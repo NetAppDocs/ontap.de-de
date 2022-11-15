@@ -1,0 +1,133 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_how_automatic_takeover_and_giveback_works.html 
+keywords: ontap, high availability, ha, pair, automatic, takeover, giveback, background, updates, policy, effect, node, panics, what, happens 
+summary: Die automatischen Takeover- und Giveback-Vorgänge können gemeinsam den Client-Ausfall reduzieren und verhindern. 
+---
+= Funktionsweise von automatischem Takeover und Giveback
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Die automatischen Takeover- und Giveback-Vorgänge können gemeinsam den Client-Ausfall reduzieren und verhindern.
+
+Wenn ein Node im HA-Paar „Panik“, „Neustart“ oder „Anhalten“ beeinträchtigt wird, übernimmt der Partner-Node automatisch und gibt beim Neustart des betroffenen Node den Storage zurück. Das HA-Paar setzt dann den normalen Betriebszustand fort.
+
+Automatische Übernahmen können auch auftreten, wenn einer der Knoten nicht mehr reagiert.
+
+Standardmäßig wird das automatische Giveback durchgeführt. Falls Sie die Auswirkungen von Giveback auf Clients eher steuern möchten, können Sie die automatische Rückübertragung deaktivieren und verwenden `storage failover modify -auto-giveback false -node <node>` Befehl. Vor Durchführung des automatischen Giveback (unabhängig vom Auslösewert) wartet der Partner-Node auf eine festgelegte Zeit, die vom gesteuert wird `-delay- seconds` Parameter von `storage failover modify` Befehl. Die Standardverzögerung beträgt 600 Sekunden. Durch Verzögerung der Rückgabe führt der Prozess zu zwei kurzen Ausfällen: Einen während des Takeover und einen während des Giveback.
+
+Dieser Prozess vermeidet einen einzelnen, längeren Ausfall, der Folgendes beinhaltet:
+
+* Der Übernahmemodus
+* Der übernsorientierte Knoten, um bis zu dem Punkt zu booten, an dem er für das Giveback bereit ist
+* Der Giveback-Vorgang
+
+
+Wenn das automatische Giveback für einen der nicht-Root-Aggregate fehlschlägt, versucht das System automatisch zwei weitere Versuche, das Giveback abzuschließen.
+
+
+NOTE: Während des Takeover wird der Prozess für die automatische Rückgabe gestartet, bevor der Partner-Node für das Giveback bereit ist. Wenn die Zeitgrenze des automatischen Giveback-Prozesses abgelaufen ist und der Partner-Node noch nicht bereit ist, wird der Timer neu gestartet. So kann der Zeitpunkt zwischen dem bereitzustehen des Partner-Nodes und dem tatsächlichen Giveback kürzer sein als die automatische Rückübertragung.
+
+
+
+== Was passiert bei der Übernahme
+
+Wenn ein Node den Partner übernimmt, werden auch in den Aggregaten und Volumes des Partners weiterhin Daten bereitgestellt und aktualisiert.
+
+Folgende Schritte treten während des Übernahmeseprozesses auf:
+
+. Wenn die ausgehandelte Übernahme vom Benutzer initiiert wird, werden aggregierte Daten vom Partner-Node auf den Node verschoben, der die Übernahme durchführt. Ein kurzer Ausfall tritt auf, wenn sich der aktuelle Eigentümer jedes Aggregats (mit Ausnahme des Root-Aggregats) zum Takeover-Node ändert. Dieser Ausfall ist kurz als ein Ausfall, der während einer Übernahme ohne Aggregatverschiebung auftritt.
++
+** Sie können den Fortschritt mit dem überwachen `storage failover show‑takeover` Befehl.
+** Sie können die Aggregatverschiebung während dieser Takeover-Instanz vermeiden, indem Sie die verwenden `‑bypass‑optimization` Parameter mit `storage failover takeover` Befehl.
++
+
+NOTE: Aggregate werden während geplanter Übernahme seriell verschoben, um Client-Ausfälle zu verringern. Wenn die Aggregatverschiebung umgangen ist, kommt es während der geplanten Übernahme zu einem längeren Client-Ausfall.
+
+
+
+. Wenn es sich bei der vom Benutzer initiierten Übernahme um eine ausgehandelte Übernahme handelt, wird der Ziel-Node ordnungsgemäß heruntergefahren, gefolgt von der Übernahme des Root-Aggregats des Ziel-Nodes und allen Aggregaten, die nicht in Schritt 1 verlagert wurden.
+. Vor dem Beginn der Storage-Übernahme migrieren Daten-LIFs (logische Schnittstellen) basierend auf den LIF Failover-Regeln vom Ziel-Node auf den Takeover-Node oder auf einen anderen Node im Cluster. Sie können die LIF-Migration mithilfe von vermeiden `‑skip‑lif-migration` Parameter mit `storage failover takeover` Befehl.
+. Bestehende SMB-Sessions werden unterbrochen, wenn eine Übernahme stattfindet.
++
+
+NOTE: Aufgrund des Wesens des SMB-Protokolls werden alle SMB-Sitzungen unterbrochen (außer bei SMB 3.0-Sitzungen, die mit Freigaben mit der Eigenschaft „Continuous Availability“ verbunden sind). SMB 1.0- und SMB 2.x-Sessions können nach einem Takeover-Ereignis nicht erneut verbunden werden. Daher ist die Übernahme mit Unterbrechungen verbunden und es können Datenverluste auftreten.
+
+. SMB 3.0-Sitzungen, die für Freigaben mit aktivierter Eigenschaft „kontinuierliche Verfügbarkeit“ eingerichtet wurden, können nach einem Takeover-Ereignis eine Verbindung zu den getrennten Freigaben herstellen. Wenn Ihre Site SMB 3.0-Verbindungen zu Microsoft Hyper-V verwendet und die Eigenschaft „kontinuierliche Verfügbarkeit“ auf den zugehörigen Freigaben aktiviert ist, sind Übernahmen für diese Sitzungen unterbrechungsfrei.
+
+
+
+
+=== Was geschieht, wenn ein Node eine „Takeover“-Panik ausführt
+
+Wenn der Node, der die Takeover-Panik innerhalb von 60 Sekunden nach dem Start des Takeover durchführt, treten die folgenden Ereignisse auf:
+
+* Der Node, der in Panik geraten war, wird neu gebootet.
+* Nach dem Neubooten des Node führt der Node Self-Recovery-Vorgänge aus und befindet sich nicht mehr im Übernahmemodus.
+* Der Failover ist deaktiviert.
+* Wenn der Node weiterhin Eigentümer einiger Aggregate des Partners ist, geben Sie diese Aggregate nach Aktivierung des Storage Failovers an den Partner zurück, der die verwendet `storage failover giveback` Befehl.
+
+
+
+
+== Was passiert bei der Rückgabe
+
+Wenn Probleme gelöst sind, wenn der Partner-Node gestartet wird oder wenn die Rückgabe initiiert wird, gibt der lokale Node die Eigentümerschaft an den Partner-Node zurück.
+
+Der folgende Prozess findet im normalen Giveback-Vorgang statt. In dieser Diskussion hat Node A Node B übernommen Alle Probleme auf Knoten B wurden behoben, und es ist bereit, die Bereitstellung von Daten fortzusetzen.
+
+. Alle Probleme auf Knoten B werden behoben, und es wird die folgende Meldung angezeigt: `Waiting for giveback`
+. Das Giveback wird vom initiiert `storage failover giveback` Befehl oder automatisches Giveback, falls das System dafür konfiguriert ist. Dadurch wird die Rückgabe der Eigentumsrechte an Aggregaten und Volumes von Node B von Node A zurück zu Node B. initiiert
+. Node A gibt zuerst die Kontrolle über das Root-Aggregat zurück.
+. Node B schließt das Booten bis zu seinem normalen Betriebszustand ab.
+. Sobald Node B den Punkt im Boot-Prozess erreicht, an dem es die nicht-Root-Aggregate akzeptieren kann, gibt Node A die Eigentumsrechte an den anderen Aggregaten einzeln zurück, bis die Rückgabe abgeschlossen ist. Sie können den Status der Rückgabe mithilfe von überwachen `storage failover show-giveback` Befehl.
++
+
+NOTE: Der `storage failover show-giveback` Der Befehl zeigt nicht (und ist auch nicht vorgesehen) Informationen zu allen Vorgängen an, die während des Storage Failover-Giveback-Vorgangs auftreten. Sie können das verwenden `storage failover show` Befehl zum Anzeigen zusätzlicher Details zum aktuellen Failover-Status des Nodes, z. B. wenn der Node voll funktionsfähig ist, Übernahme möglich und Rückgabe abgeschlossen ist.
+
++
+Die I/O-Vorgänge werden für jedes Aggregat fortgesetzt, nachdem die Rückgabe für dieses Aggregat abgeschlossen ist, was das allgemeine Ausfallzeitfenster reduziert.
+
+
+
+
+
+== HA-Richtlinie und ihre Auswirkungen auf Takeover und Giveback
+
+ONTAP weist einem Aggregat automatisch eine HA-Richtlinie von CFO (Controller Failover) und SFO (Storage Failover) zu. Diese Richtlinie bestimmt, wie Storage Failover-Vorgänge für das Aggregat und seine Volumes durchgeführt werden.
+
+Die beiden Optionen, CFO und SFO, bestimmen die ONTAP-Aggregatkontrolle während des Storage Failover und Giveback.
+
+Auch wenn die Begriffe CFO und SFO manchmal informell für Storage Failover (Takeover und Giveback) Vorgänge verwendet werden, stellen sie tatsächlich die HA-Richtlinie dar, die den Aggregaten zugewiesen ist. Zum Beispiel beziehen sich die Begriffe SFO-Aggregat oder CFO-Aggregat einfach auf die HA-Richtlinienzuweisung des Aggregats.
+
+HA-Richtlinien wirken sich auf Takeover- und Giveback-Vorgänge aus:
+
+* Auf ONTAP Systemen erstellte Aggregate (mit Ausnahme des Root-Aggregats, das das Root-Volume enthält) haben eine HA-Richtlinie von SFO. Manuell initiierte Übernahme ist für Performance optimiert und verlagert SFO-Aggregate (nicht-Root-Aggregate) vor dem Takeover seriell an den Partner. Während des Giveback-Prozesses erhalten die Aggregate seriell, nachdem die übernehmen-Systeme gestartet wurden und die Management-Applikationen online geschaltet wurden. So erhält der Node seine Aggregate.
+* Da bei der Aggregatverschiebung die Neuzuteilung von aggregierten Festplatten und die Verschiebung der Kontrolle von einem Node zu seinem Partner erforderlich sind, können nur Aggregate mit einer HA-Richtlinie von SFO für einen Aggregatverschiebung qualifiziert werden.
+* Das Root-Aggregat hat immer eine HA-Richtlinie von CFO an und wird zu Beginn des Giveback-Vorgangs zurückgegeben. Dies ist erforderlich, damit das übernsaufgenommene System gestartet werden kann. Alle anderen Aggregate werden seriell zurückgegeben, nachdem das übergenommene System den Boot-Prozess abgeschlossen hat und die Management-Applikationen online geschaltet wurden. So erhält der Node seine Aggregate.
+
+
+
+NOTE: Die Änderung der HA-Richtlinie eines Aggregats von SFO zu CFO ist ein Wartungsmodus-Vorgang. Ändern Sie diese Einstellung nur, wenn Sie von einem Kundendienstmitarbeiter dazu aufgefordert werden.
+
+
+
+== Auswirkungen von Hintergrund-Updates auf Takeover und Giveback
+
+Hintergrund-Updates der Festplatten-Firmware wirken sich je nach Initiierung der Operationen auf HA-Paar-Takeover, Giveback und Aggregatverschiebung aus.
+
+In der folgenden Liste wird beschrieben, wie sich Updates der Festplatten-Firmware im Hintergrund auf Takeover, Giveback und Aggregatverschiebung auswirken:
+
+* Wenn auf einem Laufwerk auf einem der Nodes ein Update der Festplatten-Firmware im Hintergrund stattfindet, werden manuell initiierte Übernahmevorgänge verzögert, bis das Update der Festplatten-Firmware auf dieser Festplatte abgeschlossen ist. Wenn das Update der Firmware auf der Festplatte im Hintergrund länger als 120 Sekunden dauert, werden Übernahmevorgänge abgebrochen und müssen nach Abschluss des Festplatten-Firmware-Updates manuell neu gestartet werden. Wenn die Übernahme mit dem initiiert wurde `‑bypass‑optimization` Parameter von `storage failover takeover` Befehl ist auf festgelegt `true`, Die auf dem Ziel-Knoten vorkommende Firmware-Aktualisierung der Hintergrund-Festplatte hat keine Auswirkung auf die Übernahme.
+* Wenn auf einer Festplatte auf dem Quell- (oder Takeover-) Node ein Update der Festplatten-Firmware im Hintergrund stattfindet und der Takeover manuell mit dem initiiert wurde `‑options` Parameter von `storage failover takeover` Befehl ist auf festgelegt `immediate`, Übernahmevorgänge starten sofort.
+* Wenn auf einer Festplatte auf einem Node eine Firmware im Hintergrund aktualisiert wird und eine Panik besteht, beginnt sofort die Übernahme des Panik- und Node-Systems.
+* Wenn auf einem Laufwerk auf einem der Nodes ein Update der Festplatten-Firmware im Hintergrund stattfindet, wird die Rückgabe von Datenaggregaten verzögert, bis das Update der Festplatten-Firmware auf dieser Festplatte abgeschlossen ist.
+* Wenn das Update der Firmware auf der Festplatte im Hintergrund länger als 120 Sekunden dauert, werden GiveBack-Vorgänge abgebrochen und müssen nach Abschluss der Aktualisierung der Festplatten-Firmware manuell neu gestartet werden.
+* Wenn auf einem Laufwerk auf einem der beiden Nodes ein Update der Festplatten-Firmware im Hintergrund stattfindet, werden Aggregatverschiebung verzögert, bis das Update der Festplatten-Firmware auf dieser Festplatte abgeschlossen ist. Wenn das Update der Festplatten-Firmware länger als 120 Sekunden dauert, werden Aggregatverschiebung abgebrochen und nach Abschluss der Firmware-Aktualisierung der Festplatte manuell neu gestartet. Wenn eine Aggregatverschiebung mit dem initiiert wurde `-override-destination-checks` Des `storage aggregate relocation` Befehl ist auf festgelegt `true`, Die Firmware-Aktualisierung auf dem Ziel-Knoten im Hintergrund hat keine Auswirkung auf die Aggregatverschiebung.
+

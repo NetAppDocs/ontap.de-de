@@ -1,0 +1,122 @@
+---
+permalink: antivirus/architecture-concept.html 
+sidebar: sidebar 
+keywords: antivirus, architecture 
+summary: Die Antiviren-Architektur von NetApp besteht aus einem Vscan Server und einer Reihe von ONTAP Konfigurationen. 
+---
+= Virenschutz-Architektur
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Antiviren-Architektur von NetApp besteht aus einem Vscan Server und einer Reihe von ONTAP Konfigurationen.
+
+
+
+== Vscan-Server-Komponenten
+
+Sie müssen die folgenden Komponenten auf dem Vscan-Server installieren.
+
+* *ONTAP Antivirus Connector*
++
+Der von NetApp bereitgestellte Antivirus Connector ONTAP behandelt die Kommunikation zwischen ONTAP und dem Vscan Server.
+
+* *Antivirus-Software*
++
+Die ONTAP-konforme Virenschutzsoftware anderer Anbieter überprüft Dateien auf Viren oder andere Malware. Sie geben die Abhilfemaßnahmen für infizierte Dateien an, wenn Sie die Software konfigurieren.
+
+
+
+
+
+== ONTAP-Konfigurationen
+
+Sie müssen die folgenden Elemente auf dem NetApp Storage-System konfigurieren.
+
+* *Scanner-Pool*
++
+Ein Scanner-Pool definiert die Vscan-Server und privilegierten Benutzer, die eine Verbindung zu SVMs herstellen können. Es definiert auch eine Zeitdauer für die Scan-Anforderung, nach der die Scan-Anforderung an einen alternativen Vscan-Server gesendet wird, wenn eine verfügbar ist.
+
++
+[NOTE]
+====
+Es empfiehlt sich, den Zeitraum für die Zeitüberschreitung in der Antivirensoftware auf dem Vscan-Server auf fünf Sekunden zu setzen, die unter dem Timeout-Zeitraum für die Scannerpoolanforderung liegen. Um Situationen zu vermeiden, in denen der Dateizugriff komplett verzögert oder verweigert wird, weil die Zeitdauer auf der Software größer ist als die Zeitdauer für die Scan-Anforderung.
+
+====
+* *Privilegierter Benutzer*
++
+Ein privilegierter Benutzer ist ein Domain-Benutzerkonto, das von einem Vscan-Server zur Verbindung mit der SVM verwendet wird. Das Konto muss in die Liste der privilegierten Benutzer enthalten sein, die im Scannerpool definiert sind.
+
+* *Scanner-Richtlinie*
++
+Eine Scannerrichtlinie bestimmt, ob ein Scannerpool aktiv ist. Eine Scannerrichtlinie kann einen der folgenden Werte aufweisen:
+
++
+** `Primary` Gibt an, dass der Scannerpool aktiv ist.
+** `Secondary` Gibt an, dass der Scannerpool nur aktiv ist, wenn keiner der Vscan-Server im primären Scannerpool angeschlossen ist.
+** `Idle` Gibt an, dass der Scannerpool inaktiv ist. Die Scannerrichtlinien sind systemdefiniert. Sie können keine benutzerdefinierte Scannerrichtlinie erstellen.
+
+
+* *Zugangsrichtlinie*
++
+Eine Zugriffsrichtlinie definiert den Umfang eines Scans beim Zugriff. Sie können die maximale Größe der zu scannenden Dateien, die Erweiterungen der Dateien, die in den Scan aufgenommen werden sollen, sowie die Erweiterungen und Pfade der Dateien angeben, die vom Scan ausgeschlossen werden sollen.
+
++
+Standardmäßig werden nur Lese- und Schreib-Volumes gescannt. Sie können Filter festlegen, die das Scannen von schreibgeschützten Volumes ermöglichen oder das Scannen auf Dateien beschränken, die mit dem Zugriff ausführen geöffnet wurden:
+
++
+** `scan-ro-volume` Ermöglicht das Scannen schreibgeschützter Volumes.
+** `scan-execute-access` Schränkt das Scannen auf Dateien ein, die durch Ausführen des Zugriffs geöffnet wurden.
++
+[NOTE]
+====
+„`Execute Access`“ ist nicht identisch mit „`Execute Permission`“. Ein bestimmter Client hat „`Execute Access`“ in einer ausführbaren Datei nur dann, wenn die Datei mit „`Execute Intent`“ geöffnet wurde.
+
+====
+
+
++
+Sie können die einstellen `scan-mandatory` Option „aus“, um festzulegen, dass der Dateizugriff zulässig ist, wenn keine Vscan-Server für Virenprüfungen verfügbar sind.
+
+* *On-Demand Task*
++
+Ein On-Demand-Task definiert den Umfang eines Scans nach Bedarf. Sie können die maximale Größe der zu scannenden Dateien, die Erweiterungen und Pfade der Dateien angeben, die in den Scan aufgenommen werden sollen, sowie die Erweiterungen und Pfade der Dateien, die vom Scan ausgeschlossen werden sollen. Dateien in Unterverzeichnissen werden standardmäßig gescannt.
+
++
+Sie verwenden einen Cron-Zeitplan, um festzulegen, wann die Aufgabe ausgeführt wird. Sie können das verwenden `vserver vscan on-demand-task run` Befehl zum sofortigen Ausführen der Aufgabe.
+
+* *Vscan-Dateioperationen-Profil (nur beim Scannen beim Zugriff)*
++
+Der `-vscan-fileop-profile` Parameter für das `vserver cifs share create` Der Befehl definiert, welche Vorgänge auf einer SMB-Freigabe einen Virus-Scan auslösen können. Standardmäßig ist der Parameter auf festgelegt `standard`, Das ist die NetApp Best Practice.
+
++
+Sie können diesen Parameter beim Erstellen oder Ändern einer SMB-Freigabe nach Bedarf anpassen:
+
++
+** `no-scan` Gibt an, dass Virenscans nie für die Freigabe ausgelöst werden.
+** `standard` Gibt an, dass Virenprüfungen durch Öffnen, Schließen und Umbenennen von Vorgängen ausgelöst werden können.
+** `strict` Gibt an, dass Virenprüfungen durch Öffnen, Lesen, Schließen und Umbenennen von Vorgängen ausgelöst werden können.
++
+Der `strict` Profil bietet erhöhte Sicherheit für Situationen, in denen mehrere Clients gleichzeitig auf eine Datei zugreifen. Wenn ein Client eine Datei schließt, nachdem ein Virus darauf geschrieben wurde, und die gleiche Datei weiterhin auf einem zweiten Client geöffnet bleibt, `strict` Stellt sicher, dass ein Lesevorgang auf dem zweiten Client einen Scan auslöst, bevor die Datei geschlossen wird.
+
++
+Sie sollten vorsichtig sein, die zu beschränken `strict` Profil für Freigaben, die Dateien enthalten, auf die Sie erwarten, wird gleichzeitig zugegriffen. Da das Profil mehr Scananforderungen generiert als die anderen, kann es sich negativ auf die Leistung auswirken.
+
+** `writes-only` Gibt an, dass Virenprüfungen nur ausgelöst werden können, wenn eine geänderte Datei geschlossen wurde.
++
+[NOTE]
+====
+Wenn eine Client-Anwendung einen Umbenennung durchführt, wird die Datei mit dem neuen Namen geschlossen und nicht gescannt. Wenn ein solcher Betrieb in Ihrer Umgebung Sicherheitsaspekte mit sich bringt, sollten Sie den verwenden `standard` Oder `strict` Profil:
+
+====
++
+Weil `writes-only` Generiert weniger Scananforderungen als die anderen Profile (außer `no-scan`), es verbessert in der Regel die Leistung.
+
++
+Beachten Sie jedoch, dass der Scanner konfiguriert werden muss, wenn Sie dieses Profil für eine Freigabe verwenden, um eine nicht pairable infizierte Datei zu löschen oder zu isolieren, damit später keine Clients darauf zugreifen können. Wenn z. B. ein Client eine Datei nach dem Schreiben eines Virus schließt und die Datei nicht repariert, gelöscht oder isoliert wird, wird jeder Client, der auf die Datei zugreift, infiziert.
+
+
+
+

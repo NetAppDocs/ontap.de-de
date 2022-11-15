@@ -1,0 +1,104 @@
+---
+permalink: san-admin/restore-single-lun-snapvault-backup-task.html 
+sidebar: sidebar 
+keywords: ontap 9.2, restore, single, lun, snapvault backup 
+summary: Sie können eine einzelne LUN an einem neuen Speicherort oder am ursprünglichen Speicherort wiederherstellen. Sie können Restores von jeder beliebigen Snapshot Kopie im sekundären SnapVault Volume durchführen. Um die LUN am ursprünglichen Speicherort wiederherzustellen, stellen Sie sie zuerst an einem neuen Speicherort wieder her und kopieren sie dann. 
+---
+= Stellen Sie eine einzelne LUN aus einem SnapVault-Backup wieder her
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können eine einzelne LUN an einem neuen Speicherort oder am ursprünglichen Speicherort wiederherstellen. Sie können Restores von jeder beliebigen Snapshot Kopie im sekundären SnapVault Volume durchführen. Um die LUN am ursprünglichen Speicherort wiederherzustellen, stellen Sie sie zuerst an einem neuen Speicherort wieder her und kopieren sie dann.
+
+.Was Sie und#8217;ll benötigen
+* Die SnapVault-Beziehung muss initialisiert werden und das sekundäre SnapVault Volume muss eine entsprechende Snapshot Kopie enthalten, um sie wiederherzustellen.
+* Die Storage Virtual Machine (SVM), die das sekundäre SnapVault Volume enthält, muss über eine oder mehrere LIFs mit dem gewünschten SAN-Protokoll verfügen, auf die der Host zum Zugriff auf die LUN-Kopie zugreifen kann.
+* Die Initiatorgruppen müssen auf der SnapVault SVM bereits vorhanden sein.
+
+
+Dieser Prozess umfasst die Erstellung eines Volume-Klons mit Lese- und Schreibvorgängen aus einer Snapshot Kopie im sekundären SnapVault Volume. Sie können die LUN direkt aus dem Klon verwenden oder den LUN-Inhalt optional wieder an den ursprünglichen Speicherort der LUN kopieren.
+
+Die LUN im Klon verfügt über einen anderen Pfad und eine andere Seriennummer als die ursprüngliche LUN. Persistente Reservierungen werden nicht beibehalten.
+
+.Schritte
+. Führen Sie die aus `snapmirror show` Befehl zur Überprüfung des sekundären Volumes, das das SnapVault Backup enthält.
++
+[listing]
+----
+cluster::> snapmirror show
+
+Source         Dest     Mirror  Relation  Total             Last
+Path     Type  Path     State   Status    Progress  Healthy Updated
+-------- ---- --------- ------- --------- --------- ------- -------
+vserverA:srcvolA
+         XDP  vserverB:dstvolB
+                        Snapmirrored
+                                Idle       -         true    -
+----
+. Führen Sie die aus `volume snapshot show` Befehl zum Identifizieren der Snapshot Kopie, aus der Sie die LUN wiederherstellen möchten.
++
+[listing]
+----
+cluster::> volume snapshot show
+
+Vserver  Volume  Snapshot               State Size   Total% Used%
+-------- ------- ---------------------- ----- ------ ------ -----
+vserverB
+         dstvolB
+                 snap2.2013-02-10_0010  valid  124KB     0%    0%
+                 snap1.2013-02-10_0015 valid  112KB     0%    0%
+                 snap2.2013-02-11_0010  valid  164KB     0%    0%
+----
+. Führen Sie die aus `volume clone create` Befehl, um einen Klon mit Lese- und Schreibvorgängen aus der gewünschten Snapshot Kopie zu erstellen.
++
+Der Volume-Klon wird im selben Aggregat erstellt wie der SnapVault Backup. Im Aggregat muss genügend Speicherplatz vorhanden sein, um den Klon zu speichern.
+
++
+[listing]
+----
+cluster::> volume clone create -vserver vserverB
+  -flexclone dstvolB_clone -type RW -parent-volume dstvolB
+  -parent-snapshot daily.2013-02-10_0010
+[Job 108] Job succeeded: Successful
+----
+. Führen Sie die aus `lun show` Befehl zum Auflisten der LUNs im Klon des Volumes
++
+[listing]
+----
+cluster::> lun show -vserver vserverB -volume dstvolB_clone
+
+Vserver   Path                      State   Mapped   Type
+--------- ------------------------  ------- -------- --------
+vserverB  /vol/dstvolB_clone/lun_A  online  unmapped windows
+vserverB  /vol/dstvolB_clone/lun_B  online  unmapped windows
+vserverB  /vol/dstvolB_clone/lun_C  online  unmapped windows
+
+3 entries were displayed.
+----
+. Wenn die Initiatorgruppe für den gewünschten Host auf der SVM, die das SnapVault-Backup enthält, nicht bereits vorhanden ist, führen Sie die aus `igroup create` Befehl zum Erstellen einer Initiatorgruppe
++
+Dieses Beispiel erstellt eine Initiatorgruppe für einen Windows Host, der das iSCSI-Protokoll verwendet:
+
++
+[listing]
+----
+cluster::> igroup create -vserver vserverB -igroup temp_igroup
+  -protocol iscsi -ostype windows
+  -initiator iqn.1991-05.com.microsoft:hostA
+----
+. Führen Sie die aus `lun mapping create` Befehl zum Zuordnen der gewünschten LUN-Kopie zur Initiatorgruppe.
++
+[listing]
+----
+cluster::> lun mapping create -vserver vserverB
+  -path /vol/dstvolB_clone/lun_C -igroup temp_igroup
+----
+. Verbinden Sie den Host mit der LUN und greifen Sie nach Bedarf auf den Inhalt der LUN zu.
++
+Die LUN ist Lese- und Schreib-LUN, die anstelle der ursprünglichen LUN verwendet werden kann. Da die LUN-Seriennummer sich unterscheidet, interpretiert der Host sie als eine andere LUN als das Original.
+
+. Verwenden Sie ein Kopierprogramm auf dem Host, um den LUN-Inhalt zurück auf die ursprüngliche LUN zu kopieren.
+

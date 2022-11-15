@@ -1,0 +1,76 @@
+---
+permalink: smb-hyper-v-sql/verify-kerberos-ntlmv2-authentication-task.html 
+sidebar: sidebar 
+keywords: nondisruptive, operation, hyper, v, verify, kerberos, ntlmv2, authentication, cifs, server, svm, data 
+summary: Für den unterbrechungsfreien Betrieb von Hyper-V über SMB ist erforderlich, dass der CIFS-Server auf einer Daten-SVM und der Hyper-V Server sowohl Kerberos als auch NTLMv2-Authentifizierung gestatten. Sie müssen die Einstellungen sowohl auf dem CIFS-Server als auch auf den Hyper-V-Servern überprüfen, die steuern, welche Authentifizierungsmethoden zulässig sind. 
+---
+= Überprüfung, ob sowohl Kerberos als auch NTLMv2-Authentifizierung zulässig sind (Hyper-V über SMB-Freigaben)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Für den unterbrechungsfreien Betrieb von Hyper-V über SMB ist erforderlich, dass der CIFS-Server auf einer Daten-SVM und der Hyper-V Server sowohl Kerberos als auch NTLMv2-Authentifizierung gestatten. Sie müssen die Einstellungen sowohl auf dem CIFS-Server als auch auf den Hyper-V-Servern überprüfen, die steuern, welche Authentifizierungsmethoden zulässig sind.
+
+Kerberos-Authentifizierung ist erforderlich, wenn eine kontinuierlich verfügbare Freigabverbindung hergestellt wird. Ein Teil des Remote-VSS-Prozesses verwendet die NTLMv2-Authentifizierung. Daher müssen Verbindungen, die beide Authentifizierungsmethoden verwenden, für Hyper-V über SMB-Konfigurationen unterstützt werden.
+
+Die folgenden Einstellungen müssen so konfiguriert sein, dass sowohl Kerberos- als auch NTLMv2-Authentifizierung zugelassen wird:
+
+* Exportrichtlinien für SMB müssen auf der Storage Virtual Machine (SVM) deaktiviert werden.
+
+
+Sowohl Kerberos als auch NTLMv2-Authentifizierung sind immer auf SVMs aktiviert. Exportrichtlinien können jedoch verwendet werden, um den Zugriff auf Basis der Authentifizierungsmethode zu beschränken.
+
+Exportrichtlinien für SMB sind optional und werden standardmäßig deaktiviert. Wenn Exportrichtlinien deaktiviert sind, sind sowohl Kerberos als auch NTLMv2-Authentifizierung standardmäßig auf einem CIFS-Server zulässig.
+
+* Die Domäne, zu der der CIFS-Server und Hyper-V-Server gehören, muss sowohl Kerberos als auch NTLMv2-Authentifizierung zulassen.
+
+
+Kerberos-Authentifizierung ist in Active Directory-Domänen standardmäßig aktiviert. Die NTLMv2-Authentifizierung kann jedoch nicht zulässig sein, entweder unter Verwendung von Sicherheitsrichtlinien oder Gruppenrichtlinien.
+
+.Schritte
+. Führen Sie folgende Schritte durch, um zu überprüfen, ob Exportrichtlinien auf der SVM deaktiviert sind:
++
+.. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`*set -privilege advanced*`
+
+.. Überprüfen Sie das `-is-exportpolicy-enabled` Die CIFS-Serveroption ist auf festgelegt `false`:
++
+`*vserver cifs options show -vserver _vserver_name_ -fields vserver,is-exportpolicy-enabled*`
+
+.. Zurück zur Administratorberechtigungsebene:
++
+`*set -privilege admin*`
+
+
+
+. Wenn Exportrichtlinien für SMB nicht deaktiviert sind, deaktivieren Sie diese:
++
+`*vserver cifs options modify -vserver _vserver_name_ -is-exportpolicy-enabled false*`
+
+. Überprüfen Sie, ob NTLMv2- und Kerberos-Authentifizierung in der Domäne zulässig sind.
++
+Informationen darüber, welche Authentifizierungsmethoden in der Domäne zulässig sind, finden Sie in der Microsoft TechNet-Bibliothek.
+
+. Wenn die Domäne die NTMLv2-Authentifizierung nicht zulässt, aktivieren Sie die NTLMv2-Authentifizierung mithilfe einer der in der Microsoft-Dokumentation beschriebenen Methoden.
+
+
+Mit den folgenden Befehlen wird sichergestellt, dass Exportrichtlinien für SMB auf SVM vs1 deaktiviert sind:
+
+[listing]
+----
+cluster1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them
+only when directed to do so by technical support personnel.
+Do you wish to continue? (y or n): y
+
+cluster1::*> vserver cifs options show -vserver vs1 -fields vserver,is-exportpolicy-enabled
+
+vserver  is-exportpolicy-enabled
+-------- -----------------------
+vs1      false
+
+cluster1::*> set -privilege admin
+----

@@ -1,0 +1,159 @@
+---
+permalink: performance-admin/set-throughput-ceiling-qos-task.html 
+sidebar: sidebar 
+keywords: setting, throughput, ceiling, qos 
+summary: 'Das Feld für den maximalen Durchsatz kann für eine Richtliniengruppe verwendet werden, um eine Durchsatzgrenze für Storage-Objekt-Workloads (QoS max.) zu definieren. Sie können die Richtliniengruppe anwenden, wenn Sie das Speicherobjekt erstellen oder ändern.' 
+---
+= Festlegung einer Durchsatzgrenze mit QoS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `max-throughput` Feld für eine Richtliniengruppe zur Definition einer Durchsatzgrenze für Storage-Objekt-Workloads (max. QoS) Sie können die Richtliniengruppe anwenden, wenn Sie das Speicherobjekt erstellen oder ändern.
+
+.Was Sie und#8217;ll benötigen
+* Zum Erstellen einer Richtliniengruppe müssen Sie ein Cluster-Administrator sein.
+* Zum Anwenden einer Richtliniengruppe auf eine SVM müssen Sie ein Cluster-Administrator sein.
+
+
+.Über diese Aufgabe
+* Ab ONTAP 9.4 können Sie mithilfe einer Richtliniengruppe „_non-shared_ QoS“ angeben, dass die definierte Durchsatzobergrenze für jeden einzelnen Mitglied-Workload gilt. Andernfalls wird die Richtliniengruppe „_shared“:_ der Gesamtdurchsatz der der Richtliniengruppe zugewiesenen Workloads darf die angegebene Obergrenze nicht überschreiten.
++
+Einstellen `-is-shared=false` Für das `qos policy-group create` Befehl zum Festlegen einer nicht freigegebenen Gruppe.
+
+* Sie können das Durchsatzlimit für IOPS, MB/s oder IOPS, MB/s festlegen Wenn Sie sowohl IOPS als auch MB/s angeben, wird der erste Grenzwert erreicht.
++
+[NOTE]
+====
+Wenn Sie eine Decke und ein Boden für denselben Workload festlegen, können Sie nur das Durchsatzlimit für den IOPS festlegen.
+
+====
+* Ein Storage-Objekt, das einem QoS-Limit unterliegt, muss von der SVM, der die Richtliniengruppe angehört, enthalten sein. Mehrere Richtliniengruppen können derselben SVM angehören.
+* Sie können einer Richtliniengruppe kein Speicherobjekt zuweisen, wenn das zugehörige Objekt oder seine untergeordneten Objekte zur Richtliniengruppe gehören.
+* Es handelt sich um eine Best Practice bei QoS, eine Richtliniengruppe auf denselben Storage-Typ anzuwenden.
+
+
+.Schritte
+. Erstellen einer Richtliniengruppe:
++
+`qos policy-group create -policy-group _policy_group_ -vserver _SVM_ -max-throughput _number_of_iops_|Mb/S|iops,Mb/S -is-shared true|false`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page. Sie können das verwenden `qos policy-group modify` Befehl zum Einstellen der Durchsatzdecken.
+
++
+Mit dem folgenden Befehl wird die gemeinsam genutzte Richtliniengruppe erstellt `pg-vs1` Bei einem maximalen Durchsatz von 5,000 IOPS:
+
++
+[listing]
+----
+cluster1::> qos policy-group create -policy-group pg-vs1 -vserver vs1 -max-throughput 5000iops -is-shared true
+----
++
+Mit dem folgenden Befehl wird die nicht gemeinsam genutzte Richtliniengruppe erstellt `pg-vs3` Bei einem maximalen Durchsatz von 100 IOPS und 400 KB/s:
+
++
+[listing]
+----
+cluster1::> qos policy-group create -policy-group pg-vs3 -vserver vs3 -max-throughput 100iops,400KB/s -is-shared false
+----
++
+Mit dem folgenden Befehl wird die nicht gemeinsam genutzte Richtliniengruppe erstellt `pg-vs4` Ohne Durchsatzbegrenzung:
+
++
+[listing]
+----
+cluster1::> qos policy-group create -policy-group pg-vs4 -vserver vs4 -is-shared false
+----
+. Anwenden einer Richtliniengruppe auf eine SVM, Datei, Volume oder LUN:
++
+`_storage_object_ create -vserver _SVM_ -qos-policy-group _policy_group_`
+
++
+Eine vollständige Befehlssyntax finden Sie in den man-Pages. Sie können das verwenden `_storage_object_ modify` Befehl zum Anwenden einer anderen Richtliniengruppe auf das Speicherobjekt.
+
++
+Der folgende Befehl wendet die Richtliniengruppe an `pg-vs1` Zu SVM `vs1`:
+
++
+[listing]
+----
+cluster1::> vserver create -vserver vs1 -qos-policy-group pg-vs1
+----
++
+Die folgenden Befehle wenden eine Richtliniengruppe an `pg-app` Auf die Volumes `app1` Und `app2`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs2 -volume app1 -aggregate aggr1 -qos-policy-group pg-app
+----
++
+[listing]
+----
+cluster1::> volume create -vserver vs2 -volume app2 -aggregate aggr1 -qos-policy-group pg-app
+----
+. Überwachung der Richtliniengruppenleistung:
++
+`qos statistics performance show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+[NOTE]
+====
+Monitoring der Performance über das Cluster Verwenden Sie kein Tool auf dem Host, um die Leistung zu überwachen.
+
+====
++
+Mit dem folgenden Befehl wird die Performance der Richtliniengruppe angezeigt:
+
++
+[listing]
+----
+cluster1::> qos statistics performance show
+Policy Group           IOPS      Throughput   Latency
+-------------------- -------- --------------- ----------
+-total-                 12316       47.76MB/s  1264.00us
+pg_vs1                   5008       19.56MB/s     2.45ms
+_System-Best-Effort        62       13.36KB/s     4.13ms
+_System-Background         30           0KB/s        0ms
+----
+. Monitoring der Workload-Performance:
++
+`qos statistics workload performance show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+[NOTE]
+====
+Monitoring der Performance über das Cluster Verwenden Sie kein Tool auf dem Host, um die Leistung zu überwachen.
+
+====
++
+Mit dem folgenden Befehl wird die Workload-Performance angezeigt:
+
++
+[listing]
+----
+cluster1::> qos statistics workload performance show
+Workload          ID     IOPS      Throughput    Latency
+--------------- ------ -------- ---------------- ----------
+-total-              -    12320        47.84MB/s  1215.00us
+app1-wid7967      7967     7219        28.20MB/s   319.00us
+vs1-wid12279     12279     5026        19.63MB/s     2.52ms
+_USERSPACE_APPS     14       55        10.92KB/s   236.00us
+_Scan_Backgro..   5688       20            0KB/s        0ms
+----
++
+[NOTE]
+====
+Sie können das verwenden `qos statistics workload latency show` Befehl zum Anzeigen detaillierter Latenzstatistiken für QoS-Workloads
+
+====
+

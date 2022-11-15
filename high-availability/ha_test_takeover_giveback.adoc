@@ -1,0 +1,164 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_test_takeover_giveback.html 
+keywords: ontap, high, availability, ha, pair, test, testing, takeover, giveback 
+summary: Nachdem Sie alle Aspekte Ihres HA-Paars konfiguriert haben, müssen Sie überprüfen, ob dieses wie erwartet funktioniert, damit während Übernahme und Rückgabe beim Betrieb ein unterbrechungsfreier Zugriff auf den Storage beider Nodes gewährleistet wird 
+---
+= Testen von Takeover und Giveback
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Nachdem Sie alle Aspekte Ihres HA-Paars konfiguriert haben, müssen Sie überprüfen, ob dieses wie erwartet funktioniert, damit während Übernahme und Rückgabe beim Betrieb ein unterbrechungsfreier Zugriff auf den Storage beider Nodes gewährleistet wird. Während des Übernahme-Prozesses sollte der lokale (oder Takeover-) Node weiterhin die Daten bereitstellen, die normalerweise vom Partner-Node bereitgestellt werden. Während der Rückgabe sollte der Storage des Partners wieder an den Partner-Node weitergegeben werden.
+
+.Schritte
+. Überprüfen Sie die Verkabelung der HA Interconnect-Kabel, um die Sicherheit zu gewährleisten.
+. Vergewissern Sie sich, dass Sie für jedes lizenzierte Protokoll auf beiden Nodes Dateien erstellen und abrufen können.
+. Geben Sie den folgenden Befehl ein:
++
+`storage failover takeover -ofnode partnernode`
+
++
+Befehlsdetails sind auf der man-Page zu finden.
+
+. Geben Sie einen der folgenden Befehle ein, um zu bestätigen, dass die Übernahme erfolgt ist:
++
+`storage failover show-takeover`
+
++
+`storage failover show`
+
++
+--
+Wenn Sie die haben `storage failover` Befehl `-auto-giveback` Option aktiviert:
+
+|===
+
+
+| Knoten | Partner | Übernahme Möglich | Statusbeschreibung 
+
+
+| Knoten 1 | Knoten 2 | - | Warten auf Giveback 
+
+
+| Knoten 2 | Knoten 1 | Falsch | Bei der Übernahme wird das automatische Giveback in Sekunden eingeleitet 
+|===
+Wenn Sie die haben `storage failover` Befehl `-auto-giveback` Option deaktiviert:
+
+|===
+
+
+| Knoten | Partner | Übernahme Möglich | Statusbeschreibung 
+
+
+| Knoten 1 | Knoten 2 | - | Warten auf Giveback 
+
+
+| Knoten 2 | Knoten 1 | Falsch | Übernahme 
+|===
+--
+. Zeigen Sie alle Festplatten an, die zum Partner-Node (Node2) gehören, die der Takeover-Node (Node1) erkennen kann:
++
+`storage disk show -home node2 -ownership`
+
++
+--
+Mit dem folgenden Befehl werden alle Festplatten angezeigt, die zu Node2 gehören, die Node1 erkennen kann:
+`cluster::> storage disk show -home node2 -ownership`
+
+|===
+
+
+| Festplatte | Aggregat | Zu Hause | Eigentümer | DR Home | Home-ID | Besitzer-ID | DR-Home-ID | Reservierer | Pool 
+
+
+| 1.0.2 | - | Knoten 2 | Knoten 2 | - | 4078312453 | 4078312453 | - | 4078312452 | Pool0 
+
+
+| 1.0.3 | - | Knoten 2 | Knoten 2 | - | 4078312453 | 4078312453 | - | 4078312452 | Pool0 
+|===
+--
+. Bestätigen Sie, dass der Takeover-Node (Node1) die Aggregate des Partner-Node (Node2) steuert:
++
+`aggr show ‑fields home‑id,home‑name,is‑home`
+
++
+--
+|===
+
+
+| Aggregat | Home-id | Home-namenh | Zu Hause 
+
+
+ a| 
+Aggr0_1
+ a| 
+2014942045
+ a| 
+Knoten 1
+ a| 
+Richtig
+
+
+
+ a| 
+Aggr0_2
+ a| 
+4078312453
+ a| 
+Knoten 2
+ a| 
+Falsch
+
+
+
+ a| 
+Aggr1_1
+ a| 
+2014942045
+ a| 
+Knoten 1
+ a| 
+Richtig
+
+
+
+| Aggr1_2 | 4078312453 | Knoten 2  a| 
+Falsch
+
+|===
+Während der Übernahme ist der Wert „`is-Home`“ der Aggregate des Partner-Knotens falsch.
+
+--
+. Geben Sie den Datenservice des Partner Node zurück, nachdem der Meldung „`waiting for Giveback`“ angezeigt wurde:
++
+`storage failover giveback -ofnode partnernode`
+
+. Geben Sie einen der folgenden Befehle ein, um den Fortschritt des Giveback-Vorgangs zu beobachten:
++
+`storage failover show-giveback`
+
++
+`storage failover show`
+
+. Fahren Sie fort, je nachdem, ob Sie die Meldung gesehen haben, dass das Giveback erfolgreich abgeschlossen wurde:
++
+--
+|===
+
+
+| Wenn Takeover und Giveback... | Dann... 
+
+
+| Wurden erfolgreich abgeschlossen | Wiederholen Sie Schritt 2 bis Schritt 8 auf dem Partner-Node. 
+
+
+| Fehler | Korrigieren Sie den Takeover- oder Giveback-Fehler und wiederholen Sie diesen Vorgang. 
+|===
+--
+

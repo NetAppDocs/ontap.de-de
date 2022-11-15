@@ -1,0 +1,63 @@
+---
+permalink: s3-config/index.html 
+sidebar: sidebar 
+keywords: decide, s3, configuration, client, access, configure, object, bucket, svm 
+summary: 'Ab ONTAP 9.8 können Sie einen S3-Objekt-Storage-Server (ONTAP Simple Storage Service) in einem ONTAP-Cluster aktivieren.' 
+---
+= S3-Konfigurationsübersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.8 können Sie einen S3-Objekt-Storage-Server (ONTAP Simple Storage Service) in einem ONTAP-Cluster aktivieren.
+
+ONTAP unterstützt zwei lokale Anwendungsszenarien für die Bereitstellung von S3-Objekt-Storage:
+
+* FabricPool Tiering zu einem Bucket auf lokalem Cluster (Tiering zu einem lokalen Bucket) oder Remote-Cluster (Cloud-Tier)
+* Zugriff auf einen S3-Client-App auf einen Bucket auf dem lokalen Cluster oder auf einem Remote-Cluster
+
+
+Ab ONTAP 9.12.1 können Sie einen S3-Objekt-Storage-Server auf einer SVM in einem nicht gespiegelten Aggregat in einer MetroCluster IP-Konfiguration aktivieren. Weitere Informationen zu den Einschränkungen nicht gespiegelter Aggregate in MetroCluster IP-Konfigurationen finden Sie unter link:https://docs.netapp.com/us-en/ontap-metrocluster/install-ip/considerations_unmirrored_aggrs.html?q=unmirrored+aggregates["Überlegungen bei nicht gespiegelten Aggregaten"].
+
+Sie sollten die folgenden Verfahren verwenden, wenn Sie S3-Objektspeicher wie folgt konfigurieren möchten:
+
+* Sie möchten S3 Objekt-Storage von einem vorhandenen Cluster mit ONTAP bereitstellen.
++
+ONTAP S3 ist die richtige Lösung, wenn Sie S3-Funktionen auf vorhandenen Clustern ohne zusätzliche Hardware und Management wünschen. Für Implementierungen mit über 300 TB ist NetApp StorageGRID immer noch die Vorzeigelösung für Objekt-Storage. Weitere Informationen finden Sie im link:https://docs.netapp.com/sgws-114/index.jsp["StorageGRID-Dokumentation"^].
+
+* Sie verfügen über Cluster-Administratorrechte, keine SVM-Administratorrechte.
+
+
+
+
+== S3-Konfiguration mit System Manager und der ONTAP-CLI
+
+ONTAP S3 lässt sich mit System Manager und der ONTAP CLI konfigurieren und verwalten. Wenn Sie S3 aktivieren und Buckets mithilfe von System Manager erstellen, wählt ONTAP für eine vereinfachte Konfiguration Best Practice-Standards. Wenn Sie Konfigurationsparameter angeben müssen, möchten Sie sie möglicherweise die ONTAP-CLI verwenden. Wenn Sie den S3-Server und die Buckets aus der CLI konfigurieren, können Sie sie nach Bedarf auch mit System Manager managen oder umgekehrt.
+
+Wenn Sie mit System Manager einen S3-Bucket erstellen, konfiguriert ONTAP ein Service-Level für die Standard-Performance, das auf Ihrem System am höchsten verfügbar ist. Bei einem AFF-System wäre beispielsweise die Standardeinstellung *Extreme*. Performance-Service-Level sind vordefinierte Richtliniengruppen (Quality of Service, QoS). Anstelle eines der Standard-Service-Level können Sie eine benutzerdefinierte QoS-Richtliniengruppe oder keine Richtliniengruppe angeben.
+
+Folgende vordefinierten adaptiven QoS-Richtliniengruppen sind definiert:
+
+* *Extreme*: Wird für Applikationen verwendet, die eine äußerst niedrige Latenz und höchste Performance erwarten.
+* *Performance*: Wird für Applikationen mit geringen Performance-Anforderungen und Latenz verwendet.
+* *Wert*: Wird für Applikationen verwendet, bei denen Durchsatz und Kapazität wichtiger sind als die Latenz.
+* *Benutzerdefiniert*: Geben Sie eine benutzerdefinierte QoS-Richtlinie oder keine QoS-Richtlinie an.
+
+
+Wenn Sie *für Tiering* verwenden auswählen, werden keine Leistungsservicelevel ausgewählt und das System versucht, kostengünstige Medien mit optimaler Leistung für die Tiered Data auszuwählen.
+
+Siehe auch: link:../performance-admin/adaptive-qos-policy-groups-task.html["Verwendung von adaptiven QoS-Richtliniengruppen"].
+
+ONTAP versucht, diesen Bucket auf lokalen Tiers bereitzustellen, die über die am besten geeigneten Festplatten verfügen und dem ausgewählten Service-Level gerecht werden. Wenn Sie jedoch angeben müssen, welche Festplatten in den Bucket enthalten sind, sollten Sie S3-Objekt-Storage aus der CLI konfigurieren, indem Sie die lokalen Tiers (Aggregat) angeben. Wenn Sie den S3-Server über die CLI konfigurieren, können Sie ihn bei Bedarf weiterhin mit System Manager managen.
+
+Wenn Sie angeben können, welche Aggregate für Buckets verwendet werden, können Sie dies nur über die CLI tun.
+
+
+
+== Konfigurieren von S3 Buckets für Cloud Volumes ONTAP
+
+Wenn Sie Buckets von Cloud Volumes ONTAP dienen möchten, wird dringend empfohlen, dass Sie die zugrunde liegenden Aggregate manuell auswählen, um sicherzustellen, dass sie nur einen Node verwenden. Die Verwendung von Aggregaten beider Nodes kann sich auf die Performance auswirken, da die Nodes sich in geografisch getrennten Verfügbarkeitszonen befinden und daher anfällig für Latenzprobleme sind. In Cloud Volumes ONTAP-Umgebungen sollten Sie dies daher tun xref:create-bucket-task.html[Konfigurieren Sie S3 Buckets über die CLI].
+
+Ansonsten werden S3-Server in Cloud Volumes ONTAP in Cloud Volumes ONTAP wie in On-Premises-Umgebungen konfiguriert und gepflegt.

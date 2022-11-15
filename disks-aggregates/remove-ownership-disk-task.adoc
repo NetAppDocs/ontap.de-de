@@ -1,0 +1,67 @@
+---
+permalink: disks-aggregates/remove-ownership-disk-task.html 
+sidebar: sidebar 
+keywords: remove, ownership, disk 
+summary: ONTAP schreibt die Festplattenbesitzer-Informationen auf die Festplatte. Bevor Sie eine Spare-Festplatte oder ihr Shelf von einem Node entfernen, sollten Sie die Besitzinformationen entfernen, damit sie ordnungsgemäß in einen anderen Node integriert werden können. 
+---
+= Entfernen Sie den Besitz von einer Festplatte
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP schreibt die Festplattenbesitzer-Informationen auf die Festplatte. Bevor Sie eine Spare-Festplatte oder ihr Shelf von einem Node entfernen, sollten Sie die Besitzinformationen entfernen, damit sie ordnungsgemäß in einen anderen Node integriert werden können.
+
+Der Datenträger, aus dem Sie den Besitz entfernen möchten, muss die folgenden Anforderungen erfüllen:
+
+* Es muss eine Ersatzfestplatte sein.
++
+Sie können die Eigentümerschaft nicht von einer Festplatte entfernen, die in einer lokalen Ebene (Aggregat) verwendet wird.
+
+* Er kann nicht im Wartungs-Center sein.
+* Die Bereinigung kann nicht ausgeführt werden.
+* Er kann nicht ausgefallen sein.
++
+Es ist nicht erforderlich, das Eigentum von einer ausgefallenen Festplatte zu entfernen.
+
+
+
+Wenn die automatische Festplattenzuordnung aktiviert ist, kann ONTAP die Eigentumsrechte automatisch neu zuweisen, bevor Sie die Festplatte vom Node entfernen. Aus diesem Grund deaktivieren Sie die automatische Eigentumszuweisung, bis die Festplatte entfernt wurde, und aktivieren Sie sie erneut.
+
+.Schritte
+. Wenn die automatische Zuweisung der Festplatteneigentümer aktiviert ist, schalten Sie sie über die CLI aus:
++
+`storage disk option modify -node _node_name_ -autoassign off`
+
+. Wiederholen Sie bei Bedarf den vorherigen Schritt für den HA-Partner des Node.
+. Entfernen Sie die Softwareineigentum-Informationen von der Festplatte:
++
+`storage disk removeowner _disk_name_`
+
++
+Um Besitzinformationen von mehreren Festplatten zu entfernen, verwenden Sie eine kommagetrennte Liste.
+
++
+Beispiel:
+
++
+....
+storage disk removeowner sys1:0a.23,sys1:0a.24,sys1:0a.25
+....
+. Wenn die Festplatte für die Root-Daten-Partitionierung partitioniert ist, entfernen Sie die Eigentumsrechte von den Partitionen, indem Sie beide der folgenden Befehle eingeben:
++
+`storage disk removeowner -disk _disk_name_ -root true`
+
++
+`storage disk removeowner -disk _disk_name_ -data true`
+
++
+Beide Partitionen sind Eigentum eines Node mehr.
+
+. Wenn Sie zuvor die automatische Zuweisung von Festplatten deaktiviert haben, schalten Sie sie ein, nachdem die Festplatte entfernt oder neu zugewiesen wurde:
++
+`storage disk option modify -node _node_name_ -autoassign on`
+
+. Wiederholen Sie bei Bedarf den vorherigen Schritt für den HA-Partner des Node.
+

@@ -1,0 +1,81 @@
+---
+permalink: data-protection/snapmirror-global-throttling-concept.html 
+sidebar: sidebar 
+keywords: using snapmirror, global, throttling 
+summary: Globale Netzwerkdrosselung ist für alle SnapMirror- und SnapVault-Transfers auf Node-Ebene verfügbar. 
+---
+= Globale Drosselung mit SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Globale Netzwerkdrosselung ist für alle SnapMirror- und SnapVault-Transfers auf Node-Ebene verfügbar.
+
+Die globale Drosselung von SnapMirror schränkt die durch ein- und/oder ausgehende SnapMirror- und SnapVault-Transfers verwendete Bandbreite ein. Die Einschränkung wird auf allen Nodes im Cluster clusterweit durchgesetzt.
+
+Wenn die ausgehende Drosselklappe beispielsweise auf 100 Mbit/s eingestellt ist, hat jeder Knoten im Cluster die ausgehende Bandbreite auf 100 Mbit/s eingestellt. Wenn die globale Drosselung deaktiviert ist, ist sie auf allen Knoten deaktiviert.
+
+[NOTE]
+====
+Die Drosselklappe hat keine Auswirkung auf `volume move` Übertragung oder Lastverteilung durch Spiegelungen Obwohl Datenübertragungsraten häufig in Bits pro Sekunde (bps) angegeben werden, müssen die Drosselwerte in Kilobyte pro Sekunde (kbps) eingegeben werden.
+
+====
+Globale Drosselung arbeitet mit der Gaspedalfunktion für SnapMirror und SnapVault Transfers. Die Drosselung pro Beziehung wird so lange durchgesetzt, bis die kombinierte Bandbreite der Transfers den Wert der globalen Drosselung überschreitet, nach der die globale Drosselung durchgesetzt wird. Ein Drosselwert `0` Bedeutet, dass die globale Drosselung deaktiviert ist.
+
+[NOTE]
+====
+Die globale Drosselung von SnapMirror hat keine Auswirkung auf die synchronen Beziehungen von SnapMirror, wenn sie in-Sync sind. Die Drosselung wirkt sich jedoch auf SnapMirror Synchronous Beziehungen aus, wenn sie eine asynchrone Übertragungsphase wie z. B. einen Initialisierungsvorgang oder nach einem Ereignis außerhalb der Synchronisierung durchführen. Aus diesem Grund wird die Aktivierung der globalen Drosselung mit SnapMirror Synchronous Beziehungen nicht empfohlen.
+
+====
+.Schritte
+. Globale Drosselung aktivieren:
++
+`options -option-name replication.throttle.enable on|off`
+
++
+Das folgende Beispiel zeigt, wie die globale SnapMirror-Drosselung aktiviert wird `cluster_dst`:
+
++
+[listing]
+----
+cluster_dst::> options -option-name replication.throttle.enable on
+----
+. Geben Sie die maximale Bandbreite an, die von eingehenden Transfers auf dem Ziel-Cluster verwendet wird:
++
+`options -option-name replication.throttle.incoming.max_kbs _KBps_`
+
++
+Die empfohlene minimale Drosselbandbreite beträgt 4 kbps und die maximale Bandbreite beträgt bis zu 2 Tbps. Der Standardwert für diese Option ist `unlimited`, Das heißt, es gibt keine Begrenzung der gesamten Bandbreite verwendet.
+
++
+Das folgende Beispiel zeigt, wie die maximale Bandbreite für eingehende Übertragungen auf 100 Mbit/s eingestellt wird:
+
++
+[listing]
+----
+cluster_dst::> options -option-name replication.throttle.incoming.max_kbs 12500
+----
++
+[NOTE]
+====
+100 Mbit/s = 12500 kBit/s
+
+====
+. Geben Sie die maximale Bandbreite an, die bei ausgehenden Transfers auf dem Quellcluster verwendet wird:
++
+`options -option-name replication.throttle.outgoing.max_kbs _KBps_`
+
++
+Kbps ist die maximale Übertragungsrate in Kilobyte pro Sekunde. Gültige Transferrate Werte sind 1 bis 125000. Der Standardwert für diese Option ist `unlimited`, Das heißt, es gibt keine Begrenzung der gesamten Bandbreite verwendet.
+
++
+Das folgende Beispiel zeigt, wie die maximale Bandbreite für ausgehende Übertragungen auf 100 Mbit/s eingestellt wird:
+
++
+[listing]
+----
+cluster_src::> options -option-name replication.throttle.outgoing.max_kbs 12500
+----
+

@@ -1,0 +1,134 @@
+---
+permalink: disks-aggregates/manual-assign-ownership-partitioned-disks-task.html 
+sidebar: sidebar 
+keywords: manual, assign, disk, ownership, partition, disks 
+summary: Sie können das Eigentum der Container-Festplatte oder der Partitionen manuell oder durch die automatische Zuweisung einstellen – genau wie bei nicht partitionierten Festplatten. 
+---
+= Manuelle Zuweisung der Eigentumsrechte an partitionierten Festplatten – Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Über die CLI können Sie die Eigentümerschaft der Container-Festplatte oder der Partitionen manuell oder unter Verwendung der automatischen Zuweisung – genau wie bei nicht partitionierten Festplatten – festlegen.
+
+[NOTE]
+====
+Wenn eine Container-Festplatte in einem halb bestückten Shelf ausfällt und ersetzt wird, weist ONTAP die Eigentumsrechte nicht automatisch zu. In diesem Fall muss jede Zuordnung neuer Festplatten manuell vorgenommen werden. Um die automatische Zuweisung auf halb bestückten Shelfs zu ermöglichen, legen Sie Festplatten gleich auf die untere Hälfte und 6 in die rechte Seite der Einschübe ein, um damit zu beginnen. Das heißt, 6 Festplatten aus den Schächten 0-5 und 6 Festplatten aus den Schächten 18-23. Nachdem die Container-Festplatte in einem ADP-konfigurierten System zugewiesen wurde, übernimmt die ONTAP Software alle erforderlichen Partitions- und Partitionszuweisungen, ohne den Benutzer zu involvieren.
+
+====
+Sie können in der CLI die folgenden Aufgaben ausführen:
+
+.Weisen Sie Festplatten manuell mit Root-Daten-Partitionierung zu
+====
+Für die Root-Daten-Partitionierung gibt es drei eigene Einheiten (die Container-Festplatte und die beiden Partitionen), die gemeinsam dem HA-Paar gehören.
+
+Die Container-Festplatte und die beiden Partitionen müssen nicht alle im HA-Paar in den Besitz desselben Nodes sein, solange sie sich alle im Besitz eines der Nodes im HA-Paar befinden. Wenn Sie jedoch eine Partition in einer lokalen Ebene (Aggregat) verwenden, muss sie dem gleichen Node gehören, der die lokale Ebene besitzt.
+
+.Schritte
+. Verwenden Sie die CLI, um das aktuelle Eigentumsrecht für die partitionierte Festplatte anzuzeigen:
++
+`storage disk show -disk _disk_name_ -partition-ownership`
+
+. Legen Sie die CLI-Berechtigungsebene auf erweitert fest:
++
+`set -privilege advanced`
+
+. Geben Sie den entsprechenden Befehl ein, je nachdem, für welche Eigentümereinheit Sie das Eigentum zuweisen möchten:
++
+[cols="25,75"]
+|===
+
+
+| Wenn Sie die Eigentümerschaft für den zuweisen möchten... | Befehl 
+
+
+ a| 
+Container-Festplatte
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_`
+
+
+
+ a| 
+Daten-Partition
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -data true`
+
+
+
+ a| 
+Root-Partition
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -root true`
+
+|===
++
+Wenn eine der Eigentumsrechte bereits Eigentümer ist, müssen Sie die Option „`-Force`“ angeben.
+
+
+
+====
+.Weisen Sie Festplatten manuell mit Root-Data-Data-Partitionierung zu
+====
+Für die Root-Daten-Partitionierung gibt es vier eigene Einheiten (die Container-Festplatte und die drei Partitionen), die gemeinsam dem HA-Paar gehören.
+
+Root-Daten-Daten-Partitionierung erstellt eine kleine Partition als Root-Partition und zwei größere, gleich große Partitionen für Daten.
+
+Parameter müssen mit dem verwendet werden `disk assign` Befehl, um die richtige Partition eines Root-Daten-partitionierten Laufwerks zuzuweisen. Sie können diese Parameter nicht mit Festplatten verwenden, die Teil eines Speicherpools sind. Der Standardwert ist „`false`“.
+
+* Der `-data1 true` Parameter weist die Partition „`data1`“ einer Root-data1-data2 partitionierten Festplatte zu.
+* Der `-data2 true` Parameter weist die Partition „`data2`“ eines Root-data1-data2 partitionierten Laufwerks zu.
+
+
+.Schritte
+. Verwenden Sie die CLI, um das aktuelle Eigentumsrecht für die partitionierte Festplatte anzuzeigen:
++
+`storage disk show -disk _disk_name_ -partition-ownership`
+
+. Legen Sie die CLI-Berechtigungsebene auf erweitert fest:
++
+`set -privilege advanced`
+
+. Geben Sie den entsprechenden Befehl ein, je nachdem, für welche Eigentümereinheit Sie das Eigentum zuweisen möchten:
++
+[cols="25,75"]
+|===
+
+
+| Wenn Sie die Eigentümerschaft für den zuweisen möchten... | Befehl 
+
+
+ a| 
+Container-Festplatte
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_`
+
+
+
+ a| 
+Daten-1-Partition
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -data1 true`
+
+
+
+ a| 
+Daten-2-Partition
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -data2 true`
+
+
+
+ a| 
+Root-Partition
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -root true`
+
+|===
+
+
+Wenn eine der Eigentumsrechte bereits Eigentümer ist, müssen Sie die Option „`-Force`“ angeben.
+
+====

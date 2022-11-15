@@ -1,0 +1,146 @@
+---
+permalink: nas-audit/create-security-trace-filters-task.html 
+sidebar: sidebar 
+keywords: create, security trace filters 
+summary: 'Sie können Filter für Sicherheitsspuren erstellen, die SMB- und NFS-Client-Vorgänge auf Storage Virtual Machines (SVMs) erkennen und alle Zugriffsprüfungen verfolgen, die dem Filter entsprechen. Sie können die Ergebnisse aus Sicherheitspuren verwenden, um Ihre Konfiguration zu validieren oder um Zugriffsprobleme zu beheben.' 
+---
+= Erstellen von Sicherheitsverfolgungsfiltern
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Filter für Sicherheitsspuren erstellen, die SMB- und NFS-Client-Vorgänge auf Storage Virtual Machines (SVMs) erkennen und alle Zugriffsprüfungen verfolgen, die dem Filter entsprechen. Sie können die Ergebnisse aus Sicherheitspuren verwenden, um Ihre Konfiguration zu validieren oder um Zugriffsprobleme zu beheben.
+
+Für den Befehl vserver Security trace Filter create gibt es zwei erforderliche Parameter:
+
+[cols="35,65"]
+|===
+
+
+| Erforderliche Parameter | Beschreibung 
+
+
+ a| 
+`-vserver` `vserver_name`
+ a| 
+_SVM Name_
+
+Der Name der SVM, die die Dateien oder Ordner enthält, auf denen Sie den Filter für die Sicherheitsverfolgung anwenden möchten.
+
+
+
+ a| 
+`-index` `index_number`
+ a| 
+_Indexnummer Filter_
+
+Die Indexnummer, die auf den Filter angewendet werden soll. Sie dürfen pro SVM maximal 10 Trace-Filter verwenden. Die zulässigen Werte für diesen Parameter sind 1 bis 10.
+
+|===
+Mit einer Reihe optionaler Filterparameter können Sie den Sicherheitsspurfilter so anpassen, dass Sie die Ergebnisse des Sicherheitspurenfilters eingrenzen können:
+
+[cols="35,65"]
+|===
+
+
+| Filterparameter | Beschreibung 
+
+
+ a| 
+`-client-ip` `IP_Address`
+ a| 
+Dieser Filter gibt die IP-Adresse an, von der der Benutzer auf die SVM zugreift.
+
+
+
+ a| 
+`-path` `path`
+ a| 
+Dieser Filter gibt den Pfad an, auf den der Berechtigungs-Trace-Filter angewendet werden soll. Der Wert für `-path` Es stehen folgende Formate zur Verfügung:
+
+* Der vollständige Pfad, beginnend mit dem Stammverzeichnis der Freigabe oder des Exports
+* Ein partieller Pfad, relativ zur Wurzel des Shares
+
+
+Im Pfadwert müssen Sie die Verzeichnistrennzeichen für das NFS-Style-Verzeichnis UNIX-Stil verwenden.
+
+
+
+ a| 
+`-windows-name` `win_user_name` Oder `-unix-name``unix_user_name`
+ a| 
+Sie können entweder den Windows-Benutzernamen oder den UNIX-Benutzernamen angeben, dessen Zugriffsanfragen Sie nachverfolgen möchten. Die Groß-/Kleinschreibung der Variable für den Benutzernamen wird nicht berücksichtigt. Sie können keinen Windows-Benutzernamen und keinen UNIX-Benutzernamen im selben Filter angeben.
+
+[NOTE]
+====
+Auch wenn Sie SMB- und NFS-Zugriffsereignisse verfolgen können, können der zugewiesene UNIX Benutzer und die zugeordneten UNIX Benutzergruppen verwendet werden, wenn Zugriffsprüfungen für gemischte oder UNIX-Sicherheitsdaten durchgeführt werden.
+
+====
+
+
+ a| 
+`-trace-allow` {`yes`|`no`}
+ a| 
+Für einen Sicherheits-Trace-Filter ist immer die Verfolgung von Deny-Ereignissen aktiviert. Sie können optional Ereignisse zulassen nachverfolgen. Um Ereignisse zuzulassen, legen Sie diesen Parameter auf fest `yes`.
+
+
+
+ a| 
+`-enabled` {`enabled`|`disabled`}
+ a| 
+Sie können den Filter für die Sicherheitsverfolgung aktivieren oder deaktivieren. Standardmäßig ist der Filter Security Trace aktiviert.
+
+
+
+ a| 
+`-time-enabled` `integer`
+ a| 
+Sie können eine Zeitüberschreitung für den Filter angeben, nach der er deaktiviert ist.
+
+|===
+.Schritte
+. Erstellen eines Sicherheits-Trace-Filters:
++
+`vserver security trace filter create -vserver vserver_name -index index_numberfilter_parameters`
+
++
+`filter_parameters` Ist eine Liste der optionalen Filterparameter.
+
++
+Weitere Informationen finden Sie auf den man-Pages für den Befehl.
+
+. Überprüfen Sie den Eintrag des Sicherheits-Trace-Filters:
++
+`vserver security trace filter show -vserver vserver_name -index index_number`
+
+
+
+Mit dem folgenden Befehl wird ein Security Trace Filter für jeden Benutzer erstellt, der auf eine Datei mit einem Freigabepfad zugreift `\\server\share1\dir1\dir2\file.txt` Aus der IP-Adresse 10.10.10.7. Der Filter verwendet einen vollständigen Pfad für den `-path` Option. Die IP-Adresse des Clients, die für den Zugriff auf Daten verwendet wird, lautet 10.10.10.7. Der Filter wird nach 30 Minuten ausgezeiten:
+
+[listing]
+----
+cluster1::> vserver security trace filter create -vserver vs1 -index 1 -path /dir1/dir2/file.txt -time-enabled 30 -client-ip 10.10.10.7
+cluster1::> vserver security trace filter show -index 1
+Vserver  Index   Client-IP            Path            Trace-Allow  Windows-Name
+-------- -----  -----------  ----------------------   -----------  -------------
+vs1        1    10.10.10.7   /dir1/dir2/file.txt          no       -
+----
+Mit dem folgenden Befehl wird ein Security Trace Filter unter Verwendung eines relativen Pfads für das erstellt `-path` Option. Der Filter verfolgt den Zugriff für einen Windows-Benutzer namens „`joe`“. Joe greift auf eine Datei mit einem Freigabepfad zu `\\server\share1\dir1\dir2\file.txt`. Die Filterspuren erlauben und verweigern Ereignisse:
+
+[listing]
+----
+cluster1::> vserver security trace filter create -vserver vs1 -index 2 -path /dir1/dir2/file.txt -trace-allow yes -windows-name mydomain\joe
+
+cluster1::> vserver security trace filter show -vserver vs1 -index 2
+                                 Vserver: vs1
+                            Filter Index: 2
+              Client IP Address to Match: -
+                                    Path: /dir1/dir2/file.txt
+                       Windows User Name: mydomain\joe
+                          UNIX User Name: -
+                      Trace Allow Events: yes
+                          Filter Enabled: enabled
+               Minutes Filter is Enabled: 60
+----

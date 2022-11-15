@@ -1,0 +1,85 @@
+---
+permalink: system-admin/requirements-autosupport-reference.html 
+sidebar: sidebar 
+keywords: requirements, autosupport, messages, http, smtp, https, configuration, support, protocols 
+summary: Sie sollten HTTPS verwenden, um AutoSupport-Meldungen zu versenden, um die beste Sicherheit zu bieten und alle neuesten AutoSupport Funktionen zu unterstützen. Obwohl AutoSupport HTTP und SMTP für die Bereitstellung von AutoSupport-Meldungen unterstützt, wird HTTPS empfohlen. 
+---
+= Anforderungen für die Verwendung von AutoSupport
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie sollten HTTPS verwenden, um AutoSupport-Meldungen zu versenden, um die beste Sicherheit zu bieten und alle neuesten AutoSupport Funktionen zu unterstützen. Obwohl AutoSupport HTTP und SMTP für die Bereitstellung von AutoSupport-Meldungen unterstützt, wird HTTPS empfohlen.
+
+
+
+== Unterstützte Protokolle
+
+Alle diese Protokolle werden auf IPv4 oder IPv6 ausgeführt, basierend auf der Adressfamilie, in die der Name auflöst.
+
+|===
+| Protokoll und Port | Beschreibung 
+
+
+ a| 
+HTTPS an Port 443
+ a| 
+Dies ist das Standardprotokoll. Sie sollten dies wann immer möglich verwenden.
+
+Dieses Protokoll unterstützt AutoSupport OnDemand und Uploads großer Dateien.
+
+Das Zertifikat des Remote-Servers wird mit dem Stammzertifikat validiert, es sei denn, Sie deaktivieren die Validierung.
+
+Bei der Lieferung wird eine HTTP PUT-Anforderung verwendet. Bei PUT wird die Anforderung bei der Übertragung neu gestartet, wo sie angehalten wurde. Wenn der Server, der die Anfrage empfängt, PUT nicht unterstützt, verwendet die Lieferung eine HTTP-POST-Anforderung.
+
+
+
+ a| 
+HTTP an Port 80
+ a| 
+Dieses Protokoll ist über SMTP bevorzugt.
+
+Dieses Protokoll unterstützt Uploads großer Dateien, jedoch nicht AutoSupport OnDemand.
+
+Bei der Lieferung wird eine HTTP PUT-Anforderung verwendet. Bei PUT wird die Anforderung bei der Übertragung neu gestartet, wo sie angehalten wurde. Wenn der Server, der die Anfrage empfängt, PUT nicht unterstützt, verwendet die Lieferung eine HTTP-POST-Anforderung.
+
+
+
+ a| 
+SMTP an Port 25 oder an einem anderen Port
+ a| 
+Dieses Protokoll sollte nur verwendet werden, wenn die Netzwerkverbindung HTTPS oder HTTP nicht zulässt.
+
+Der standardmäßige Port-Wert ist 25, Sie können jedoch AutoSupport für einen anderen Port konfigurieren.
+
+Beachten Sie bei der Verwendung von SMTP die folgenden Einschränkungen:
+
+* AutoSupport OnDemand und Uploads großer Dateien werden nicht unterstützt.
+* Die Daten sind nicht verschlüsselt.
++
+SMTP sendet Daten im Klartext, sodass Text in der AutoSupport-Nachricht einfach abgefangen und gelesen werden kann.
+
+* Einschränkungen hinsichtlich der Nachrichtenlänge und der Linienlänge können eingeführt werden.
+
+
+|===
+Wenn Sie AutoSupport mit bestimmten E-Mail-Adressen für Ihre interne Support-Abteilung oder eine Support-Partnerorganisation konfigurieren, werden diese Meldungen immer über SMTP gesendet.
+
+Wenn Sie beispielsweise das empfohlene Protokoll zum Senden von Meldungen an den technischen Support verwenden und auch Meldungen an Ihre interne Support-Organisation senden möchten, werden Ihre Nachrichten sowohl über HTTPS als auch SMTP übertragen.
+
+AutoSupport begrenzt die maximale Dateigröße für jedes Protokoll. Die Standardeinstellung für HTTP- und HTTPS-Transfers ist 25 MB. Die Standardeinstellung für SMTP-Transfers ist 5 MB. Wenn die Größe der AutoSupport-Meldung das konfigurierte Limit übersteigt, liefert AutoSupport so viel wie möglich. Sie können die maximale Größe bearbeiten, indem Sie die AutoSupport-Konfiguration ändern. Siehe `system node autosupport modify` Man-Page für weitere Informationen.
+
+[NOTE]
+====
+AutoSupport überschreibt automatisch die maximale Dateigröße für die HTTPS- und HTTP-Protokolle, wenn Sie AutoSupport Meldungen generieren und senden, die Core Dump- oder Performance-Archivdateien auf die NetApp Support-Website oder einen angegebenen URI hochladen. Die automatische Überschreibung gilt nur, wenn Sie Dateien mit dem hochladen `system node autosupport invoke-core-upload` Oder im `system node autosupport invoke-performance-archive` Befehle.
+
+====
+
+
+== Konfigurationsanforderungen
+
+Je nach Netzwerkkonfiguration erfordert die Verwendung von HTTP- oder HTTPS-Protokollen möglicherweise eine zusätzliche Konfiguration einer Proxy-URL. Wenn Sie zum Senden von AutoSupport-Meldungen über HTTP oder HTTPS an den technischen Support verwenden und einen Proxy haben, müssen Sie die URL für diesen Proxy angeben. Wenn der Proxy einen anderen Port als den Standardport verwendet, der 3128 ist, können Sie den Port für diesen Proxy angeben. Sie können auch einen Benutzernamen und ein Kennwort für die Proxy-Authentifizierung angeben.
+
+Wenn Sie SMTP zum Senden von AutoSupport-Meldungen an Ihre interne Supportorganisation oder an den technischen Support verwenden, müssen Sie einen externen E-Mail-Server konfigurieren. Das Speichersystem kann nicht als E-Mail-Server verwendet werden. Es ist ein externer Mail-Server an Ihrem Standort erforderlich, um E-Mails zu senden. Der Mail-Server muss ein Host sein, der den SMTP-Port (25) oder einen anderen Port abhört und für das Senden und Empfangen von 8-Bit-MIME-Kodierungen (MultiPurpose Internet Mail Extensions) konfiguriert sein muss. Zu den Beispiel-Mail-Hosts gehört ein UNIX-Host, auf dem ein SMTP-Server ausgeführt wird, z. B. das sendmail-Programm, und ein Windows-Server, auf dem der Microsoft Exchange-Server ausgeführt wird. Sie können einen oder mehrere E-Mail-Hosts haben.

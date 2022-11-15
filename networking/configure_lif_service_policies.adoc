@@ -1,0 +1,295 @@
+---
+sidebar: sidebar 
+permalink: networking/configure_lif_service_policies.html 
+keywords: create service policy, assign service policy, service policy commands, configure lif service policies, create and assign a service policy for lifs, configure lif service policies, create a service policy for lifs, network interface service show, service-policy create, assign a service policy to a lif, examples, commands for managing lif service policies 
+summary: Erstellen und Zuweisen einer Service-Richtlinie für LIFs 
+---
+= Konfigurieren von Richtlinien für den LIF-Dienst
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Sie können LIF-Service-Richtlinien konfigurieren, um einen einzelnen Service oder eine Liste von Services zu identifizieren, die eine LIF verwenden.
+
+
+
+== Erstellen einer Service-Richtlinie für LIFs
+
+Sie können eine Service-Richtlinie für LIFs erstellen. Sie können einer oder mehreren LIFs eine Service-Richtlinie zuweisen, sodass diese Datenverkehr für einen einzelnen Service oder eine Liste von Services leiten kann.
+
+Sie benötigen erweiterte Berechtigungen, um die ausführen zu können `network interface service-policy create` Befehl.
+
+Für das Management des Daten- und Managementdatenverkehrs auf Daten- und System-SVMs stehen integrierte Services und Service-Richtlinien zur Verfügung. Die meisten Anwendungsfälle sind mit einer integrierten Service-Richtlinie zufrieden, anstatt eine individuelle Service-Richtlinie zu erstellen.
+
+Sie können diese integrierten Service-Richtlinien, falls erforderlich, ändern.
+
+.Schritte
+. Zeigen Sie die im Cluster verfügbaren Services an:
++
+....
+network interface service show
+....
++
+Services stellen die Applikationen dar, auf die von einer logischen Schnittstelle zugegriffen wird, sowie die vom Cluster bereitgestellten Applikationen. Jeder Dienst umfasst Null oder mehr TCP- und UDP-Ports, auf denen die Anwendung zuhört.
+
++
+Die folgenden zusätzlichen Daten- und Management-Services stehen zur Verfügung:
+
++
+....
+cluster1::> network interface service show
+
+Service                     Protocol:Ports
+-------                     --------------
+cluster-core                -
+data-cifs                   -
+data-core                   -
+data-flexcache              -
+data-iscsi                  -
+data-nfs                    -
+intercluster-core           tcp:11104-11105
+management-autosupport      -
+management-bgp              tcp:179
+management-core             -
+management-https            tcp:443
+management-ssh              tcp:22
+12 entries were displayed.
+....
+. Zeigen Sie die Service-Richtlinien für das Cluster an:
++
+....
+cluster1::> network interface service-policy show
+
+Vserver   Policy                     Service: Allowed Addresses
+--------- -------------------------- ----------------------------------------
+cluster1
+          default-intercluster       intercluster-core: 0.0.0.0/0
+                                     management-https: 0.0.0.0/0
+
+          default-management         management-core: 0.0.0.0/0
+                                     management-autosupport: 0.0.0.0/0
+                                     management-ssh: 0.0.0.0/0
+                                     management-https: 0.0.0.0/0
+
+          default-route-announce     management-bgp: 0.0.0.0/0
+
+Cluster
+          default-cluster            cluster-core: 0.0.0.0/0
+
+vs0
+          default-data-blocks        data-core: 0.0.0.0/0
+                                     data-iscsi: 0.0.0.0/0
+
+          default-data-files         data-core: 0.0.0.0/0
+                                     data-nfs: 0.0.0.0/0
+                                     data-cifs: 0.0.0.0/0
+                                     data-flexcache: 0.0.0.0/0
+
+          default-management         data-core: 0.0.0.0/0
+                                     management-ssh: 0.0.0.0/0
+                                     management-https: 0.0.0.0/0
+
+7 entries were displayed.
+....
+. Service-Richtlinie erstellen:
++
+....
+cluster1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by technical support.
+Do you wish to continue? (y or n): y
+
+cluster1::> network interface service-policy create -vserver <svm_name> -policy <service_policy_name> -services <service_name> -allowed-addresses <IP_address/mask,...>
+....
++
+** „Service_Name“ gibt eine Liste der Services an, die in die Richtlinie aufgenommen werden sollen.
+** „IP_Address/masks“ gibt die Liste der Subnetzmaske für Adressen an, die auf die Dienste in der Service-Richtlinie zugreifen dürfen. Standardmäßig werden alle angegebenen Dienste mit einer standardmäßig zulässigen Adressliste von 0.0.0.0/0 hinzugefügt, die den Datenverkehr aus allen Subnetzen erlaubt. Wenn eine nicht standardmäßige Liste der zulässigen Adressen angegeben wird, werden LIFs mithilfe der Richtlinie konfiguriert, um alle Anforderungen mit einer Quelladresse zu blockieren, die keiner der angegebenen Masken entspricht.
++
+Das folgende Beispiel zeigt, wie eine Datenservicerichtlinie, _svm1_Data_Policy_, für eine SVM erstellt wird, die _NFS_ und _SMB_-Dienste umfasst:
+
++
+....
+cluster1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by technical support.
+Do you wish to continue? (y or n): y
+
+cluster1::> network interface service-policy create -vserver svm1 -policy svm1_data_policy -services data-nfs,data-cifs,data-core
+....
++
+Im folgenden Beispiel wird gezeigt, wie eine Richtlinie für Intercluster-Services erstellt wird:
+
++
+....
+cluster1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by technical support.
+Do you wish to continue? (y or n): y
+
+cluster1::> network interface service-policy create -vserver cluster1 -policy intercluster1 -services intercluster-core
+....
+
+
+. Vergewissern Sie sich, dass die Service-Richtlinie erstellt wurde.
++
+....
+cluster1::> network interface service-policy show
+....
++
+Die folgende Ausgabe zeigt die verfügbaren Service-Richtlinien:
+
++
+....
+cluster1::> network interface service-policy show
+
+Vserver   Policy                     Service: Allowed Addresses
+--------- -------------------------- ----------------------------------------
+cluster1
+          default-intercluster       intercluster-core: 0.0.0.0/0
+                                     management-https: 0.0.0.0/0
+
+          intercluster1              intercluster-core: 0.0.0.0/0
+
+          default-management         management-core: 0.0.0.0/0
+                                     management-autosupport: 0.0.0.0/0
+                                     management-ssh: 0.0.0.0/0
+                                     management-https: 0.0.0.0/0
+
+          default-route-announce     management-bgp: 0.0.0.0/0
+
+Cluster
+          default-cluster            cluster-core: 0.0.0.0/0
+
+vs0
+          default-data-blocks        data-core: 0.0.0.0/0
+                                     data-iscsi: 0.0.0.0/0
+
+          default-data-files         data-core: 0.0.0.0/0
+                                     data-nfs: 0.0.0.0/0
+                                     data-cifs: 0.0.0.0/0
+                                     data-flexcache: 0.0.0.0/0
+
+          default-management         data-core: 0.0.0.0/0
+                                     management-ssh: 0.0.0.0/0
+                                     management-https: 0.0.0.0/0
+
+          svm1_data_policy           data-core: 0.0.0.0/0
+                                     data-nfs: 0.0.0.0/0
+                                     data-cifs: 0.0.0.0/0
+
+9 entries were displayed.
+....
+
+
+Weisen Sie der Service-Richtlinie einem LIF entweder zum Zeitpunkt der Erstellung oder durch Ändern eines vorhandenen LIF zu.
+
+
+
+== Weisen Sie einer logischen Schnittstelle eine Service-Richtlinie zu
+
+Sie können einer logischen Schnittstelle entweder zum Zeitpunkt der Erstellung der logischen Schnittstelle oder durch Ändern der logischen Schnittstelle eine Service-Richtlinie zuweisen. Eine Service-Richtlinie definiert eine Liste der Services, die zusammen mit dem LIF verwendet werden können.
+
+Sie können Service-Richtlinien für LIFs im Administrator und den Daten-SVMs zuweisen.
+
+Führen Sie je nachdem, wann Sie die Service-Richtlinie einem LIF zuweisen möchten, eine der folgenden Aktionen durch:
+
+[cols="25,75"]
+|===
+| Ihr Unternehmen | Service-Richtlinie zuweisen... 
+
+
+| Erstellen eines LIF | Netzwerkschnittstelle create -vserver svm_Name -lif <lif_Name> -Home-Node <Node_Name> -Home-Port <Port_Name> {(-Adresse <IP_address> -Netmask <IP_address>) -subnet-Name <subnet_Name>} -Service-Policy <Service_Policy_Name> 
+
+
+| Ändern eines LIF | Netzwerkschnittstelle modify -vServer <svm_Name> -lif <lif_Name> -Service-Policy <Service_Policy_Name> 
+|===
+Wenn Sie eine Service-Richtlinie für eine LIF angeben, müssen Sie nicht das Datenprotokoll und die Rolle für die LIF angeben. Außerdem wird das Erstellen von LIFs unterstützt, indem die Rolle und die Datenprotokolle angegeben werden.
+
+
+NOTE: Eine Service-Richtlinie kann nur von LIFs in derselben SVM verwendet werden, die Sie beim Erstellen der Service-Richtlinie angegeben haben.
+
+
+
+=== Beispiele
+
+Das folgende Beispiel zeigt, wie die Service-Richtlinie eines LIF geändert wird, um die Standard-Management-Service-Richtlinie zu verwenden:
+
+....
+cluster1::> network interface modify -vserver cluster1 -lif lif1 -service-policy default-management
+....
+
+
+== Befehle zum Verwalten von LIF-Servicrichtlinien
+
+Verwenden Sie die `network interface service-policy` Befehle zum Verwalten von LIF-Servicrichtlinien.
+
+|===
+
+
+| Ihr Ziel ist | Befehl 
+
+
+ a| 
+Service-Policy erstellen (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy create`
+
+
+
+ a| 
+Hinzufügen eines zusätzlichen Serviceeintrags zu einer vorhandenen Servicerichtlinie (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy add-service`
+
+
+
+ a| 
+Klonen einer vorhandenen Service-Richtlinie (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy clone`
+
+
+
+ a| 
+Ändern eines Diensteintrags in einer vorhandenen Servicerichtlinie (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy modify-service`
+
+
+
+ a| 
+Entfernen eines Diensteintrags aus einer vorhandenen Servicerichtlinie (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy remove-service`
+
+
+
+ a| 
+Umbenennen einer vorhandenen Service-Richtlinie (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy rename`
+
+
+
+ a| 
+Löschen einer vorhandenen Service-Richtlinie (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy delete`
+
+
+
+ a| 
+Wiederherstellen einer integrierten Service-Richtlinie in ihren Originalzustand (erweiterte Berechtigungen erforderlich)
+ a| 
+`network interface service-policy restore-defaults`
+
+
+
+ a| 
+Vorhandene Service-Richtlinien anzeigen
+ a| 
+`network interface service-policy show`
+
+|===

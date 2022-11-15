@@ -1,0 +1,169 @@
+---
+permalink: revert/task_verify_health.html 
+sidebar: sidebar 
+keywords: ontap, revert, reverting, reversion, downgrade, downgrading, verifying, verify, cluster, health 
+summary: Nach der Wiederherstellung oder Downgrade eines Clusters sollten Sie überprüfen, ob die Nodes ordnungsgemäß arbeiten und am Cluster teilnehmen können und dass das Cluster sich in einem Quorum befindet. 
+---
+= Prüfen Sie den Cluster- und Storage-Zustand nach Downgrade oder Zurücksetzen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Nach einem Downgrade oder Zurücksetzen eines Clusters sollten Sie überprüfen, ob die Nodes in einem ordnungsgemäßen Zustand und zur Teilnahme am Cluster qualifiziert sind und dass sich das Cluster in einem Quorum befindet. Außerdem sollten Sie den Status der Festplatten, Aggregate und Volumes überprüfen.
+
+
+
+== Überprüfen des Cluster-Systemzustands
+
+. Vergewissern Sie sich, dass die Nodes im Cluster online sind und am Cluster teilnehmen können: `cluster show`
++
+[listing]
+----
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node0                 true    true
+node1                 true    true
+----
++
+Wenn ein Knoten fehlerhaft oder nicht geeignet ist, überprüfen Sie die EMS-Protokolle auf Fehler und ergreifen Sie Korrekturmaßnahmen.
+
+. Stellen Sie die Berechtigungsebene auf Erweiteriert: + ein
+`set -privilege advanced`
++
+Eingabe `y` Um fortzufahren.
+
+. Überprüfen Sie die Konfigurationsdetails für jeden RDB-Prozess.
++
+** Die Epochen der relationalen Datenbank und Datenbank-Epochen sollten für jeden Node übereinstimmen.
+** Der Quorum-Master pro Ring sollte für alle Knoten gleich sein.
++
+Beachten Sie, dass für jeden Ring möglicherweise ein anderer Quorum-Master vorhanden ist.
+
++
+[cols="2*"]
+|===
+| So zeigen Sie diesen RDB-Prozess an: | Diesen Befehl eingeben... 
+
+
+ a| 
+Managementapplikation
+ a| 
+`cluster ring show -unitname mgmt`
+
+
+
+ a| 
+Volume-Standortdatenbank
+ a| 
+`cluster ring show -unitname vldb`
+
+
+
+ a| 
+Virtual Interface Manager
+ a| 
+`cluster ring show -unitname vifmgr`
+
+
+
+ a| 
+SAN Management-Daemon
+ a| 
+`cluster ring show -unitname bcomd`
+
+|===
++
+Dieses Beispiel zeigt den Datenbankprozess für den Speicherort des Volumes:
+
+
+
++
+[listing]
+----
+cluster1::*> cluster ring show -unitname vldb
+Node      UnitName Epoch    DB Epoch DB Trnxs Master    Online
+--------- -------- -------- -------- -------- --------- ---------
+node0     vldb     154      154      14847    node0     master
+node1     vldb     154      154      14847    node0     secondary
+node2     vldb     154      154      14847    node0     secondary
+node3     vldb     154      154      14847    node0     secondary
+4 entries were displayed.
+----
+. Zurück zur Administratorberechtigungsebene: `set -privilege admin`
+. Wenn Sie in einer SAN-Umgebung arbeiten, vergewissern Sie sich, dass sich jeder Knoten in einem SAN-Quorum befindet: `event log show  -severity informational -message-name scsiblade.*`
++
+Die letzte scsiblade-Ereignismeldung für jeden Knoten sollte darauf hinweisen, dass sich das scsi-Blade im Quorum befindet.
+
++
+[listing]
+----
+cluster1::*> event log show  -severity informational -message-name scsiblade.*
+Time             Node       Severity       Event
+---------------  ---------- -------------- ---------------------------
+MM/DD/YYYY TIME  node0      INFORMATIONAL  scsiblade.in.quorum: The scsi-blade ...
+MM/DD/YYYY TIME  node1      INFORMATIONAL  scsiblade.in.quorum: The scsi-blade ...
+----
+
+
+link:../system-admin/index.html["Systemadministration"]
+
+
+
+== Überprüfung des Storage-Zustands
+
+Nach der Umrüstung oder Downgrade eines Clusters sollten Sie den Status Ihrer Festplatten, Aggregate und Volumes überprüfen.
+
+. Überprüfen des Festplattenstatus:
++
+[cols="2*"]
+|===
+| Um zu prüfen, ob... | Tun Sie das... 
+
+
+ a| 
+Fehlerhafte Festplatten
+ a| 
+.. Fehlerhafte Festplatten anzeigen: `storage disk show -state broken`
+.. Entfernen oder ersetzen Sie alle defekten Festplatten.
+
+
+
+
+ a| 
+Festplatten werden gewartet oder rekonstruiert
+ a| 
+.. Anzeigen aller Datenträger in Wartungs-, Ausstehend- oder Rekonstruktionstatus: `storage disk show -state maintenance|pending|reconstructing`
+.. Warten Sie, bis die Wartung oder Rekonstruktion abgeschlossen ist, bevor Sie fortfahren.
+
+
+|===
+. Überprüfen Sie, ob alle Aggregate online sind, indem Sie den Status des physischen und logischen Storage anzeigen, einschließlich Storage-Aggregate: `storage aggregate show -state !online`
++
+Mit diesem Befehl werden die Aggregate angezeigt, die _Not_ online sind. Alle Aggregate müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
+
++
+[listing]
+----
+cluster1::> storage aggregate show -state !online
+There are no entries matching your query.
+----
+. Überprüfen Sie, ob alle Volumes online sind, indem Sie alle Volumes anzeigen, die _Not_ online sind: `volume show -state !online`
++
+Alle Volumes müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
+
++
+[listing]
+----
+cluster1::> volume show -state !online
+There are no entries matching your query.
+----
+. Vergewissern Sie sich, dass es keine inkonsistenten Volumes gibt: `volume show -is-inconsistent true`
++
+Weitere Informationen finden Sie im Knowledge Base-Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Volume_Showing_WAFL_Inconsistent["Volume zeigt WAFL inkonsistent an"] Die Vorgehensweise für inkonsistente Volumes
+
+
+
+link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"]

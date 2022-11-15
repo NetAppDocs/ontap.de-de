@@ -1,0 +1,52 @@
+---
+permalink: smb-admin/access-snapshot-directories-clients-smb2-concept.html 
+sidebar: sidebar 
+keywords: method, access, snapshot, directory, windows, client, smb, data, store, copies, copy, how to access the snapshot directory from windows clients using smb 2.x 
+summary: Die Methode, mit der Sie auf das Verzeichnis ~Snapshot von Windows-Clients mit SMB 2.x zugreifen können, unterscheidet sich von der für SMB 1.0 verwendeten Methode. Sie müssen verstehen, wie Sie auf das ~Snapshot-Verzeichnis zugreifen können, wenn Sie SMB 2.x-Verbindungen verwenden, um erfolgreich auf in Snapshot-Kopien gespeicherte Daten zuzugreifen. 
+---
+= Greifen Sie über Windows-Clients über SMB 2.x auf das Verzeichnis ~Snapshot zu
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Methode, mit der Sie auf das zugreifen `~snapshot` Verzeichnis von Windows-Clients mit SMB 2.x unterscheidet sich von der für SMB 1.0 verwendeten Methode. Sie müssen verstehen, wie Sie auf das zugreifen können `~snapshot` Verzeichnis bei Verwendung von SMB 2.x-Verbindungen für erfolgreichen Zugriff auf Daten, die in Snapshot-Kopien gespeichert sind.
+
+Der SVM-Administrator steuert, ob Benutzer auf Windows Clients den anzeigen und auf den zugreifen können `~snapshot` Verzeichnis auf einer Freigabe durch Aktivieren oder Deaktivieren des `showsnapshot` Geben Sie die Eigenschaft mithilfe von Befehlen aus den Familien mit den CIFS-Freigabegenschaften des vServers gemeinsam.
+
+Wenn der `showsnapshot` Freigabegenschaft ist deaktiviert, ein Benutzer auf einem Windows-Client mit SMB 2.x kann das nicht anzeigen `~snapshot` Verzeichnis und kein Zugriff auf Snapshot Kopien innerhalb des `~snapshot` Verzeichnis, auch wenn manuell der Pfad zum eingegeben wird `~snapshot` Verzeichnis oder zu spezifischen Snapshot Kopien innerhalb des Verzeichnisses ablegen.
+
+Wenn der `showsnapshot` Freigabeigenschaft ist aktiviert, ein Benutzer auf einem Windows-Client mit SMB 2.x kann das immer noch nicht anzeigen `~snapshot` Verzeichnis entweder im Stammverzeichnis der Freigabe oder innerhalb einer beliebigen Verbindung oder eines Verzeichnisses unterhalb der Stammverzeichnis der Freigabe. Nach der Verbindung zu einer Freigabe kann der Benutzer jedoch auf das verborgene zugreifen `~snapshot` Verzeichnis durch manuelles Anhängen `\~snapshot` Bis zum Ende des Freigabepfades. Das Verborgene `~snapshot` Zugriff auf das Verzeichnis über zwei Einstiegspunkte:
+
+* Im Stammverzeichnis des Shares
+* An jedem Verbindungspunkt im gemeinsamen Raum
+
+
+Das Verborgene `~snapshot` Der Zugriff auf das Verzeichnis ist von Unterverzeichnissen ohne Verbindungsabzweigung innerhalb der Freigabe nicht möglich.
+
+Mit der im folgenden Beispiel gezeigten Konfiguration kann ein Benutzer auf einem Windows Client mit einer SMB 2.x-Verbindung zur „`eng`“-Freigabe auf das zugreifen `~snapshot` Verzeichnis durch manuelles Anhängen `\~snapshot` Zum Freigabepfad am Stammverzeichnis der Freigabe und an jedem Verbindungspunkt im Pfad. Das Verborgene `~snapshot` Auf das Verzeichnis kann über die folgenden drei Pfade zugegriffen werden:
+
+* `\\vs1\eng\~snapshot`
+* `\\vs1\eng\projects1\~snapshot`
+* `\\vs1\eng\projects2\~snapshot`
+
+
+[listing]
+----
+cluster1::> volume show -vserver vs1 -fields volume,junction-path
+vserver volume       junction-path
+------- ------------ ----------------------------------------
+vs1     vs1_root      /
+vs1     vs1_vol1      /eng
+vs1     vs1_vol2      /eng/projects1
+vs1     vs1_vol3      /eng/projects2
+
+cluster1::> vserver cifs share show
+Vserver  Share   Path     Properties    Comment  ACL
+-------- ------  -------  ----------    -------- ----------
+vs1      eng     /eng     oplocks       -        Everyone / Full Control
+                          changenotify
+                          browsable
+                          showsnapshot
+----

@@ -1,0 +1,49 @@
+---
+permalink: revert/remove-nas-bucket-task.html 
+sidebar: sidebar 
+keywords: s3, svm, bucket, object, server, filesystems, nas, directories, revert 
+summary: Wenn Sie den S3-Client-Zugriff für NAS-Daten konfiguriert haben und von ONTAP 9.12.1 oder höher auf ONTAP 9.11.1 oder früher zurückgesetzt werden, müssen Sie die NAS-Bucket-Konfiguration entfernen und vor dem Zurücksetzen alle S3-Benutzer in Windows/Unix-Benutzernamenzuordnungen entfernen. 
+---
+= Entfernen Sie die S3-NAS-Bucket-Konfiguration, bevor Sie die S3-NAS-Konfiguration von ONTAP 9.12.1 oder höher zurücksetzen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie den S3-Client-Zugriff für NAS-Daten konfiguriert haben und von ONTAP 9.12.1 oder höher auf ONTAP 9.11.1 oder früher zurückgesetzt werden, müssen Sie die NAS-Bucket-Konfiguration entfernen und vor dem Zurücksetzen alle Namenszuordnungen (S3-Benutzer zu Windows- oder Unix-Benutzern) entfernen.
+
+Die folgenden Aufgaben werden während des Umkehrvorgangs im Hintergrund ausgeführt.
+
+* Entfernen Sie alle teilweise ausgefüllten Singleton-Objektkreationen (d. h. alle Einträge in versteckten Verzeichnissen).
+* Entfernen Sie alle verborgenen Verzeichnisse. Es kann ein auf für jedes Volume vorhanden sein, auf das im Stammverzeichnis des Exports aus dem S3-NAS-Bucket zugegriffen werden kann.
+* Entfernen Sie die Upload-Tabelle.
+* Löschen Sie alle standardmäßigen unix-Benutzer- und Standard-Windows-Benutzerwerte für alle konfigurierten S3-Server.
+
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Entfernen einer S3-NAS-Bucket-Konfiguration + Klicken Sie auf *Storage > Buckets*, klicken Sie auf image:../media/icon_kabob.gif["Kebab-Symbol"] Klicken Sie für jeden konfigurierten S3-NAS-Bucket auf *Löschen*.
+. Entfernen Sie lokale Namenszuordnungen für UNIX oder Windows Clients (oder beide).
++
+.. Klicken Sie auf *Storage > Buckets* und wählen Sie dann die S3/NAS-fähige Storage-VM aus.
+.. Wählen Sie *Einstellungen* und klicken Sie dann auf image:../media/icon_arrow.gif["Nach-rechts-Taste"] Unter *Name Mapping* (unter *Host-Benutzer und -Gruppen*).
+.. Klicken Sie in den Kacheln *S3 zu Windows* oder *S3 zu UNIX* (oder beide) auf image:../media/icon_kabob.gif["Kebab-Symbol"] Klicken Sie für jede konfigurierte Zuordnung auf *Löschen*.
+
+
+
+
+--
+.CLI
+--
+. S3 NAS-Bucket-Konfiguration entfernen +
+`vserver object-store-server bucket delete -vserver _svm_name_ -bucket _s3_nas_bucket_name_`
+. Namenszuordnungen entfernen. +
+`vserver name-mapping delete -vserver _svm_name_ -direction s3-unix` +
+`vserver name-mapping delete -vserver _svm_name_ -direction s3-win`
+
+
+--
+====

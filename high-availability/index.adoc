@@ -1,0 +1,45 @@
+---
+sidebar: sidebar 
+permalink: high-availability/index.html 
+keywords: high availability, ha, overview 
+summary: Übernahme ist der Prozess, in dem ein Node die Kontrolle über den Storage seines Partners übernimmt. GiveBack ist der Prozess, in dem die Speicherung an den Partner zurückgeschickt wird. 
+---
+= HA-Paar-Management – Übersicht
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Cluster-Nodes werden in HA-Paaren konfiguriert, um Fehlertoleranz und unterbrechungsfreien Betrieb zu gewährleisten. Wenn ein Node ausfällt oder Sie einen Node zur routinemäßigen Wartung herunterfahren müssen, kann sein Partner seinen Storage übernehmen und weiterhin Daten darauf bereitstellen. Der Partner gibt Storage zurück, wenn der Node wieder in den Online-Modus versetzt wird.
+
+Die HA-Paar-Controller-Konfiguration besteht aus einem Paar übereinstimmenden FAS/AFF Storage-Controllern (lokaler Node und Partner-Node). Jeder dieser Nodes ist mit den Festplatten-Shelfs der anderen verbunden. Wenn auf einem Node in einem HA-Paar ein Fehler auftritt und die Verarbeitung der Daten angehalten wird, erkennt der Partner den Status „ausgefallen“ und übernimmt die gesamte Verarbeitung der Daten von diesem Controller.
+
+_Übernahme_ ist der Prozess, in dem ein Node die Kontrolle über den Storage seines Partners übernimmt.
+
+_GiveBack_ ist der Prozess, in dem die Speicherung an den Partner zurückgeschickt wird.
+
+Standardmäßig werden Übernahmen automatisch in einer der folgenden Situationen durchgeführt:
+
+* Ein Software- oder Systemfehler tritt auf einem Node auf, der zu einem Panikzustand führt. Die HA-Paar-Controller führen automatisch einen Failover auf den Partner-Node durch. Nachdem der Partner den Panikzustand wiederhergestellt und hochgefahren hat, führt der Node automatisch ein Giveback durch und stellt den normalen Betrieb des Partners wieder her.
+* Auf einem Node tritt ein Systemfehler auf, und der Node kann nicht neu gebootet werden. Wenn ein Node beispielsweise aufgrund eines Stromausfalls ausfällt, führen die HA-Paar-Controller automatisch einen Failover auf seinen Partner-Node aus und stellen Daten vom verbleibenden Storage Controller bereit.
+
+
+
+NOTE: Sollte auch der Storage für einen Node zur gleichen Zeit an Strom verlieren, ist ein Standard-Takeover nicht möglich.
+
+* Heartbeat-Meldungen werden nicht vom Partner des Node empfangen. Das könnte passieren, wenn der Partner einen Hardware- oder Softwarefehler (z. B. ein Interconnect-Fehler) hat, der nicht zu einem Panik- oder Systemfehler geführt hat, aber dennoch daran gehindert wird, ihn korrekt zu funktionieren.
+* Der Anhalten eines Knotens ist nicht zu verwenden `-f` Oder `-inhibit-takeover true` Parameter.
+
+
+
+NOTE: In einem Cluster mit zwei Nodes und Cluster HA-aktiviert, wird ein Node mithilfe von angehalten oder neu gebootet `‑inhibit‑takeover true` Der Parameter bewirkt, dass auf beiden Nodes keine Daten mehr bereitgestellt werden, es sei denn, Sie deaktivieren zuerst die Cluster-HA und weisen dann dem Node Epsilon zu, der online bleiben soll.
+
+* Sie booten einen der Nodes neu, ohne den zu verwenden `‑inhibit‑takeover true` Parameter. (Der `‑onboot` Parameter von `storage failover` Standardmäßig ist der Befehl aktiviert.)
+* Das Remote-Management-Gerät (Service Processor) erkennt den Ausfall des Partner-Node. Dies gilt nicht, wenn Sie die Hardware-gestützte Übernahme deaktivieren.
+
+
+Sie können Übernahmen auch manuell mit dem initiieren `storage failover takeover` Befehl.

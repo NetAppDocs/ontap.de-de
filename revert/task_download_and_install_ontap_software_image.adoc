@@ -1,0 +1,106 @@
+---
+permalink: revert/task_download_and_install_ontap_software_image.html 
+sidebar: sidebar 
+keywords: ontap, software, image, download, downloading, install, installing 
+summary: Sie müssen zuerst die ONTAP-Software herunterladen, dann können Sie sie installieren. 
+---
+= Laden Sie das ONTAP Software-Image herunter und installieren Sie es
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die ONTAP Software muss zuerst von der NetApp Support Site heruntergeladen und dann installiert werden.
+
+
+
+== Laden Sie das Software-Image herunter
+
+Bei einem Downgrade oder Zurücksetzen von ONTAP 9.4 und höher kann das ONTAP Software-Image von der NetApp Support-Website in einen lokalen Ordner kopiert werden. Um ein Downgrade durchzuführen oder auf ONTAP 9.3 oder eine frühere Version zurückzusetzen, müssen Sie das ONTAP-Software-Image auf einen HTTP-Server oder FTP-Server in Ihrem Netzwerk kopieren.
+
+Sie sollten folgende wichtige Informationen beachten:
+
+* Software-Images sind für Plattformmodelle spezifisch.
++
+Sie müssen das richtige Image für Ihr Cluster erhalten. Software-Images, Informationen zu Firmware-Versionen und die neueste Firmware für Ihr Plattformmodell finden Sie auf der NetApp Support Site.
+
+* Software-Images enthalten die neueste Version der System-Firmware, die verfügbar war, wenn eine bestimmte Version von ONTAP veröffentlicht wurde.
+* Wenn Sie ein System mit NetApp Volume Encryption ab ONTAP 9.5 oder höher stufen, müssen Sie das ONTAP Software Image für Länder herunterladen, für die keine Einschränkungen bestehen. Dazu gehört auch die NetApp Volume Encryption.
++
+Wenn Sie das ONTAP Software-Image für eingeschränkte Länder verwenden, um ein System mit NetApp Volume Encryption herunterzustufen oder wiederherzustellen, kommt es zu einer Systempanik und Sie verlieren den Zugriff auf Ihre Volumes.
+
++
+.. Suchen Sie die Ziel-ONTAP-Software im link:http://mysupport.netapp.com/NOW/cgi-bin/software["Software-Downloads"] Der NetApp Support Site.
+.. Kopieren Sie das Software-Image.
++
+*** Kopieren Sie für ONTAP 9.3 oder eine frühere Version das Software-Image (z. B. 93_q_image.tgz) von der NetApp Support-Website in das Verzeichnis auf dem HTTP-Server oder FTP-Server, von dem das Image bereitgestellt wird.
+*** Kopieren Sie für ONTAP 9.4 oder höher das Software-Image (z. B. 97_q_image.tgz) von der NetApp Support-Website in das Verzeichnis auf dem HTTP-Server oder FTP-Server, von dem das Image bereitgestellt wird, oder in einen lokalen Ordner.
+
+
+
+
+
+
+
+
+== Installieren Sie das Software-Image
+
+Sie müssen das Ziel-Software-Image auf den Nodes des Clusters installieren.
+
+* Wenn Sie ein System mit NetApp Volume Encryption von ONTAP 9.5 oder höher Downgrade oder Zurücksetzen, müssen Sie das ONTAP Software-Image für Länder ohne Einschränkungen heruntergeladen haben, zu denen NetApp Volume Encryption gehört.
++
+Wenn Sie das ONTAP Software-Image für eingeschränkte Länder verwenden, um ein System mit NetApp Volume Encryption herunterzustufen oder wiederherzustellen, kommt es zu einer Systempanik und Sie verlieren den Zugriff auf Ihre Volumes.
+
++
+.. Stellen Sie die Berechtigungsebene auf Erweitert ein, und geben Sie bei Aufforderung * y* ein, um fortzufahren: `set -privilege advanced`
++
+Die erweiterte Eingabeaufforderung (`*>`Erscheint.
+
+.. Installieren Sie das Software-Image auf den Nodes.
++
+Mit diesem Befehl wird das Software-Image gleichzeitig auf allen Nodes heruntergeladen und installiert. Um das Image auf jedem Knoten einzeln herunterzuladen und zu installieren, geben Sie den Parameter „-background“ nicht an.
+
++
+*** Wenn Sie eine nicht-MetroCluster Konfiguration oder eine MetroCluster Konfiguration mit zwei Nodes ein- oder zurücksetzen:``system node image update -node * -package location -replace-package true -setdefault true -background true``
++
+Dieser Befehl verwendet eine erweiterte Abfrage, um das als alternatives Image installierte Ziel-Software-Image als Standard-Image für den Node zu ändern.
+
+*** Wenn Sie eine MetroCluster Konfiguration mit vier oder acht Nodes ausführen oder zurücksetzen, müssen Sie auf beiden Clustern den folgenden Befehl ausführen: `system node image update -node * -package location -replace-package true true -background true -setdefault false`
++
+Dieser Befehl verwendet eine erweiterte Abfrage, um das Ziel-Software-Image zu ändern, das als alternatives Image auf jedem Node installiert wird.
+
+
+
+.. Eingabe `y` Fortfahren, wenn Sie dazu aufgefordert werden.
+.. Vergewissern Sie sich, dass das Software-Image auf jedem Node heruntergeladen und installiert ist: `system node image show-update-progress -node *`
++
+Mit diesem Befehl wird der aktuelle Status des Downloads und der Installation des Software-Images angezeigt. Sie sollten diesen Befehl weiter ausführen, bis alle Knoten einen Ausführungsstatus von „Exit“ und einen Status „Exit Status of Success“ melden.
+
++
+Der Befehl zum Aktualisieren des System-Node-Images kann fehlschlagen und zeigt Fehler- oder Warnmeldungen an. Nach Beheben von Fehlern oder Warnungen können Sie den Befehl erneut ausführen.
+
++
+In diesem Beispiel wird ein Cluster mit zwei Nodes angezeigt, in dem das Software-Image auf beiden Nodes heruntergeladen und erfolgreich installiert wird:
+
++
+[listing]
+----
+cluster1::*> system node image show-update-progress -node *
+There is no update/install in progress
+Status of most recent operation:
+        Run Status:     Exited
+        Exit Status:    Success
+        Phase:          Run Script
+        Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node0.
+There is no update/install in progress
+Status of most recent operation:
+        Run Status:     Exited
+        Exit Status:    Success
+        Phase:          Run Script
+        Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node1.
+2 entries were acted on.
+----
+
+
+

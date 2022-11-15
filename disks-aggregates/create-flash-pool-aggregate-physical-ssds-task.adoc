@@ -1,0 +1,73 @@
+---
+permalink: disks-aggregates/create-flash-pool-aggregate-physical-ssds-task.html 
+sidebar: sidebar 
+keywords: create, flash, pool, aggregate, local tier, physical, ssds 
+summary: 'Sie erstellen eine lokale Flash Pool-Ebene (Aggregat), indem Sie die Funktion auf einer bestehenden lokalen Ebene aus HDD-RAID-Gruppen aktivieren und dann dieser lokalen Tier eine oder mehrere SSD-RAID-Gruppen hinzufügen. Das führt zu zwei Gruppen von RAID-Gruppen für diese lokale Tier: SSD RAID-Gruppen (der SSD-Cache) und HDD RAID-Gruppen.' 
+---
+= Erstellen Sie eine lokale Flash Pool-Tier (Aggregat) mit physischen SSDs
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie erstellen eine lokale Flash Pool-Ebene (Aggregat), indem Sie die Funktion auf einer bestehenden lokalen Ebene aus HDD-RAID-Gruppen aktivieren und dann dieser lokalen Tier eine oder mehrere SSD-RAID-Gruppen hinzufügen. Das führt zu zwei Gruppen von RAID-Gruppen für diese lokale Tier: SSD RAID-Gruppen (der SSD-Cache) und HDD RAID-Gruppen.
+
+.Was Sie und#8217;ll benötigen
+* Sie müssen eine gültige lokale Tier mit HDDs identifiziert haben, um in eine lokale Flash Pool-Ebene umgewandelt werden zu können.
+* Sie müssen die Berechtigung zum Schreib-Caching für die Volumes festgelegt haben, die der lokalen Tier zugeordnet sind, und alle erforderlichen Schritte ausführen, um die Teilnahmevoraussetzungen zu lösen.
+* Sie müssen festgelegt haben, welche SSDs Sie hinzufügen möchten. Diese SSDs müssen Eigentum des Node sein, auf dem Sie die lokale Flash Pool-Tier erstellen.
+* Sie müssen die Prüfsummentypen der beiden zufügeden SSDs und der HDDs bereits in der lokalen Tier festgelegt haben.
+* Sie müssen die Anzahl der hinzufügeenden SSDs und die optimale RAID-Gruppengröße für die SSD RAID-Gruppen bestimmt haben.
++
+Durch die geringere Anzahl von RAID-Gruppen im SSD Cache wird die Anzahl der erforderlichen Parity Disks verringert, aber größere RAID-Gruppen erfordern RAID-DP.
+
+* Sie müssen das RAID-Level bestimmt haben, das Sie für den SSD-Cache verwenden möchten.
+* Sie müssen die maximale Cache-Größe für Ihr System festgelegt haben und festgestellt haben, dass das Hinzufügen von SSD-Cache zu Ihrer lokalen Ebene nicht dazu führt, dass Sie sie überschreiten.
+* Sie müssen sich mit den Konfigurationsanforderungen für lokale Flash Pool Tiers vertraut machen.
+
+
+Nachdem Sie einer lokalen Tier einen SSD-Cache hinzugefügt haben, um eine lokale Flash Pool-Ebene zu erstellen, können Sie den SSD-Cache nicht entfernen, um die lokale Tier zurück in ihre ursprüngliche Konfiguration zu konvertieren.
+
+Standardmäßig ist das RAID-Level des SSD-Caches mit dem RAID-Level der HDD-RAID-Gruppen identisch. Sie können diese Standardauswahl überschreiben, indem Sie die Option „`raidtype`“ angeben, wenn Sie die ersten SSD-RAID-Gruppen hinzufügen.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Ab ONTAP 9.12.1 können Sie mit System Manager eine lokale Flash Pool Tier unter Verwendung von physischen SSDs erstellen.
+
+.Schritte
+. Klicken Sie auf *Storage > Tiers* und wählen Sie einen vorhandenen lokalen Festplatten-Storage aus.
+. Klicken Sie Auf image:icon_kabob.gif["Kabob-Symbol"] Und wählen Sie *Flash Pool Cache hinzufügen*.
+. Wählen Sie als Cache dedizierte SSDs verwenden aus.
+. Wählen Sie einen Festplattentyp und die Anzahl der Festplatten aus.
+. Wählen Sie einen RAID-Typ aus.
+. Klicken Sie Auf *Speichern*.
+. Suchen Sie die Storage Tier, und klicken Sie auf image:icon_kabob.gif["Kabob-Symbol"].
+. Wählen Sie *Mehr Details* aus, und überprüfen Sie, ob Flash Pool als *aktiviert* angezeigt wird.
+
+
+--
+.CLI
+--
+.Schritte
+. Markieren Sie die lokale Tier (Aggregat) als berechtigt, ein Flash Pool Aggregat zu werden:
++
+`storage aggregate modify -aggregate _aggr_name_ -hybrid-enabled true`
+
++
+Wenn dieser Schritt nicht erfolgreich ist, bestimmen Sie die Berechtigung zum Schreib-Caching für das Zielaggregat.
+
+. Fügen Sie die SSDs mit dem zum Aggregat hinzu `storage aggregate add` Befehl.
++
+** Sie können die SSDs mithilfe der ID oder mit angeben `diskcount` Und `disktype` Parameter.
+** Wenn HDDs und SSDs nicht den gleichen Prüfsummentyp haben oder das Aggregat ein Aggregat mit gemischten Prüfsummen ist, müssen Sie das verwenden `checksumstyle` Parameter zur Angabe des Prüfsummentyps der Festplatten, die Sie dem Aggregat hinzufügen.
+** Sie können einen anderen RAID-Typ für den SSD-Cache mit angeben `raidtype` Parameter.
+** Wenn die Cache-RAID-Gruppengröße von der Standardgröße für den RAID-Typ, den Sie verwenden, abweichen soll, sollten Sie sie jetzt mit dem ändern `-cache-raid-group-size` Parameter.
+
+
+
+
+--
+====

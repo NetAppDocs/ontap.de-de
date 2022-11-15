@@ -1,0 +1,103 @@
+---
+permalink: ndmp/prepare-ndmp-config-task.html 
+sidebar: sidebar 
+keywords: prepare, ndmp, configuration 
+summary: 'Bevor Sie den Zugriff auf Tape-Backups über das Network Data Management Protocol (NDMP) konfigurieren, müssen Sie überprüfen, ob die geplante Konfiguration unterstützt wird. Vergewissern Sie sich, dass Ihre Bandlaufwerke auf jedem Node als qualifizierte Laufwerke aufgeführt sind. Vergewissern Sie sich, dass alle Nodes über Intercluster LIFs verfügen. Und ermitteln, ob die Backup-Applikation die Cluster-Aware-Backup-Erweiterung (CAB) unterstützt.' 
+---
+= Vorbereitung auf die NDMP-Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie den Zugriff auf Tape-Backups über das Network Data Management Protocol (NDMP) konfigurieren, müssen Sie überprüfen, ob die geplante Konfiguration unterstützt wird. Vergewissern Sie sich, dass Ihre Bandlaufwerke auf jedem Node als qualifizierte Laufwerke aufgeführt sind. Vergewissern Sie sich, dass alle Nodes über Intercluster LIFs verfügen. Und ermitteln, ob die Backup-Applikation die Cluster-Aware-Backup-Erweiterung (CAB) unterstützt.
+
+.Schritte
+. ONTAP-Unterstützung finden Sie in der Kompatibilitätsmatrix des Providers Ihrer Backup-Applikation (NetApp ist nicht als Backup-Applikationen anderer Anbieter mit ONTAP oder NDMP qualifiziert).
++
+Sie sollten überprüfen, ob die folgenden NetApp Komponenten kompatibel sind:
+
++
+--
+** Die Version von ONTAP 9, die auf dem Cluster ausgeführt wird.
+** Anbieter und Version der Backup-Applikation, beispielsweise Veritas NetBackup 8.2 oder CommVault.
+** Die Bandgeräte enthalten Details wie Hersteller, Modell und Schnittstelle der Bandlaufwerke, z. B. IBM Ultrium 8 oder HPE StoreEver Ultrium 30750 LTO-8.
+** Die Plattformen der Nodes im Cluster, z. B. FAS8700 oder A400.
+
+
+--
++
+
+NOTE: Im finden Sie Legacy-Supportmatrizen zur ONTAP-Kompatibilität für Backup-Anwendungen https://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^].
+
+. Vergewissern Sie sich, dass Ihre Bandlaufwerke in der integrierten Tape-Konfigurationsdatei jedes Node als qualifizierte Laufwerke aufgeführt sind:
++
+.. Zeigen Sie auf der Befehlszeilenschnittstelle die integrierte Tape-Konfigurationsdatei mithilfe von an `storage tape show-supported-status` Befehl.
++
+....
+cluster1::> storage tape show-supported-status
+
+Node: cluster1-1
+                                Is
+Tape Drives                     Supported  Support Status
+------------------------------  ---------  -------------------------------
+Certance Ultrium 2              true       Dynamically Qualified
+Certance Ultrium 3              true       Dynamically Qualified
+Digital DLT2000                 true       Qualified
+....
+.. Vergleichen Sie Ihre Bandlaufwerke mit der Liste der qualifizierten Laufwerke in der Ausgabe.
++
+[NOTE]
+====
+Die Namen der Bandgeräte in der Ausgabe können geringfügig von den Namen auf dem Geräteetikett oder in der Interoperabilitäts-Matrix abweichen. Beispielsweise kann Digital DLT2000 auch als DLT2K bezeichnet werden. Sie können diese geringfügigen Benennungsunterschiede ignorieren.
+
+====
+.. Wenn ein Gerät in der Ausgabe nicht als qualifiziert aufgeführt wird, obwohl das Gerät gemäß der Interoperabilitäts-Matrix qualifiziert ist, können Sie eine aktualisierte Konfigurationsdatei für das Gerät herunterladen und mithilfe der Anweisungen auf der NetApp Support Site installieren.
++
+http://mysupport.netapp.com/NOW/download/tools/tape_config["NetApp Downloads: Konfigurationsdateien für Bandgeräte"]
+
++
+In der integrierten Bandkonfigurationsdatei wird möglicherweise kein qualifiziertes Gerät aufgeführt, wenn das Bandgerät nach dem Versand des Knotens qualifiziert war.
+
+
+
+. Überprüfen Sie, ob jeder Node im Cluster über eine Intercluster-LIF verfügt:
++
+.. Zeigen Sie die Intercluster-LIFs auf den Nodes mithilfe von an `network interface show -role intercluster` Befehl.
++
+[listing]
+----
+cluster1::> network interface show -role intercluster
+
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+cluster1    IC1        up/up      192.0.2.65/24      cluster1-1    e0a     true
+----
+.. Wenn auf einem Node keine Intercluster-LIF vorhanden ist, erstellen Sie mithilfe der eine Intercluster-LIF `network interface create` Befehl.
++
+[listing]
+----
+cluster1::> network interface create -vserver cluster1 -lif IC2 -role intercluster
+-home-node cluster1-2 -home-port e0b -address 192.0.2.68 -netmask 255.255.255.0
+-status-admin up -failover-policy local-only -firewall-policy intercluster
+
+cluster1::> network interface show -role intercluster
+
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+cluster1    IC1        up/up      192.0.2.65/24      cluster1-1    e0a     true
+cluster1    IC2        up/up      192.0.2.68/24      cluster1-2    e0b     true
+----
++
+link:../networking/index.html["Netzwerkmanagement"]
+
+
+
+. Ermitteln Sie, ob die Backup-Applikation Cluster-Aware Backup (CAB) unterstützt, indem Sie die mit der Backup-Applikation bereitgestellte Dokumentation verwenden.
++
+DIE CAB-Unterstützung ist ein entscheidender Faktor bei der Ermittlung der Art der Datensicherung, die Sie durchführen können.
+
+

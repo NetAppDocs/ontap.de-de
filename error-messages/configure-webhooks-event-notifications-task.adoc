@@ -1,0 +1,135 @@
+---
+permalink: error-messages/configure-webhooks-event-notifications-task.html 
+sidebar: sidebar 
+keywords: configure, important, ems, events, receive, email, notifications, forward, rest, api, webhook 
+summary: Sie können ONTAP so konfigurieren, dass wichtige Ereignisbenachrichtigungen an eine Webhook-Anwendung weitergesendet werden. Die erforderlichen Konfigurationsschritte hängen vom gewählten Sicherheitsniveau ab. 
+---
+= Konfigurieren Sie wichtige EMS-Ereignisse, um Benachrichtigungen an eine Webhook-Anwendung weiterzuleiten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können ONTAP so konfigurieren, dass wichtige Ereignisbenachrichtigungen an eine Webhook-Anwendung weitergesendet werden. Die erforderlichen Konfigurationsschritte hängen vom gewählten Sicherheitsniveau ab.
+
+
+
+== Bereiten Sie sich auf die Konfiguration der EMS-Ereignisweiterleitung vor
+
+Es gibt verschiedene Konzepte und Anforderungen, die Sie berücksichtigen sollten, bevor Sie ONTAP konfigurieren, um Ereignisbenachrichtigungen an eine Webhook-Anwendung weiterzuleiten.
+
+
+
+=== Webhook-Anwendung
+
+Sie benötigen eine Webhook-Anwendung, die die ONTAP-Ereignisbenachrichtigungen erhalten kann. Ein Webhook ist eine benutzerdefinierte Callback-Routine, die die Fähigkeit der Remote-Anwendung oder des Servers erweitert, auf dem sie ausgeführt wird. Webhooks werden vom Client (in diesem Fall ONTAP) aufgerufen oder aktiviert, indem eine HTTP-Anfrage an die Ziel-URL gesendet wird. Insbesondere sendet ONTAP eine HTTP-POST-Anfrage an den Server, der die Webhook-Anwendung hostet, sowie die in XML formatierten Ereignisbenachrichtigungen.
+
+
+
+=== Sicherheitsoptionen
+
+Je nach Verwendung des TLS-Protokolls (Transport Layer Security) stehen verschiedene Sicherheitsoptionen zur Verfügung. Die von Ihnen gewählte Option bestimmt die erforderliche ONTAP-Konfiguration.
+
+[NOTE]
+====
+TLS ist ein kryptografisches Protokoll, das im Internet weit verbreitet ist. Sie bietet Datenschutz sowie Datenintegrität und Authentifizierung unter Verwendung eines oder mehrerer Public-Key-Zertifikate. Die Zertifikate werden von vertrauenswürdigen Zertifizierungsstellen ausgestellt.
+
+====
+HTTP:: Sie können HTTP für die Übertragung von Ereignisbenachrichtigungen verwenden. Bei dieser Konfiguration ist die Verbindung nicht sicher. Die Identitäten des ONTAP-Clients und der Webhook-Anwendung werden nicht überprüft. Darüber hinaus ist der Netzwerkverkehr weder verschlüsselt noch geschützt. Siehe link:configure-webhooks-event-notifications-task.html#configure-a-webhook-destination-to-use-http["Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTP"] Für die Konfigurationsdetails.
+HTTPS:: Für zusätzliche Sicherheit können Sie ein Zertifikat auf dem Server installieren, der die Webhook-Routine hostet. Das HTTPS-Protokoll wird von ONTAP verwendet, um die Identität des Webhook-Anwendungsservers sowie von beiden Parteien zu überprüfen, um die Privatsphäre und Integrität des Netzwerkdatenverkehrs zu gewährleisten. Siehe link:configure-webhooks-event-notifications-task.html#configure-a-webhook-destination-to-use-https["Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTPS"] Für die Konfigurationsdetails.
+HTTPS mit gegenseitiger Authentifizierung:: Sie können die HTTPS-Sicherheit weiter erhöhen, indem Sie ein Clientzertifikat beim ONTAP-System installieren, das die Webbook-Anfragen ausgibt. Zusätzlich zur ONTAP, die die Identität des Webhook-Anwendungsservers überprüft und den Netzwerkverkehr schützt, überprüft die Webhook-Anwendung die Identität des ONTAP-Clients. Diese Zweiwege-Peer-Authentifizierung wird als _Mutual TLS_ bezeichnet. Siehe link:configure-webhooks-event-notifications-task.html#configure-a-webhook-destination-to-use-https-with-mutual-authentication["Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTPS mit gegenseitiger Authentifizierung"] Für die Konfigurationsdetails.
+
+
+.Verwandte Informationen
+* https://www.rfc-editor.org/info/rfc8446["Das TLS-Protokoll (Transport Layer Security) Version 1.3"^]
+
+
+
+
+== Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTP
+
+Sie können ONTAP so konfigurieren, dass Ereignisbenachrichtigungen mithilfe von HTTP an eine Webhook-Anwendung weitergesendet werden. Dies ist die am wenigsten sichere Option, aber die einfachste Einrichtung.
+
+.Schritte
+. Erstellen Sie ein neues Ziel `restapi-ems` So erhalten Sie die Ereignisse:
++
+`event notification destination create -name restapi-ems -rest-api-url \http://<webhook-application>`
+
++
+Im obigen Befehl müssen Sie das *HTTP*-Schema für das Ziel verwenden.
+
+. Erstellen Sie eine Benachrichtigung, die den verknüpft `important-events` Mit dem filtern `restapi-ems` Ziel:
++
+`event notification create -filter-name important-events -destinations restapi-ems`
+
+
+
+
+
+== Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTPS
+
+Sie können ONTAP so konfigurieren, dass Ereignisbenachrichtigungen mithilfe von HTTPS an eine Webhook-Anwendung weitergesendet werden. ONTAP verwendet das Serverzertifikat, um die Identität der Webhook-Anwendung zu bestätigen und den Netzwerkverkehr zu sichern.
+
+.Bevor Sie beginnen
+* Generieren Sie einen privaten Schlüssel und ein Zertifikat für den Webhook-Anwendungsserver
+* Lassen Sie das Root-Zertifikat zur Installation in ONTAP zur Verfügung
+
+
+.Schritte
+. Installieren Sie den entsprechenden Server-privaten Schlüssel und die entsprechenden Zertifikate auf dem Server, der Ihre Webhook-Anwendung hostet. Die spezifischen Konfigurationsschritte hängen vom Server ab.
+. Installieren Sie das Server-Root-Zertifikat in ONTAP:
++
+`security certificate install -type server-ca`
+
++
+Der Befehl fragt nach dem Zertifikat.
+
+. Erstellen Sie die `restapi-ems` Ziel für den Empfang der Ereignisse:
++
+`event notification destination create -name restapi-ems -rest-api-url \https://<webhook-application>`
+
++
+Im obigen Befehl müssen Sie das Schema *HTTPS* für das Ziel verwenden.
+
+. Erstellen Sie die Benachrichtigung, die den verbindet `important-events` Mit dem neuen Filter filtern `restapi-ems` Ziel:
++
+`event notification create -filter-name important-events -destinations restapi-ems`
+
+
+
+
+
+== Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTPS mit gegenseitiger Authentifizierung
+
+Sie können ONTAP so konfigurieren, dass Ereignisbenachrichtigungen mithilfe von HTTPS mit gegenseitiger Authentifizierung an eine Webhook-Anwendung weitergesendet werden. Mit dieser Konfiguration gibt es zwei Zertifikate. ONTAP verwendet das Serverzertifikat, um die Identität der Webhook-Anwendung zu bestätigen und den Netzwerkverkehr zu sichern. Darüber hinaus verwendet die Anwendung, die den Webhook hostet, das Clientzertifikat, um die Identität des ONTAP-Clients zu bestätigen.
+
+Vor dem Konfigurieren von ONTAP müssen Sie Folgendes ausführen:
+
+* Generieren Sie einen privaten Schlüssel und ein Zertifikat für den Webhook-Anwendungsserver
+* Lassen Sie das Root-Zertifikat zur Installation in ONTAP zur Verfügung
+* Generieren Sie einen privaten Schlüssel und ein Zertifikat für den ONTAP-Client
+
+
+.Schritte
+. Führen Sie die ersten beiden Schritte in der Aufgabe aus link:configure-webhooks-event-notifications-task.html#configure-a-webhook-destination-to-use-https["Konfigurieren Sie ein Webhook-Ziel für die Verwendung von HTTPS"] So installieren Sie das Serverzertifikat, damit ONTAP die Identität des Servers überprüfen kann.
+. Installieren Sie die entsprechenden Root- und Zwischenzertifikate in der Webhook-Anwendung, um das Clientzertifikat zu validieren.
+. Installieren Sie das Client-Zertifikat in ONTAP:
++
+`security certificate install -type client`
+
++
+Der Befehl fragt nach dem privaten Schlüssel und dem Zertifikat.
+
+. Erstellen Sie die `restapi-ems` Ziel für den Empfang der Ereignisse:
++
+`event notification destination create -name restapi-ems -rest-api-url \https://<webhook-application> -certificate-authority <issuer of the client certificate> -certificate-serial <serial of the client certificate>`
+
++
+Im obigen Befehl müssen Sie das Schema *HTTPS* für das Ziel verwenden.
+
+. Erstellen Sie die Benachrichtigung, die den verbindet `important-events` Mit dem neuen Filter filtern `restapi-ems` Ziel:
++
+`event notification create -filter-name important-events -destinations restapi-ems`
+
+

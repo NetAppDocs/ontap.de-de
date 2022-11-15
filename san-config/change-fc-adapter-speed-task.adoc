@@ -1,0 +1,51 @@
+---
+permalink: san-config/change-fc-adapter-speed-task.html 
+sidebar: sidebar 
+keywords: change, fc adapter, speed 
+summary: Sie sollten die Zielportgeschwindigkeit des Adapters so einstellen, dass sie mit der Geschwindigkeit des Geräts übereinstimmt, zu dem es eine Verbindung herstellt, anstatt die Autonegotiation zu verwenden. Ein Port, der auf die Autonegotiation festgelegt ist, kann nach einer Übernahme/Rückgabe oder einer anderen Unterbrechung länger dauern, bis die Verbindung wiederhergestellt ist. 
+---
+= Ändern Sie die FC-Adaptergeschwindigkeit
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie sollten die Zielportgeschwindigkeit des Adapters so einstellen, dass sie mit der Geschwindigkeit des Geräts übereinstimmt, zu dem es eine Verbindung herstellt, anstatt die Autonegotiation zu verwenden. Ein Port, der auf die Autonegotiation festgelegt ist, kann nach einer Übernahme/Rückgabe oder einer anderen Unterbrechung länger dauern, bis die Verbindung wiederhergestellt ist.
+
+Alle LIFs, die diesen Adapter als Home-Port verwenden, müssen offline sein.
+
+Da diese Aufgabe alle Storage Virtual Machines (SVMs) und alle LIFs in einem Cluster umfasst, müssen Sie das verwenden `-home-port` Und `-home-lif` Parameter, um den Umfang dieses Vorgangs zu begrenzen. Wenn Sie diese Parameter nicht verwenden, gilt der Vorgang für alle LIFs im Cluster, die möglicherweise nicht wünschenswert wären.
+
+.Schritte
+. Versetzen Sie alle LIFs auf diesem Adapter in den Offline-Modus:
++
+`network interface modify -vserver * -lif * { -home-node node1 -home-port 0c } -status-admin down`
+
+. Versetzen Sie den Adapter in den Offline-Modus:
++
+`network fcp adapter modify -node node1 -adapter 0c -state down`
+
++
+Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+
+. Bestimmen Sie die maximale Geschwindigkeit für den Port-Adapter:
++
+`fcp adapter show -instance`
+
++
+Sie können die Adaptergeschwindigkeit nicht über die Höchstgeschwindigkeit hinaus ändern.
+
+. Ändern Sie die Adaptergeschwindigkeit:
++
+`network fcp adapter modify -node node1 -adapter 0c -speed 16`
+
+. Versetzen Sie den Adapter in den Online-Modus:
++
+`network fcp adapter modify -node node1 -adapter 0c -state up`
+
+. Versetzen Sie alle LIFs am Adapter in den Online-Modus:
++
+`network interface modify -vserver * -lif * { -home-node node1 -home-port 0c } -status-admin up`
+
+

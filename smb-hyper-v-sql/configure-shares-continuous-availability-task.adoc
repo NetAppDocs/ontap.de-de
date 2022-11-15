@@ -1,0 +1,128 @@
+---
+permalink: smb-hyper-v-sql/configure-shares-continuous-availability-task.html 
+sidebar: sidebar 
+keywords: configure, shares, continuous, availability, hyper, v, sql, server, virutal, machine, database, file 
+summary: Sie können vorhandene Shares so ändern, dass diese kontinuierlich verfügbaren Shares werden, die mit den Hyper-V und SQL Server Applikationsserver für den unterbrechungsfreien Zugriff auf Hyper-V Virtual Machines, Konfigurationsdateien und SQL Server Datenbankdateien verwendet werden. 
+---
+= Konfigurieren Sie vorhandene Shares für kontinuierliche Verfügbarkeit
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können vorhandene Shares so ändern, dass diese kontinuierlich verfügbaren Shares werden, die mit den Hyper-V und SQL Server Applikationsserver für den unterbrechungsfreien Zugriff auf Hyper-V Virtual Machines, Konfigurationsdateien und SQL Server Datenbankdateien verwendet werden.
+
+Vorhandene Freigaben können nicht als kontinuierlich verfügbare Freigabe für unterbrechungsfreien Betrieb bei Applikations-Servern über SMB verwendet werden, wenn der Share folgende Merkmale aufweist:
+
+* Wenn der `homedirectory` Share-Eigenschaft wird auf dieser Freigabe festgelegt
+* Wenn die Freigabe aktivierte Symlink oder widelinks enthält
+* Wenn die Freigabe Verbindungen unter dem Stammverzeichnis der Freigabe enthält
+
+
+Sie müssen überprüfen, ob die beiden folgenden Freigabeparameter richtig eingestellt sind:
+
+* Der `-offline-files` Der Parameter ist entweder auf festgelegt `manual` (Standard) oder `none`.
+* Symlinks müssen deaktiviert sein.
+
+
+Die folgenden Freigabeigenschaften müssen konfiguriert werden:
+
+* `continuously-available`
+* `oplocks`
+
+
+Die folgenden Freigabeigenschaften dürfen nicht festgelegt werden. Wenn sie in der Liste der aktuellen Share-Eigenschaften vorhanden sind, müssen sie aus der kontinuierlich verfügbaren Freigabe entfernt werden:
+
+* `attributecache`
+* `branchcache`
+
+
+.Schritte
+. Die aktuellen Einstellungen für den Freigabeparameter und die aktuelle Liste der konfigurierten Freigabeneigenschaften anzeigen:
++
+`*vserver cifs share show -vserver _vserver_name_ -share-name _share_name_*`
+
+. Ändern Sie ggf. die Freigabeparameter, um Symlinks zu deaktivieren und Offline-Dateien mithilfe des auf manuell zu setzen `vserver cifs share properties modify` Befehl.
++
+Sie können Symlinks deaktivieren, indem Sie den Wert des festlegen `-symlink` Parameter an `""`.
+
++
+** Sie können Symlinks deaktivieren, indem Sie den Wert des festlegen `-symlink` Parameter an `""`.
+** Sie können die einstellen `-offline-files` Parameter auf die richtige Einstellung durch Angabe `manual`.
+
+
+. Fügen Sie die hinzu `continuously-available` Teilen Sie die Eigenschaft, und, falls erforderlich, die `oplocks` Eigenschaft teilen:
++
+`*vserver cifs share properties add -vserver _vserver_name_ -share-name _share_name_ -share-properties continuously-available[,oplock]*`
+
++
+Wenn der `oplocks` Die Freigabegenschaft ist nicht bereits festgelegt, Sie müssen sie zusammen mit dem hinzufügen `continuously-available` Eigenschaft freigeben.
+
+. Entfernen Sie alle Share-Eigenschaften, die nicht auf kontinuierlich verfügbaren Freigaben unterstützt werden:
++
+`*vserver cifs share properties remove -vserver _vserver_name_ -share-name _share_name_ -share-properties properties[,...]*`
+
++
+Sie können eine oder mehrere Share-Eigenschaften entfernen, indem Sie die Share-Eigenschaften mit einer kommagetrennten Liste angeben.
+
+. Überprüfen Sie das `-symlink` Und `-offline-files` Parameter sind korrekt eingestellt:
++
+`*vserver cifs share show -vserver _vserver_name_ -share-name _share_name_ -fields symlink-properties,offline-files*`
+
+. Vergewissern Sie sich, dass die Liste der konfigurierten Freigabeigenschaften korrekt ist:
++
+`*vserver cifs shares properties show -vserver _vserver_name_ -share-name share_name*`
+
+
+
+Das folgende Beispiel zeigt, wie eine vorhandene Freigabe mit dem Namen „`share1`“ auf Storage Virtual Machine (SVM) vs1 für NDOS mit einem Applikations-Server über SMB konfiguriert wird:
+
+* Die Symlinks werden auf der Freigabe durch Festlegen des deaktiviert `-symlink` Parameter auf „“.
+* Der `-offline-file` Parameter wurde geändert und auf festgelegt `manual`.
+* Der `continuously-available` Share-Eigenschaft wird zur Freigabe hinzugefügt.
+* Der `oplocks` Die Freigabeigenschaft befindet sich bereits in der Liste der Freigabeneigenschaften. Sie muss daher nicht hinzugefügt werden.
+* Der `attributecache` Die Freigabegenschaft wird aus der Freigabe entfernt.
+* Der `browsable` Share-Eigenschaft ist optional für eine kontinuierlich verfügbare Freigabe, die für NDOS mit Anwendungsservern über SMB verwendet wird, und wird als eine der Share-Eigenschaften beibehalten.
+
+
+[listing]
+----
+cluster1::> vserver cifs share show -vserver vs1 -share-name share1
+
+                      Vserver: vs1
+                        Share: share1
+     CIFS Server NetBIOS Name: vs1
+                         Path: /data
+             Share Properties: oplocks
+                               browsable
+                               attributecache
+           Symlink Properties: enable
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: 10s
+                  Volume Name: data
+                Offline Files: documents
+Vscan File-Operations Profile: standard
+
+cluster1::> vserver cifs share modify -vserver vs1 -share-name share1 -offline-file manual -symlink ""
+
+cluster1::> vserver cifs share properties add -vserver vs1 -share-name share1 -share-properties continuously-available
+
+cluster1::> vserver cifs share properties remove -vserver vs1 -share-name share1 -share-properties attributecache
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name share1 -fields symlink-properties,offline-files
+vserver  share-name symlink-properties offline-files
+-------- ---------- ------------------ -------------
+vs1      share1    -                  manual
+
+cluster1::> vserver cifs share properties show -vserver vs1 -share-name share1
+
+         Vserver: vs1
+           Share: share1
+Share Properties: oplocks
+                  browsable
+                  continuously-available
+----

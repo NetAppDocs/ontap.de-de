@@ -1,0 +1,33 @@
+---
+permalink: smb-admin/optimize-user-access-force-group-share-concept.html 
+sidebar: sidebar 
+keywords: create, share, ontap, command, line, data, unix, effective, security, smb, user, group, force-group, predefined, database, force-group, access, how to optimize smb user access with the force-group share setting 
+summary: Wenn Sie eine Freigabe von der ONTAP-Befehlszeile zu Daten mit UNIX-effektiver Sicherheit erstellen, können Sie angeben, dass alle Dateien, die von SMB-Benutzern in dieser Freigabe erstellt wurden, zur gleichen Gruppe gehören, die als Force-Group bezeichnet wird. Dies muss eine vordefinierte Gruppe in der UNIX-Gruppendatenbank sein. Durch die Verwendung einer Force-Group ist es einfacher sicherzustellen, dass SMB-Benutzer, die zu verschiedenen Gruppen gehören, auf Dateien zugreifen können. 
+---
+= Optimieren Sie den SMB-Benutzerzugriff mit der Einstellung Force-Group-Freigabe
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie eine Freigabe von der ONTAP-Befehlszeile zu Daten mit UNIX-effektiver Sicherheit erstellen, können Sie angeben, dass alle Dateien, die von SMB-Benutzern in dieser Freigabe erstellt wurden, zur gleichen Gruppe gehören, die als _Force-Group_ bezeichnet wird. Dies muss eine vordefinierte Gruppe in der UNIX-Gruppendatenbank sein. Durch die Verwendung einer Force-Group ist es einfacher sicherzustellen, dass SMB-Benutzer, die zu verschiedenen Gruppen gehören, auf Dateien zugreifen können.
+
+Die Angabe einer Force-Group ist nur dann sinnvoll, wenn sich der Share in einem Unix oder einem gemischten qtree befindet. Es muss keine Force-Group für Shares in einem NTFS-Volume oder qtree festgelegt werden, da der Zugriff auf Dateien in diesen Shares durch Windows-Berechtigungen und nicht durch UNIX GIDs bestimmt wird.
+
+Wenn für eine Freigabe eine Force-Group angegeben wurde, gilt die Freigabe folgendermaßen:
+
+* SMB-Benutzer in der Force-Group, die auf diese Freigabe zugreifen, werden vorübergehend in die GID der Force-Group geändert.
++
+Mit dieser GID können sie auf Dateien in dieser Freigabe zugreifen, auf die normalerweise mit ihrer primären GID oder UID nicht zugegriffen werden kann.
+
+* Alle von SMB-Benutzern in diesem Share erstellten Dateien gehören zur gleichen Force-Gruppe, unabhängig von der primären GID des Dateiinhabers.
+
+
+Wenn SMB-Benutzer versuchen, auf eine von NFS erstellte Datei zuzugreifen, bestimmen die primären GIDs der SMB-Benutzer die Zugriffsrechte.
+
+Die Force-Group hat keinen Einfluss darauf, wie NFS-Benutzer auf Dateien in dieser Freigabe zugreifen. Eine von NFS erstellte Datei erwirbt die GID vom Eigentümer der Datei. Die Festlegung der Zugriffsberechtigungen basiert auf der UID und der primären GID des NFS-Benutzers, der versucht, auf die Datei zuzugreifen.
+
+Durch die Verwendung einer Force-Group ist es einfacher sicherzustellen, dass SMB-Benutzer, die zu verschiedenen Gruppen gehören, auf Dateien zugreifen können. Wenn Sie beispielsweise eine Freigabe erstellen möchten, um die Webseiten des Unternehmens zu speichern und Benutzern in den Bereichen Engineering und Marketing Schreibzugriff zu geben, können Sie eine Freigabe erstellen und einer Force-Group namens „`webgroup1`“ Schreibzugriff gewähren. Aufgrund der Force-Group sind alle Dateien, die von SMB-Benutzern in dieser Freigabe erstellt wurden, Eigentum der Gruppe „`webgroup1`“. Außerdem wird den Benutzern beim Zugriff auf die Freigabe automatisch die GID der Gruppe „`webgroup1`“ zugewiesen. Dadurch können alle Benutzer auf diese Freigabe schreiben, ohne dass Sie die Zugriffsrechte der Benutzer in den Bereichen Engineering und Marketing verwalten müssen.
+
+xref:create-share-force-group-setting-task.adoc[Erstellen einer SMB-Freigabe mit der Force-Group-Freigabe-Einstellung]

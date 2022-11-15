@@ -1,0 +1,70 @@
+---
+sidebar: sidebar 
+permalink: networking/create_a_broadcast_domain_reference.html 
+keywords: create, creation, creating, add, adding, broadcast, domain, create a broadcast domain, broadcast domains group network ports in the cluster that belong to the same layer 2 network, network port broadcast-domain remove-ports 
+summary: Broadcast-Domänen gruppieren Netzwerk-Ports im Cluster, die zum gleichen Layer-2-Netzwerk gehören 
+---
+= Erstellen einer Broadcast-Domäne
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Erstellen Sie eine Broadcast-Domäne, um Netzwerkports im Cluster zu gruppieren, die zum selben Layer-2-Netzwerk gehören. Die Ports können dann von SVMs verwendet werden.
+
+Die Ports, die Sie der Broadcast-Domäne hinzufügen möchten, dürfen nicht einer anderen Broadcast-Domäne angehören.
+
+.Über diese Aufgabe
+* Alle Broadcast-Domain-Namen müssen innerhalb eines IPspaces eindeutig sein.
+* Die Ports, die einer Broadcast-Domäne hinzugefügt werden, können physische Netzwerkports, VLANs oder Interface Groups (iffrps) sein.
+* Wenn die Ports, die Sie verwenden möchten, zu einer anderen Broadcast-Domäne gehören, aber nicht verwendet werden, verwenden Sie das `network port broadcast-domain remove-ports` Befehl zum Entfernen der Ports aus der vorhandenen Broadcast-Domäne.
+* Die MTU der Ports, die einer Broadcast-Domäne hinzugefügt werden, wird auf den MTU-Wert in der Broadcast-Domäne aktualisiert.
+* Der MTU-Wert muss mit allen mit diesem Layer-2-Netzwerk verbundenen Geräten übereinstimmen, außer für den Port-Management-Traffic E0M.
+* Wenn Sie keinen IPspace-Namen angeben, wird die Broadcast-Domäne im „Standard“-IPspace erstellt.
+
+
+Um die Systemkonfiguration zu vereinfachen, wird automatisch eine Failover-Gruppe desselben Namens erstellt, die dieselben Ports enthält.
+
+.Schritte
+. Anzeigen der Ports, die derzeit keiner Broadcast-Domäne zugewiesen sind:
++
+`network port show`
+
++
+Wenn das Display groß ist, verwenden Sie das `network port show -broadcast-domain` Befehl zum Anzeigen nur nicht zugewiesene Ports.
+
+. Broadcast-Domäne erstellen:
++
+`network port broadcast-domain create -broadcast-domain _broadcast_domain_name_ -mtu _mtu_value_ [-ipspace _ipspace_name_] [-ports _ports_list_]`
+
++
+** `_broadcast_domain_name_` Ist der Name der Broadcast-Domain, die Sie erstellen möchten.
+** `_mtu_value_` Ist die MTU-Größe für IP-Pakete; 1500 und 9000 sind typische Werte.
++
+Dieser Wert wird auf alle Ports angewendet, die dieser Broadcast-Domäne hinzugefügt werden.
+
+** `_ipspace_name_` Ist der Name des IPspaces, dem diese Broadcast-Domain hinzugefügt wird.
++
+Der IPspace 'Default' wird verwendet, es sei denn, Sie geben einen Wert für diesen Parameter an.
+
+** `_ports_list_` Ist die Liste der Ports, die der Broadcast-Domäne hinzugefügt werden.
++
+Die Ports werden im Format hinzugefügt `_node_name:port_number_`, Zum Beispiel, `node1:e0c`.
+
+
+
+. Vergewissern Sie sich, dass die Broadcast-Domäne nach Bedarf erstellt wurde:
+`network port show -instance -broadcast-domain _new_domain_`
+
+
+Mit dem folgenden Befehl wird Broadcast-Domäne bcast1 im Standard-IPspace erstellt, die MTU auf 1500 festgelegt und vier Ports hinzugefügt:
+
+`network port broadcast-domain create -broadcast-domain _bcast1_ -mtu _1500_ -ports _cluster1-01:e0e,cluster1-01:e0f,cluster1-02:e0e,cluster1-02:e0f_`
+
+Sie können den Pool mit IP-Adressen definieren, die in der Broadcast-Domäne verfügbar sein werden, indem Sie ein Subnetz erstellen. Alternativ können Sie dem IPspace SVMs und Schnittstellen zuweisen. Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap-sm-classic/peering/index.html["Cluster- und SVM-Peering"].
+
+Wenn Sie den Namen einer vorhandenen Broadcast-Domäne ändern müssen, verwenden Sie das `network port broadcast-domain rename` Befehl.

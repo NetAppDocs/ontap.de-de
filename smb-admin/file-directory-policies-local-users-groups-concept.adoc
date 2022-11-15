@@ -1,0 +1,100 @@
+---
+permalink: smb-admin/file-directory-policies-local-users-groups-concept.html 
+sidebar: sidebar 
+keywords: guideline, mind, apply, file-directory, policies, policy, storage, virtual, machine, svm, disaster, recovery, destination, id, discard, configuration, local, user, dacl, sacl, entries, entry, guidelines for applying file-directory policies that use local users of groups on the svm disaster recovery destination 
+summary: 'Es gibt bestimmte Richtlinien, die Sie beachten müssen, bevor Sie Dateiverzeichnisrichtlinien auf dem SVM-Disaster-Recovery-Ziel (Storage Virtual Machine) in einer ID-Verwerfen-Konfiguration anwenden, wenn die Konfiguration Ihrer Dateiverzeichnisrichtlinie lokale Benutzer oder Gruppen im Sicherheitsdeskriptor oder in den DACL- oder SACL-Einträgen verwendet.' 
+---
+= Richtlinien zum Anwenden von Dateiverzeichnisrichtlinien, die lokale Benutzer oder Gruppen auf dem SVM Disaster-Recovery-Ziel verwenden
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Es gibt bestimmte Richtlinien, die Sie beachten müssen, bevor Sie Dateiverzeichnisrichtlinien auf dem SVM-Disaster-Recovery-Ziel (Storage Virtual Machine) in einer ID-Verwerfen-Konfiguration anwenden, wenn die Konfiguration Ihrer Dateiverzeichnisrichtlinie lokale Benutzer oder Gruppen im Sicherheitsdeskriptor oder in den DACL- oder SACL-Einträgen verwendet.
+
+Sie können eine Disaster-Recovery-Konfiguration für eine SVM konfigurieren, bei der die Quell-SVM auf dem Quellcluster die Daten und Konfigurationen von der Quell-SVM auf eine Ziel-SVM auf einem Ziel-Cluster repliziert.
+
+Sie können einen der zwei Arten von Disaster-Recovery für SVM einrichten:
+
+* Identität wurde erhalten
++
+Mit dieser Konfiguration wird die Identität der SVM und des CIFS-Servers beibehalten.
+
+* Identität verworfen
++
+Mit dieser Konfiguration wird die Identität der SVM und des CIFS-Servers nicht erhalten. In diesem Szenario unterscheidet sich der Name der SVM und der CIFS-Server auf der Ziel-SVM von der SVM und dem CIFS-Servernamen auf der Quell-SVM.
+
+
+
+
+
+== Richtlinien für identitätsentworfene Konfigurationen
+
+Bei einer Konfiguration mit einer über die Identität ausgelegten Identität muss für eine SVM-Quelle, die lokale Benutzer-, Gruppen- und Berechtigungskonfigurationen enthält, der Name der lokalen Domäne (lokaler CIFS-Servername) geändert werden, um mit dem CIFS-Servernamen auf dem SVM-Ziel überein. Wenn beispielsweise der Name der Quell-SVM „`vs1`“ und der Name des CIFS-Servers „`CIFS1`“ lautet und der Ziel-SVM-Name „`vs1_dst`“ und der CIFS-Servername „`CIFS1_DST`“ lautet, wird der lokale Domänenname für einen lokalen Benutzer mit dem Namen „`CIFS1\user1`“ automatisch in „`CIFS1_DST\SVM“ auf dem Ziel geändert: User1` SVM „user1“ auf dem Ziel: „User“.
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1_dst
+
+Vserver      User Name                Full Name      Description
+------------ ------------------------ -------------- -------------
+vs1          CIFS1\Administrator                     Built-in administrator account
+vs1          CIFS1\user1              -              -
+
+cluster1dst::> vserver cifs users-and-groups local-user show -vserver vs1_dst
+
+Vserver      User Name                Full Name      Description
+------------ ------------------------ -------------- -------------
+vs1_dst      CIFS1_DST\Administrator                 Built-in administrator account
+vs1_dst      CIFS1_DST\user1          -              -
+----
+Auch wenn lokale Benutzer- und Gruppennamen in den lokalen Benutzer- und Gruppendatenbanken automatisch geändert werden, werden lokale Benutzer oder Gruppennamen in den Dateiverzeichnisrichtlinien-Konfigurationen nicht automatisch geändert (Richtlinien, die in der CLI unter Verwendung der konfiguriert sind `vserver security file-directory` Befehlsfamilie).
+
+Beispiel: Für „`vs1`“, wenn Sie einen DACL-Eintrag für den konfiguriert haben `-account` Der Parameter ist auf „`CIFS1\user1`“ gesetzt. Die Einstellung wird auf der Ziel-SVM nicht automatisch geändert, um den CIFS-Servernamen des Ziels anzugeben.
+
+[listing]
+----
+cluster1::> vserver security file-directory ntfs dacl show -vserver vs1
+
+Vserver: vs1
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access             Apply To
+                     Type     Rights
+    --------------   -------  -------            -----------
+    CIFS1\user1      allow    full-control      this-folder
+
+cluster1::> vserver security file-directory ntfs dacl show -vserver vs1_dst
+
+Vserver: vs1_dst
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access             Apply To
+                     Type     Rights
+    --------------   -------  -------            -----------
+    **CIFS1**\user1          allow    full-control      this-folder
+----
+Sie müssen den verwenden `vserver security file-directory modify` Befehle zum manuellen Ändern des CIFS-Servernamens zum Ziel-CIFS-Servernamen.
+
+
+
+== Komponenten der Dateiverzeichnisrichtlinie, die Kontoparameter enthalten
+
+Es gibt drei Konfigurationskomponenten für die Dateiverzeichnisrichtlinie, die Parametereinstellungen verwenden können, die lokale Benutzer oder Gruppen enthalten können:
+
+* Sicherheitsdeskriptor
++
+Sie können optional den Besitzer des Sicherheitsdeskriptors und die primäre Gruppe des Besitzers des Sicherheitsdeskriptors angeben. Wenn beim Sicherheitsdeskriptor ein lokaler Benutzer oder eine lokale Gruppe für die Einträge in den Inhabern und der primären Gruppe verwendet wird, müssen Sie den Sicherheitsdeskriptor ändern, um im Kontonamen die Ziel-SVM zu verwenden. Sie können das verwenden `vserver security file-directory ntfs modify` Befehl, um alle erforderlichen Änderungen an den Kontonamen vorzunehmen.
+
+* DACL-Einträge
++
+Jeder DACL-Eintrag muss einem Konto zugeordnet sein. Sie müssen alle DACLs ändern, die lokale Benutzer- oder Gruppenkonten verwenden, um den Ziel-SVM-Namen zu verwenden. Da Sie den Kontonamen für vorhandene DACL-Einträge nicht ändern können, müssen Sie alle DACL-Einträge mit lokalen Benutzern oder Gruppen aus den Sicherheitsdeskriptoren entfernen, neue DACL-Einträge mit den korrigierten Zielkontonamen erstellen und diese neuen DACL-Einträge mit den entsprechenden Sicherheitsdeskriptoren verknüpfen.
+
+* SACL-Einträge
++
+Jeder SACL-Eintrag muss einem Konto zugeordnet sein. Sie müssen alle SACLs ändern, die lokale Benutzer- oder Gruppenkonten verwenden, um den Ziel-SVM-Namen zu verwenden. Da Sie den Kontonamen für vorhandene SACL-Einträge nicht ändern können, müssen Sie alle SACL-Einträge mit lokalen Benutzern oder Gruppen aus den Sicherheitsdeskriptoren entfernen, neue SACL-Einträge mit den korrigierten Zielkontonamen erstellen und diese neuen SACL-Einträge mit den entsprechenden Sicherheitsdeskriptoren verknüpfen.
+
+
+
+Vor der Anwendung der Richtlinie müssen Sie alle erforderlichen Änderungen an lokalen Benutzern oder Gruppen vornehmen, die in der Konfiguration der Dateiverzeichnisrichtlinien verwendet werden. Andernfalls schlägt der Auftrag zum Anwenden fehl.

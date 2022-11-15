@@ -1,0 +1,36 @@
+---
+sidebar: sidebar 
+permalink: networking/example_of_using_ipspaces.html 
+keywords: example, sample, ipspace, example of using ipspaces, sample using ipspaces, hosts.equiv 
+summary: Beispiel mit IPspaces 
+---
+= Beispiel für die Verwendung von IPspaces
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Eine gängige Applikation für den Einsatz von IPspaces ist, wenn ein Storage-Service-Provider (SSP) Kunden von Unternehmen A und B mit einem ONTAP Cluster am SSP-Standort verbinden muss und beide Unternehmen dieselben privaten IP-Adressbereiche nutzen.
+
+Der SSP erstellt SVMs auf dem Cluster für jeden Kunden und bietet einen dedizierten Netzwerkpfad von zwei SVMs zu Unternehmen A Netzwerk und von den anderen zwei SVMs zu Unternehmen B Netzwerk.
+
+Diese Art der Bereitstellung ist in der folgenden Abbildung dargestellt, und es funktioniert, wenn beide Unternehmen nicht-private IP-Adressbereiche verwenden. Die Abbildung zeigt jedoch, dass beide Unternehmen dieselben privaten IP-Adressbereiche nutzen, was zu Problemen führt.
+
+image:ontap_nm_image9.jpeg["Beispiel für IPspace"]
+
+Beide Unternehmen verwenden die private IP-Adresse Subnetz 10.0.0.0, was die folgenden Probleme verursacht:
+
+* Die SVMs im Cluster am SSP-Standort verfügen über widersprüchliche IP-Adressen, wenn beide Unternehmen sich entscheiden, dieselbe IP-Adresse für die jeweiligen SVMs zu verwenden.
+* Selbst wenn sich beide Unternehmen einig sind, unterschiedliche IP-Adressen für ihre SVMs zu verwenden, können Schwierigkeiten auftreten.
+* Zum Beispiel, wenn jeder Client im Netzwerk Von A die gleiche IP-Adresse hat wie ein Client im Netzwerk von B, können Pakete, die für einen Client im Adressraum Von A bestimmt sind, im Adressraum von B an einen Client weitergeleitet werden und umgekehrt.
+* Wenn die beiden Unternehmen sich entscheiden, sich gegenseitig ausschließende Adressbereiche zu verwenden (Z. B. verwendet A 10.0.0.0 mit einer Netzmaske von 255.128.0.0 und B 10.128.0.0 mit einer Netzmaske von 255.128.0.0), Der SSP muss statische Routen auf dem Cluster konfigurieren, um Verkehr entsprechend zu A und B-Netzwerken zu leiten.
+* Diese Lösung ist weder skalierbar (aufgrund statischer Routen) noch sicher (Broadcast-Datenverkehr wird an alle Schnittstellen des Clusters gesendet).um diese Probleme zu überwinden, definiert der SSP zwei IPspaces auf dem Cluster – eine für jedes Unternehmen. Da kein Cross-IPspace Traffic weitergeleitet wird, werden die Daten jedes Unternehmens sicher an das jeweilige Netzwerk weitergeleitet, auch wenn alle SVMs im Adressbereich 10.0.0.0 konfiguriert sind, wie in der folgenden Abbildung dargestellt:
+
+
+image:ontap_nm_image10.jpeg["Beispiel für IPspace"]
+
+Darüber hinaus werden die IP-Adressen, auf die von den verschiedenen Konfigurationsdateien verwiesen wird, z. B. die `/etc/ hosts` Datei, der `/etc/hosts.equiv` Datei, und `the /etc/rc` Datei, sind relativ zu diesem IPspace. Daher können die IPspaces dem SSP konfliktfrei dieselbe IP-Adresse für die Konfigurations- und Authentifizierungsdaten für mehrere SVMs konfigurieren.

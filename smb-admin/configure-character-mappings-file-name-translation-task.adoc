@@ -1,0 +1,167 @@
+---
+permalink: smb-admin/configure-character-mappings-file-name-translation-task.html 
+sidebar: sidebar 
+keywords: nfs, client, create, file, name, character, valid, smb, windows, application, configure, map, translation, configure character mapping for smb file name translation on volumes 
+summary: NFS-Clients können Dateinamen mit Zeichen erstellen, die für SMB-Clients und bestimmte Windows-Applikationen nicht gültig sind. Sie können die Zeichenzuordnung für die Übersetzung von Dateinamen auf Volumes konfigurieren, damit SMB-Clients auf Dateien mit NFS-Namen zugreifen können, die ansonsten nicht gültig wären. 
+---
+= Konfigurieren Sie die Zeichenzuordnung für die Übersetzung von SMB-Dateinamen auf Volumes
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+NFS-Clients können Dateinamen mit Zeichen erstellen, die für SMB-Clients und bestimmte Windows-Applikationen nicht gültig sind. Sie können die Zeichenzuordnung für die Übersetzung von Dateinamen auf Volumes konfigurieren, damit SMB-Clients auf Dateien mit NFS-Namen zugreifen können, die ansonsten nicht gültig wären.
+
+Wenn von NFS-Clients erstellte Dateien von SMB Clients abgerufen werden, wird der Name der Datei von ONTAP angezeigt. Wenn der Name kein gültiger SMB-Dateiname ist (z. B. wenn er ein eingebettetes Doppelpunkt "`:`" Zeichen hat), gibt ONTAP den Dateinamen von 8.3 zurück, der für jede Datei gepflegt wird. Dies führt jedoch zu Problemen für Anwendungen, die wichtige Informationen in lange Dateinamen kodieren.
+
+Wenn Sie also eine Datei zwischen Clients auf verschiedenen Betriebssystemen gemeinsam nutzen, sollten Sie Zeichen in den Dateinamen verwenden, die in beiden Betriebssystemen gültig sind.
+
+Wenn Sie jedoch NFS-Clients haben, die Dateinamen mit Zeichen erstellen, die keine gültigen Dateinamen für SMB-Clients sind, können Sie eine Karte definieren, die ungültige NFS-Zeichen in Unicode-Zeichen umwandelt, die sowohl SMB- als auch bestimmte Windows-Anwendungen akzeptieren. Diese Funktionalität unterstützt beispielsweise die CATIA MCAD- und Mathematica-Anwendungen sowie andere Anwendungen, die diese Anforderung haben.
+
+Sie können die Zeichenzuordnung auf Volume-Basis konfigurieren.
+
+Bei der Konfiguration der Zeichenzuordnung auf einem Volume müssen Sie Folgendes beachten:
+
+* Die Zeichenzuordnung wird nicht über Kreuzungspunkte angewendet.
++
+Sie müssen die Zeichenzuordnung für jedes Verbindungvolume explizit konfigurieren.
+
+* Sie müssen sicherstellen, dass die Unicode-Zeichen, die für ungültige oder illegale Zeichen verwendet werden, Zeichen sind, die normalerweise nicht in Dateinamen angezeigt werden. Andernfalls werden unerwünschte Zuordnungen angezeigt.
++
+Wenn Sie beispielsweise versuchen, einen Doppelpunkt (:) einem Bindestrich (-) zuzuordnen, aber der Bindestrich (-) wurde im Dateinamen richtig verwendet, würde ein Windows-Client, der versucht, auf eine Datei namens „`a-b`“ zuzugreifen, seine Anfrage dem NFS-Namen „`a:b`“ zugeordnet haben (nicht das gewünschte Ergebnis).
+
+* Wenn die Zuordnung nach dem Anwenden der Zeichenzuordnung noch ein ungültiges Windows-Zeichen enthält, wird ONTAP auf Windows 8.3-Dateinamen zurückfallend.
+* In FPolicy Benachrichtigungen, NAS-Prüfprotokollen und Security-Trace-Meldungen werden die zugeordneten Dateinamen angezeigt.
+* Wenn eine SnapMirror Beziehung des Typs DP erstellt wird, wird die Charakterzuordnung des Quell-Volumes nicht auf dem Ziel-DP Volume repliziert.
+* Case-Sensitivität: Da die zugeordneten Windows-Namen in NFS-Namen umgewandelt werden, folgt die Suche nach den Namen NFS-Semantik. Das schließt auch die Tatsache ein, dass NFS-Lookups Groß- und Kleinschreibung beachten. Das bedeutet, dass Anwendungen, die auf zugewiesene Freigaben zugreifen, nicht auf Groß- und Kleinschreibung von Windows angewiesen sein dürfen. Der Name 8.3 ist jedoch verfügbar, und der Groß-/Kleinschreibung wird nicht berücksichtigt.
+* Partielle oder ungültige Zuordnungen: Nachdem ein Name zugeordnet wurde, um zu Clients zurückzukehren, die die Verzeichnisenumeration („dir“) ausführen, wird der resultierende Unicode-Name auf Windows-Gültigkeit überprüft. Wenn dieser Name noch ungültige Zeichen enthält oder wenn er ansonsten für Windows ungültig ist (z. B. endet er in "." oder leer), wird der Name 8.3 anstelle des ungültigen Namens zurückgegeben.
+
+
+.Schritt
+. Konfigurieren der Zeichenzuordnung: +
+
+
+`vserver cifs character-mapping create -vserver _vserver_name_ -volume _volume_name_ -mapping _mapping_text_, ...` +
+
+Die Zuordnung besteht aus einer Liste von Quell-Ziel-Zeichenpaaren getrennt durch "`:`". Bei den Zeichen handelt es sich um Unicode-Zeichen, die mit Hexadezimalziffern eingegeben werden. Zum Beispiel: 3C:E03C. +
+
+Der erste Wert jeder `mapping_text` Das Paar, das durch einen Doppelpunkt getrennt wird, ist der hexadezimale Wert des zu übersetzenden NFS-Zeichens, und der zweite Wert ist der Unicode-Wert, den SMB verwendet. Die Zuordnungspaare müssen eindeutig sein (es sollte ein 1:1-Mapping vorhanden sein).
+
+* Quellenzuordnung +
+
+
+Die folgende Tabelle zeigt den zulässigen Unicode-Zeichensatz für die Quellenzuordnung:
+
++
+
+|===
+| Unicode-Zeichen | Gedrucktes Zeichen | Beschreibung 
+
+
+ a| 
+0x01-0x19
+ a| 
+Keine Angabe
+ a| 
+Nicht druckende Kontrollzeichen
+
+
+
+ a| 
+0x5C
+ a| 
+ a| 
+Umgekehrter Schrägstrich
+
+
+
+ a| 
+0x3A
+ a| 
+:
+ a| 
+Doppelpunkt
+
+
+
+ a| 
+0x2A
+ a| 
+*
+ a| 
+Sternchen
+
+
+
+ a| 
+0x3F
+ a| 
+?
+ a| 
+Fragezeichen
+
+
+
+ a| 
+0x22
+ a| 
+„
+ a| 
+Anführungszeichen
+
+
+
+ a| 
+0x3C
+ a| 
+<
+ a| 
+Kleiner als
+
+
+
+ a| 
+0x3E
+ a| 
+>
+ a| 
+Größer als
+
+
+
+ a| 
+0x7C
+ a| 
+.
+ a| 
+Vertikale Linie
+
+
+
+ a| 
+0xB1
+ a| 
+±
+ a| 
+Plus-Minus-Zeichen
+
+|===
+* Zielzuordnung
++
+Im Bereich „`Private Use Area`“ von Unicode können Sie Zielzeichen im folgenden Bereich angeben: U+E0000...U+F8FF.
+
+
+
+Mit dem folgenden Befehl wird eine Zeichenzuordnung für ein Volume mit dem Namen „`data`“ auf der Storage Virtual Machine (SVM) vs1 erstellt:
+
+[listing]
+----
+cluster1::> vserver cifs character-mapping create -volume data -mapping 3c:e17c,3e:f17d,2a:f745
+cluster1::> vserver cifs character-mapping show
+
+Vserver         Volume Name  Character Mapping
+--------------  -----------  ------------------------------------------
+vs1             data         3c:e17c, 3e:f17d, 2a:f745
+----
+xref:create-manage-data-volumes-nas-namespaces-concept.adoc[Daten-Volumes werden in NAS-Namespaces erstellt und gemanagt]

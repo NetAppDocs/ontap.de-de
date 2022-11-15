@@ -1,0 +1,143 @@
+---
+permalink: system-admin/manage-node-boot-menu-task.html 
+sidebar: sidebar 
+keywords: system, manager, manage, node, boot, menu, configuration, problems, password, reset, initialize, disks, restore, device 
+summary: Sie können über das Startmenü Konfigurationsprobleme auf einem Node beheben, das Admin-Passwort zurücksetzen, Festplatten initialisieren, die Node-Konfiguration zurücksetzen und die Node-Konfigurationsinformationen zurück auf das Boot-Gerät wiederherstellen. 
+---
+= Verwalten Sie einen Knoten über das Startmenü
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können über das Startmenü Konfigurationsprobleme auf einem Node beheben, das Admin-Passwort zurücksetzen, Festplatten initialisieren, die Node-Konfiguration zurücksetzen und die Node-Konfigurationsinformationen zurück auf das Boot-Gerät wiederherstellen.
+
+
+NOTE: Wenn ein HA-Paar nutzt link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/support-storage-encryption-concept.html["Verschlüsselung von SAS- oder NVMe-Laufwerken (SED, NSE, FIPS)"], Sie müssen die Anweisungen im Thema folgen link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/return-seds-unprotected-mode-task.html["Ein FIPS-Laufwerk oder eine SED-Festplatte in den ungeschützten Modus zurückkehren"] Für alle Laufwerke innerhalb des HA-Paars vor der Initialisierung des Systems (Boot-Optionen 4 oder 9). Andernfalls kann es zu künftigen Datenverlusten kommen, wenn die Laufwerke einer anderen Verwendung zugewiesen werden.
+
+.Schritte
+. Starten Sie den Node neu, um mit dem auf das Boot-Menü zuzugreifen `system node reboot` Befehl an der Eingabeaufforderung des Systems.
++
+Der Node startet den Neubootvorgang.
+
+. Drücken Sie während des Neubootens Strg-C, um das Boot-Menü anzuzeigen, wenn Sie dazu aufgefordert werden.
++
+Auf dem Node werden die folgenden Optionen für das Startmenü angezeigt:
+
++
+[listing]
+----
+(1) Normal Boot.
+(2) Boot without /etc/rc.
+(3) Change password.
+(4) Clean configuration and initialize all disks.
+(5) Maintenance mode boot.
+(6) Update flash from backup config.
+(7) Install new software first.
+(8) Reboot node.
+(9) Configure Advanced Drive Partitioning
+Selection (1-9)?
+----
++
+[NOTE]
+====
+Boot Menu Option (2) Boot ohne /etc/rc ist veraltet und hat keine Auswirkung auf das System.
+
+====
+. Wählen Sie eine der folgenden Optionen aus, indem Sie die entsprechende Nummer eingeben:
++
+[cols="35,65"]
+|===
+| An... | Auswählen... 
+
+
+ a| 
+Fahren Sie mit dem Booten des Node im normalen Modus fort
+ a| 
+1) Normaler Start
+
+
+
+ a| 
+Ändern Sie das Passwort des Node. Dies ist auch das Passwort für das`admin`
+ a| 
+3) Passwort Ändern
+
+
+
+ a| 
+Initialisieren Sie die Festplatten des Node und erstellen Sie ein Root-Volume für den Node
+ a| 
+4) Reinigen Sie die Konfiguration und initialisieren Sie alle Festplatten
+
+[NOTE]
+====
+Mit dieser Menüoption werden alle Daten auf den Festplatten des Knotens gelöscht und die Knotenkonfiguration auf die werkseitigen Standardeinstellungen zurückgesetzt.
+
+====
+Wählen Sie dieses Menüelement nur aus, nachdem der Knoten aus einem Cluster entfernt wurde (nicht verbunden) und nicht mit einem anderen Cluster verbunden ist.
+
+Bei einem Node mit internen oder externen Festplatten-Shelfs wird das Root-Volume auf den internen Festplatten initialisiert. Wenn keine internen Festplatten-Shelfs vorhanden sind, wird das Root-Volume auf den externen Festplatten initialisiert.
+
+Bei einem System, auf dem die FlexArray-Virtualisierung mit internen oder externen Festplatten-Shelfs ausgeführt wird, werden die Array-LUNs nicht initialisiert. Alle nativen Festplatten auf internen oder externen Shelfs werden initialisiert.
+
+Für ein System, auf dem die FlexArray-Virtualisierung mit nur Array-LUNS ausgeführt wird und keine internen oder externen Festplatten-Shelfs, wird das Root-Volume im Speicher-Array-LUNS initialisiert. Siehe link:https://docs.netapp.com/us-en/ontap-flexarray/pdfs/sidebar/Installing_FlexArray.pdf["FlexArray wird installiert"].
+
+Wenn der Knoten, den Sie initialisieren möchten, über Festplatten verfügt, die für die Root-Daten-Partitionierung partitioniert wurden, müssen die Festplatten unpartitioniert werden, bevor der Knoten initialisiert werden kann, siehe *9) Erweiterte Laufwerkpartitionierung konfigurieren* und link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"].
+
+
+
+ a| 
+Führen Sie Wartungsvorgänge für Aggregate und Festplatten durch und erhalten Sie detaillierte Aggregat- und Festplatteninformationen.
+ a| 
+5) Bootvorgang im Wartungsmodus
+
+Sie beenden den Wartungsmodus mit `halt` Befehl.
+
+
+
+ a| 
+Stellen Sie die Konfigurationsinformationen vom Root-Volume des Node auf das Boot-Gerät, z. B. eine PC CompactFlash Card, wieder her
+ a| 
+6) Flash aus Backup-Konfiguration aktualisieren
+
+ONTAP speichert einige Node-Konfigurationsinformationen auf dem Boot-Gerät. Beim Neubooten des Node werden die Informationen zum Boot-Gerät automatisch auf dem Root-Volume des Node gesichert. Wenn das Startgerät beschädigt wird oder ersetzt werden muss, müssen Sie diese Menüoption verwenden, um die Konfigurationsinformationen aus dem Stammvolumen des Knotens wieder auf das Startgerät wiederherzustellen.
+
+
+
+ a| 
+Installieren Sie auf dem Node neue Software
+ a| 
+7) Neue Software zuerst installieren
+
+Wenn die ONTAP-Software auf dem Boot-Gerät keine Unterstützung für das Speicher-Array bietet, das Sie für das Root-Volume verwenden möchten, können Sie mit dieser Menüoption eine Version der Software erhalten, die Ihr Speicher-Array unterstützt und auf dem Knoten installieren.
+
+Diese Menüoption dient nur zur Installation einer neueren Version der ONTAP-Software auf einem Knoten, auf dem kein Root-Volume installiert ist. Do_Not_ Verwenden Sie diese Menüoption, um ONTAP zu aktualisieren.
+
+
+
+ a| 
+Booten Sie den Node neu
+ a| 
+8) Node neu booten
+
+
+
+ a| 
+Heben Sie die Partitionierung aller Festplatten auf, entfernen Sie deren Besitzinformationen oder reinigen Sie die Konfiguration und initialisieren Sie das System mit ganzen oder partitionierten Festplatten
+ a| 
+9) Konfigurieren Der Erweiterten Laufwerkpartitionierung
+
+Ab ONTAP 9.2 bietet die Option „Advanced Drive Partitioning“ zusätzliche Managementfunktionen für Festplatten, die für Root-Daten oder Root-Daten-Partitionierung konfiguriert sind. Die folgenden Optionen sind über die Boot-Option 9 verfügbar:
+
+[listing]
+----
+(9a) Unpartition all disks and remove their ownership information.
+(9b) Clean configuration and initialize system with partitioned disks.
+(9c) Clean configuration and initialize system with whole disks.
+(9d) Reboot the node.
+(9e) Return to main boot menu.
+----
+|===
+

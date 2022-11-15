@@ -1,0 +1,46 @@
+---
+permalink: concepts/snapmirror-disaster-recovery-data-transfer-concept.html 
+sidebar: sidebar 
+keywords: snapmirror disaster recovery, data transfer 
+summary: SnapMirror ist eine Disaster-Recovery-Technologie für den Failover von primärem Storage zu sekundärem Storage an einem geografisch verteilten Standort. Wie der Name schon sagt, erstellt SnapMirror eine Spiegelung Ihrer Arbeitsdaten im sekundären Storage, von dem aus Sie im K-Fall am primären Standort weiterhin Daten bereitstellen können. 
+---
+= SnapMirror Disaster Recovery und Datentransfer
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+_SnapMirror_ ist eine Disaster Recovery-Technologie für den Failover von primärem Storage zu sekundärem Storage an einem geografisch verteilten Standort. Wie der Name schon andeutet, erstellt SnapMirror ein Replikat, oder _Mirror_ Ihrer Arbeitsdaten im Sekundärspeicher, von dem Sie im K-Fall am primären Standort weiter Daten bereitstellen können.
+
+Daten werden auf Volume-Ebene gespiegelt. Die Beziehung zwischen dem Quell-Volume im primären Storage und dem Ziel-Volume im sekundären Storage wird als „_Data Protection Relationship“ bezeichnet._ die Cluster, in denen sich die Volumes befinden, und die SVMs, die Daten aus den Volumes bereitstellen, müssen _peering durchgeführt werden._ Eine Peer-Beziehung ermöglicht den Austausch von Clustern und SVMs Sicher aus Daten.
+
+[TIP]
+====
+Sie können auch eine Datensicherungsbeziehung zwischen SVMs erstellen. In dieser Art der Beziehung wird die gesamte Konfiguration der SVM, von NFS-Exporten und SMB-Freigaben bis hin zur rollenbasierten Zugriffssteuerung, sowie die Daten in den Volumes repliziert, die die SVM besitzt.
+
+====
+Ab ONTAP 9.10.1 können Sie Datensicherungsbeziehungen zwischen S3 Buckets mithilfe von S3 SnapMirror erstellen. Ziel-Buckets können sich auf lokalen oder Remote-ONTAP Systemen oder auf Systemen anderer Anbieter wie StorageGRID und AWS befinden.
+
+Beim ersten Aufruf von SnapMirror führt es einen _Baseline-Transfer_ vom Quell-Volume zum Ziel-Volume durch. Der Basistransfer umfasst die folgenden Schritte:
+
+* Erstellen einer Snapshot Kopie des Quell-Volume
+* Übertragen Sie die Snapshot Kopie und alle Datenblöcke, auf die sie auf das Ziel-Volume verweist.
+* Übertragen Sie die verbleibenden, weniger aktuellen Snapshot Kopien auf dem Quell-Volume auf das Ziel-Volume, falls die „`aktive`“-Spiegelung beschädigt ist.
+
+
+Nach Abschluss des Basistransfers überträgt SnapMirror nur neue Snapshot Kopien auf die Spiegelung. Updates werden asynchron und folgen dem von Ihnen konfigurierten Zeitplan. Die Aufbewahrung spiegelt die Snapshot-Richtlinie auf der Quelle. Sie können das Ziel-Volume bei minimalen Unterbrechungen im Falle eines Ausfalls am primären Standort aktivieren und das Quell-Volume wieder aktivieren, wenn der Service wiederhergestellt ist.
+
+Da SnapMirror nur Snapshot Kopien überträgt, nachdem die Basis erstellt wurde, erfolgt die Replizierung schnell und unterbrechungsfrei. Wie der Anwendungsfall für Failover impliziert, sollten die Controller auf dem sekundären System äquivalent oder fast vergleichbar mit den Controllern auf dem Primärsystem sein, um Daten effizient aus dem gespiegelten Storage bereitzustellen.
+
+image::../media/snapmirror.gif[snapmirror]
+
+|===
+
+
+ a| 
+*_Verwenden von SnapMirror für Datentransfer_*
+
+Daten können auch mit SnapMirror zwischen Endpunkten in der NetApp Data-Fabric-Infrastruktur repliziert werden. Bei der Erstellung der SnapMirror-Richtlinie kann zwischen einer einmaligen Replizierung oder wiederkehrenden Replizierung gewählt werden.
+
+|===

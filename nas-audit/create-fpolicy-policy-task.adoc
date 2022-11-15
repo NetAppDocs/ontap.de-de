@@ -1,0 +1,75 @@
+---
+permalink: nas-audit/create-fpolicy-policy-task.html 
+sidebar: sidebar 
+keywords: create, fpolicy, policy 
+summary: 'Wenn Sie die FPolicy erstellen, verknüpfen Sie eine externe Engine und ein oder mehrere Ereignisse mit der Richtlinie. Die Richtlinie legt außerdem fest, ob ein obligatorisches Screening erforderlich ist, ob die FPolicy Server privilegierten Zugriff auf Daten auf der Storage Virtual Machine (SVM) haben und ob Passthrough-Read für Offline-Dateien aktiviert ist.' 
+---
+= Erstellen Sie die FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie die FPolicy erstellen, verknüpfen Sie eine externe Engine und ein oder mehrere Ereignisse mit der Richtlinie. Die Richtlinie legt außerdem fest, ob ein obligatorisches Screening erforderlich ist, ob die FPolicy Server privilegierten Zugriff auf Daten auf der Storage Virtual Machine (SVM) haben und ob Passthrough-Read für Offline-Dateien aktiviert ist.
+
+.Was Sie und#8217;ll benötigen
+* Das Arbeitsblatt für die FPolicy sollte ausgefüllt werden.
+* Wenn Sie planen, die Richtlinie für FPolicy-Server zu konfigurieren, muss die externe Engine vorhanden sein.
+* Mindestens ein FPolicy-Ereignis, das Sie auf eine Verknüpfung mit der FPolicy planen, muss existieren.
+* Wenn Sie einen privilegierten Datenzugriff konfigurieren möchten, muss auf der SVM ein SMB-Server vorhanden sein.
+
+
+.Schritte
+. Erstellen der FPolicy:
++
+`vserver fpolicy policy create -vserver-name vserver_name -policy-name policy_name -engine engine_name -events event_name,... [-is-mandatory {true|false}] [-allow-privileged-access {yes|no}] [-privileged-user-name domain\user_name] [-is-passthrough-read-enabled {true|false}]`
+
++
+** Sie können ein oder mehrere Events zur FPolicy hinzufügen.
+** Standardmäßig ist das obligatorische Screening aktiviert.
+** Wenn Sie privilegierten Zugriff zulassen möchten, setzen Sie die ein `-allow-privileged-access` Parameter an `yes`, Sie müssen auch einen privilegierten Benutzernamen für privilegierten Zugriff konfigurieren.
+** Wenn Sie Passthrough-read konfigurieren möchten, indem Sie die einstellen `-is-passthrough-read-enabled` Parameter an `true`, Sie müssen auch privilegierten Datenzugriff konfigurieren.
++
+Mit dem folgenden Befehl wird eine Richtlinie mit dem Namen „`policy1`“ erstellt, in der das Ereignis „`event1`“ und die externe Engine „`Engine1`“ mit ihr verknüpft sind. Diese Richtlinie verwendet Standardwerte in der Richtlinienkonfiguration:
+`vserver fpolicy policy create -vserver vs1.example.com -policy-name policy1 -events event1 -engine engine1`
+
++
+Mit dem folgenden Befehl wird eine Richtlinie mit dem Namen „`policy2`“ erstellt, in der das Ereignis „`event2`“ und die externe Engine „`Engine2`“ mit ihr verknüpft sind. Diese Richtlinie wurde für die Verwendung von privilegiertem Zugriff unter Verwendung des angegebenen Benutzernamens konfiguriert. Passthrough-read ist aktiviert:
+
++
+`vserver fpolicy policy create -vserver vs1.example.com -policy-name policy2 -events event2 -engine engine2 -allow-privileged-access yes ‑privileged-user-name example\archive_acct -is-passthrough-read-enabled true`
+
++
+Mit dem folgenden Befehl wird eine Richtlinie mit dem Namen „`nativ1`“ erstellt, die das Ereignis „`event3`“ mit ihr verknüpft hat. Diese Richtlinie verwendet die native Engine und verwendet Standardwerte in der Richtlinienkonfiguration:
+
++
+`vserver fpolicy policy create -vserver vs1.example.com -policy-name native1 -events event3 -engine native`
+
+
+
+. Überprüfen Sie die FPolicy-Konfiguration mit `vserver fpolicy policy show` Befehl.
++
+Mit dem folgenden Befehl werden Informationen zu den drei konfigurierten FPolicy-Richtlinien angezeigt, einschließlich der folgenden Informationen:
+
++
+** Der Richtlinie zugeordnete SVM
+** Die externe Engine, die der Richtlinie zugeordnet ist
+** Die mit der Richtlinie verbundenen Ereignisse
+** Gibt an, ob eine obligatorische Überprüfung erforderlich ist
+** Gibt an, ob ein privilegierter Zugriff erforderlich ist
+`vserver fpolicy policy show`
+
+
++
+[listing]
+----
+
+   Vserver       Policy     Events    Engine    Is Mandatory  Privileged
+                 Name                                         Access
+--------------   ---------  --------- --------- ------------  -----------
+vs1.example.com  policy1    event1    engine1   true          no
+vs1.example.com  policy2    event2    engine2   true          yes
+vs1.example.com  native1    event3    native    true          no
+----
+

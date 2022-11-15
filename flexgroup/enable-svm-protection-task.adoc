@@ -1,0 +1,81 @@
+---
+permalink: flexgroup/enable-svm-protection-task.html 
+sidebar: sidebar 
+keywords: enable, svm, protection, flexgroup, volume 
+summary: Wenn das SVM-DR-Schutzfahne auf ungesichert auf einem FlexGroup Volume gesetzt ist, können Sie das Flag auf Protected setzen, um den SVM DR-Schutz zu aktivieren. 
+---
+= Aktivieren Sie SVM-Sicherung auf einem FlexGroup Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn das SVM-DR-Schutzfahne auf festgelegt ist `unprotected` Auf einem FlexGroup-Volume können Sie das Flag auf setzen `protected` Um SVM-DR-Schutz zu aktivieren.
+
+.Was Sie und#8217;ll benötigen
+* Die SVM-DR-Beziehung zwischen primärem und sekundärem Storage ist ordnungsgemäß.
+* Der SVM-DR-Sicherungsparameter ist auf festgelegt `unprotected`.
+
+
+.Schritte
+. Aktivieren Sie den Schutz mit `volume modify` Um das zu ändern `vserver-dr-protection` Parameter für das FlexGroup-Volume auf `protected`.
++
+[listing]
+----
+cluster2::> volume modify -vserver vs1 -volume fg_src -vserver-dr-protection protected
+[Job 5384] Job is queued: Modify fg_src.
+[Job 5384] Steps completed: 4 of 4.
+cluster2::>
+----
+. Aktualisieren der SVM am sekundären Standort: `snapmirror update -destination-path destination_svm_name -source-path source_svm_name`
++
+[listing]
+----
+snapmirror update -destination-path vs1_dst: -source-path vs1:
+----
+. Vergewissern Sie sich, dass die SnapMirror-Beziehung ordnungsgemäß ist: `snapmirror show`
++
+[listing]
+----
+cluster2::> snapmirror show
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs1:        XDP  vs1_dst:     Snapmirrored
+                                      Idle           -         true    -
+----
+. Vergewissern Sie sich, dass die FlexGroup SnapMirror Beziehung ordnungsgemäß ist: `snapmirror show -expand`
++
+[listing]
+----
+cluster2::> snapmirror show -expand
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs1:        XDP  vs1_dst:     Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src  XDP  vs1_dst:fg_src
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0001
+            XDP  vs1_dst:fg_src__0001
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0002
+            XDP  vs1_dst:fg_src__0002
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0003
+            XDP  vs1_dst:fg_src__0003
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0004
+            XDP  vs1_dst:fg_src__0004
+                              Snapmirrored
+                                      Idle           -         true    -
+6 entries were displayed.
+----
+

@@ -1,0 +1,62 @@
+---
+permalink: system-admin/restore-node-config-backup-file-task.html 
+sidebar: sidebar 
+keywords: restore, node, configuration, backup, file, recovering 
+summary: Sie stellen die Node-Konfiguration mithilfe der Backup-Datei der Konfiguration wieder her, die Sie für den Wiederherstellungsknoten identifiziert und bereitgestellt haben. 
+---
+= Stellen Sie die Node-Konfiguration mithilfe einer Backup-Konfigurationsdatei wieder her
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie stellen die Node-Konfiguration mithilfe der Backup-Datei der Konfiguration wieder her, die Sie für den Wiederherstellungsknoten identifiziert und bereitgestellt haben.
+
+Sie sollten diese Aufgabe nur durchführen, um nach einem Notfall, der zum Verlust der lokalen Konfigurationsdateien des Knotens führte, wiederherzustellen.
+
+.Schritte
+. Ändern Sie die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Wenn der Node sich in einem ordnungsgemäßen Zustand befindet, verwenden Sie auf der erweiterten Berechtigungsebene eines anderen Node die `cluster modify` Befehl mit dem `-node` Und `-eligibility` Parameter, die nicht unterstützt werden sollen, und um sie vom Cluster zu isolieren.
++
+Wenn der Knoten nicht ordnungsgemäß ist, sollten Sie diesen Schritt überspringen.
+
++
+In diesem Beispiel wird node2 so geändert, dass er nicht zur Teilnahme am Cluster berechtigt ist, damit seine Konfiguration wiederhergestellt werden kann:
+
++
+[listing]
+----
+cluster1::*> cluster modify -node node2 -eligibility false
+----
+. Verwenden Sie die `system configuration recovery node restore` Befehl auf der erweiterten Berechtigungsebene zum Wiederherstellen der Node-Konfiguration aus einer Backup-Konfigurationsdatei.
++
+Wenn der Knoten seine Identität verloren hat, einschließlich seines Namens, sollten Sie den verwenden `-nodename-in-backup` Parameter zum Angeben des Node-Namens in der Backup-Datei der Konfiguration.
+
++
+In diesem Beispiel wird die Konfiguration des Node mithilfe einer der auf dem Node gespeicherten Backup-Konfigurationsdateien wiederhergestellt:
+
++
+[listing]
+----
+cluster1::*> system configuration recovery node restore -backup cluster1.8hour.2011-02-22.18_15_00.7z
+
+Warning: This command overwrites local configuration files with
+         files contained in the specified backup file. Use this
+         command only to recover from a disaster that resulted
+         in the loss of the local configuration files.
+         The node will reboot after restoring the local configuration.
+Do you want to continue? {y|n}: y
+----
++
+Die Konfiguration wird wiederhergestellt und der Node wird neu gebootet.
+
+. Wenn Sie den nicht zugelassenen Knoten markiert haben, verwenden Sie den `system configuration recovery cluster sync` Befehl, um den Node als berechtigt zu markieren und mit dem Cluster zu synchronisieren.
+. Wenn Sie in einer SAN-Umgebung arbeiten, verwenden Sie das `system node reboot` Befehl zum Neustart des Knotens und Wiederherstellung des SAN Quorum.
+
+
+Wenn Sie das Cluster zuvor neu erstellt haben und wenn Sie die Node-Konfiguration mithilfe einer Backup-Konfigurationsdatei wiederherstellen, die vor der erneuten Erstellung dieses Clusters erstellt wurde, müssen Sie das Cluster erneut erstellen.

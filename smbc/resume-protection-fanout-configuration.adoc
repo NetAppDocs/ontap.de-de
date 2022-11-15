@@ -1,0 +1,32 @@
+---
+permalink: smbc/resume-protection-fan-out-configuration.html 
+sidebar: sidebar 
+keywords: fan out, asynchronous, restore, third site, MirrorAllSnapshots, MirrorAndVault 
+summary: SM-BC unterstützt Fan-out-Konfigurationen. Nach einem Failover auf dem SM-BC-Endpunkt müssen Sie die Verbindung mit dem asynchronen Fan-out-Endpunkt fortsetzen. 
+---
+= Setzen Sie den Schutz in einer Fan-out-Konfiguration mit SM-BC fort
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+SM-BC unterstützt xref:../data-protection/supported-deployment-config-concept.html[Fan-out-Konfigurationen]. Das Quell-Volume kann zu einem SM-BC-Zielendpunkt und zu einer oder mehreren asynchronen SnapMirror Beziehungen gespiegelt werden.
+
+Fan-out-Konfigurationen werden von unterstützt `MirrorAllSnapshots` Und, beginnend mit ONTAP 9.11.1, der `MirrorAndVault` Richtlinie: Ab ONTAP 9.11.1 werden Fan-out-Konfigurationen in SM-BC nicht auf der unterstützt `XDPDefault` Richtlinie:
+
+Wenn ein Failover auf dem SM-BC-Ziel stattfindet, wird das asynchrone SnapMirror Ziel fehlerhaft. Sie müssen den Schutz manuell wiederherstellen, indem Sie die Beziehung zu dem asynchronen SnapMirror-Endpunkt löschen und neu erstellen.
+
+.Setzen Sie den Schutz in einer Fan-out-Konfiguration fort
+. Überprüfen Sie, ob der Failover erfolgreich abgeschlossen wurde:
+`snapmirror failover show`
+. Löschen Sie am asynchronen SnapMirror Endpunkt das Fan-out-Endpunkt:
+`snapmirror delete -destination-path _destination_path_`
+. Erstellen Sie am dritten Standort eine asynchrone SnapMirror Beziehungen zwischen dem neuen primären SM-BC Volume und dem asynchronen Fan-out-Ziel-Volume:
+`snapmirror create -source-path _source_path_ -destination-path _destination_path_ -policy MirrorAllSnapshots -schedule _schedule_`
+. Beziehung neu synchronisieren:
+`SnapMirror resync -destination-path _destination_path_`
+. Überprüfen Sie den Beziehungsstatus und den Status „Systemzustand“:
+`snapmirror show`
+

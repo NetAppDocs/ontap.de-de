@@ -1,0 +1,124 @@
+---
+permalink: s3-config/create-svm-s3-task.html 
+sidebar: sidebar 
+keywords: create, svm, s3 
+summary: Obwohl S3 parallel zu einer SVM mit anderen Protokollen eingesetzt werden kann, sollten Sie möglicherweise eine neue SVM erstellen, um Namespace und Workload zu isolieren. 
+---
+= Erstellung einer SVM für S3
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Obwohl S3 parallel zu anderen Protokollen in einer SVM unterstützt werden kann, sollten Sie möglicherweise eine neue SVM erstellen, um Namespace und Workload zu isolieren.
+
+Wenn Sie lediglich S3-Objekt-Storage über eine SVM bereitstellen, ist für den S3-Server keine DNS-Konfiguration erforderlich. Allerdings möchten Sie DNS möglicherweise auf der SVM konfigurieren, wenn andere Protokolle verwendet werden.
+
+Wenn Sie mit System Manager S3-Zugriff auf eine neue Storage-VM konfigurieren, müssen Sie Zertifikat- und Netzwerkinformationen eingeben. Die Storage-VM und der S3-Objekt-Storage-Server werden in einem Vorgang erstellt.
+
+[role="tabbed-block"]
+.Schritte
+====
+.CLI
+--
+. Vergewissern Sie sich, dass S3 für Ihr Cluster lizenziert ist:
++
+`system license show -package s3`
+
++
+Falls nicht, wenden Sie sich an Ihren Vertriebsmitarbeiter.
+
+. SVM erstellen:
++
+`vserver create -vserver _svm_name_ -rootvolume _root_volume_name_ -aggregate _aggregate_name_ -rootvolume-security-style unix -language C.UTF-8 -ipspace _ipspace_name_`
+
++
+** Verwenden Sie die UNIX-Einstellung für den `-rootvolume-security-style` Option.
+** Verwenden Sie die Standard-C.UTF-8 `-language` Option.
+** Der `ipspace` Die Einstellung ist optional.
+
+
+. Konfiguration und Status der neu erstellten SVM überprüfen:
++
+`vserver show -vserver _svm_name_`
+
++
+Der `Vserver Operational State` Das Feld muss angezeigt werden `running` Bundesland. Wenn der angezeigt wird `initializing` Zustand: Einiger Zwischenvorgang wie z. B. die Erstellung des Root-Volumes ist fehlgeschlagen. Außerdem müssen Sie die SVM löschen und erneut erstellen.
+
+
+
+Mit dem folgenden Befehl wird eine SVM für den Datenzugriff im IPspace ipspace A erstellt:
+
+[listing]
+----
+cluster-1::> vserver create -vserver svm1.example.com -rootvolume root_svm1 -aggregate aggr1 -rootvolume-security-style unix -language C.UTF-8 -ipspace ipspaceA
+
+[Job 2059] Job succeeded:
+Vserver creation completed
+----
+Der folgende Befehl zeigt, dass eine SVM mit einem Root-Volume von 1 GB erstellt wurde und dass sie automatisch gestartet wurde und sich in befindet `running` Bundesland. Das Root-Volume verfügt über eine standardmäßige Exportrichtlinie, die keine Regeln enthält, sodass das Root-Volume bei der Erstellung nicht exportiert wird. Standardmäßig wird das vsadmin-Benutzerkonto erstellt und befindet sich in `locked` Bundesland. Die vsadmin-Rolle ist dem vsadmin-Standardbenutzerkonto zugewiesen.
+
+[listing]
+----
+cluster-1::> vserver show -vserver svm1.example.com
+                                    Vserver: svm1.example.com
+                               Vserver Type: data
+                            Vserver Subtype: default
+                               Vserver UUID: b8375669-19b0-11e5-b9d1-00a0983d9736
+                                Root Volume: root_svm1
+                                  Aggregate: aggr1
+                                 NIS Domain: -
+                 Root Volume Security Style: unix
+                                LDAP Client: -
+               Default Volume Language Code: C.UTF-8
+                            Snapshot Policy: default
+                                    Comment:
+                               Quota Policy: default
+                List of Aggregates Assigned: -
+ Limit on Maximum Number of Volumes allowed: unlimited
+                        Vserver Admin State: running
+                  Vserver Operational State: running
+   Vserver Operational State Stopped Reason: -
+                          Allowed Protocols: nfs, cifs
+                       Disallowed Protocols: -
+                           QoS Policy Group: -
+                                Config Lock: false
+                               IPspace Name: ipspaceA
+----
+--
+.System Manager
+--
+Sie sollten darauf vorbereitet sein, den S3-Servernamen als vollständig qualifizierter Domain-Name (FQDN) einzugeben, den die Clients für den S3-Zugriff verwenden. Der FQDN des S3-Servers darf nicht mit einem Bucket-Namen beginnen.
+
+Sie sollten darauf vorbereitet sein, IP-Adressen für die Schnittstellenrollendaten einzugeben.
+
+Wenn Sie ein von einer externen Zertifizierungsstelle signiertes Zertifikat verwenden, werden Sie aufgefordert, es während dieses Verfahrens einzugeben. Sie haben auch die Möglichkeit, ein vom System generiertes Zertifikat zu verwenden.
+
+. Aktivieren Sie S3 auf einer Storage-VM.
++
+.. Fügen Sie eine neue Speicher-VM hinzu: Klicken Sie auf *Storage > Storage VMs* und dann auf *Hinzufügen*.
++
+Falls es sich um ein neues System ohne bereits vorhandene Storage-VMs handelt, klicken Sie auf *Dashboard > Protokolle konfigurieren*.
+
++
+Wenn Sie einen S3-Server zu einer vorhandenen Speicher-VM hinzufügen: Klicken Sie auf *Storage > Storage VMs*, wählen Sie eine Speicher-VM aus, klicken Sie auf *Einstellungen* und klicken Sie dann auf image:icon_gear.gif["Einstellungssymbol"] Unter *S3*.
+
+.. Klicken Sie auf *S3* aktivieren und geben Sie dann den S3-Servernamen ein.
+.. Wählen Sie den Zertifikatstyp aus.
++
+Unabhängig davon, ob Sie ein vom System generiertes Zertifikat oder ein eigenes Zertifikat auswählen, wird es für den Client-Zugriff erforderlich sein.
+
+.. Geben Sie die Netzwerkschnittstellen ein.
+
+
+. Wenn Sie das vom System generierte Zertifikat ausgewählt haben, werden Ihnen die Zertifikatsinformationen angezeigt, wenn die Erstellung der neuen Storage-VM bestätigt wurde. Klicken Sie auf *Download* und speichern Sie es für den Client-Zugriff.
++
+** Der Geheimschlüssel wird nicht mehr angezeigt.
+** Wenn Sie die Zertifikatinformation erneut benötigen: Klicken Sie auf *Storage > Storage VMs*, wählen Sie die Speicher-VM aus und klicken Sie auf *Einstellungen*.
+
+
+
+
+--
+====

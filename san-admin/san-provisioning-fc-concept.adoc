@@ -1,0 +1,84 @@
+---
+permalink: san-admin/san-provisioning-fc-concept.html 
+sidebar: sidebar 
+keywords:  
+summary: Wichtige Konzepte sollten Sie kennen, um zu verstehen, wie ONTAP FC SAN implementiert. 
+---
+= SAN Provisionierung mit FC
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wichtige Konzepte sollten Sie kennen, um zu verstehen, wie ONTAP FC SAN implementiert.
+
+
+
+== Wie FC-Ziel-Nodes mit dem Netzwerk verbunden werden
+
+Storage-Systeme und Hosts verfügen über Adapter, sodass sie mit Kabeln FC-Switches verbunden werden können.
+
+Wenn ein Node mit dem FC SAN verbunden ist, registriert jede SVM zusammen mit dem Fabric Name Service den World Wide Port Name (WWPN) ihrer logischen Schnittstelle. Der WWNN der SVM und der WWPN jeder logischen Schnittstelle werden automatisch durch ONTAP zugewiesen.
+
+[NOTE]
+====
+Die direkte Verbindung zu Nodes von Hosts mit FC wird nicht unterstützt, NPIV ist erforderlich und dies erfordert einen Switch, der verwendet werden muss. Bei iSCSI-Sessions funktioniert die Kommunikation mit Verbindungen, die entweder über Netzwerk oder direkt verbunden sind. Beide Methoden werden jedoch von ONTAP unterstützt.
+
+====
+
+
+== So werden FC-Knoten identifiziert
+
+Jede mit FC konfigurierte SVM wird durch einen Worldwide Node Name (WWNN) identifiziert.
+
+
+
+== Verwendung von WWPNs
+
+WWPNs identifizieren jede LIF in einer SVM, die zur Unterstützung von FC konfiguriert ist. Diese LIFs nutzen die physischen FC-Ports in jedem Node im Cluster. Dabei können es sich um FC-Target-Karten, UTA oder UTA2 handelt, die in den Nodes als FC oder FCoE konfiguriert wurden.
+
+* Erstellen einer Initiatorgruppe
++
+Die WWPNs der HBAs des Hosts werden zum Erstellen einer Initiatorgruppe verwendet. Eine Initiatorgruppe wird verwendet, um den Host-Zugriff auf bestimmte LUNs zu steuern. Sie können eine Initiatorgruppe erstellen, indem Sie eine Sammlung von WWPNs von Initiatoren in einem FC-Netzwerk angeben. Wenn Sie eine LUN auf einem Storage-System einer Initiatorgruppe zuordnen, können Sie allen Initiatoren in dieser Gruppe Zugriff auf diese LUN gewähren. Wenn der WWPN eines Hosts nicht zu einer Initiatorgruppe gehört, die einer LUN zugeordnet ist, hat der Host keinen Zugriff auf die LUN. Das bedeutet, dass die LUNs nicht als Datenträger auf diesem Host angezeigt werden.
+
++
+Sie können auch Portsätze erstellen, um eine LUN nur auf bestimmten Zielports sichtbar zu machen. Ein Port-Satz besteht aus einer Gruppe von FC-Ziel-Ports. Sie können eine Initiatorgruppe an einen Portsatz binden. Jeder Host in der Initiatorgruppe kann nur durch Verbindung mit den Ziel-Ports im festgelegten Port auf die LUNs zugreifen.
+
+* Identifizierung von FC-LIFs auf einzigartige Weise
++
+WWPNs identifizieren jede logische FC-Schnittstelle individuell. Das Host-Betriebssystem verwendet die Kombination des WWNN und WWPN, um SVMs und FC LIFs zu identifizieren. Einige Betriebssysteme erfordern eine dauerhafte Bindung, um sicherzustellen, dass die LUN mit derselben Ziel-ID auf dem Host angezeigt wird.
+
+
+
+
+
+== Funktionsweise von weltweiten Namenszuweisungen
+
+Weltweite Namen werden sequenziell in ONTAP erstellt. Aufgrund der Art und Weise, wie ONTAP sie zuweist, werden sie möglicherweise in nicht-sequenzieller Reihenfolge zugewiesen.
+
+Jeder Adapter verfügt über einen vorkonfigurierten WWPN und den WWNN, ONTAP verwendet jedoch diese vorkonfigurierten Werte nicht. Stattdessen weist ONTAP basierend auf den MAC-Adressen der integrierten Ethernet-Ports seine eigenen WWPNs oder WWNNs zu.
+
+Die weltweiten Namen scheinen aus folgenden Gründen nicht sequenziell zu sein:
+
+* Alle Nodes und Storage Virtual Machines (SVMs) im Cluster werden weltweit Namen zugewiesen.
+* Freigegebene weltweite Namen werden wiederverwertet und wieder dem Pool verfügbarer Namen hinzugefügt.
+
+
+
+
+== So werden FC Switches identifiziert
+
+Fibre Channel-Switches verfügen über einen Worldwide Node Name (WWNN) für das Gerät selbst und einen weltweiten Port-Namen (WWPN) für jeden seiner Ports.
+
+Das folgende Diagramm zeigt beispielsweise, wie den jeweiligen Ports auf einem Brocade Switch mit 16 Ports die WWPNs zugewiesen werden. Weitere Informationen zur Nummer der Ports für einen bestimmten Switch finden Sie in der Dokumentation des Anbieters für diesen Switch.
+
+image::../media/drw-fcswitch-scrn-en-noscale.gif[drw fcschalter, schrn en noscale]
+
+Port *0*, WWPN 20:**00**:00:60:69:51:06:b4
+
+Port *1*, WWPN 20:**01**:00:60:69:51:06:b4
+
+Port *14*, WWPN 20:**0e**:00:60:69:51:06:b4
+
+Port *15*, WWPN 20:**0f**:00:60:69:51:06:b4

@@ -1,0 +1,100 @@
+---
+permalink: disks-aggregates/configure-auto-assignment-disk-ownership-task.html 
+sidebar: sidebar 
+keywords: configure, automatic, assignment, disk ownership 
+summary: Sie können ONTAP so konfigurieren, dass die Festplatteneigentümer gemäß Stapel, Regal oder Schacht einer Festplatte automatisch zugewiesen werden. Bei entsprechender Konfiguration erfolgt die automatische Zuweisung der Festplatteneigentümer 10 Minuten nach der Systeminitialisierung und alle fünf Minuten während des normalen Systembetriebs. 
+---
+= Konfigurieren Sie die automatische Zuweisung der Festplatteneigentümer
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Mit der CLI können Sie ONTAP konfigurieren, damit die Festplatteneigentümer nach Stack, Shelf oder Schacht einer Festplatte automatisch zugewiesen werden. Bei entsprechender Konfiguration erfolgt die automatische Zuweisung der Festplatteneigentümer 10 Minuten nach der Systeminitialisierung und alle fünf Minuten während des normalen Systembetriebs.
+
+.Was Sie und#8217;ll benötigen
+* Ihr System muss die Anforderungen für den automatischen Festplattenbesitzer erfüllen.
+* Wenn Sie bereits über mehrere Stacks oder Shelfs verfügen müssen, die eigene Storage-Systeme aufweisen müssen, muss jedem Stack oder Shelf manuell eine Festplatte zugewiesen werden, damit die automatische Eigentumszuweisung auf jedem Stack und Shelf funktioniert.
+
+
+.Welche Richtlinie für die automatische Zuweisung der Festplatte wird verwendet
+--
+
+NOTE: Verwenden Sie die „`bay autoassign-Policy`“ nur für Plattformen auf Einstiegsebene. Wenn Sie versuchen, die „`bay autoassign-Policy`“ für eine Plattform zu verwenden, die nicht auf Einstiegsebene erfolgt, schlägt sie fehl.
+
+--
+Sie können in der Regel die standardmäßige automatische Zuweisungsrichtlinie verwenden, die der „`stack`“-Richtlinie für die meisten Systeme entspricht, und die „`Bay`“-Richtlinie für Einstiegssysteme (AFF A2xx, FAS2xxx). Bei einigen Konfigurationen müssen Sie jedoch unter Umständen die Richtlinie für die automatische Zuweisung ändern.
+
+Sie müssen die entsprechende automatische Zuweisung basierend auf Ihrer Konfiguration auswählen:
+
+[cols="70,30"]
+|===
+
+
+| Sie verwenden... | Verwenden Sie dann diese Richtlinien für die automatische Zuweisung... 
+
+
+ a| 
+Standalone-Einstiegssystem
+ a| 
+Stapel
+
+
+
+ a| 
+Einstiegssysteme in einer HA-Konfiguration mit einem einzelnen gemeinsam genutzten Shelf
+ a| 
+bucht
+
+
+
+ a| 
+Einstiegssysteme in einer HA-Konfiguration mit einem Stack mit zwei oder mehr Shelfs
+ a| 
+Shelf
+
+
+
+ a| 
+MetroCluster-Konfigurationen mit einem Stack pro Node, zwei oder mehr Shelfs
+ a| 
+Shelf
+
+
+
+ a| 
+Alle anderen Konfigurationen
+ a| 
+Stapel
+
+|===
+Das Verhalten der automatischen Zuweisungsrichtlinie "`default`" hängt vom Systemmodell ab. Bei Modellen der Einstiegsklasse entspricht die Richtlinie „`default`“ der Richtlinie „`bay`“. Für alle anderen Systeme entspricht sie der Richtlinie "`stack`".
+
+.Schritte
+. Konfiguration der automatischen Festplattenzuordnung:
++
+`storage disk option modify -autoassign-policy _autoassign_policy_ -node _node_name_`
+
++
+** Nutzung `stack` Als der `_autoassign_policy_` Zum Konfigurieren der automatischen Eigentümerschaft auf Stack- oder Loop-Ebene.
+** Nutzung `shelf` Als der `_autoassign_policy_` Um die automatische Nutzung auf Shelf-Ebene zu konfigurieren.
+** Nutzung `bay` Als der `_autoassign_policy_` So konfigurieren Sie die automatische Eigentümerschaft auf der Einschubebene.
+
+
+. Überprüfen Sie die Einstellungen für die automatische Zuordnung der Festplatten:
++
+`storage disk option show`
+
++
+[listing]
+----
+cluster1::> storage disk option show
+
+Node           BKg. FW. Upd.  Auto Copy     Auto Assign    Auto
+                                                           Assign Policy
+-------------  -------------  ------------  -------------  --------
+cluster1-1     on             on            on             default
+cluster1-2     on             on            on             default
+----
+

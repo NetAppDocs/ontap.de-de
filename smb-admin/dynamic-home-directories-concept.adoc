@@ -1,0 +1,70 @@
+---
+permalink: smb-admin/dynamic-home-directories-concept.html 
+sidebar: sidebar 
+keywords: ontap, home, directories, directory, configure, smb, share, map, base, connect, set, variable, creating, create, separate, share, user, define, home, relationship, entry, point, svm, how ontap enables dynamic home directories 
+summary: 'Mit den ONTAP Home Directorys können Sie eine SMB-Freigabe konfigurieren, die verschiedenen Verzeichnissen anhand des Benutzers, der mit ihm verbunden wird, und einer Reihe von Variablen zugeordnet wird. Anstatt separate Shares für jeden Benutzer zu erstellen, können Sie eine Freigabe mit ein paar Home-Verzeichnis-Parametern konfigurieren, um die Beziehung eines Benutzers zwischen einem Eingangspunkt (die Freigabe) und dem Home-Verzeichnis (ein Verzeichnis auf der SVM) zu definieren.' 
+---
+= So ermöglicht ONTAP dynamische Home Directories
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Mit den ONTAP Home Directorys können Sie eine SMB-Freigabe konfigurieren, die verschiedenen Verzeichnissen anhand des Benutzers, der mit ihm verbunden wird, und einer Reihe von Variablen zugeordnet wird. Anstatt separate Shares für jeden Benutzer zu erstellen, können Sie eine Freigabe mit einigen Home-Directory-Parametern konfigurieren, um die Beziehung eines Benutzers zwischen einem Eintragspunkt (Share) und dem Home-Verzeichnis (ein Verzeichnis auf der SVM) zu definieren.
+
+Ein Benutzer, der als Gastbenutzer angemeldet ist, verfügt nicht über ein Home-Verzeichnis und kann nicht auf die Home-Verzeichnisse anderer Benutzer zugreifen. Es gibt vier Variablen, die bestimmen, wie ein Benutzer einem Verzeichnis zugeordnet wird:
+
+* *Name teilen*
++
+Dies ist der Name der Freigabe, die Sie erstellen, mit der der Benutzer eine Verbindung herstellt. Sie müssen die Home-Verzeichnis-Eigenschaft für diese Freigabe festlegen.
+
++
+Der Freigabename kann die folgenden dynamischen Namen verwenden:
+
++
+** `%w` (Der Windows-Benutzername des Benutzers)
+** `%d` (Windows-Domain-Name des Benutzers)
+**  `%u` (Der zugewiesene UNIX-Benutzername des Benutzers) um den Freigabennamen in allen Home-Verzeichnissen eindeutig zu machen, muss der Freigabenname entweder den enthalten/`%w` Oder im `%u` Variabel. Der Freigeben-Name kann beides enthalten `%d` Und das/`%w` Variable (z. B. `%d`/`%w`), oder der Freigabename kann einen statischen Teil und einen variablen Teil enthalten (z. B. Home_/`%w`).
+
+
+* *Pfad teilen*
++
+Dies ist der relative Pfad, der durch die Freigabe definiert wird und somit mit einem der Share-Namen verknüpft ist, der an jeden Suchpfad angehängt wird, um den gesamten Home-Directory-Pfad des Benutzers aus dem Root der SVM zu generieren. Er kann statisch sein (z.B. `home`), dynamisch (zum Beispiel, `%w`) Oder eine Kombination der beiden (zum Beispiel, `eng/%w`).
+
+* *Suchpfade*
++
+Dies ist die Gruppe der absoluten Pfade aus dem Root der SVM, die Sie angeben, dass die ONTAP-Suche nach Home Directorys geleitet wird. Sie können einen oder mehrere Suchpfade mithilfe des angeben `vserver cifs home-directory search-path add` Befehl. Wenn Sie mehrere Suchpfade angeben, versucht ONTAP sie in der angegebenen Reihenfolge, bis ein gültiger Pfad gefunden wird.
+
+* *Verzeichnis*
++
+Dies ist das Home-Verzeichnis des Benutzers, das Sie für den Benutzer erstellen. Der Verzeichnisname ist normalerweise der Name des Benutzers. Sie müssen das Home-Verzeichnis in einem der Verzeichnisse erstellen, die durch die Suchpfade definiert werden.
+
+
+
+Betrachten Sie als Beispiel die folgende Einrichtung:
+
+* Benutzer: John Smith
+* Benutzerdomäne: acme
+* Benutzername: Jsmith
+* SVM-Name: vs1
+* Home Directory share Name #1: Home_ `%w` - Freigabepfad: `%w`
+* Home-Verzeichnis Freigabenname #2: `%w` - Freigabepfad: `%d/%w`
+* Suchpfad #1: `/vol0home/home`
+* Suchpfad #2: `/vol1home/home`
+* Suchpfad #3: `/vol2home/home`
+* Home-Verzeichnis: `/vol1home/home/jsmith`
+
+
+Szenario 1: Der Benutzer stellt eine Verbindung her `\\vs1\home_jsmith`. Dies entspricht dem ersten Home-Verzeichnis-Freigabennamen und erzeugt den relativen Pfad `jsmith`. ONTAP sucht jetzt nach einem Verzeichnis mit dem Namen `jsmith` Indem Sie die einzelnen Suchpfade in der folgenden Reihenfolge überprüfen:
+
+* `/vol0home/home/jsmith` Ist nicht vorhanden; weiter zu Suchpfad #2.
+* `/vol1home/home/jsmith` Existiert; deshalb wird der Suchpfad #3 nicht überprüft; der Benutzer ist jetzt mit seinem Home-Verzeichnis verbunden.
+
+
+Szenario 2: Der Benutzer stellt eine Verbindung her `\\vs1\jsmith`. Dies entspricht dem zweiten Home-Verzeichnis-Freigabennamen und erzeugt den relativen Pfad `acme/jsmith`. ONTAP sucht jetzt nach einem Verzeichnis mit dem Namen `acme/jsmith` Indem Sie die einzelnen Suchpfade in der folgenden Reihenfolge überprüfen:
+
+* `/vol0home/home/acme/jsmith` Ist nicht vorhanden; weiter zu Suchpfad #2.
+* `/vol1home/home/acme/jsmith` Ist nicht vorhanden; weiter zum Suchpfad #3.
+* `/vol2home/home/acme/jsmith` Ist nicht vorhanden; das Home-Verzeichnis ist nicht vorhanden; daher schlägt die Verbindung fehl.
+

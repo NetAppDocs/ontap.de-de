@@ -1,0 +1,89 @@
+---
+permalink: error-messages/ems-routing-notifications-models-concept.html 
+sidebar: sidebar 
+keywords: configure, map, important, ems, events, notifications, filters 
+summary: Vor ONTAP 9.0 konnten EMS-Ereignisse basierend auf dem Abgleich von Ereignisnamen nur Ereigniszielen zugeordnet werden. Die ONTAP-Befehle, die mit diesem Modell verbunden sind, sind weiterhin verfügbar, aber sie sind seit ONTAP 9.0 veraltet. 
+---
+= EMS-Modelle für die Ereigniszuordnung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Vor ONTAP 9.0 konnten EMS-Ereignisse basierend auf dem Abgleich von Ereignisnamen nur Ereigniszielen zugeordnet werden. Die ONTAP-Befehle werden eingestellt (`event destination`, `event route`), die dieses Modell verwenden, ist weiterhin in den neuesten Versionen von ONTAP verfügbar, aber sie sind seit ONTAP 9.0 veraltet.
+
+Seit ONTAP 9.0 empfiehlt sich die Verwendung des skalierbareren Ereignisfiltermodells für ONTAP EMS, in dem die Musteranpassung für mehrere Felder mit dem durchgeführt wird `event filter`, `event notification`, und `event notification destination` Befehlssätze.
+
+Wenn Ihre EMS-Zuordnung mit den veralteten Befehlen konfiguriert ist, sollten Sie Ihre Zuordnung aktualisieren, um die zu verwenden `event filter`, `event notification`, und `event notification destination` Befehlssätze.
+
+Es gibt zwei Arten von Ereigniszielen:
+
+. *Systemgenerierte Ziele*: Es gibt fünf vom System generierte Ereignisziele (standardmäßig erstellt)
++
+** `allevents`
+** `asup`
+** `criticals`
+** `pager`
+** `traphost`
++
+Einige der vom System generierten Ziele sind für besondere Zwecke. Zum Beispiel leitet das Asup-Zielgerät Callhome.* Ereignisse an das AutoSupport-Modul in ONTAP weiter, um AutoSupport-Nachrichten zu generieren.
+
+
+
+. *Vom Benutzer erstellte Ziele*: Diese werden manuell mit dem erstellt `event destination create` Befehl.
++
+[listing]
+----
+cluster-1::event*> destination show
+                                                                 Hide
+Name             Mail Dest.        SNMP Dest.         Syslog Dest.       Params
+---------------- ----------------- ------------------ ------------------ ------
+allevents        -                 -                  -                  false
+asup             -                 -                  -                  false
+criticals        -                 -                  -                  false
+pager            -                 -                  -                  false
+traphost         -                 -                  -                  false
+5 entries were displayed.
++
+cluster-1::event*> destination create -name test -mail test@xyz.com
+This command is deprecated. Use the "event filter", "event notification destination" and "event notification" commands, instead.
++
+cluster-1::event*> destination show
++                                                                     Hide
+Name             Mail Dest.        SNMP Dest.         Syslog Dest.       Params
+---------------- ----------------- ------------------ ------------------ ------
+allevents        -                 -                  -                  false
+asup             -                 -                  -                  false
+criticals        -                 -                  -                  false
+pager            -                 -                  -                  false
+test             test@xyz.com      -                  -                  false
+traphost         -                 -                  -                  false
+6 entries were displayed.
+----
+
+
+Im veralteten Modell werden EMS-Ereignisse individuell einem Ziel über zugeordnet `event route add-destinations` Befehl.
+
+[listing]
+----
+cluster-1::event*> route add-destinations -message-name raid.aggr.* -destinations test
+This command is deprecated. Use the "event filter", "event notification destination" and "event notification" commands, instead.
+4 entries were acted on.
+
+cluster-1::event*> route show -message-name raid.aggr.*
+                                                               Freq    Time
+Message                          Severity       Destinations   Threshd Threshd
+-------------------------------- -------------- -------------- ------- -------
+raid.aggr.autoGrow.abort         NOTICE         test           0       0
+raid.aggr.autoGrow.success       NOTICE         test           0       0
+raid.aggr.lock.conflict          INFORMATIONAL  test           0       0
+raid.aggr.log.CP.count           DEBUG          test           0       0
+4 entries were displayed.
+----
+Der neue, besser skalierbare EMS-Mechanismus für Ereignisbenachrichtigungen basiert auf Ereignisfiltern und Zielorten für Ereignisbenachrichtigungen. Detaillierte Informationen zum neuen Benachrichtigungsmechanismus für Ereignisse finden Sie in dem folgenden KB-Artikel:
+
+* link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/FAQ%3A_Overview_of_Event_Management_System_for_ONTAP_9["Übersicht über das Event Management System für ONTAP 9"^]
+
+
+image:../media/ems-event-diag.jpg["Diagramm der Ereignismodelle"]

@@ -1,0 +1,54 @@
+---
+permalink: smb-hyper-v-sql/create-ntfs-data-volumes-task.html 
+sidebar: sidebar 
+keywords: create, ntfs, data, volume, storage, virutal, machine, svm, smb, application, server, volume, configuration 
+summary: 'Sie müssen NTFS-Daten-Volumes auf der Storage Virtual Machine (SVM) erstellen, bevor Sie kontinuierlich verfügbare Shares für die Verwendung mit Hyper-V oder SQL Server über SMB Applikationsserver konfigurieren können. Erstellen Sie Ihre Daten-Volumes mithilfe des Arbeitsblatts zur Volume-Konfiguration.' 
+---
+= NTFS-Daten-Volumes erstellen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie müssen NTFS-Daten-Volumes auf der Storage Virtual Machine (SVM) erstellen, bevor Sie kontinuierlich verfügbare Shares für die Verwendung mit Hyper-V oder SQL Server über SMB Applikationsserver konfigurieren können. Erstellen Sie Ihre Daten-Volumes mithilfe des Arbeitsblatts zur Volume-Konfiguration.
+
+Sie können optionale Parameter zum Anpassen eines Daten-Volumes verwenden. Weitere Informationen zum Anpassen von Volumes finden Sie im link:link:../volumes/index.html["Logisches Storage-Management"].
+
+Bei der Erstellung von Daten-Volumes sollten keine Verbindungspunkte innerhalb eines Volumes erstellt werden, die die folgenden Elemente enthalten:
+
+* Hyper-V Dateien, bei denen ONTAP Schattenkopien erstellt
+* SQL Server Datenbankdateien, die mit SQL Server gesichert werden
+
+
+[NOTE]
+====
+Wenn Sie versehentlich ein Volume erstellen, das gemischten oder UNIX Sicherheitsstil nutzt, können Sie das Volume nicht auf ein NTFS-Sicherheitsformat ändern und dann direkt verwenden, um kontinuierlich verfügbare Shares für den unterbrechungsfreien Betrieb zu erstellen. Unterbrechungsfreier Betrieb von Hyper-V und SQL Server über SMB funktioniert nicht ordnungsgemäß, es sei denn, die in der Konfiguration verwendeten Volumes werden als NTFS SicherheitsVolumes erstellt. Sie müssen entweder das Volume löschen und das Volume mit NTFS-Sicherheitsstil neu erstellen. Sie können das Volume auch auf einem Windows-Host zuordnen und eine ACL oben auf dem Volume anwenden sowie die ACL auf alle Dateien und Ordner im Volume übertragen.
+
+====
+.Schritte
+. Erstellen Sie das Daten-Volume mit dem entsprechenden Befehl:
++
+[cols="1, 4"]
+|===
+| Wenn Sie ein Volume in einer SVM erstellen möchten, wo sich der Sicherheitsstil für das Root-Volume befindet... | Geben Sie den Befehl ein... 
+
+
+ a| 
+NTFS
+ a| 
+`*volume create -vserver _vserver_name_ -volume _volume_name_ -aggregate _aggregate_name_ -size integer[KB{vbar}MB{vbar}GB{vbar}TB{vbar}PB] -junction-path _path_*`
+
+
+
+ a| 
+Nicht NTFS
+ a| 
+`*volume create -vserver _vserver_name_ -volume _volume_name_ -aggregate _aggregate_name_ -size integer[KB{vbar}MB{vbar}GB{vbar}TB{vbar}PB]-security-style ntfs -junction-path path*`
+
+|===
+. Vergewissern Sie sich, dass die Volume-Konfiguration korrekt ist:
++
+`*volume show -vserver _vserver_name_ -volume _volume_name_*`
+
+

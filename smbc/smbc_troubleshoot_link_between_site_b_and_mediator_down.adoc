@@ -1,0 +1,59 @@
+---
+sidebar: sidebar 
+permalink: smbc/smbc_troubleshoot_link_between_site_b_and_mediator_down.html 
+keywords: SM-BC, SMBC, troubleshooting, link down, Mediator 
+summary: Mediator-Verbindung von Standort B wird als nicht erreichbar angezeigt. 
+---
+= Verknüpfung zwischen Standort B und Mediator ab und Standort A unten
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Um den Anschluss des Mediators zu überprüfen, verwenden Sie den `snapmirror mediator show` Befehl. Wenn der Verbindungsstatus nicht erreichbar ist und Standort B nicht erreichbar ist, wird eine ähnliche Ausgabe wie unten ausgegeben. Befolgen Sie die Schritte in der Lösung, um die Verbindung wiederherzustellen
+
+....
+cluster::*> snapmirror mediator show
+Mediator Address Peer Cluster     Connection Status Quorum Status
+---------------- ---------------- ----------------- -------------
+10.237.86.17     C1_cluster       unreachable       true
+SnapMirror consistency group relationship status is out of sync.
+
+C2_cluster::*> snapmirror show -expand
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs0:/cg/src_cg_1 XDP vs1:/cg/dst_cg_1 Snapmirrored OutOfSync - false   -
+vs0:zrto_cg_655724_188a_RW1 XDP vs1:zrto_cg_655755_188c_DP1 Snapmirrored OutOfSync - false -
+vs0:zrto_cg_655733_188a_RW2 XDP vs1:zrto_cg_655762_188c_DP2 Snapmirrored OutOfSync - false -
+vs0:zrto_cg_655739_188b_RW1 XDP vs1:zrto_cg_655768_188d_DP1 Snapmirrored OutOfSync - false -
+vs0:zrto_cg_655748_188b_RW2 XDP vs1:zrto_cg_655776_188d_DP2 Snapmirrored OutOfSync - false -
+5 entries were displayed.
+
+Site B cluster is unable to reach Site A.
+C2_cluster::*> cluster peer show
+Peer Cluster Name         Cluster Serial Number Availability   Authentication
+------------------------- --------------------- -------------- --------------
+C1_cluster 			  1-80-000011           Unavailable    ok
+....
+Erzwingen Sie einen Failover, um I/O von Standort B zu aktivieren und dann eine RTO-Beziehung von Standort B zu Standort A ohne Recovery-Wert zu definieren
+
+Führen Sie die folgenden Schritte durch, um einen erzwungenen Failover an Standort B durchzuführen
+
+. Heben Sie die Zuordnung aller LUNs, die der Konsistenzgruppe angehören, von Standort B. auf
+. Löschen Sie die SnapMirror Consistency Group-Beziehung mit der Force-Option.
+. Geben Sie in den Volumes für die Konsistenzgruppe den Befehl „snapmirror Pause“ ein, um Volumes von DP in RW zu konvertieren, um I/O von Standort B zu aktivieren
+. Starten Sie die Knoten Standort A, um eine RTO-Beziehung von Standort B zu Standort A zu erstellen
+. Freigabe der Konsistenzgruppe mit „nur Beziehung“ bei Standort A, um eine allgemeine Snapshot Kopie beizubehalten und die zu der Konsistenzgruppe gehörenden LUNs zu aufheben
+. Konvertieren Sie Volumes an Standort A von RW nach DP, indem Sie eine Beziehung auf Volume-Ebene mit einer Sync-Richtlinie oder einer asynchronen Richtlinie einrichten.
+. Geben Sie die snapmirror-Resynchronisierung ein, um die Beziehungen zu synchronisieren.
+. Löschen Sie die SnapMirror Beziehungen mit der Sync-Richtlinie auf Standort A
+. Lassen Sie die SnapMirror Beziehungen mit Sync-Richtlinie unter Verwendung von Relationship-info-only True auf Site B. frei
+. Erstellen Sie eine Konsistenzgruppenbeziehung von Standort B zu Standort A
+. Führen Sie eine Neusynchronisierung von Konsistenzgruppen von Standort A durch, und überprüfen Sie dann, ob die Konsistenzgruppe synchron ist.
+. Wiederherstellen aller Pfade zu den LUNs durch erneute Überprüfung der Host-LUN-I/O-Pfade
+

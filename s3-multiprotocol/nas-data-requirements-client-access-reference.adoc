@@ -1,0 +1,32 @@
+---
+permalink: s3-multiprotocol/nas-data-requirements-client-access-reference.html 
+sidebar: sidebar 
+keywords: s3, mapping, directory, access, configuration, object, nas, bucket 
+summary: Es ist wichtig zu verstehen, dass das Zuordnen von NAS-Dateien und Verzeichnissen für S3-Zugriff ein gewisses Standard-NAS-Verhalten verändert. 
+---
+= NAS-Datenanforderungen für den S3-Client-Zugriff
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Es ist wichtig zu verstehen, dass es einige inhärente Inkompatibilitäten beim Zuordnen von NAS-Dateien und Verzeichnissen für S3-Zugriff gibt. Unter Umständen müssen NAS-Dateihierarchien angepasst werden, bevor sie über S3 NAS Buckets bereitgestellt werden.
+
+Ein S3-NAS-Bucket bietet S3-Zugriff auf ein NAS-Verzeichnis, indem dieses Verzeichnis mithilfe der S3-Bucket-Syntax zugeordnet wird. Die Dateien in der Verzeichnisstruktur werden als Objekte angezeigt. Die Objektnamen sind die durch Schrägstriche getrennten Pfadnamen der Dateien relativ zum in der S3-Bucket-Konfiguration angegebenen Verzeichnis.
+
+Diese Zuordnung enthält einige Anforderungen, wenn Dateien und Verzeichnisse über S3 NAS Buckets bereitgestellt werden:
+
+* S3-Namen sind auf 1024 Byte beschränkt, daher ist der Zugriff auf Dateien mit längeren Pfadnamen über S3 nicht möglich.
+* Die Datei- und Verzeichnisnamen sind auf 255 Zeichen beschränkt, sodass ein Objektname nicht mehr als 255 aufeinanderfolgende Zeichen ohne Schrägstrich (‘/’) enthalten kann
+* Ein SMB-Pfadname, der durch Backslash (‘\’)-Zeichen getrennt wird, erscheint S3 als Objektname mit Vorwärtsschrägstrich (‘/’) Zeichen.
+* Einige Paare von rechtmäßigen S3-Objektnamen können in der zugeordneten NAS-Verzeichnisstruktur nicht nebeneinander bestehen. So werden beispielsweise die gesetzlichen S3-Objektnamen „part1/part2“ und „part1/part2/part3“ Dateien zugeordnet, die nicht gleichzeitig im NAS-Verzeichnisbaum existieren können, da „part1/part2“ eine Datei im Vornamen und ein Verzeichnis im anderen ist.
++
+** Wenn „part1/part2“ eine vorhandene Datei ist, schlägt eine S3-Erstellung von „part1/part2/part3“ fehl.
+** Wenn „part1/part2/part3“ eine vorhandene Datei ist, schlägt eine S3-Erstellung oder -Löschung von „part1/part2“ fehl.
+** Bei einer S3-Objekterstellung, die mit dem Namen eines vorhandenen Objekts übereinstimmt, werden das vorhandene Objekt (in nicht versionierten Buckets) ersetzt. Das Objekt befindet sich in NAS, benötigt jedoch einen genauen Abgleich. Die obigen Beispiele führen nicht zum Entfernen des vorhandenen Objekts, da die Namen nicht übereinstimmen, während die Namen kollidieren.
+
+
+
+
+Während ein Objektspeicher eine sehr große Anzahl von beliebigen Namen unterstützt, kann es bei einer NAS-Verzeichnisstruktur zu Performance-Problemen kommen, wenn eine sehr große Anzahl von Namen in einem Verzeichnis abgelegt wird. Insbesondere Namen ohne Schrägstrich (‘/’) Zeichen in ihnen werden alle in das Stammverzeichnis des NAS-Mapping gelegt. Anwendungen, die umfassende Verwendung von Namen, die nicht „NAS-freundlich“ sind, sind besser auf einem tatsächlichen Objektspeicher-Bucket statt auf einem NAS-Mapping gehostet werden.

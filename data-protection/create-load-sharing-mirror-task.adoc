@@ -1,0 +1,84 @@
+---
+permalink: data-protection/create-load-sharing-mirror-task.html 
+sidebar: sidebar 
+keywords: create, initialize, load-sharing, mirror, relationship 
+summary: 'Sie sollten eine Load-Sharing-Spiegelung (LSM) für jedes Root-Volume im Cluster erstellen. Sie können das LSM auf einem anderen Knoten als dem erstellen, der das Root-Volume enthält, z. B. den Partner-Node in einem HA-Paar oder vorzugsweise in einem anderen HA-Paar. Für ein Cluster mit zwei Knoten sollten Sie das LSM auf dem Partner des Knotens mit dem Root-Volume erstellen.' 
+---
+= Erstellen und Initialisieren von Mirror-Beziehungen zur Lastverteilung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie sollten eine Load-Sharing-Spiegelung (LSM) für jedes SVM-Root-Volume erstellen, das NAS-Daten im Cluster bereitstellt. Sie können das LSM auf einem anderen Knoten als dem erstellen, der das Root-Volume enthält, z. B. den Partner-Node in einem HA-Paar oder vorzugsweise in einem anderen HA-Paar. Für ein Cluster mit zwei Nodes sollten Sie das LSM auf dem Partner des Node mit dem SVM-Root-Volume erstellen.
+
+Wenn Sie auf demselben Node ein LSM erstellen und der Node nicht verfügbar ist, liegt ein Single Point of Failure bei und Sie verfügen nicht über eine zweite Kopie, um sicherzustellen, dass die Daten für Clients verfügbar bleiben. Wenn Sie aber das LSM auf einem anderen Node als dem mit dem Root-Volume oder auf einem anderen HA-Paar erstellen, sind die Daten im Falle eines Ausfalls weiterhin verfügbar.
+
+Beispiel: In einem Cluster mit vier Nodes mit einem Root-Volume auf drei Nodes:
+
+* Erstellen Sie für das Root-Volume in HA 1 Node 1 das LSM auf HA 2 Node 1 oder HA 2 Node 2.
+* Erstellen Sie für das Root-Volume in HA 1 Node 2 das LSM auf HA 2 Node 1 oder HA 2 Node 2.
+* Erstellen Sie für das Root-Volume in HA 2 Node 1 das LSM auf HA 1 Node 1 oder HA 1 Node 2.
+
+
+.Schritte
+. Zielvolume für das LSM erstellen:
++
+`volume create -vserver _SVM_ -volume volume -aggregate _aggregate_ -type DP -size size`
+
++
+Das Zielvolumen sollte gleich oder größer sein als das Root-Volume.
+
++
+Als Best Practice empfiehlt es sich, das Root- und Zielvolumen mit Suffixen wie z. B. zu benennen `_root` Und `_m1`.
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Das folgende Beispiel erstellt ein Mirror-Volume zur Lastverteilung für das Root-Volume `svm1_root` In `cluster_src`:
+
++
+[listing]
+----
+cluster_src:> volume create -vserver svm1 -volume svm1_m1 -aggregate aggr_1 -size 1gb -state online -type DP
+----
+. Erstellen Sie einen Replikationsjob-Zeitplan, wie unter beschrieben link:create-replication-job-schedule-task.html["Erstellen eines Replikationsauftragplans"].
+. Erzeugung einer Load-Sharing-Mirror-Beziehung zwischen dem SVM Root-Volume und dem Ziel-Volume für das LSM:
++
+`snapmirror create -source-path _SVM:volume_|_cluster://SVM/volume_ -destination-path _SVM:volume_|_cluster://SVM/volume_ -type LS -schedule _schedule_`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Das folgende Beispiel erstellt eine Mirror-Beziehung zur Lastverteilung zwischen dem Root-Volume `svm1_root` Und das Load-Sharing-Mirror-Volume `svm1_m1`:
+
++
+[listing]
+----
+cluster_src::> snapmirror create -source-path svm1:svm1_root -destination-path svm1:svm1_m1 -type LS -schedule hourly
+----
++
+Das Typ-Attribut der Load-Sharing-Spiegelung ändert sich von `DP` Bis `LS`.
+
+. Initialisieren Sie die Load-Sharing-Spiegelung:
++
+`snapmirror initialize-ls-set -source-path _SVM:volume_|_cluster://SVM/volume_`
+
++
+Initialisierung kann sehr zeitaufwendig sein. Möglicherweise möchten Sie den Basistransfer in Zeiten geringerer Auslastung durchführen.
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel wird die Load-Sharing-Spiegelung für das Root-Volume initialisiert `svm1_root`:
+
++
+[listing]
+----
+cluster_src::> snapmirror initialize-ls-set -source-path svm1:svm1_root
+----
+

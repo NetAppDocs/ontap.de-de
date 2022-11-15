@@ -1,0 +1,93 @@
+---
+permalink: performance-admin/measure-latency-throughput-nodes-task.html 
+sidebar: sidebar 
+keywords: check, throughput, latency, between, nodes 
+summary: Mithilfe des Befehls „Network Test-Path“ können Sie Netzwerkengpässe identifizieren oder Netzwerkpfade zwischen Nodes vorqualifizieren. Sie können den Befehl zwischen Cluster Nodes oder Intracluster Nodes ausführen. 
+---
+= Prüfen Sie Durchsatz und Latenz zwischen Nodes
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `network test-path` Befehl zum Identifizieren von Netzwerkengpässen oder zum Vorqualifizieren von Netzwerkpfaden zwischen Nodes. Sie können den Befehl zwischen Cluster Nodes oder Intracluster Nodes ausführen.
+
+.Was Sie und#8217;ll benötigen
+* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Für diese Aufgabe sind erweiterte Befehle auf Berechtigungsebene erforderlich.
+* Für einen Intercluster-Pfad müssen die Quell- und Ziel-Cluster Peering durchgeführt werden.
+
+
+Gelegentlich erfüllt die Netzwerkleistung zwischen Knoten möglicherweise nicht die Erwartungen an Ihre Pfadkonfiguration. Eine Übertragungsrate von 1 Gbit/s für die Art großer Datentransfers, wie bei SnapMirror Replizierungsvorgängen zu beobachten ist, wäre nicht mit einer 10-GbE-Verbindung zwischen den Quell- und Ziel-Clustern konsistent.
+
+Sie können das verwenden `network test-path` Befehl zum Messen des Durchsatzes und der Latenz zwischen Nodes. Sie können den Befehl zwischen Cluster Nodes oder Intracluster Nodes ausführen.
+
+[NOTE]
+====
+Der Test sättigt den Netzwerkpfad mit Daten. Wenn also das System nicht ausgelastet ist und der Netzwerk-Traffic zwischen den Nodes nicht zu hoch ist, sollte der Befehl ausgeführt werden. Die Testzeit beträgt nach zehn Sekunden. Der Befehl kann nur zwischen ONTAP 9 Nodes ausgeführt werden.
+
+====
+Der `session-type` Option gibt den Vorgang an, den Sie über den Netzwerkpfad ausführen, z. B. „AsyncMirrorRemote“ für die SnapMirror Replizierung an einem Remote-Ziel. Der Typ gibt die Menge der im Test verwendeten Daten an. Die folgende Tabelle definiert die Sitzungstypen:
+
+|===
+
+
+| Sitzungstyp | Beschreibung 
+
+
+ a| 
+SyncMirrorLocal
+ a| 
+Von SnapMirror zwischen den Nodes im selben Cluster verwendete Einstellungen
+
+
+
+ a| 
+SyncMirrorRemote
+ a| 
+Von SnapMirror verwendete Einstellungen zwischen Nodes in verschiedenen Clustern (Standardtyp)
+
+
+
+ a| 
+RemoteDataTransfer
+ a| 
+Von ONTAP für Remote-Datenzugriff zwischen Nodes im selben Cluster (z. B. eine NFS-Anforderung an einen Node für eine Datei, die in einem Volume auf einem anderen Node gespeichert ist)
+
+|===
+.Schritte
+. Ändern Sie die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Messung des Durchsatzes und der Latenz zwischen Nodes:
++
+`network test-path -source-node _source_nodename_ |local -destination-cluster _destination_clustername_ -destination-node _destination_nodename_ -session-type Default|AsyncMirrorLocal|AsyncMirrorRemote|SyncMirrorRemote|RemoteDataTransfer`
+
++
+Der Quell-Node muss sich im lokalen Cluster befinden. Der Ziel-Node kann sich im lokalen Cluster oder in einem Peering-Cluster befinden. Ein Wert von "lokal" für `-source-node` Gibt den Node an, auf dem Sie den Befehl ausführen.
+
++
+Mit dem folgenden Befehl wird der Durchsatz und die Latenz für SnapMirror Replizierungsvorgänge zwischen dem Typ gemessen `node1` Auf dem lokalen Cluster und `node3` Ein `cluster2`:
+
++
+[listing]
+----
+cluster1::> network test-path -source-node node1 -destination-cluster cluster2 -destination-node node3 -session-type AsyncMirrorRemote
+Test Duration:      10.88 secs
+Send Throughput:    18.23 MB/sec
+Receive Throughput: 18.23 MB/sec
+MB sent:            198.31
+MB received:        198.31
+Avg latency in ms:  2301.47
+Min latency in ms:  61.14
+Max latency in ms:  3056.86
+----
+. Zurück zur Administratorberechtigung:
++
+`set -privilege admin`
+
+
+
+Wenn die Performance die Erwartungen der Pfadkonfiguration nicht erfüllt, sollten Sie die Performance-Statistiken der Nodes überprüfen, die verfügbaren Tools verwenden, um das Problem im Netzwerk zu isolieren, die Switch-Einstellungen zu überprüfen usw.

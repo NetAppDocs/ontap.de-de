@@ -1,0 +1,128 @@
+---
+permalink: smb-admin/configure-offline-files-support-task.html 
+sidebar: sidebar 
+keywords: configure, offline, file, support, ontap, cli, smb, modify, exist, smb, share, manual, default, setting, configure offline files support on smb shares using the cli 
+summary: Sie können die Unterstützung von Offline-Dateien über die ONTAP-CLI konfigurieren, indem Sie eine der vier Einstellungen für Offline-Dateien beim Erstellen von SMB-Freigaben oder jederzeit durch Ändern vorhandener SMB-Freigaben festlegen. Die Standardeinstellung ist die Unterstützung von manuellen Offline-Dateien. 
+---
+= Konfigurieren Sie die Unterstützung von Offline-Dateien für SMB-Freigaben über die Befehlszeilenschnittstelle
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die Unterstützung von Offline-Dateien über die ONTAP-CLI konfigurieren, indem Sie eine der vier Einstellungen für Offline-Dateien beim Erstellen von SMB-Freigaben oder jederzeit durch Ändern vorhandener SMB-Freigaben festlegen. Die Standardeinstellung ist die Unterstützung von manuellen Offline-Dateien.
+
+Wenn Sie Offline-Dateien konfigurieren, können Sie eine der folgenden vier Offline-Dateien-Einstellungen wählen:
+
+|===
+| Einstellung | Beschreibung 
+
+
+ a| 
+`none`
+ a| 
+Windows-Clients können keine Dateien auf dieser Freigabe speichern.
+
+
+
+ a| 
+`manual`
+ a| 
+Ermöglicht Benutzern unter Windows-Clients, Dateien manuell auszuwählen, die zwischengespeichert werden sollen.
+
+
+
+ a| 
+`documents`
+ a| 
+Ermöglicht Windows-Clients das Zwischenspeichern von Benutzerdokumenten, die vom Benutzer für den Offline-Zugriff verwendet werden.
+
+
+
+ a| 
+`programs`
+ a| 
+Windows-Clients können Programme zwischenspeichern, die vom Benutzer für Offline-Zugriff verwendet werden. Clients können die zwischengespeicherten Programmdateien auch dann im Offline-Modus verwenden, wenn die Freigabe verfügbar ist.
+
+|===
+Sie können nur eine Offline-Dateieinstellung auswählen. Wenn Sie eine Einstellung für Offline-Dateien für eine vorhandene SMB-Freigabe ändern, ersetzt die Einstellung für die neuen Offline-Dateien die ursprüngliche Einstellung. Andere Konfigurationseinstellungen und Eigenschaften für vorhandene SMB-Freigaben werden nicht entfernt oder ersetzt. Sie bleiben wirksam, bis sie explizit entfernt oder geändert werden.
+
+.Schritte
+. Führen Sie die entsprechende Aktion aus:
++
+|===
+| Konfigurieren von Offline-Dateien auf... | Geben Sie den Befehl ein... 
+
+
+ a| 
+Ein neuer SMB-Share
+ a| 
+`vserver cifs share create -vserver vserver_name -share-name share_name -path path -offline-files {none|manual|documents|programs}`
+
+
+
+ a| 
+Ein vorhandener SMB-Share
+ a| 
+`vserver cifs share modify -vserver vserver_name -share-name share_name -offline-files {none|manual|documents|programs}`
+
+|===
+. Vergewissern Sie sich, dass die Konfiguration der SMB-Freigabe korrekt ist: `vserver cifs share show -vserver vserver_name -share-name share_name -instance`
+
+
+Mit dem folgenden Befehl wird eine SMB-Freigabe mit dem Namen „`data1`“ erstellt, bei der die Offline-Dateien auf festgelegt sind `documents`:
+
+[listing]
+----
+cluster1::> vserver cifs share create -vserver vs1 -share-name data1 -path /data1 -comment "Offline files" -offline-files documents
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data1 -instance
+
+                          Vserver: vs1
+                            Share: data1
+         CIFS Server NetBIOS Name: VS1
+                             Path: /data1
+                 Share Properties: oplocks
+                                   browsable
+                                   changenotify
+               Symlink Properties: enable
+          File Mode Creation Mask: -
+     Directory Mode Creation Mask: -
+                    Share Comment: Offline files
+                        Share ACL: Everyone / Full Control
+    File Attribute Cache Lifetime: -
+                      Volume Name: -
+                    Offline Files: documents
+    Vscan File-Operations Profile: standard
+Maximum Tree Connections on Share: 4294967295
+       UNIX Group for File Create: -
+----
+Mit dem folgenden Befehl wird eine vorhandene SMB-Freigabe mit dem Namen „`data1`“ geändert, indem die Einstellung für Offline-Dateien auf geändert wird `manual` Und Werte für die Erstellungsmaske des Datei- und Verzeichnismodus hinzufügen:
+
+[listing]
+----
+cluster1::> vserver cifs share modify -vserver vs1 -share-name data1 -offline-files manual -file-umask 644 -dir-umask 777
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data1 -instance
+
+                          Vserver: vs1
+                            Share: data1
+         CIFS Server NetBIOS Name: VS1
+                             Path: /data1
+                 Share Properties: oplocks
+                                   browsable
+                                   changenotify
+               Symlink Properties: enable
+          File Mode Creation Mask: 644
+     Directory Mode Creation Mask: 777
+                    Share Comment: Offline files
+                        Share ACL: Everyone / Full Control
+    File Attribute Cache Lifetime: -
+                      Volume Name: -
+                    Offline Files: manual
+    Vscan File-Operations Profile: standard
+Maximum Tree Connections on Share: 4294967295
+       UNIX Group for File Create: -
+----
+xref:add-remove-share-properties-eexisting-share-task.adoc[Hinzufügen oder Entfernen von Share-Eigenschaften für eine vorhandene SMB-Freigabe]

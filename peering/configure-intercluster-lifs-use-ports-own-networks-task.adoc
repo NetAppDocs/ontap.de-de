@@ -1,0 +1,303 @@
+---
+permalink: peering/configure-intercluster-lifs-use-ports-own-networks-task.html 
+sidebar: sidebar 
+keywords: configure, intercluster, LIFs  custom, ipspaces 
+summary: Sie können Intercluster-LIFs in benutzerdefinierten IPspaces konfigurieren. Auf diese Weise lässt sich der Replizierungs-Datenverkehr in mandantenfähigen Umgebungen isolieren. 
+---
+= Konfigurieren Sie Intercluster LIFs in benutzerdefinierten IPspaces
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Intercluster-LIFs in benutzerdefinierten IPspaces konfigurieren. Auf diese Weise lässt sich der Replizierungs-Datenverkehr in mandantenfähigen Umgebungen isolieren.
+
+Wenn Sie einen benutzerdefinierten IPspace erstellen, erstellt das System eine Storage Virtual Machine (SVM) des Systems, die als Container für die Systemobjekte in diesem IPspace dient. Sie können die neue SVM als Container für alle Intercluster LIFs im neuen IPspace verwenden. Die neue SVM hat den gleichen Namen wie der benutzerdefinierte IPspace.
+
+.Schritte
+. Liste der Ports im Cluster:
++
+`network port show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden die Netzwerkports in angezeigt `cluster01`:
+
++
+[listing]
+----
+
+cluster01::> network port show
+                                                             Speed (Mbps)
+Node   Port      IPspace      Broadcast Domain Link   MTU    Admin/Oper
+------ --------- ------------ ---------------- ----- ------- ------------
+cluster01-01
+       e0a       Cluster      Cluster          up     1500   auto/1000
+       e0b       Cluster      Cluster          up     1500   auto/1000
+       e0c       Default      Default          up     1500   auto/1000
+       e0d       Default      Default          up     1500   auto/1000
+       e0e       Default      Default          up     1500   auto/1000
+       e0f       Default      Default          up     1500   auto/1000
+cluster01-02
+       e0a       Cluster      Cluster          up     1500   auto/1000
+       e0b       Cluster      Cluster          up     1500   auto/1000
+       e0c       Default      Default          up     1500   auto/1000
+       e0d       Default      Default          up     1500   auto/1000
+       e0e       Default      Default          up     1500   auto/1000
+       e0f       Default      Default          up     1500   auto/1000
+----
+. Erstellen Sie benutzerdefinierte IPspaces auf dem Cluster:
++
+`network ipspace create -ipspace _ipspace_`
+
++
+Im folgenden Beispiel wird der benutzerdefinierte IPspace erstellt `ipspace-IC1`:
+
++
+[listing]
+----
+cluster01::> network ipspace create -ipspace ipspace-IC1
+----
+. Bestimmen Sie, welche Ports für die Intercluster-Kommunikation verfügbar sind:
++
+`network interface show -fields home-port,curr-port`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden die Ports angezeigt `e0e` Und `e0f` Es wurden keine LIFs zugewiesen:
+
++
+[listing]
+----
+
+cluster01::> network interface show -fields home-port,curr-port
+vserver lif                  home-port curr-port
+------- -------------------- --------- ---------
+Cluster cluster01_clus1   e0a       e0a
+Cluster cluster01_clus2   e0b       e0b
+Cluster cluster02_clus1   e0a       e0a
+Cluster cluster02_clus2   e0b       e0b
+cluster01
+        cluster_mgmt         e0c       e0c
+cluster01
+        cluster01-01_mgmt1   e0c       e0c
+cluster01
+        cluster01-02_mgmt1   e0c       e0c
+----
+. Entfernen Sie die verfügbaren Ports aus der Standard-Broadcast-Domäne:
++
+`network port broadcast-domain remove-ports -broadcast-domain Default -ports ports`
+
++
+Ein Port darf nicht mehrere Broadcast-Domänen gleichzeitig haben. Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden Ports entfernt `e0e` Und `e0f` In der Standard-Broadcast-Domäne:
+
++
+[listing]
+----
+cluster01::> network port broadcast-domain remove-ports -broadcast-domain Default -ports
+cluster01-01:e0e,cluster01-01:e0f,cluster01-02:e0e,cluster01-02:e0f
+----
+. Vergewissern Sie sich, dass die Ports aus der Standard-Broadcast-Domäne entfernt wurden:
++
+`network port show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden die Ports angezeigt `e0e` Und `e0f` Wurden aus der Standard-Broadcast-Domäne entfernt:
+
++
+[listing]
+----
+cluster01::> network port show
+                                                       Speed (Mbps)
+Node   Port    IPspace   Broadcast Domain Link   MTU    Admin/Oper
+------ ------- --------- --------------- ----- ------- ------------
+cluster01-01
+       e0a     Cluster    Cluster          up    9000  auto/1000
+       e0b     Cluster    Cluster          up    9000  auto/1000
+       e0c     Default    Default          up    1500  auto/1000
+       e0d     Default    Default          up    1500  auto/1000
+       e0e     Default    -                up    1500  auto/1000
+       e0f     Default    -                up    1500  auto/1000
+       e0g     Default    Default          up    1500  auto/1000
+cluster01-02
+       e0a     Cluster    Cluster          up    9000  auto/1000
+       e0b     Cluster    Cluster          up    9000  auto/1000
+       e0c     Default    Default          up    1500  auto/1000
+       e0d     Default    Default          up    1500  auto/1000
+       e0e     Default    -                up    1500  auto/1000
+       e0f     Default    -                up    1500  auto/1000
+       e0g     Default    Default          up    1500  auto/1000
+----
+. Erstellen Sie eine Broadcast-Domäne im benutzerdefinierten IPspace:
++
+`network port broadcast-domain create -ipspace _ipspace_ -broadcast-domain _broadcast_domain_ -mtu _MTU_ -ports _ports_`
+
++
+Im folgenden Beispiel wird die Broadcast-Domäne erstellt `ipspace-IC1-bd` Im IPspace `ipspace-IC1`:
+
++
+[listing]
+----
+cluster01::> network port broadcast-domain create -ipspace ipspace-IC1 -broadcast-domain
+ipspace-IC1-bd -mtu 1500 -ports cluster01-01:e0e,cluster01-01:e0f,
+cluster01-02:e0e,cluster01-02:e0f
+----
+. Vergewissern Sie sich, dass die Broadcast-Domäne erstellt wurde:
++
+`network port broadcast-domain show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+[listing]
+----
+cluster01::> network port broadcast-domain show
+IPspace Broadcast                                         Update
+Name    Domain Name    MTU  Port List                     Status Details
+------- ----------- ------  ----------------------------- --------------
+Cluster Cluster       9000
+                            cluster01-01:e0a              complete
+                            cluster01-01:e0b              complete
+                            cluster01-02:e0a              complete
+                            cluster01-02:e0b              complete
+Default Default       1500
+                            cluster01-01:e0c              complete
+                            cluster01-01:e0d              complete
+                            cluster01-01:e0f              complete
+                            cluster01-01:e0g              complete
+                            cluster01-02:e0c              complete
+                            cluster01-02:e0d              complete
+                            cluster01-02:e0f              complete
+                            cluster01-02:e0g              complete
+ipspace-IC1
+        ipspace-IC1-bd
+                      1500
+                            cluster01-01:e0e              complete
+                            cluster01-01:e0f              complete
+                            cluster01-02:e0e              complete
+                            cluster01-02:e0f              complete
+----
+. Erstellen von Intercluster-LIFs auf der System-SVM, und weisen Sie sie der Broadcast-Domäne zu:
++
+|===
+| Option | Beschreibung 
+
+
+ a| 
+*Im ONTAP 9.6 und höher:*
+ a| 
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -service-policy default-intercluster -home-node _node_ -home-port _port_ -address _port_IP_ -netmask _netmask_`
+
+
+
+ a| 
+*In ONTAP 9.5 und früher:*
+ a| 
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -role intercluster -home-node _node_ -home-port _port_ -address _port_IP_ -netmask _netmask_`
+
+|===
++
+Die LIF wird in der Broadcast-Domäne erstellt, der der Home-Port zugewiesen ist. Die Broadcast-Domäne besitzt eine Standard-Failover-Gruppe mit demselben Namen wie die Broadcast-Domäne. Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden Intercluster-LIFs erstellt `cluster01_icl01` Und `cluster01_icl02` In der Broadcast-Domäne `ipspace-IC1-bd`:
+
++
+[listing]
+----
+cluster01::> network interface create -vserver ipspace-IC1 -lif cluster01_icl01 -service-
+policy default-intercluster -home-node cluster01-01 -home-port e0e -address 192.168.1.201
+-netmask 255.255.255.0
+
+cluster01::> network interface create -vserver ipspace-IC1 -lif cluster01_icl02 -service-
+policy default-intercluster -home-node cluster01-02 -home-port e0e -address 192.168.1.202
+-netmask 255.255.255.0
+----
+. Überprüfen Sie, ob die Intercluster-LIFs erstellt wurden:
++
+|===
+| Option | Beschreibung 
+
+
+ a| 
+*Im ONTAP 9.6 und höher:*
+ a| 
+`network interface show -service-policy default-intercluster`
+
+
+
+ a| 
+*In ONTAP 9.5 und früher:*
+ a| 
+`network interface show -role intercluster`
+
+|===
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+[listing]
+----
+cluster01::> network interface show -service-policy default-intercluster
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+ipspace-IC1
+            cluster01_icl01
+                       up/up      192.168.1.201/24   cluster01-01  e0e     true
+            cluster01_icl02
+                       up/up      192.168.1.202/24   cluster01-02  e0f     true
+----
+. Vergewissern Sie sich, dass die Intercluster-LIFs redundant sind:
++
+|===
+| Option | Beschreibung 
+
+
+ a| 
+*Im ONTAP 9.6 und höher:*
+ a| 
+`network interface show -service-policy default-intercluster -failover`
+
+
+
+ a| 
+*In ONTAP 9.5 und früher:*
+ a| 
+`network interface show -role intercluster -failover`
+
+|===
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Das folgende Beispiel zeigt, dass die Intercluster-LIFs sind `cluster01_icl01` Und `cluster01_icl02` Auf der SVM `e0e` Port-Failover zum Port`e0f`:
+
++
+[listing]
+----
+cluster01::> network interface show -service-policy default-intercluster –failover
+         Logical         Home                  Failover        Failover
+Vserver  Interface       Node:Port             Policy          Group
+-------- --------------- --------------------- --------------- --------
+ipspace-IC1
+         cluster01_icl01 cluster01-01:e0e   local-only      intercluster01
+                            Failover Targets:  cluster01-01:e0e,
+                                               cluster01-01:e0f
+         cluster01_icl02 cluster01-02:e0e   local-only      intercluster01
+                            Failover Targets:  cluster01-02:e0e,
+                                               cluster01-02:e0f
+----
+

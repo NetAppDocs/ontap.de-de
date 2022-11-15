@@ -1,0 +1,77 @@
+---
+permalink: volumes/df-command-file-size-concept.html 
+sidebar: sidebar 
+keywords: how, df command, accounts for file size 
+summary: 'Die Art und Weise, wie im Befehl df die Platznutzung meldet, hängt von zwei Bedingungen ab: Ob die Kontingente für das Volume, das den qtree enthält, aktiviert oder deaktiviert sind und ob die Kontingentnutzung innerhalb des qtree nachverfolgt wird.' 
+---
+= Wie der df-Befehl Dateigrößen berücksichtigt
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Art und Weise, in der in `df` Befehl meldet, dass der Platzverbrauch von zwei Bedingungen abhängt: Ob die Quoten für das Volume aktiviert oder deaktiviert sind, das den qtree enthält, und ob die Kontingentnutzung innerhalb des qtree nachverfolgt wird.
+
+Wenn Quoten für das Volume aktiviert sind, das den qtree enthält und die Kontingentnutzung innerhalb des qtree erfasst wird, wird der von gemeldete Platzverbrauch berechnet `df` Der Befehl entspricht dem vom Quota-Bericht angegebenen Wert. In dieser Situation werden Blöcke, die von Verzeichnissen, ACLs, Datenverzeichnissen und Metadateien verwendet werden, ausgeschlossen.
+
+Wenn Quoten auf dem Volume nicht aktiviert sind oder wenn für den qtree keine Kontingentregel konfiguriert ist, beinhaltet die gemeldete Speicherplatznutzung Blöcke, die von Verzeichnissen, ACLs, Stream-Verzeichnissen und Metadateien für das gesamte Volume verwendet werden, einschließlich anderer qtrees innerhalb des Volume. In dieser Situation wird der vom gemeldete Platzbedarf angegeben `df` Befehl ist größer als der erwartete Wert, der beim Ververfolgen von Kontingenten gemeldet wird.
+
+Wenn Sie den ausführen `df` Befehl vom Mount-Punkt eines qtree, für den die Kontingentnutzung nachverfolgt wird, zeigt die Befehlsausgabe die gleiche Speicherplatznutzung wie der vom Kontingentbericht angegebene Wert an. In den meisten Fällen, wenn die Baumquote-Regel ein Festplatten-Limit hat, die Gesamtgröße, die vom gemeldet wird `df` Befehl entspricht dem Festplattenlimit und der verfügbare Speicherplatz entspricht der Differenz zwischen dem Kontingent-Plattenlimit und der Kontingentnutzung.
+
+In einigen Fällen ist jedoch der verfügbare Speicherplatz, der vom gemeldet wird `df` Befehl entspricht möglicherweise dem Speicherplatz, der im Volume als Ganzes verfügbar ist. Dies kann auftreten, wenn für den qtree kein Festplattenlimit konfiguriert ist. Ab ONTAP 9.9 kann es auch vorkommen, wenn der im Volumen als Ganzes verfügbare Platz unter dem verbleibenden Baum-Quota-Raum liegt. Wenn eine dieser Bedingungen eintritt, wird die Gesamtgröße vom angegeben `df` Befehl ist eine synthetisierte Zahl in Höhe der Quote die im qtree verwendet wird plus dem verfügbaren Platz im FlexVol Volume.
+
+[NOTE]
+====
+Diese Gesamtgröße entspricht weder dem qtree-Festplattenlimit noch der konfigurierten Volume-Größe. Dies kann auch von Ihrer Schreibaktivität im Rahmen anderer qtrees oder aufgrund Ihrer Storage-Effizienzaktivitäten im Hintergrund abweichen.
+
+====
+Der folgende Quota-Bericht zeigt eine Datenträgerbegrenzung von 1 GB für qtree alice, 2 GB für qtree bob, und kein Limit für qtree projekt1:
+
+[listing]
+----
+C1_vsim1::> quota report -vserver vs0
+Vserver: vs0
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol2     alice     tree    1
+                                  502.0MB    1GB       2       -   alice
+vol2     bob       tree    2
+                                   1003MB    2GB       2       -   bob
+vol2     project1  tree    3
+                                  200.8MB      -       2       -   project1
+vol2               tree    *           0B      -       0       -   *
+4 entries were displayed.
+----
+Im folgenden Beispiel wird die Ausgabe von angezeigt `df` Bei dem Befehl „qtrees“ meldet alice und bob den gleichen belegten Speicherplatz wie der Kontingentbericht und die gleiche Gesamtgröße (als 1-Millionen-Blöcke) wie das Plattenlimit. Dies liegt daran, dass die Kontingentregeln für qtrees alice und bob eine definierte Datenträgergrenze haben und der verfügbare Speicherplatz (1211 MB) des Volumens größer ist als der für qtree alice (523 MB) und qtree bob (1045 MB) verbleibende Speicherplatz.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2/alice
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      1024   502       523  50% /mnt/vol2
+
+linux-client1 [~]$ df -m /mnt/vol2/bob
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      2048  1004      1045  50% /mnt/vol2
+----
+Im folgenden Beispiel wird die Ausgabe von angezeigt `df` Befehl auf qtree project1 berichtet den gleichen belegten Speicherplatz wie der Quotenbericht, aber die Gesamtgröße wird synthetisiert, indem der verfügbare Platz in dem Volumen als Ganzes (1211 MB) zur Kontingentnutzung von qtree project1 (201 MB) addieren, um insgesamt 1412 MB zu geben. Der Grund dafür ist, dass die Kontingentregel für qtree project1 kein Datenträgerlimit hat.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2/project1
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      1412   201      1211  15% /mnt/vol2
+----
+[NOTE]
+====
+Das folgende Beispiel zeigt die Ausgabe von `df` Befehl auf dem gesamten Volume meldet denselben verfügbaren Platz wie project1.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      2919  1709      1211  59% /mnt/vol2
+----
+====

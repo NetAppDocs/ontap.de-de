@@ -1,0 +1,130 @@
+---
+permalink: system-admin/access-cluster-ssh-task.html 
+sidebar: sidebar 
+keywords: access, ssh, cluster, administrative, task 
+summary: Sie können SSH-Anforderungen an das Cluster ausgeben, um administrative Aufgaben durchzuführen. SSH ist standardmäßig aktiviert. 
+---
+= Greifen Sie über SSH auf das Cluster zu
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können SSH-Anforderungen an das Cluster ausgeben, um administrative Aufgaben durchzuführen. SSH ist standardmäßig aktiviert.
+
+.Was Sie und#8217;ll benötigen
+* Sie müssen über ein Benutzerkonto verfügen, das für die Verwendung konfiguriert ist `ssh` Als Zugriffsmethode.
++
+Der `-application` Parameter von `security login` Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Der `security login` Man-Pages enthalten zusätzliche Informationen.
+
+* Wenn Sie für den Zugriff auf das Cluster ein Active Directory (AD)-Domänenbenutzerkonto verwenden, muss ein Authentifizierungstunnel für das Cluster über eine CIFS-fähige Storage Virtual Machine (SVM) eingerichtet worden sein, und Ihr AD-Domänenbenutzerkonto muss dem Cluster mit hinzugefügt worden sein `ssh` Als Zugriffsmethode und `domain` Als Authentifizierungsmethode.
+* Wenn Sie IPv6-Verbindungen verwenden, muss IPv6 bereits auf dem Cluster konfiguriert und aktiviert sein. Firewallrichtlinien müssen bereits mit IPv6-Adressen konfiguriert sein.
++
+Der `network options ipv6 show` Der Befehl zeigt an, ob IPv6 aktiviert ist. Der `system services firewall policy show` Befehl zeigt Firewallrichtlinien an.
+
+
+
+.Über diese Aufgabe
+* Sie müssen einen OpenSSH 5.7 oder höher -Client verwenden.
+* Nur das SSH v2-Protokoll wird unterstützt; SSH v1 wird nicht unterstützt.
+* ONTAP unterstützt maximal 64 gleichzeitige SSH-Sitzungen pro Node.
++
+Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zusammen mit der Node-Management-LIF verwendet.
+
++
+Falls die Rate der eingehenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
+
+* ONTAP unterstützt nur die Verschlüsselungsalgorithmen AES und 3DES für SSH (auch bekannt als _Chiffers_).
++
+AES wird mit 128, 192 und 256 Bit in Schlüssellänge unterstützt. 3DES ist 56 Bit in Schlüssellänge wie im Original DES, wird aber dreimal wiederholt.
+
+* Wenn der FIPS-Modus aktiviert ist, sollten SSH-Clients mit den öffentlichen Schlüssel-Algorithmen des Elliptic Curve Digital Signature Algorithm (ECDSA) verhandeln, damit die Verbindung erfolgreich hergestellt werden kann.
+* Wenn Sie von einem Windows-Host aus auf die ONTAP-CLI zugreifen möchten, können Sie ein Dienstprogramm eines Drittanbieters wie z. B. PuTTY verwenden.
+* Wenn Sie einen Windows AD-Benutzernamen verwenden, um sich bei ONTAP anzumelden, sollten Sie dieselben Groß- oder Kleinbuchstaben verwenden, die beim Erstellen des AD-Benutzernamens und des Domänennamens in ONTAP verwendet wurden.
++
+BEI AD-Benutzernamen und -Domain-Namen wird die Groß-/Kleinschreibung nicht beachtet. Bei ONTAP-Benutzernamen muss die Groß-/Kleinschreibung beachtet werden. Eine Diskrepanz zwischen dem in ONTAP erstellten Benutzernamen und dem in AD erstellten Benutzernamen führt zu einem Anmeldefehler.
+
+* Ab ONTAP 9.3 können Sie die SSH-Multi-Faktor-Authentifizierung für lokale Administratorkonten aktivieren.
++
+Wenn die Multi-Faktor-Authentifizierung mittels SSH aktiviert ist, werden Benutzer mit einem öffentlichen Schlüssel und einem Passwort authentifiziert.
+
+* Ab ONTAP 9.4 können Sie die Multi-Faktor-SSH-Authentifizierung für LDAP- und NIS-Remote-Benutzer aktivieren.
+
+
+.Schritte
+. Geben Sie von einem Administrationshost das ein `ssh` Befehl in einem der folgenden Formate:
++
+** `*ssh _username@hostname_or_IP_ [_command_]*`
+** `*ssh -l _username hostname_or_IP_ [_command_]*`
+
+
+
+
+Wenn Sie ein AD-Domänenbenutzerkonto verwenden, müssen Sie angeben `_username_` Im Format von `_domainname\\AD_accountname_` (Mit doppelten umgekehrten Schrägstrichen nach dem Domain-Namen) oder `"_domainname\AD_accountname_"` (Eingeschlossen in doppelte Anführungszeichen und mit einem einzelnen umgekehrten Schrägstrich nach dem Domainnamen).
+
+`_hostname_or_IP_` Ist der Host-Name oder die IP-Adresse der Cluster-Management-LIF oder eine Node-Management-LIF. Es wird empfohlen, die Cluster-Management-LIF zu verwenden. Sie können eine IPv4- oder IPv6-Adresse verwenden.
+
+`_command_` Ist für SSH-interaktive Sessions nicht erforderlich.
+
+Die folgenden Beispiele zeigen, wie das Benutzerkonto mit dem Namen „`joe`“ eine SSH-Anforderung für den Zugriff auf ein Cluster ausgeben kann, dessen Cluster-Management-LIF 10.72.137.28 ist:
+
+[listing]
+----
+$ ssh joe@10.72.137.28
+Password:
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
+2 entries were displayed.
+----
+[listing]
+----
+$ ssh -l joe 10.72.137.28 cluster show
+Password:
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
+2 entries were displayed.
+----
+Die folgenden Beispiele zeigen, wie das Benutzerkonto „`john`“ aus der Domäne „`DOMAIN1`“ eine SSH-Anforderung für den Zugriff auf einen Cluster ausgeben kann, dessen Cluster-Management-LIF 10.72.137.28 ist:
+
+[listing]
+----
+$ ssh DOMAIN1\\john@10.72.137.28
+Password:
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
+2 entries were displayed.
+----
+[listing]
+----
+$ ssh -l "DOMAIN1\john" 10.72.137.28 cluster show
+Password:
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
+2 entries were displayed.
+----
+Das folgende Beispiel zeigt, wie das Benutzerkonto mit dem Namen „`joe`“ eine SSH MFA-Anforderung für den Zugriff auf ein Cluster ausgeben kann, dessen Cluster-Management-LIF 10.72.137.32 ist:
+
+[listing]
+----
+$ ssh joe@10.72.137.32
+Authenticated with partial success.
+Password:
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
+2 entries were displayed.
+----
+link:../authentication/index.html["Administratorauthentifizierung und RBAC"]

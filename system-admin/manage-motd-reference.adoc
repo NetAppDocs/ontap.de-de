@@ -1,0 +1,170 @@
+---
+permalink: system-admin/manage-motd-reference.html 
+sidebar: sidebar 
+keywords: manage, motd, message, day, cluster, svm, administrator 
+summary: 'Sie können die Meldung des Tages (MOTD) auf Cluster- oder SVM-Ebene managen. Standardmäßig ist das für den Cluster konfigurierte MOTD auch für alle SVMs aktiviert. Außerdem kann für jede SVM ein MOTD auf SVM-Ebene konfiguriert werden. Die MOTD auf Cluster-Ebene kann für jede SVM durch den Cluster-Administrator aktiviert oder deaktiviert werden.' 
+---
+= Verwalten der MOTD
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die Meldung des Tages (MOTD) auf Cluster- oder SVM-Ebene managen. Standardmäßig ist das für den Cluster konfigurierte MOTD auch für alle SVMs aktiviert. Außerdem kann für jede SVM ein MOTD auf SVM-Ebene konfiguriert werden. Die MOTD auf Cluster-Ebene kann für jede SVM durch den Cluster-Administrator aktiviert oder deaktiviert werden.
+
+.Wahlmöglichkeiten
+* Verwalten Sie die MOTD auf Clusterebene:
++
+|===
+| Ihr Ziel ist | Dann... 
+
+
+ a| 
+Erstellen Sie eine MOTD für alle Anmeldungen, wenn keine MOTD vorhanden ist
+ a| 
+Legen Sie eine MOTD auf Cluster-Ebene fest:
+
+`*security login motd modify -vserver _cluster_name_ { [-message "_text_"] | [-uri _ftp_or_http_addr_] }*`
+
+
+
+ a| 
+Ändern Sie das MOTD für alle Anmeldungen, wenn keine MOTDs auf SVM-Ebene konfiguriert sind
+ a| 
+Ändern Sie die MOTD auf Cluster-Ebene:
+
+`*security login motd modify -vserver _cluster_name_ { [-message "_text_"] } | [-uri ftp_or_http_addr] }*`
+
+
+
+ a| 
+Entfernen Sie das MOTD für alle Anmeldungen, wenn keine MOTDs auf SVM-Ebene konfiguriert sind
+ a| 
+Legen Sie die MOTD auf Cluster-Ebene auf einen leeren String fest (`""`):
+
+`*security login motd modify -vserver _cluster_name_ -message ""*`
+
+
+
+ a| 
+Verwenden Sie für jede SVM eine MOTD auf Cluster-Ebene statt die SVM-Ebene
+ a| 
+Legen Sie eine MOTD auf Cluster-Ebene fest und setzen Sie dann alle MOTDs auf eine leere Zeichenfolge mit aktivierter MOTD auf Cluster-Ebene:
+
+.. `*security login motd modify -vserver _cluster_name_ { [-message "_text_"] | [-uri _ftp_or_http_addr_] }*`
+.. `*security login motd modify { -vserver !"_cluster_name_" } -message "" -is-cluster-message-enabled true*`
+
+
+
+
+ a| 
+Wird ein MOTD nur für ausgewählte SVMs angezeigt, und es wird kein MOTD auf Cluster-Ebene verwendet
+ a| 
+Legen Sie die MOTD auf Cluster-Ebene auf einen leeren String fest und legen Sie dann MOTDs auf SVM-Ebene für ausgewählte SVMs fest:
+
+.. `*security login motd modify -vserver _cluster_name_ -message ""*`
+.. `*security login motd modify -vserver _svm_name_ { [-message "_text_"] | [-uri _ftp_or_http_addr_] }*`
++
+Sie können diesen Schritt bei Bedarf für jede SVM wiederholen.
+
+
+
+
+
+ a| 
+Verwenden Sie für alle SVMs (Daten und Admin) dasselbe MOTD auf SVM-Ebene
+ a| 
+Legen Sie den Cluster und alle SVMs so fest, dass er dasselbe MOTD verwenden soll:
+
+`*security login motd modify _-vserver_ * { [-message "_text_"] | [-uri _ftp_or_http_addr_] }*`
+
+[NOTE]
+====
+Wenn Sie den interaktiven Modus verwenden, werden Sie von der CLI aufgefordert, die MOTD einzeln für das Cluster und jede SVM einzugeben. Sie können dieselbe MOTD in jede Instanz einfügen, wenn Sie dazu aufgefordert werden.
+
+====
+
+
+ a| 
+Ein MOTD auf Cluster-Ebene steht optional allen SVMs zur Verfügung, soll aber nicht, dass der MOTD für Cluster-Anmeldungen angezeigt wird
+ a| 
+Legen Sie eine MOTD auf Cluster-Ebene fest, deaktivieren Sie jedoch die Anzeige für das Cluster:
+
+`*security login motd modify -vserver _cluster_name_ { [-message "_text_"] | [-uri _ftp_or_http_addr_] } -is-cluster-message-enabled false*`
+
+
+
+ a| 
+Entfernen Sie alle MODs auf Cluster- und SVM-Ebene, wenn nur einige SVMs über MOTDs auf Cluster-Ebene und SVM-Ebene verfügen
+ a| 
+Legen Sie den Cluster und alle SVMs so fest, dass für die MOTD ein leerer String verwendet wird:
+
+`*security login motd modify -vserver * -message ""*`
+
+
+
+ a| 
+Ändern Sie die MOTD nur für die SVMs mit einer nicht leeren Zeichenfolge, wenn andere SVMs einen leeren String verwenden und wenn auf Clusterebene ein anderes MOTD verwendet wird
+ a| 
+Verwenden Sie erweiterte Abfragen, um die MOTD selektiv zu ändern:
+
+`*security login motd modify { -vserver !"_cluster_name_" -message !"" } { [-message "_text_"] | [-uri _ftp_or_http_addr_] }*`
+
+
+
+ a| 
+Alle MOTDs, die spezifischen Text enthalten (z. B. „`Januar`“ gefolgt von „`2015`“), können überall in einer einzelnen oder mehrzeiligen Nachricht angezeigt werden, auch wenn der Text über verschiedene Zeilen aufgeteilt wird
+ a| 
+Verwenden Sie eine Abfrage, um MOTDs anzuzeigen:
+
+`*security login motd show -message *"January"\***"2015"**`
+
+
+
+ a| 
+Erstellen Sie interaktiv ein MOTD, das mehrere und aufeinanderfolgende Zeilen enthält (auch als Zeilenende oder EOLs bezeichnet).
+ a| 
+Drücken Sie im interaktiven Modus die Leertaste, gefolgt von Enter, um eine leere Zeile zu erstellen, ohne die Eingabe für die MOTD zu beenden.
+
+|===
+* Management von MOTD auf SVM-Ebene:
++
+Angeben `-vserver _svm_name_` Ist im SVM-Kontext nicht erforderlich.
+
++
+|===
+| Ihr Ziel ist | Dann... 
+
+
+ a| 
+Verwenden Sie ein anderes MOTD auf SVM-Ebene, wenn für die SVM bereits eine MOTD auf SVM-Ebene vorhanden ist
+ a| 
+Ändern Sie die MOTD auf SVM-Ebene:
+
+`*security login motd modify -vserver _svm_name_ { [-message "_text_"] | [-uri _ftp_or_http_addr_] }*`
+
+
+
+ a| 
+Verwenden Sie nur das MOTD auf Cluster-Ebene für die SVM, wenn die SVM bereits über eine MOTD auf SVM-Ebene verfügt
+ a| 
+Legen Sie die MOTD auf SVM-Ebene auf einen leeren String fest, und lassen Sie den Clusteradministrator die MOTD auf Clusterebene für die SVM aktivieren:
+
+.. `*security login motd modify -vserver _svm_name_ -message ""*`
+.. (Für den Cluster-Administrator) `*security login motd modify -vserver _svm_name_ -is-cluster-message-enabled true*`
+
+
+
+
+ a| 
+Die SVM zeigt keine MOTD an, wenn derzeit sowohl die MOTDs auf Cluster- als auch die SVM-Ebene für die SVM angezeigt werden
+ a| 
+Legen Sie die MOTD auf SVM-Ebene auf einen leeren String fest, und lassen Sie den Cluster-Administrator die MOTD auf Cluster-Ebene für die SVM deaktivieren:
+
+.. `*security login motd modify -vserver _svm_name_ -message ""*`
+.. (Für den Cluster-Administrator) `*security login motd modify -vserver _svm_name_ -is-cluster-message-enabled false*`
+
+
+|===
+

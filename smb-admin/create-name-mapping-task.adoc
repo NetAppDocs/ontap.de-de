@@ -1,0 +1,51 @@
+---
+permalink: smb-admin/create-name-mapping-task.html 
+sidebar: sidebar 
+keywords: vserver, name-mapping, create, command, name, map, windows, enable, user, access, unix, security, style, volume, reverse, create a name mapping 
+summary: Sie können den Befehl vserver Name-Mapping create verwenden, um eine Namenszuweisung zu erstellen. Sie verwenden Namenszuordnungen, um Windows-Benutzern den Zugriff auf UNIX-Sicherheitsstil-Volumes zu ermöglichen und umgekehrt. 
+---
+= Erstellen einer Namenszuweisung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `vserver name-mapping create` Befehl zum Erstellen einer Namenszuweisung. Sie verwenden Namenszuordnungen, um Windows-Benutzern den Zugriff auf UNIX-Sicherheitsstil-Volumes zu ermöglichen und umgekehrt.
+
+Für jede SVM unterstützt ONTAP bis zu 12,500 Namenszuordnungen für jede Richtung.
+
+.Schritt
+. Erstellen einer Namenszuweisung: `vserver name-mapping create -vserver _vserver_name_ -direction {krb-unix|win-unix|unix-win} -position _integer_ -pattern text -replacement _text_`
++
+[NOTE]
+====
+Der `-pattern` Und `-replacement` Aussagen können als reguläre Ausdrücke formuliert werden. Sie können auch die verwenden `-replacement` Anweisung, eine Zuordnung zum Benutzer durch Verwendung der leeren Ersatzzeichenfolge explizit zu verweigern `" "` (Das Leerzeichen). Siehe `vserver name-mapping create` Man-Page für Details.
+
+====
++
+Beim Erstellen von Windows-zu-UNIX-Zuordnungen müssen sich alle SMB-Clients, die zum Zeitpunkt der Erstellung der neuen Zuordnungen offene Verbindungen zum ONTAP System haben, abmelden und zurück anmelden, um die neuen Zuordnungen zu sehen.
+
+
+
+Mit dem folgenden Befehl wird eine Namenszuweisung auf der SVM mit dem Namen vs1 erstellt. Die Zuordnung ist eine Zuordnung von UNIX zu Windows an Position 1 in der Prioritätenliste. Das Mapping ordnet den UNIX-Benutzer johnd dem Windows-Benutzer eng\JohnDoe zu.
+
+[listing]
+----
+vs1::> vserver name-mapping create -vserver vs1 -direction unix-win -position 1 -pattern johnd
+-replacement "ENG\\JohnDoe"
+----
+Mit dem folgenden Befehl wird eine weitere Namenszuweisung auf der SVM mit dem Namen vs1 erstellt. Die Zuordnung ist eine Zuordnung von Windows zu UNIX an Position 1 in der Prioritätenliste. Hier sind Muster und Ersatz enthalten reguläre Ausdrücke. Das Mapping ordnet jedem CIFS-Benutzer in der Domäne eng Benutzern in der mit der SVM verknüpften LDAP-Domäne zu.
+
+[listing]
+----
+vs1::> vserver name-mapping create -vserver vs1 -direction win-unix -position 1 -pattern "ENG\\(.+)"
+-replacement "\1"
+----
+Mit dem folgenden Befehl wird eine weitere Namenszuweisung auf der SVM mit dem Namen vs1 erstellt. Hier enthält das Muster „` €`“ als Element im Windows-Benutzernamen, das entkommen sein muss. Das Mapping ordnet den Windows-Benutzer eng\ john€3ps dem UNIX-Benutzer john_OPS zu.
+
+[listing]
+----
+vs1::> vserver name-mapping create -direction win-unix -position 1 -pattern ENG\\john\$ops
+-replacement john_ops
+----

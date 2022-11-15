@@ -1,0 +1,161 @@
+---
+permalink: s3-audit/plan-config-task.html 
+sidebar: sidebar 
+keywords: s3, audit, create, configure s3 audit 
+summary: Diese Aufgabe erläutert die in der s3-Prüfung verwendeten Parameter. 
+---
+= Planen einer S3-Audit-Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie müssen eine Reihe von Parametern für die S3-Überwachungskonfiguration angeben oder die Standardeinstellungen akzeptieren. Insbesondere sollten Sie berücksichtigen, welche Protokollrotationsparameter dazu beitragen, ausreichend freien Speicherplatz zu gewährleisten.
+
+Siehe *`vserver object-store-server audit create`* Man page für Syntax Details.
+
+
+
+== Allgemeine Parameter
+
+Es gibt zwei erforderliche Parameter, die Sie beim Erstellen der Überwachungskonfiguration angeben müssen. Es gibt außerdem drei optionale Parameter, die Sie angeben können.
+
+[cols="4,2,1"]
+|===
+
+
+| Informationstyp | Option | Erforderlich 
+
+
+ a| 
+_SVM Name_
+
+Name der SVM, auf der die Audit-Konfiguration erstellt werden soll.
+
+Die SVM muss bereits vorhanden und für S3 aktiviert sein.
+ a| 
+`-verserver _svm_name_`
+ a| 
+Ja.
+
+
+
+ a| 
+_Zielpfad protokollieren_
+
+Gibt an, wo die konvertierten Audit-Protokolle gespeichert werden. Der Pfad muss auf der SVM bereits vorhanden sein.
+
+Der Pfad kann bis zu 864 Zeichen lang sein und muss über Lese-/Schreibberechtigungen verfügen.
+
+Wenn der Pfad nicht gültig ist, schlägt der Befehl für die Prüfungskonfiguration fehl.
+ a| 
+`-destination _text_`
+ a| 
+Ja.
+
+
+
+ a| 
+_Kategorien von Ereignissen zur Prüfung_
+
+Folgende Ereigniskategorien können geprüft werden:
+
+* Data GetObject, PutObject und DeleteObject Ereignisse
+* Management-Events „PutBucket“ und „DeleteBucket“
+
+
+Standardmäßig werden nur Datenereignisse geprüft.
+ a| 
+`-events {data{vbar}management}, ...`
+ a| 
+Nein
+
+|===
+Sie können einen der folgenden Parameter eingeben, um die Anzahl der Audit-Log-Dateien zu steuern. Wenn kein Wert eingegeben wird, bleiben alle Protokolldateien erhalten.
+
+[cols="4,2,1"]
+|===
+
+
+| Informationstyp | Option | Erforderlich 
+
+
+ a| 
+_Log-Dateien Rotationsgrenze_
+
+Legt fest, wie viele Audit-Log-Dateien gespeichert werden sollen, bevor die älteste Protokolldatei ausgedreht wird. Wenn Sie beispielsweise einen Wert von 5 eingeben, werden die letzten fünf Protokolldateien beibehalten.
+
+Der Wert 0 gibt an, dass alle Protokolldateien aufbewahrt werden. Der Standardwert ist 0.
+ a| 
+`-rotate-limit _integer_`
+ a| 
+Nein
+
+
+
+ a| 
+_Dauer der Protokolldateien_
+
+Legt fest, wie lange eine Protokolldatei aufbewahrt werden kann, bevor sie gelöscht wird. Wenn Sie beispielsweise einen Wert von 5d0h0m eingeben, werden Protokolle gelöscht, die älter als 5 Tage sind.
+
+Der Wert 0 gibt an, dass alle Protokolldateien aufbewahrt werden. Der Standardwert ist 0.
+ a| 
+`-retention duration _integer_time_`
+ a| 
+Nein
+
+|===
+
+
+== Parameter für die Drehung des Prüfprotokolls
+
+Sie können Prüfprotokolle basierend auf Größe oder Zeitplan drehen. Standardmäßig werden Auditprotokolle auf der Grundlage der Größe gedreht.
+
+
+
+=== Drehen Sie Protokolle basierend auf der Protokollgröße
+
+Wenn Sie die Standard-Protokollrotation-Methode und die Standard-Protokollgröße verwenden möchten, müssen Sie keine spezifischen Parameter für die Protokollrotation konfigurieren. Die Standard-Protokollgröße beträgt 100 MB.
+
+Wenn Sie die Standardprotokollgröße nicht verwenden möchten, können Sie das konfigurieren `-rotate-size` Parameter zum Festlegen einer benutzerdefinierten Protokollgröße.
+
+Wenn Sie die Drehung auf Basis einer Protokollgröße zurücksetzen möchten, können Sie die Einstellung mit dem folgenden Befehl aufheben `-rotate-schedule-minute` Parameter:
+
+`vserver audit modify -vserver _svm_name_ -destination / -rotate-schedule-minute -`
+
+
+
+=== Protokolle nach einem Zeitplan drehen
+
+Wenn Sie die Prüfprotokolle nach einem Zeitplan drehen möchten, können Sie die Protokollrotation mithilfe der zeitbasierten Rotationsparameter in beliebiger Kombination planen.
+
+* Wenn Sie zeitbasierte Rotation verwenden, wird das angezeigt `-rotate-schedule-minute` Parameter muss angegeben werden.
+* Alle anderen zeitbasierten Rotationsparameter sind optional.
++
+** `-rotate-schedule-month`
+** `-rotate-schedule-dayofweek`
+** `-rotate-schedule-day`
+** `-rotate-schedule-hour`
+
+
+* Der Rotationsplan wird unter Verwendung aller zeitbezogenen Werte berechnet. Wenn Sie beispielsweise nur die angeben `-rotate-schedule-minute` Parameter, die Audit-Log-Dateien werden auf der Grundlage der Minuten gedreht, die an allen Wochentagen, während aller Stunden an allen Monaten des Jahres angegeben sind.
+* Wenn Sie nur einen oder zwei zeitbasierte Rotationsparameter angeben (z. B. `-rotate-schedule-month` Und `-rotate-schedule-minutes`), die Log-Dateien werden basierend auf den Minutenwerten, die Sie an allen Wochentagen, während aller Stunden, aber nur während der angegebenen Monate angegeben.
++
+Sie können z. B. angeben, dass das Audit-Protokoll in den Monaten Januar, März und August alle Montag, Mittwoch und Samstag um 10:30 Uhr gedreht werden soll
+
+* Wenn Sie Werte für beide angeben `-rotate-schedule-dayofweek` Und `-rotate-schedule-day`, Sie werden unabhängig betrachtet.
++
+Beispiel: Wenn Sie angeben `-rotate-schedule-dayofweek` Als Freitag und `-rotate-schedule-day` Als 13, dann werden die Audit-Protokolle an jedem Freitag und am 13. Tag des angegebenen Monats gedreht werden, nicht nur an jedem Freitag der 13...
+
+* Wenn Sie die Rotation basierend auf einem Zeitplan allein zurücksetzen möchten, verwenden Sie den folgenden Befehl, um die Einstellung einzustellen `-rotate-size parameter`:
++
+`vserver audit modify -vserver _svm_name_ -destination / -rotate-size -`
+
+
+
+
+
+=== Drehen Sie Protokolle basierend auf der Protokollgröße und dem Zeitplan
+
+Sie können wählen, ob Sie die Protokolldateien basierend auf der Protokollgröße und einem Zeitplan drehen möchten, indem Sie den Parameter -rotieren-size und die zeitbasierten Rotationsparameter in einer beliebigen Kombination einstellen. Beispiel: Wenn `-rotate-size` Ist auf 10 MB und eingestellt `-rotate-schedule-minute` Ist auf 15 gesetzt, drehen sich die Protokolldateien, wenn die Protokolldateigröße 10 MB oder in der 15. Minute jeder Stunde (je nachdem, welches Ereignis zuerst eintritt) erreicht.

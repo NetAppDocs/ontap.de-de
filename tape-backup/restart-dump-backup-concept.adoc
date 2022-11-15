@@ -1,0 +1,57 @@
+---
+permalink: tape-backup/restart-dump-backup-concept.html 
+sidebar: sidebar 
+keywords: restart, dump, backup, internal, external, tape, write, errors, power, outages, accidental, user, interruptions, internal, inconsistency 
+summary: Ein Dump-Backup wird manchmal nicht beendet, weil interne oder externe Fehler wie Tape-Schreibfehler, Stromausfälle, versehentliche Unterbrechungen der Benutzer oder interne Inkonsistenzen im Storage-System auftreten. Wenn Ihr Backup aus einem der folgenden Gründe ausfällt, können Sie es neu starten. 
+---
+= Wann wird ein Speicherauszug neu gestartet
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein Dump-Backup wird manchmal nicht beendet, weil interne oder externe Fehler wie Tape-Schreibfehler, Stromausfälle, versehentliche Unterbrechungen der Benutzer oder interne Inkonsistenzen im Storage-System auftreten. Wenn Ihr Backup aus einem der folgenden Gründe ausfällt, können Sie es neu starten.
+
+Sie können das Backup unterbrechen und neu starten, um Zeiten mit hohem Datenverkehr im Storage-System zu vermeiden oder um Mitbewerber wegen begrenzter Ressourcen auf dem Storage-System, wie beispielsweise eines Bandlaufwerks, zu vermeiden. Sie können ein langes Backup unterbrechen und es später neu starten, wenn für eine dringendere Wiederherstellung (oder Sicherung) dasselbe Bandlaufwerk erforderlich ist. Neu startbare Backups bleiben bei einem Neustart erhalten. Sie können eine abgebrochene Sicherung auf Band nur dann neu starten, wenn die folgenden Bedingungen erfüllt sind:
+
+* Die abgebrochene Sicherung befindet sich in Phase IV
+* Es sind alle zugehörigen Snapshot Kopien verfügbar, die durch den Dump-Befehl gesperrt wurden.
+* Der Dateiverlauf muss aktiviert sein.
+
+
+Wenn ein solcher Dump-Vorgang abgebrochen und wieder rückgängig gemacht wird, werden die zugehörigen Snapshot-Kopien gesperrt. Diese Snapshot Kopien werden freigegeben, nachdem der Backup-Kontext gelöscht wurde. Sie können die Liste der Backup-Kontexte anzeigen, indem Sie die verwenden `vserver services ndmp restartable backup show` Befehl.
+
+[listing]
+----
+cluster::> vserver services ndmpd restartable-backup show
+Vserver     Context Identifier                   Is Cleanup Pending?
+----------- ------------------------------------ -------------------
+vserver1 330e6739-0179-11e6-a299-005056bb4bc9 false
+vserver1 481025c1-0179-11e6-a299-005056bb4bc9 false
+vserver2 5cf10132-0179-11e6-a299-005056bb4bc9 false
+3 entries were displayed.
+
+cluster::> vserver services ndmpd restartable-backup show -vserver vserver1 -context-id 330e6739-0179-11e6-a299-005056bb4bc9
+
+                       Vserver: vserver1
+            Context Identifier: 330e6739-0179-11e6-a299-005056bb4bc9
+                   Volume Name: /vserver1/vol1
+           Is Cleanup Pending?: false
+            Backup Engine Type: dump
+Is Snapshot Copy Auto-created?: true
+                     Dump Path: /vol/vol1
+   Incremental Backup Level ID: 0
+                     Dump Name: /vserver1/vol1
+     Context Last Updated Time: 1460624875
+               Has Offset Map?: true
+                 Offset Verify: true
+       Is Context Restartable?: true
+              Is Context Busy?: false
+                  Restart Pass: 4
+              Status of Backup: 2
+            Snapshot Copy Name: snapshot_for_backup.1
+          State of the Context: 7
+
+cluster::>"
+----

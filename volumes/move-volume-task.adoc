@@ -1,0 +1,70 @@
+---
+permalink: volumes/move-volume-task.html 
+sidebar: sidebar 
+keywords: move, volume 
+summary: 'Sie können ein FlexVol Volume zu einem anderen Aggregat, Node oder beiden innerhalb derselben Storage Virtual Machine (SVM) verschieben, um die Storage-Kapazität auszugleichen, nachdem ein Ungleichgewicht in der Storage-Kapazität festgestellt wurde.' 
+---
+= Verschieben Sie ein Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können ein FlexVol Volume zu einem anderen Aggregat, Node oder beiden innerhalb derselben Storage Virtual Machine (SVM) verschieben, um die Storage-Kapazität auszugleichen, nachdem ein Ungleichgewicht in der Storage-Kapazität festgestellt wurde.
+
+Wenn der Umstellungsvorgang innerhalb von 30 Sekunden nicht abgeschlossen wird, wird er es standardmäßig erneut versuchen. Sie können das Standardverhalten mit dem anpassen `-cutover-window` Und `-cutover-action` Parameter, die beide den erweiterten Zugriff auf die Berechtigungsebene erfordern. Weitere Informationen finden Sie im `volume move start` Man-Page.
+
+.Schritte
+. Wenn Sie eine Datensicherungsspiegelung verschieben und die Spiegelbeziehung nicht initialisiert haben, initialisieren Sie die Spiegelbeziehung mit der `snapmirror initialize` Befehl.
++
+Beziehungen zur Datensicherungsspiegelung müssen initialisiert werden, bevor Sie ein Volume verschieben können.
+
+. Bestimmen Sie ein Aggregat, in das Sie das Volume mithilfe der verschieben können `volume move target-aggr show` Befehl.
++
+Das ausgewählte Aggregat muss über genügend Platz für das Volume verfügen, d. h. die verfügbare Größe ist größer als das zu bewegende Volume.
+
++
+Das folgende Beispiel zeigt, dass das vs2 Volume in ein beliebiges der aufgeführten Aggregate verschoben werden kann:
+
++
+[listing]
+----
+cluster1::> volume move target-aggr show -vserver vs2 -volume user_max
+Aggregate Name   Available Size   Storage Type
+--------------   --------------   ------------
+aggr2            467.9GB          hdd
+node12a_aggr3    10.34GB          hdd
+node12a_aggr2    10.36GB          hdd
+node12a_aggr1    10.36GB          hdd
+node12a_aggr4    10.36GB          hdd
+5 entries were displayed.
+----
+. Überprüfen Sie, ob das Volume mithilfe von in das vorgesehene Aggregat verschoben werden kann `volume move start -perform-validation-only` Befehl zum Ausführen einer Validierungsprüfung.
+. Verschieben Sie das Volume mit `volume move start` Befehl.
++
+Mit dem folgenden Befehl wird das User_max Volume auf der vs2 SVM in das node12a_aggr3 Aggregat verschoben. Die Verschiebung wird als Hintergrundprozess ausgeführt.
+
++
+[listing]
+----
+cluster1::> volume move start -vserver vs2 -volume user_max
+-destination-aggregate node12a_aggr3
+----
+. Ermitteln Sie den Status der Volume-Verschiebung mit dem `volume move show` Befehl.
++
+Das folgende Beispiel zeigt den Status einer Volume-Verschiebung, die die Replizierungsphase abgeschlossen hat und sich in der Umstellungsphase befindet:
+
++
+[listing]
+----
+
+cluster1::> volume move show
+Vserver   Volume     State    Move Phase  Percent-Complete Time-To-Complete
+--------- ---------- -------- ----------  ---------------- ----------------
+vs2       user_max   healthy  cutover     -                -
+----
++
+Die Volume-Verschiebung ist abgeschlossen, wenn sie nicht mehr im angezeigt wird `volume move show` Befehlsausgabe.
+
+

@@ -1,0 +1,86 @@
+---
+permalink: nas-audit/requirements-best-practices-fpolicy-concept.html 
+sidebar: sidebar 
+keywords: requirements, considerations, best practices, configure, fpolicy 
+summary: 'Bevor Sie FPolicy Konfigurationen auf Ihren Storage Virtual Machines (SVMs) erstellen und konfigurieren, müssen Sie bestimmte Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy kennen.' 
+---
+= Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie FPolicy Konfigurationen auf Ihren Storage Virtual Machines (SVMs) erstellen und konfigurieren, müssen Sie bestimmte Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy kennen.
+
+
+
+== Möglichkeiten zur Konfiguration von FPolicy
+
+FPolicy-Funktionen werden entweder über die Befehlszeilenschnittstelle (CLI) oder über APIs konfiguriert. In diesem Leitfaden wird die CLI verwendet, um eine FPolicy-Konfiguration auf dem Cluster zu erstellen, zu verwalten und zu überwachen.
+
+
+
+== Anforderungen für die Einrichtung von FPolicy
+
+Bevor Sie FPolicy auf Ihrer Storage Virtual Machine (SVM) konfigurieren und aktivieren, müssen Sie bestimmte Anforderungen kennen.
+
+* Auf allen Nodes im Cluster muss eine Version von ONTAP ausgeführt werden, die FPolicy unterstützt.
+* Wenn Sie nicht die native FPolicy Engine von ONTAP verwenden, müssen Sie externe FPolicy Server (FPolicy Server) installiert haben.
+* Die FPolicy Server müssen auf einem Server installiert werden, auf den über die Daten-LIFs der SVM zugegriffen werden kann, wo FPolicy-Richtlinien aktiviert sind.
+* Die IP-Adresse des FPolicy-Servers muss als primärer oder sekundärer Server in der Konfiguration einer externen FPolicy Engine konfiguriert werden.
+* Wenn die FPolicy-Server über einen privilegierten Datenkanal auf Daten zugreifen, müssen die folgenden zusätzlichen Anforderungen erfüllt werden:
++
+** SMB muss auf dem Cluster lizenziert sein.
++
+Der privilegierte Datenzugriff erfolgt über SMB-Verbindungen.
+
+** Für den Zugriff auf Dateien über den privilegierten Datenkanal müssen Benutzeranmeldeinformationen konfiguriert werden.
+** Der FPolicy-Server muss unter den in der FPolicy-Konfiguration konfigurierten Anmeldeinformationen ausgeführt werden.
+** Alle Daten-LIFs, die für die Kommunikation mit den FPolicy-Servern verwendet werden, müssen konfiguriert werden `cifs` Als eines der zulässigen Protokolle.
++
+Dies schließt die LIFs ein, die für Passthrough-Read-Verbindungen verwendet werden.
+
+
+
+
+
+
+
+== Best Practices und Empfehlungen beim Einrichten von FPolicy
+
+Wenn Sie FPolicy auf Storage Virtual Machines (SVMs) einrichten, müssen Sie mit Best Practices und Empfehlungen der Konfiguration vertraut sein, um sicherzustellen, dass Ihre FPolicy Konfiguration über robuste Monitoring-Performance und Ergebnisse verfügt, die Ihre Anforderungen erfüllen.
+
+* Externe FPolicy-Server (FPolicy Server) sollten mit hoher Bandbreite in direkter Nähe zum Cluster platziert werden, um eine minimale Latenz und Konnektivität mit hoher Bandbreite zu bieten.
+* Die externe FPolicy Engine sollte mit mehr als einem FPolicy-Server konfiguriert werden, um Ausfallsicherheit und hohe Verfügbarkeit der FPolicy-Server-Benachrichtigungsverarbeitung zu gewährleisten, insbesondere wenn Richtlinien für synchrones Screening konfiguriert wurden.
+* Es wird empfohlen, die FPolicy zu deaktivieren, bevor Sie Konfigurationsänderungen vornehmen.
++
+Wenn Sie beispielsweise eine IP-Adresse in der für die aktivierte Richtlinie konfigurierten externen Engine FPolicy hinzufügen oder ändern möchten, sollten Sie diese zunächst deaktivieren.
+
+* Das Cluster-Node-to-FPolicy-Serververhältnis sollte optimiert werden, um sicherzustellen, dass FPolicy Server nicht überlastet sind. Dies kann Latenzen bedeuten, wenn die SVM auf Client-Anforderungen reagiert.
++
+Das optimale Verhältnis hängt von der Applikation ab, für die der FPolicy-Server verwendet wird.
+
+
+
+
+
+== Überlegungen zum Passthrough-Upgrade und Zurücksetzen
+
+Es gibt bestimmte Überlegungen zum Upgrade und Zurücksetzen, die Sie vor dem Upgrade auf eine ONTAP-Version, die Passthrough-Read unterstützt, oder vor dem Zurücksetzen auf eine Version ohne Passthrough-Read wissen müssen.
+
+
+
+=== Aktualisierung
+
+Nachdem alle Knoten auf eine Version von ONTAP aktualisiert wurden, die FPolicy PassThrough-Read unterstützt, kann der Cluster die Passthrough-Read-Funktion nutzen; allerdings ist Passthrough-read bei bestehenden FPolicy-Konfigurationen standardmäßig deaktiviert. Um Passthrough-read für bestehende FPolicy-Konfigurationen zu verwenden, müssen Sie die FPolicy deaktivieren und die Konfiguration ändern und dann die Konfiguration erneut aktivieren.
+
+
+
+=== Zurücksetzen
+
+Bevor Sie zu einer Version von ONTAP zurückkehren, die FPolicy PassThrough-read nicht unterstützt, müssen die folgenden Bedingungen erfüllt sein:
+
+* Alle Richtlinien, die Passthrough-Read verwenden, müssen deaktiviert werden, und dann müssen die betroffenen Konfigurationen geändert werden, damit sie kein Passthrough-Read verwenden.
+* Die FPolicy-Funktion muss auf dem Cluster deaktiviert werden, indem jede FPolicy auf dem Cluster deaktiviert wird.
+

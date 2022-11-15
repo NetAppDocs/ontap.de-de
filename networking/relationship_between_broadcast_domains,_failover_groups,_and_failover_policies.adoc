@@ -1,0 +1,75 @@
+---
+sidebar: sidebar 
+permalink: networking/relationship_between_broadcast_domains.html 
+keywords: relationship, broadcast, domain, failover, fail, over, group, policy, policies, relationship between broadcast domains, failover groups, and failover policies, comparing broadcast domains, failover groups, and failover policies, port failover, network interface show -failover, decide which lif failover policy to use, failover policy decision tree, default failover policies by lif type, sfo-partner-only 
+summary: Broadcast-Domänen, Failover-Gruppen und Failover-Richtlinien bestimmen gemeinsam, welcher Port bei einem Ausfall übernommen wird 
+---
+= Beziehung zwischen Broadcast-Domänen, Failover-Gruppen und Failover-Richtlinien
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Broadcast-Domänen, Failover-Gruppen und Failover-Richtlinien bestimmen gemeinsam, welcher Port übernommen wird, wenn der Node oder der Port, auf dem eine LIF konfiguriert ist, ausfällt.
+
+Eine Broadcast-Domäne listet alle Ports auf, die im selben Layer-2-Ethernet-Netzwerk erreichbar sind. Ein von einem der Ports gesendete Ethernet-Broadcast-Paket wird von allen anderen Ports in der Broadcast-Domäne angezeigt. Diese gängige Erreichbarkeit einer Broadcast-Domäne ist für LIFs wichtig, da bei einem Failover einer LIF auf einen anderen Port in der Broadcast-Domäne immer noch jeder lokale und Remote Host erreichen könnte, der über den ursprünglichen Port erreichbar war.
+
+Failover-Gruppen definieren die Ports innerhalb einer Broadcast-Domäne, die für sich gegenseitig einen LIF Failover-Schutz bieten. Jede Broadcast-Domäne besitzt eine Failover-Gruppe, die alle Ports beinhaltet. Diese Failover-Gruppe, die alle Ports in der Broadcast-Domäne enthält, ist die Standard- und empfohlene Failover-Gruppe für das LIF. Sie können Failover-Gruppen mit kleineren, von Ihnen definierten Teilmengen erstellen, z. B. eine Failover-Gruppe von Ports, die dieselbe Link-Geschwindigkeit in einer Broadcast-Domäne haben.
+
+Eine Failover-Richtlinie gibt an, wie eine LIF die Ports einer Failover-Gruppe verwendet, wenn ein Node oder Port ausfällt. Betrachten Sie die Failover-Richtlinie als einen Filtertyp, der auf eine Failover-Gruppe angewendet wird. Die Failover-Ziele für eine LIF (der Port-Satz, auf den eine LIF Failover-Ausfallsicherung durchführen kann) werden durch Anwenden der Failover-Richtlinie des LIF auf die Failover-Gruppe der LIF in der Broadcast-Domäne bestimmt.
+
+Sie können die Failover-Ziele für ein LIF mit dem folgenden CLI-Befehl anzeigen:
+
+....
+network interface show -failover
+....
+NetApp empfiehlt besonders die Verwendung der Standard-Failover-Richtlinie für Ihren LIF-Typ.
+
+
+
+== Entscheiden Sie, welche LIF Failover-Richtlinie verwendet werden soll
+
+Entscheiden Sie, ob Sie die empfohlene Standard-Failover-Richtlinie verwenden oder ob Sie diese basierend auf Ihrem LIF-Typ und Ihrer Umgebung ändern sollten.
+
+
+
+=== Entscheidungsbaum für Failover-Richtlinie
+
+image:LIF_failover_decision_tree.png["Entscheidungsbaum-Image für LIF Failover"]
+
+
+
+=== Standardmäßige Failover-Richtlinien nach LIF-Typ
+
+[cols="25,25,50"]
+|===
+
+
+| LIF-Typ | Standardmäßige Failover-Richtlinie | Beschreibung 
+
+
+| BGP LIFs | Deaktiviert | Ein Failover von LIF zu einem anderen Port ist nicht möglich. 
+
+
+| Cluster-LIFs | Nur lokal | LIF führt nur ein Failover zu Ports auf demselben Node durch. 
+
+
+| Cluster-Management-LIF | Broadcast-Domain Wide | LIF Failover auf Ports in derselben Broadcast-Domäne auf jedem Node im Cluster 
+
+
+| Intercluster LIFs | Nur lokal | LIF führt nur ein Failover zu Ports auf demselben Node durch. 
+
+
+| NAS-Daten-LIFs | Systemdefiniert | LIF Failover auf einen anderen Node, der nicht der HA-Partner ist. 
+
+
+| Node-Management-LIFs | Nur lokal | LIF führt nur ein Failover zu Ports auf demselben Node durch. 
+
+
+| SAN-Daten-LIFs | Deaktiviert | Ein Failover von LIF zu einem anderen Port ist nicht möglich. 
+|===
+Der `sfo-partner-only` Die Failover-Richtlinie ist kein Standard, kann aber verwendet werden, wenn die LIF ein Failover zu einem Port auf dem Home-Node oder nur beim SFO-Partner durchführen soll.

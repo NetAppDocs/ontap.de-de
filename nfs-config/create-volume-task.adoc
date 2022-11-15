@@ -1,0 +1,76 @@
+---
+permalink: nfs-config/create-volume-task.html 
+sidebar: sidebar 
+keywords: create, volume 
+summary: Sie können ein Volume erstellen und dessen Verbindungspunkt und andere Eigenschaften mit dem Befehl Volume create festlegen. 
+---
+= Erstellen eines Volumes
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können ein Volume erstellen und dessen Verbindungspunkt und andere Eigenschaften mit der festlegen `volume create` Befehl.
+
+Der SVM-Sicherheitsstil muss UNIX sein, und NFS sollte eingerichtet und in Betrieb sein.
+
+Ein Volume muss einen Verbindungspfad_ enthalten, damit seine Daten den Clients zur Verfügung gestellt werden können. Sie können den Verbindungspfad angeben, wenn Sie ein neues Volume erstellen. Wenn Sie ein Volume erstellen, ohne einen Verbindungspfad anzugeben, müssen Sie das Volume über den im SVM Namespace mounten `volume mount` Befehl.
+
+.Schritte
+. Volume mit einem Verbindungspunkt erstellen:
++
+`volume create -vserver _vserver_name_ -volume _volume_name_ -aggregate _aggregate_name_ -size {_integer_[KB|MB|GB|TB|PB]} -security-style unix -user _user_name_or_number_ -group _group_name_or_number_ -junction-path _junction_path_ [-policy _export_policy_name_]`
+
++
+Die Wahl für `-junction-path` Sind die folgenden:
+
++
+** Beispielsweise direkt unter root `/_new_vol_`
++
+Sie können ein neues Volume erstellen und festlegen, dass es direkt in das SVM Root-Volume eingebunden wird.
+
+** Unter einem vorhandenen Verzeichnis z.B. `/_existing_dir/new_vol_`
++
+Sie können ein neues Volume erstellen und angeben, dass es in ein vorhandenes Volume (in einer vorhandenen Hierarchie) eingebunden wird, das als Verzeichnis angegeben wird.
+
+
+
++
+Wenn Sie ein Volume in einem neuen Verzeichnis erstellen möchten (in einer neuen Hierarchie unter einem neuen Volume), zum Beispiel, `_/new_dir/new_vol_`, Anschließend müssen Sie zuerst ein neues übergeordnetes Volume erstellen, das mit dem SVM Root Volume verbunden ist. Anschließend würde das neue untergeordnete Volume im Verbindungspfad des neuen übergeordneten Volume (neues Verzeichnis) erstellt.
+
++
++ Wenn Sie eine vorhandene Exportrichtlinie verwenden möchten, können Sie diese beim Erstellen des Volumes angeben. Sie können später auch eine Exportrichtlinie mit dem hinzufügen `volume modify` Befehl.
+
+. Vergewissern Sie sich, dass das Volume mit dem gewünschten Verbindungspunkt erstellt wurde:
++
+`volume show -vserver _vserver_name_ -volume _volume_name_ -junction`
+
+
+
+Mit dem folgenden Befehl wird ein neues Volume mit dem Namen „user1“ auf der SVM vs1.example.com und auf dem Aggregat aggr1 erstellt. Der neue Band wird bei zur Verfügung gestellt `/users`. Das Volume ist 750 GB groß und seine Volumengarantie ist vom Typ Volume (standardmäßig).
+
+[listing]
+----
+cluster1::> volume create -vserver vs1.example.com -volume users -aggregate aggr1 -size 750g -junction-path /users
+[Job 1642] Job succeeded: Successful
+
+cluster1::> volume show -vserver vs1.example.com -volume users -junction
+                          Junction                 Junction
+Vserver           Volume  Active   Junction Path   Path Source
+----------------- ------- -------- --------------- -----------
+vs1.example.com   users1  true     /users          RW_volume
+----
+Mit dem folgenden Befehl wird ein neues Volume namens „home4“ auf der SVM „vs1.example.com“ und das Aggregat „aggr1“ erstellt. Das Verzeichnis `/eng/` Im Namespace für die vs1 SVM ist bereits vorhanden, und das neue Volume wird unter zur Verfügung gestellt `/eng/home`, Das zum Home-Verzeichnis für das wird `/eng/` Namespace. Das Volumen ist 750 GB groß und seine Volumengarantie ist vom Typ `volume` (Standardmäßig).
+
+[listing]
+----
+cluster1::> volume create -vserver vs1.example.com -volume home4 -aggregate aggr1 -size 750g -junction-path /eng/home
+[Job 1642] Job succeeded: Successful
+
+cluster1::> volume show -vserver vs1.example.com -volume home4 -junction
+                         Junction                 Junction
+Vserver          Volume  Active   Junction Path   Path Source
+---------------- ------- -------- --------------- -----------
+vs1.example.com  home4   true     /eng/home       RW_volume
+----

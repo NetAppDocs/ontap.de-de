@@ -1,0 +1,120 @@
+---
+sidebar: sidebar 
+permalink: task_nas_secure_client_access_with_kerberos.html 
+keywords: netapp, ontap, kerberos, security, client access, group permissions, user permissions, UNIX permissions, name mapping, NAS client, storage access 
+summary: Aktivieren Sie Kerberos, um den Speicherzugriff für NAS-Clients zu sichern. 
+---
+= Sicherer Client-Zugriff mit Kerberos
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Aktivieren Sie Kerberos, um den Speicherzugriff für NAS-Clients zu sichern.
+
+Durch dieses Verfahren werden Kerberos auf einer vorhandenen Speicher-VM konfiguriert, die für aktiviert ist link:task_nas_enable_linux_nfs.html["NFS"] Oder link:task_nas_enable_windows_smb.html["SMB"].
+
+Bevor Sie beginnen, sollten Sie DNS, NTP und konfiguriert haben link:task_nas_provide_client_access_with_name_services.html["LDAP"] Auf dem Storage-System.
+
+image:workflow_nas_secure_client_access_with_kerberos.gif["Workflow zur Sicherung des Client-Zugriffs mit Kerberos"]
+
+.Schritte
+. Legen Sie in der ONTAP-Befehlszeile UNIX-Berechtigungen für das Root-Volume der Storage VM fest.
++
+.. Anzeige der entsprechenden Berechtigungen auf dem Speicher-VM-Root-Volume: `volume show -volume _root_vol_name_-fields user,group,unix-permissions`
++
+Das Root-Volume der Storage-VM muss über folgende Konfiguration verfügen:
+
++
+[cols="2"]
+|===
+| Name... | Einstellung... 
+
+
+| UID | Root oder ID 0 
+
+
+| GID | Root oder ID 0 
+
+
+| UNIX-Berechtigungen | 755 
+|===
+.. Wenn diese Werte nicht angezeigt werden, verwenden Sie den `volume modify` Befehl zum Aktualisieren der Daten.
+
+
+. Legen Sie Benutzerberechtigungen für das Root-Volume der Storage-VM fest.
++
+.. Zeigen Sie die lokalen UNIX-Benutzer an: `vserver services name-service unix-user show -vserver _vserver_name_`
++
+Die Storage VM sollte die folgenden UNIX-Benutzer konfiguriert haben:
+
++
+[cols="3"]
+|===
+| Benutzername | Benutzer-ID | ID der primären Gruppe 
+
+
+| nfs | 500 | 0 
+
+
+| Stamm | 0 | 0 
+|===
++
+*Hinweis:* der NFS-Benutzer ist nicht erforderlich, wenn eine Kerberos-UNIX Namenszuweisung für den SPN des NFS Client-Benutzers vorhanden ist; siehe Schritt 5.
+
+.. Wenn diese Werte nicht angezeigt werden, verwenden Sie den `vserver services name-service unix-user modify` Befehl zum Aktualisieren der Daten.
+
+
+. Legen Sie Gruppenberechtigungen für das Root-Volume der Storage-VM fest.
++
+.. Zeigen Sie die lokalen UNIX-Gruppen an: `vserver services name-service unix-group show -vserver _vserver_name_`
++
+Die Storage VM sollte die folgenden UNIX-Gruppen konfiguriert haben:
+
++
+[cols="2"]
+|===
+| Gruppenname | Gruppen-ID 
+
+
+| Dämon | 1 
+
+
+| Stamm | 0 
+|===
+.. Wenn diese Werte nicht angezeigt werden, verwenden Sie den `vserver services name-service unix-group modify` Befehl zum Aktualisieren der Daten.
+
+
+. Wechseln Sie zu System Manager, um Kerberos zu konfigurieren
+. Klicken Sie im System Manager auf *Storage > Storage VMs* und wählen Sie die Storage VM aus.
+. Klicken Sie Auf *Einstellungen*.
+. Klicken Sie Auf image:icon_arrow.gif["Pfeil"] Unter Kerberos.
+. Klicken Sie unter Kerberos-Bereich auf *Hinzufügen*, und füllen Sie die folgenden Abschnitte aus:
++
+** Kerberos-Bereich Hinzufügen
++
+Konfigurationsdetails je nach KDC-Anbieter eingeben.
+
+** Fügen Sie der Netzwerkschnittstelle zu Bereich hinzu
++
+Klicken Sie auf *Hinzufügen* und wählen Sie eine Netzwerkschnittstelle aus.
+
+
+
+. Fügen Sie bei Bedarf Zuordnungen von Kerberos-Hauptnamen zu lokalen Benutzernamen hinzu.
++
+.. Klicken Sie auf *Storage > Storage VMs* und wählen Sie die Speicher-VM aus.
+.. Klicken Sie auf *Einstellungen* und dann auf image:icon_arrow.gif["Pfeil"] Unter *Namenszuordnung*.
+.. Fügen Sie unter *Kerberos to UNIX* Muster und Ersetzungen mithilfe regelmäßiger Ausdrücke hinzu.
+
+
+

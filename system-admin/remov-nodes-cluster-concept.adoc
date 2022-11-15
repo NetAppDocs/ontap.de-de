@@ -1,0 +1,125 @@
+---
+permalink: system-admin/remov-nodes-cluster-concept.html 
+sidebar: sidebar 
+keywords: remove, node, cluster, failover, partner, erase, inaccessible 
+summary: Sie können nicht benötigte Nodes gleichzeitig von einem Cluster und einem Node entfernen. Nachdem Sie einen Node entfernt haben, müssen Sie auch seinen Failover-Partner entfernen. Wenn Sie einen Node entfernen, können seine Daten auf nicht mehr zugegriffen oder gelöscht werden. 
+---
+= Entfernen Sie die Nodes aus dem Cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können nicht benötigte Nodes gleichzeitig von einem Cluster und einem Node entfernen. Nachdem Sie einen Node entfernt haben, müssen Sie auch seinen Failover-Partner entfernen. Wenn Sie einen Node entfernen, können seine Daten auf nicht mehr zugegriffen oder gelöscht werden.
+
+Die folgenden Bedingungen müssen erfüllt sein, bevor die Nodes aus dem Cluster entfernt werden:
+
+* Mehr als die Hälfte der Nodes im Cluster muss sich in einem ordnungsgemäßen Zustand befinden.
+* Alle Daten auf dem Node, den Sie entfernen möchten, müssen evakuiert worden sein.
++
+** Dies kann auch sein link:../encryption-at-rest/secure-purge-data-encrypted-volume-concept.html["Daten werden aus einem verschlüsselten Volume entfernt"].
+
+
+* Alle Volumen waren link:../volumes/move-volume-task.html["Verschoben"] Oder link:../volumes/delete-flexvol-task.html["Gelöscht"] Von Aggregaten, die dem Node gehören.
+* Alle Aggregate wurden verwendet link:../disks-aggregates/commands-manage-aggregates-reference.html["Gelöscht"] Vom Node.
+* Wenn der Node Eigentümer von FIPS-Festplatten (Federal Information Processing Standards) oder Self-Encrypting Drives (SEDs) ist, link:../encryption-at-rest/return-seds-unprotected-mode-task.html["Die Festplattenverschlüsselung wurde entfernt"] Indem die Festplatten in den ungeschützten Modus versetzt werden.
++
+** Dies könnte Sie auch interessieren link:../encryption-at-rest/sanitize-fips-drive-sed-task.html["FIPS-Laufwerke oder SEDs reinigen"].
+
+
+* Daten-LIFs wurden link:../networking/delete_a_lif.html["Gelöscht"] Oder link:../networking/migrate_a_lif.html["Umgezogen"] Vom Node.
+* Die Cluster-Management-LIFs wurden link:../networking/migrate_a_lif.html["Umgezogen"] Vom Node und den Home-Ports geändert.
+* Alle Intercluster LIFs wurden link:../networking/delete_a_lif.html["Entfernt"].
++
+** Wenn Sie Intercluster LIFs entfernen, wird eine Warnung angezeigt, die ignoriert werden kann.
+
+
+* Storage-Failover war link:../high-availability/ha_commands_for_enabling_and_disabling_storage_failover.html["Deaktiviert"] Für den Node.
+* Alle LIF Failover-Regeln waren link:../networking/commands_for_managing_failover_groups_and_policies.html["Geändert"] Um Ports auf dem Node zu entfernen.
+* Alle VLANs auf dem Node waren link:../networking/configure_vlans_over_physical_ports.html#delete-a-vlan["Gelöscht"].
+
+
+Es wird empfohlen, eine AutoSupport Meldung zu senden, um den technischen Support von NetApp zu benachrichtigen, dass derzeit ein Entfernen von Nodes ausgeführt wird.
+
+*Hinweis:* Sie dürfen keine Vorgänge wie durchführen `cluster remove-node`, `cluster unjoin`, und `node rename` Läuft ein automatisiertes ONTAP Upgrade.
+
+Wenn Sie ein Cluster mit gemischten Versionen ausführen, können Sie den letzten Node niedriger Versionen mithilfe eines der erweiterten Berechtigungsbefehle, beginnend mit ONTAP 9.3, entfernen:
+
+* ONTAP 9.3: `cluster unjoin -skip-last-low-version-node-check`
+* ONTAP 9.4 und höher: `cluster remove-node -skip-last-low-version-node-check`
+
+
+*Hinweis:* Alle System- und Benutzerdaten von allen Festplatten, die mit dem Knoten verbunden sind, müssen Benutzern zugänglich gemacht werden, bevor ein Knoten aus dem Cluster entfernt wird. Wenn ein Node nicht ordnungsgemäß von einem Cluster entfernt wurde, wenden Sie sich an den NetApp Support, um Hilfe bei Optionen zur Recovery zu erhalten.
+
+.Schritte
+. Ändern Sie die Berechtigungsebene in erweitert:
++
+`*set -privilege advanced*`
+
+. Wenn der Node, den Sie entfernen möchten, der aktuelle Master-Node ist, aktivieren Sie dann einen anderen Node im Cluster, der als Master-Node ausgewählt werden soll, indem Sie die Cluster-Berechtigung des Master-Node auf ändern `false`:
++
+`*cluster modify –eligibility false*`
+
++
+Der Master-Node ist der Node mit Prozessen wie „`mgmt`“, „`vldb`“, „`vifmgr`“, „`bcomd`“ und „`crs`“. Der `cluster ring show` Der erweiterte Befehl zeigt den aktuellen Master-Node an.
+
++
+[listing]
+----
+cluster::*> cluster modify -node node1 -eligibility false
+----
+. Entfernen des Node aus dem Cluster:
++
+|===
+| Für diese ONTAP-Version... | Befehl 
+
+
+ a| 
+ONTAP 9.3
+ a| 
+`*cluster unjoin*`
+
+
+
+ a| 
+ONTAP 9.4 und höher
+ a| 
+`*cluster remove-node*`
+
+|===
++
+Wenn Sie über ein Cluster mit gemischter Version verfügen und den Node mit der letzten niedrigeren Version entfernen, verwenden Sie das `-skip-last-low-version-node-check` Parameter mit diesen Befehlen.
+
++
+Das System informiert Sie über Folgendes:
+
++
+** Außerdem müssen Sie den Failover-Partner des Node aus dem Cluster entfernen.
+** Nachdem der Node entfernt wurde und bevor er einem Cluster erneut beitreten kann, müssen Sie die Startmenü-Option (4) Clean Configuration verwenden und alle Festplatten oder Optionen (9) Configure Advanced Drive Partitioning initialisieren, um die Konfiguration des Node zu löschen und alle Festplatten zu initialisieren.
++
+Wenn die Bedingungen angegeben sind, die Sie vor dem Entfernen des Node berücksichtigen müssen, wird eine Fehlermeldung generiert. Beispielsweise könnte die Meldung angeben, dass der Node über gemeinsam genutzte Ressourcen verfügt, die Sie entfernen müssen, oder dass sich der Node in einer Cluster HA-Konfiguration oder in einer Storage-Failover-Konfiguration befindet, die Sie deaktivieren müssen.
+
++
+Wenn der Knoten der Quorum-Master ist, verliert der Cluster kurz und kehrt dann zum Quorum zurück. Dieser Quorum-Verlust ist temporär und hat keine Auswirkungen auf Datenoperationen.
+
+
+
+. Wenn eine Fehlermeldung Fehlerbedingungen anzeigt, beheben Sie diese Bedingungen und führen Sie den erneut aus `cluster remove-node` Oder `cluster unjoin` Befehl.
++
+Der Node wird automatisch neu gebootet, wenn er erfolgreich aus dem Cluster entfernt wurde.
+
+. Löschen Sie bei einer Neuzuordnung des Node die Node-Konfiguration und initialisieren Sie alle Festplatten:
++
+.. Drücken Sie während des Bootens Strg-C, um das Boot-Menü anzuzeigen, wenn Sie dazu aufgefordert werden.
+.. Wählen Sie die Startmenü-Option *(4) Konfiguration reinigen und initialisieren Sie alle Festplatten*.
+
+
+. Zurück zur Administrator-Berechtigungsebene:
++
+`*set -privilege admin*`
+
+. Wiederholen Sie die vorherigen Schritte, um den Failover-Partner aus dem Cluster zu entfernen.
+
+
+Wenn Sie Nodes entfernt haben, um ein Single-Node-Cluster zu haben, sollten Sie die Cluster-Ports ändern, um Datenverkehr bereitzustellen, indem Sie die Cluster-Ports als Daten-Ports ändern und dann Daten-LIFs für die Daten-Ports erstellen.

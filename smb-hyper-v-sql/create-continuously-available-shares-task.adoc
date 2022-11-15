@@ -1,0 +1,68 @@
+---
+permalink: smb-hyper-v-sql/create-continuously-available-shares-task.html 
+sidebar: sidebar 
+keywords: create, continuous, smb, available, share, sql, database, file, server, hyper, v, virtual, machine 
+summary: Nach der Erstellung Ihrer Daten-Volumes können Sie die kontinuierlich verfügbaren Freigaben erstellen, die von den Applikationsservern für den Zugriff auf Hyper-V Virtual Machine-, Konfigurations- und SQL Server-Datenbankdateien verwendet werden. Beim Erstellen der SMB-Freigaben sollten Sie das Konfigurationsarbeitsblatt für die Freigabe verwenden. 
+---
+= Kontinuierlich verfügbare SMB-Freigaben erstellen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Nach der Erstellung Ihrer Daten-Volumes können Sie die kontinuierlich verfügbaren Freigaben erstellen, die von den Applikationsservern für den Zugriff auf Hyper-V Virtual Machine-, Konfigurations- und SQL Server-Datenbankdateien verwendet werden. Beim Erstellen der SMB-Freigaben sollten Sie das Konfigurationsarbeitsblatt für die Freigabe verwenden.
+
+.Schritte
+. Informationen zu den vorhandenen Daten-Volumes und ihren Verbindungspfaden anzeigen:
++
+`*volume show -vserver _vserver_name_ -junction*`
+
+. Kontinuierlich verfügbare SMB-Freigabe erstellen:
++
+`*vserver cifs share create -vserver _vserver_name_ -share-name _share_name_ -path _path_ -share-properties oplocks,continuously-available -symlink "" [-comment text]*`
+
++
+** Optional können Sie der Share-Konfiguration einen Kommentar hinzufügen.
+** Standardmäßig ist die Eigenschaft „Offline-Dateifreigabe“ auf der Freigabe konfiguriert und auf festgelegt `manual`.
+** ONTAP erstellt die Freigabe mit der Windows-Standardfreigabe-Berechtigung von `Everyone` / `Full Control`.
+
+
+. Wiederholen Sie den vorherigen Schritt für alle Freigaben im Arbeitsblatt zur Freigabe-Konfiguration.
+. Überprüfen Sie mithilfe der die korrekte Konfiguration `vserver cifs share show` Befehl.
+. Konfigurieren Sie NTFS-Dateiberechtigungen auf den kontinuierlich verfügbaren Freigaben, indem Sie jedem Share ein Laufwerk zuordnen und Dateiberechtigungen über das Fenster *Windows-Eigenschaften* konfigurieren.
+
+
+Mit den folgenden Befehlen wird eine kontinuierlich verfügbare Freigabe namens „`data2`“ auf der Storage Virtual Machine (SVM, ehemals Vserver genannt) vs1 erstellt. Symlinks werden durch Setzen des deaktiviert `-symlink` Parameter an `""`:
+
+[listing]
+----
+cluster1::> volume show -vserver vs1 -junction
+                      Junction                  Junction
+Vserver   Volume      Active   Junction Path    Path Source
+--------- ----------- -------- ---------------- ------------
+vs1       data        true     /data            RW_volume
+vs1       data1       true     /data/data1      RW_volume
+vs1       data2       true     /data/data2      RW_volume
+vs1       vs1_root    -        /                -
+
+cluster1::> vserver cifs share create -vserver vs1 -share-name data2 -path /data/data2 -share-properties oplocks,continuously-available -symlink ""
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data2
+
+                      Vserver: vs1
+                        Share: data2
+     CIFS Server NetBIOS Name: VS1
+                         Path: /data/data2
+             Share Properties: oplocks
+                               continuously-available
+           Symlink Properties: -
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+----

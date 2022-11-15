@@ -1,0 +1,87 @@
+---
+permalink: smb-admin/add-task-security-policy-file-task.html 
+sidebar: sidebar 
+keywords: creating, create, add, policy, task, security, policy, configuring, configure, apply, acl, associate, task, entries, add a task to the security policy 
+summary: Das Erstellen und Hinzufügen einer Richtlinienaufgabe zu einer Sicherheitsrichtlinie ist der vierte Schritt bei der Konfiguration und Anwendung von ACLs auf Dateien oder Ordner in SVMs. Beim Erstellen der Richtlinienaufgabe verknüpfen Sie die Aufgabe mit einer Sicherheitsrichtlinie. Sie können einer Sicherheitsrichtlinie einen oder mehrere Aufgabeneinträge hinzufügen. 
+---
+= Fügen Sie der Sicherheitsrichtlinie eine Aufgabe hinzu
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Das Erstellen und Hinzufügen einer Richtlinienaufgabe zu einer Sicherheitsrichtlinie ist der vierte Schritt bei der Konfiguration und Anwendung von ACLs auf Dateien oder Ordner in SVMs. Beim Erstellen der Richtlinienaufgabe verknüpfen Sie die Aufgabe mit einer Sicherheitsrichtlinie. Sie können einer Sicherheitsrichtlinie einen oder mehrere Aufgabeneinträge hinzufügen.
+
+Die Sicherheitsrichtlinie ist ein Container für eine Aufgabe. Eine Aufgabe bezieht sich auf einen einzelnen Vorgang, der von einer Sicherheitsrichtlinie auf Dateien oder Ordner mit NTFS oder gemischter Sicherheit (oder auf ein Volume-Objekt, wenn Storage-Level Access Guard konfiguriert wird) durchgeführt werden kann.
+
+Es gibt zwei Arten von Aufgaben:
+
+* Datei- und Verzeichnisaufgaben
++
+Wird verwendet, um Aufgaben anzugeben, die Sicherheitsdeskriptoren auf bestimmte Dateien und Ordner anwenden. ACLs, die über Datei- und Verzeichnisaufgaben angewendet werden, können mit SMB-Clients oder der ONTAP CLI gemanagt werden.
+
+* Storage-Level Access Guard-Aufgaben
++
+Wird verwendet, um Aufgaben anzugeben, die Sicherheitsdeskriptoren auf Storage-Ebene für den Access Guard auf ein angegebenes Volume anwenden. ACLs, die über Aufgaben der Storage-Ebene Access Guard angewendet werden, können nur über die ONTAP-CLI gemanagt werden.
+
+
+
+Eine Aufgabe enthält Definitionen für die Sicherheitskonfiguration einer Datei (oder eines Ordners) oder eines Dateiansatz (oder Ordners). Jede Aufgabe in einer Richtlinie wird eindeutig durch den Pfad identifiziert. Es kann nur eine Aufgabe pro Pfad innerhalb einer einzigen Richtlinie geben. Eine Richtlinie kann keine doppelten Aufgabeneinträge enthalten.
+
+Richtlinien zum Hinzufügen einer Aufgabe zu einer Richtlinie:
+
+* Pro Richtlinie können maximal 10,000 Aufgabeneinträge eingegeben werden.
+* Eine Richtlinie kann eine oder mehrere Aufgaben enthalten.
++
+Obwohl eine Richtlinie mehr als eine Aufgabe enthalten kann, können Sie eine Richtlinie nicht so konfigurieren, dass sie sowohl Dateiverzeichnisaufgaben als auch Zugriffsschutz auf Speicherebene enthält. Eine Richtlinie muss entweder alle Storage-Level Access Guard-Aufgaben oder alle Dateiverzeichnisaufgaben enthalten.
+
+* Storage-Level Access Guard dient zur Einschränkung von Berechtigungen.
++
+Es wird niemals zusätzliche Zugriffsrechte geben.
+
+
+
+Beim Hinzufügen von Aufgaben zu Sicherheitsrichtlinien müssen Sie die folgenden vier erforderlichen Parameter angeben:
+
+* SVM-Name
+* Name der Richtlinie
+* Pfad
+* Sicherheitsdeskriptor, der mit dem Pfad verknüpft wird
+
+
+Sie können die Konfiguration der Sicherheitsdeskriptoren mithilfe der folgenden optionalen Parameter anpassen:
+
+* Sicherheitstyp
+* Ausbreitungsmodus
+* Indexposition
+* Art der Zugriffskontrolle
+
+
+Der Wert für alle optionalen Parameter wird für Storage-Level Access Guard ignoriert. Weitere Informationen finden Sie auf den man-Pages.
+
+.Schritte
+. Fügen Sie der Sicherheitsrichtlinie eine Aufgabe mit einem zugehörigen Sicherheitsdeskriptor hinzu: `vserver security file-directory policy task add -vserver vserver_name -policy-name policy_name -path path -ntfs-sd SD_nameoptional_parameters`
++
+`file-directory` Ist der Standardwert für `-access-control` Parameter. Die Angabe des Zugriffsteuerungstyps bei der Konfiguration von Aufgaben für den Datei- und Verzeichniszugriff ist optional.
+
++
+`vserver security file-directory policy task add -vserver vs1 -policy-name policy1 -path /home/dir1 -security-type ntfs -ntfs-mode propagate -ntfs-sd sd2 -index-num 1 -access-control file-directory`
+
+. Überprüfen Sie die Aufgabenkonfiguration der Richtlinie: `vserver security file-directory policy task show -vserver vserver_name -policy-name policy_name -path path`
++
+`vserver security file-directory policy task show`
+
++
+[listing]
+----
+
+Vserver: vs1
+Policy: policy1
+
+Index    File/Folder    Access           Security   NTFS       NTFS Security
+         Path           Control          Type       Mode       Descriptor Name
+-----    --------       -----------      --------   ------     ----------------
+1        /home/dir1     file-directory   ntfs       propagate  sd2
+----
+

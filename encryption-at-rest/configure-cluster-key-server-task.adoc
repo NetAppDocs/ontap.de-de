@@ -1,0 +1,80 @@
+---
+sidebar: sidebar 
+permalink: encryption-at-rest/configure-cluster-key-server-task.html 
+keywords: KMIP, clustered key server, external key server, secondary key server 
+summary: Aktivieren Sie durch Erstellen eines Clusters zusätzliche Unterstützung für externe Verschlüsselungsmanagementserver. 
+---
+= Konfigurieren Sie externe geclusterte Schlüsselserver
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.11.1 können Sie die Konnektivität mit externen Verschlüsselungsmanagement-Servern auf einer SVM konfigurieren. Mit geclusterten Key Servern können Sie primäre und sekundäre Schlüsselserver auf einer SVM zuweisen. Bei der Registrierung von Schlüsseln versucht ONTAP zuerst, auf einen primären Schlüsselserver zuzugreifen, bevor nacheinander versucht wird, auf sekundäre Server zuzugreifen, bis der Vorgang erfolgreich abgeschlossen ist. Dadurch wird die Duplizierung von Schlüsseln verhindert.
+
+Externe Schlüsselserver können für NSE-, NVE-, NAE- und SED-Schlüssel verwendet werden. Eine SVM kann bis zu vier primäre externe KMIP-Server unterstützen. Jeder primäre Server kann bis zu drei sekundäre Schlüsselserver unterstützen.
+
+
+
+== Bevor Sie beginnen
+
+* link:install-ssl-certificates-hardware-task.html["Das KMIP-Verschlüsselungsmanagement ist für die SVM bereits aktiviert"].
+* Dieser Prozess unterstützt nur wichtige Server, die KMIP verwenden. Eine Liste der unterstützten Schlüsselserver finden Sie in link:http://mysupport.netapp.com/matrix/["NetApp Interoperabilitäts-Matrix-Tool"^].
+* Alle Nodes im Cluster müssen ONTAP 9.11.1 oder höher ausführen.
+* In der Reihenfolge der Server sind die Argumente im aufgelistet `-secondary-key-servers` Der Parameter gibt die Zugriffsreihenfolge der KMIP-Server (External Key Management) wieder.
+
+
+
+
+== Erstellen Sie einen Cluster-Schlüsselserver
+
+Das Konfigurationsverfahren hängt davon ab, ob Sie einen primären Schlüsselserver konfiguriert haben oder nicht.
+
+[role="tabbed-block"]
+====
+.Hinzufügen von primären und sekundären Schlüsselservern zu einer SVM
+--
+. Vergewissern Sie sich, dass für das Cluster kein Verschlüsselungsmanagement aktiviert wurde:
+`security key-manager external show -vserver _vserver_name_`Wenn für die SVM bereits maximal vier primäre Schlüsselserver aktiviert sind, müssen Sie einen der vorhandenen primären Schlüsselserver entfernen, bevor Sie einen neuen hinzufügen.
+. Aktivieren Sie den primären Schlüsselmanager:
+`security key-manager external enable -vserver _vserver_name_ -key-servers _server_ip_ -client-cert _client_cert_name_ -server-ca-certs _server_ca_cert_names_`
+. Ändern Sie den primären Schlüsselserver, um sekundäre Schlüsselserver hinzuzufügen. Der `-secondary-key-servers` Der Parameter akzeptiert eine kommagetrennte Liste mit bis zu drei Schlüsselservern.
+`security key-manager external modify-server -vserver _vserver_name_ -key-servers _primary_key_server_ -secondary-key-servers _list_of_key_servers_`
+
+
+--
+.Fügen Sie einem vorhandenen primären Schlüsselserver sekundäre Schlüsselserver hinzu
+--
+. Ändern Sie den primären Schlüsselserver, um sekundäre Schlüsselserver hinzuzufügen. Der `-secondary-key-servers` Der Parameter akzeptiert eine kommagetrennte Liste mit bis zu drei Schlüsselservern.
+`security key-manager external modify-server -vserver _vserver_name_ -key-servers _primary_key_server_ -secondary-key-servers _list_of_key_servers_`Weitere Informationen zu sekundären Schlüsselservern finden Sie unter .
+
+
+--
+====
+
+
+== Cluster-Key-Server ändern
+
+Sie können externe Schlüsselserver-Cluster ändern, indem Sie den Status (primäre oder sekundäre) bestimmter Schlüsselserver ändern, sekundäre Schlüsselserver hinzufügen und entfernen oder die Zugriffsreihenfolge von sekundären Schlüsselservern ändern.
+
+
+
+=== Umwandlung von primären und sekundären Schlüsselservern
+
+Um einen primären Schlüsselserver in einen sekundären Schlüsselserver zu konvertieren, müssen Sie ihn zuerst mit der von der SVM entfernen `security key-manager external remove-servers` Befehl.
+
+Um einen sekundären Schlüsselserver in einen primären Schlüsselserver zu konvertieren, müssen Sie zuerst den sekundären Schlüsselserver vom vorhandenen primären Schlüsselserver entfernen. Siehe . Wenn Sie einen sekundären Schlüsselserver beim Entfernen eines vorhandenen Schlüssels in einen primären Server konvertieren, kann der Versuch, einen neuen Server hinzuzufügen, bevor Sie den Schlüssel entfernen und konvertieren, zu einer doppelten Tastenanfügung führen.
+
+
+
+=== Sekundäre Schlüsselserver werden geändert
+
+Sekundäre Schlüsselserver werden mit dem verwaltet `-secondary-key-servers` Parameter von `security key-manager external modify-server` Befehl. Der `-secondary-key-servers` Parameter akzeptiert eine kommagetrennte Liste. Die angegebene Reihenfolge der sekundären Schlüsselserver in der Liste bestimmt die Zugriffssequenz für die sekundären Schlüsselserver. Die Zugriffsreihenfolge kann durch Ausführen des Befehls geändert werden `security key-manager external modify-server` Bei der Eingabe der sekundären Schlüssel-Server in einer anderen Reihenfolge.
+
+Um einen sekundären Schlüsselserver zu entfernen, wird der verwendet `-secondary-key-servers` Argumente sollten die wichtigsten Server enthalten, die Sie beibehalten möchten, während Sie die zu entfernenden nicht zulassen. Um alle sekundären Schlüsselserver zu entfernen, verwenden Sie das Argument `-`, Keine zu deuten.
+
+Weitere Informationen finden Sie im `security key-manager external` Auf der link:https://docs.netapp.com/us-en/ontap-cli-9121/["Befehlsreferenz für ONTAP"^].

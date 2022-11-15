@@ -1,0 +1,83 @@
+---
+permalink: volumes/recommendations-moving-concept.html 
+sidebar: sidebar 
+keywords: considerations, recommendations, when, moving, volumes, flexclone volume, metroCluster configuration 
+summary: Das Verschieben eines Volumes hat zahlreiche Überlegungen und Empfehlungen, die von dem zu bewegenden Volume oder der Systemkonfiguration, wie beispielsweise einer MetroCluster-Konfiguration, beeinflusst werden. Sie sollten Überlegungen und Empfehlungen bezüglich der Verschiebung von Volumes verstehen. 
+---
+= Überlegungen und Empfehlungen beim Verschieben von Volumes
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Das Verschieben eines Volumes hat zahlreiche Überlegungen und Empfehlungen, die von dem zu bewegenden Volume oder der Systemkonfiguration, wie beispielsweise einer MetroCluster-Konfiguration, beeinflusst werden. Sie sollten Überlegungen und Empfehlungen bezüglich der Verschiebung von Volumes verstehen.
+
+
+
+== Allgemeine Überlegungen und Empfehlungen
+
+* Wenn Sie die Versionsfamilie für ein Cluster aktualisieren, verschieben Sie ein Volume erst, nachdem Sie alle Nodes im Cluster aktualisiert haben.
++
+Diese Empfehlung verhindert, dass Sie versehentlich versuchen, ein Volume von einer neueren Versionsfamilie auf eine ältere Versionsfamilie zu verschieben.
+
+* Das Quell-Volume muss konsistent sein.
+* Wenn Sie einer oder mehreren Aggregaten der zugehörigen Storage Virtual Machine (SVM) zugewiesen haben, muss das Zielaggregat eine der zugewiesenen Aggregate sein.
+* Ein Volume kann nicht in ein oder aus einem übernhast CFO Aggregat verschoben werden.
+* Wenn ein Volume, das LUNs enthält, vor dem Verschieben nicht „NV-Fehler“ aktiviert ist, wird das Volume nach dem Verschieben aktiviert.
+* Sie können ein Volume von einem Flash Pool Aggregat zu einem anderen Flash Pool Aggregat verschieben.
++
+** Die Caching-Richtlinien dieses Volumes werden ebenfalls verschoben.
+** Diese Verschiebung kann sich auf die Volume-Performance auswirken.
+
+
+* Sie können Volumes zwischen einem Flash Pool Aggregat und einem nicht-Flash Pool Aggregat verschieben.
++
+** Wenn Sie ein Volume von einem Flash Pool Aggregat zu einem anderen Aggregat ohne Flash Pool verschieben, zeigt ONTAP eine Warnmeldung an, dass die Verschiebung sich möglicherweise auf die Volume Performance auswirken wird und fragt, ob Sie fortfahren möchten.
+** Wenn Sie ein Volume von einem nicht-Flash Pool Aggregat zu einem Flash Pool Aggregat verschieben, weist ONTAP das zu `auto` Caching-Richtlinie:
+
+
+* Volumes verfügen über die Data-at-Rest-Sicherung des Aggregats, auf dem sie sich befinden. Wenn Sie ein Volume von einem Aggregat aus NSE-Laufwerken auf eines ohne diese verschieben, bietet das Volume keine Sicherung der Daten im Ruhezustand mehr.
+
+
+
+
+== Überlegungen und Empfehlungen zu FlexClone Volumes
+
+* FlexClone Volumes können nicht offline sein, wenn sie verschoben werden.
+* Sie können FlexClone Volumes auf demselben Node oder einem anderen Node in derselben SVM verschieben, ohne die zu initiieren. Dazu sind Sie in der Lage, FlexClone Volumes von einem Aggregat zu einem anderen Aggregat auf demselben Node zu verschieben `vol clone split start` Befehl.
++
+Durch Initiieren eines Volume-Verschiebungsvorgangs auf einem FlexClone Volume wird das Klon-Volume während der Verschiebung in ein anderes Aggregat aufgeteilt. Nach Abschluss der Verschiebung des Volume wird das verschobene Volume nicht mehr als ein Klon angezeigt, sondern es erscheint als unabhängiges Volume ohne eine Klonbeziehung zu dem vorherigen übergeordneten Volume.
+
+* FlexClone Volume Snapshot Kopien gehen nach dem Verschieben eines Klons nicht verloren.
+* Sie können übergeordnete FlexClone Volumes von einem Aggregat zu einem anderen Aggregat verschieben.
++
+Wenn Sie ein übergeordnetes FlexClone Volume verschieben, bleibt ein temporäres Volume hinter dem, das als übergeordnetes Volume für alle FlexClone Volumes fungiert. Auf dem temporären Volume sind keine Vorgänge zulässig, ausgenommen sie offline zu schalten oder zu löschen. Nachdem alle FlexClone Volumes geteilt oder zerstört wurden, wird das temporäre Volume automatisch bereinigt.
+
+* Nach dem Verschieben eines Child-Volume von FlexClone ist das Volume kein FlexClone Volume mehr.
+* FlexClone Move-Vorgänge schließen sich gegenseitig aus den FlexClone Kopien oder Split-Vorgängen ab.
+* Wenn ein Klon-Splitting-Vorgang läuft, kann das Verschieben eines Volumes fehlschlagen.
++
+Sie sollten ein Volume nicht verschieben, bis die Klonabtrennung abgeschlossen ist.
+
+
+
+
+
+== Überlegungen zur MetroCluster-Konfiguration
+
+* Wenn während einer Verschiebung eines Volumes in einer MetroCluster-Konfiguration ein temporäres Volume auf dem Zielaggregat auf dem Quellcluster erstellt wird, wird ein Datensatz des temporären Volumes erstellt, das dem Volume in der gespiegelten Ressource entspricht, aber nicht assimiliert, wird das Aggregat auch auf dem verbleibenden Cluster erstellt.
+* Wenn vor der Umstellung eine MetroCluster-Umschaltung stattfindet, verfügt das Ziel-Volume über einen Datensatz und ist ein temporäres Volume (ein Volume vom Typ TMP).
++
+Verschieben eines Jobs startet im verbleibenden Cluster (Disaster Recovery) neu, meldet einen Fehler und bereinigt alle bewegungsbezogenen Elemente einschließlich des temporären Volumes. In jedem Fall, in dem eine Bereinigung nicht korrekt durchgeführt werden kann, wird ein EMS generiert, der den Systemadministrator benachrichtigt, die erforderliche Bereinigung durchzuführen.
+
+* Wenn eine MetroCluster-Umschaltung stattfindet, nachdem die Umstellungsphase gestartet wurde, aber bevor der Ververschiebungsauftrag abgeschlossen wurde (das heißt, die Verschiebung hat eine Phase erreicht, in der das Cluster aktualisiert werden kann, um auf das Zielaggregat zu verweisen), wird der Ververschiebungsauftrag auf dem Survivor (Disaster Recovery) neu gestartet. Cluster wird ausgeführt und wird abgeschlossen.
++
+Alle verschiebungsbezogenen Elemente werden einschließlich des temporären Volumens (Originalquelle) bereinigt. In jedem Fall, in dem eine Bereinigung nicht korrekt durchgeführt werden kann, wird ein EMS generiert, der den Systemadministrator benachrichtigt, die erforderliche Bereinigung durchzuführen.
+
+* Es sind weder erzwungene noch nicht erzwungene MetroCluster-Switchbacks zulässig, wenn Volume-Vermittlungsprozesse zum Switch-Standort ausgeführt werden.
++
+Switchbacks werden nicht gesperrt, wenn Volume-Ververschiebungsvorgänge für Volumes auf lokale zum verbleibenden Standort ausgeführt werden.
+
+* Nicht erzwungene MetroCluster-Umschalter sind blockiert, jedoch werden die erzwungenen MetroCluster-Umschalter nicht blockiert, wenn es zu Volume-Move-Vorgängen kommt.
+

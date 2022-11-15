@@ -1,0 +1,151 @@
+---
+sidebar: sidebar 
+permalink: networking/configure_network_security_using_federal_information_processing_standards_@fips@.html 
+keywords: fips 140-2, compliant, ssl, connections, tlsv1.2, tlsv1.1, tlsv1, enable fips, disable fips, compliance status, SSL 
+summary: 'Die Federal Information Processing Standards (FIPS) 140-2 erfüllen alle SSL-Verbindungen' 
+---
+= Konfiguration der Netzwerksicherheit mithilfe von FIPS (Federal Information Processing Standards)
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+ONTAP ist für alle SSL-Verbindungen konform in den Federal Information Processing Standards (FIPS) 140-2. Sie können den SSL-FIPS-Modus ein- und ausschalten, SSL-Protokolle global festlegen und alle schwachen Chiffren wie RC4 innerhalb von ONTAP deaktivieren.
+
+SSL auf ONTAP wird standardmäßig mit deaktiviertem FIPS und mit dem folgenden SSL-Protokoll aktiviert:
+
+* TLSv1.3 (ab ONTAP 9.11.1)
+* TLSv1.2
+* TLSv1.1
+* TLSv1
+
+
+Wenn der SSL-FIPS-Modus aktiviert ist, wird die SSL-Kommunikation von ONTAP mit externen Client- oder Serverkomponenten außerhalb von ONTAP FIPS-konforme Crypto for SSL verwendet.
+
+Wenn Administratorkonten auf SVMs mit einem öffentlichen SSH-Schlüssel zugreifen möchten, müssen Sie vor Aktivierung des SSL-FIPS-Modus sicherstellen, dass der Host Key-Algorithmus unterstützt wird.
+
+*Hinweis:* die Unterstützung des Host Key Algorithmus hat sich in ONTAP 9.11.1 und späteren Versionen geändert.
+
+[cols="30,30,30"]
+|===
+
+
+| Version von ONTAP | Unterstützte Schlüsseltypen | Nicht unterstützte Schlüsseltypen 
+
+
+ a| 
+9.11.1 und höher
+ a| 
+ecdsa-sha2-nistp256
+ a| 
+rsa-sha2-512 + rsa-sha2-256 + ssh-ed25519 + ssh-dss + ssh-rsa
+
+
+
+ a| 
+9.10.1 und früher
+ a| 
+ecdsa-sha2-nistp256 + ssh-ed25519
+ a| 
+ssh-dss + SSH-rsa
+
+|===
+Bestehende öffentliche SSH-Konten ohne die unterstützten Schlüsselalgorithmen müssen vor der Aktivierung von FIPS mit einem unterstützten Schlüsseltyp neu konfiguriert werden oder die Administratorauthentifizierung schlägt fehl.
+
+Weitere Informationen finden Sie unter link:../authentication/enable-ssh-public-key-accounts-task.html["Aktivieren Sie SSH-Konten für öffentliche Schlüssel"].
+
+Weitere Informationen zur Konfiguration des SSL-FIPS-Modus finden Sie im `security config modify` Man-Page.
+
+
+
+== Aktivieren Sie FIPS
+
+Es wird empfohlen, dass alle sicheren Benutzer ihre Sicherheitskonfiguration unmittelbar nach der Installation oder Aktualisierung des Systems anpassen. Wenn der SSL-FIPS-Modus aktiviert ist, wird die SSL-Kommunikation von ONTAP mit externen Client- oder Serverkomponenten außerhalb von ONTAP FIPS-konforme Crypto for SSL verwendet.
+
+
+NOTE: Wenn FIPS aktiviert ist, können Sie kein Zertifikat mit einer RSA-Schlüssellänge von 4096 installieren oder erstellen.
+
+.Schritte
+. Ändern Sie die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. FIPS aktivieren:
++
+`security config modify -interface SSL -is-fips-enabled true`
+
+. Wenn Sie zum Fortfahren aufgefordert werden, geben Sie ein `y`
+. Wenn Sie ONTAP 9.8 oder früher ausführen, sollten Sie jeden Node im Cluster nacheinander neu booten. Ab ONTAP 9.9 ist ein Neubooten nicht erforderlich.
+
+
+Wenn ONTAP 9.9.1 oder höher ausgeführt wird, wird die Warnmeldung nicht angezeigt.
+
+....
+security config modify -interface SSL -is-fips-enabled true
+
+Warning: This command will enable FIPS compliance and can potentially cause some non-compliant components to fail. MetroCluster and Vserver DR require FIPS to be enabled on both sites in order to be compatible.
+Do you want to continue? {y|n}: y
+
+Warning: When this command completes, reboot all nodes in the cluster. This is necessary to prevent components from failing due to an inconsistent security configuration state in the cluster. To avoid a service outage, reboot one node at a time and wait for it to completely initialize before rebooting the next node. Run "security config status show" command to monitor the reboot status.
+Do you want to continue? {y|n}: y
+....
+
+
+== Deaktivieren Sie FIPS
+
+Wenn Sie noch eine ältere Systemkonfiguration ausführen und ONTAP mit Abwärtskompatibilität konfigurieren möchten, können Sie SSLv3 nur aktivieren, wenn FIPS deaktiviert ist.
+
+.Schritte
+. Ändern Sie die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Deaktivieren Sie FIPS, indem Sie Folgendes eingeben:
++
+`security config modify -interface SSL -is-fips-enabled false`
+
+. Wenn Sie zum Fortfahren aufgefordert werden, geben Sie ein `y`.
+. Wenn Sie ONTAP 9.8 oder älter ausführen, booten Sie jeden Node im Cluster manuell neu. Ab ONTAP 9.9 ist ein Neubooten nicht erforderlich.
+
+
+Wenn ONTAP 9.9.1 oder höher ausgeführt wird, wird die Warnmeldung nicht angezeigt.
+
+....
+security config modify -interface SSL -supported-protocols SSLv3
+
+Warning: Enabling the SSLv3 protocol may reduce the security of the interface, and is not recommended.
+Do you want to continue? {y|n}: y
+
+Warning: When this command completes, reboot all nodes in the cluster. This is necessary to prevent components from failing due to an inconsistent security configuration state in the cluster. To avoid a service outage, reboot one node at a time and wait for it to completely initialize before rebooting the next node. Run "security config status show" command to monitor the reboot status.
+Do you want to continue? {y|n}: y
+....
+
+
+== Den FIPS-Compliance-Status anzeigen
+
+Sie sehen, ob im gesamten Cluster die aktuellen Sicherheitseinstellungen ausgeführt werden.
+
+.Schritte
+. Nacheinander: Jeden Node im Cluster neu booten
++
+Starten Sie nicht alle Cluster-Nodes gleichzeitig neu. Es ist ein Neustart erforderlich, um sicherzustellen, dass auf allen Applikationen im Cluster die neue Sicherheitskonfiguration und für alle Änderungen am FIPS-ein/aus-Modus, an Protokollen und Chiffren ausgeführt wird.
+
+. Den aktuellen Compliance-Status anzeigen:
++
+`security config show`
+
+
+
+....
+security config show
+
+          Cluster                                              Cluster Security
+Interface FIPS Mode  Supported Protocols     Supported Ciphers Config Ready
+--------- ---------- ----------------------- ----------------- ----------------
+SSL       false      TLSv1_2, TLSv1_1, TLSv1 ALL:!LOW:!aNULL:  yes
+                                             !EXP:!eNULL
+....

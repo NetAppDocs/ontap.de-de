@@ -1,0 +1,47 @@
+---
+sidebar: sidebar 
+permalink: networking/recover_from_an_incorrectly_configured_cluster_lif.html 
+keywords: misconfigured, misconfigurations, incorrect, incorrectly, switch, switches, switched, cable, physical, wiring, wired, reachability, port, cluster, ontap 9.8 and later, recover from an incorrectly configured cluster lif, how to identify and correct a cluster that has been misconfigured, cluster create, network port, reachability show -detail, reset the home port 
+summary: Identifizieren und korrigieren Sie ein falsch konfiguriertes Cluster 
+---
+= ONTAP 9.8 und höher: Wiederherstellung nach einer falsch konfigurierten Cluster LIF
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Ein Cluster kann nicht erstellt werden, wenn das Cluster-Netzwerk mit einem Switch verbunden ist, aber nicht alle im Cluster IPspace konfigurierten Ports können die anderen Ports erreichen, die im IP-Speicherplatz des Clusters konfiguriert sind.
+
+Wenn in einem Switch-Cluster eine Cluster-Netzwerkschnittstelle (LIF) auf dem falschen Port konfiguriert ist oder ein Cluster-Port in das falsche Netzwerk eingebunden ist, das `cluster create` Befehl kann mit dem folgenden Fehler fehlschlagen:
+
+....
+Not all local cluster ports have reachability to one another.
+Use the "network port reachability show -detail" command for more details.
+....
+Die Ergebnisse der `network port show` Der Befehl zeigt möglicherweise, dass mehrere Ports zum Cluster-IPspace hinzugefügt werden, da sie mit einem Port verbunden sind, der mit einer Cluster-LIF konfiguriert ist. Die Ergebnisse der `network port` `reachability show -detail` Befehl zeigt an, welche Ports nicht miteinander verbunden sind.
+
+Um eine auf einem Port konfigurierte Cluster-LIF von wiederherzustellen, die für die anderen Ports, die mit Cluster-LIFs konfiguriert sind, nicht erreichbar ist, führen Sie die folgenden Schritte aus:
+
+.Schritte
+. Setzen Sie den Home-Port der Cluster-LIF auf den richtigen Port zurück:
++
+....
+network port modify -home-port
+....
+. Entfernen Sie die Ports, für die keine Cluster-LIFs konfiguriert sind, aus der Cluster-Broadcast-Domäne:
++
+....
+network port broadcast-domain remove-ports
+....
+. Erstellen des Clusters:
++
+....
+cluster create
+....
+
+
+Nach Abschluss der Cluster-Erstellung erkennt das System die korrekte Konfiguration und platziert die Ports in die richtigen Broadcast-Domänen.

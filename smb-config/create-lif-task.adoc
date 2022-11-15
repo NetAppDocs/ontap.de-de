@@ -1,0 +1,158 @@
+---
+permalink: smb-config/create-lif-task.html 
+sidebar: sidebar 
+keywords: lif, ip, address, associate, physical, logical, port, component, failure, migrate, communicate, network, create a lif 
+summary: Ein LIF ist eine IP-Adresse, die einem physischen oder logischen Port zugewiesen ist. Falls eine Komponente ausfällt, kann ein LIF ein Failover auf einen anderen physischen Port durchführen oder zu einem anderen migrieren, sodass weiterhin mit dem Netzwerk kommunizieren wird. 
+---
+= Erstellen eines LIF
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein LIF ist eine IP-Adresse, die einem physischen oder logischen Port zugewiesen ist. Falls eine Komponente ausfällt, kann ein LIF ein Failover auf einen anderen physischen Port durchführen oder zu einem anderen migrieren, sodass weiterhin mit dem Netzwerk kommunizieren wird.
+
+.Bevor Sie beginnen
+* Der zugrunde liegende physische oder logische Netzwerk-Port muss für den Administrator konfiguriert worden sein `up` Status:
+* Wenn Sie planen, einen Subnetznamen zu verwenden, um die IP-Adresse und den Netzwerkmaskenwert für eine LIF zuzuweisen, muss das Subnetz bereits vorhanden sein.
++
+Subnetze enthalten einen Pool mit IP-Adressen, die zum selben Layer-3-Subnetz gehören. Sie werden mit dem erstellt `network subnet create` Befehl.
+
+* Der Mechanismus zur Angabe der von einem LIF bearbeiteten Traffic-Art ist geändert. Für ONTAP 9.5 und früher verwendeten LIFs Rollen, um den Typ des Datenverkehrs anzugeben, den er verarbeiten würde. Ab ONTAP 9.6 verwenden LIFs Service-Richtlinien, um den Typ des Datenverkehrs anzugeben, den es verarbeiten würde.
+
+
+.Über diese Aufgabe
+* Sie können am gleichen Netzwerkport IPv4- und IPv6-LIFs erstellen.
+* Wenn Sie eine große Anzahl von LIFs im Cluster besitzen, können Sie die im Cluster unterstützte LIF-Kapazität mithilfe der überprüfen `network interface capacity show` Befehl und die LIF-Kapazität, die auf jedem Node mithilfe von unterstützt wird `network interface capacity details show` Befehl (auf der erweiterten Berechtigungsebene).
+* Wenn bereits ab ONTAP 9.7 andere LIFs für die SVM im selben Subnetz vorhanden sind, müssen Sie den Home Port der LIF nicht angeben. ONTAP wählt automatisch einen zufälligen Port auf dem angegebenen Home-Node in derselben Broadcast-Domäne wie die anderen LIFs, die bereits im selben Subnetz konfiguriert sind.
+
+
+Ab ONTAP 9.4 wird FC-NVMe unterstützt. Wenn Sie eine FC-NVMe-LIF erstellen, sollten Sie Folgendes beachten:
+
+* Das NVMe-Protokoll muss vom FC-Adapter unterstützt werden, auf dem die LIF erstellt wird.
+* FC-NVMe kann das einzige Datenprotokoll auf Daten-LIFs sein.
+* Für jede Storage Virtual Machine (SVM), die SAN unterstützt, muss eine logische Schnittstelle für den Management-Datenverkehr konfiguriert werden.
+* NVMe LIFs und Namespaces müssen auf demselben Node gehostet werden.
+* Pro SVM kann nur eine NVMe-LIF konfiguriert werden, die den Datenverkehr verarbeitet
+
+
+.Schritte
+. LIF erstellen:
++
+`network interface create -vserver _vserver_name_ -lif _lif_name_ -role data -data-protocol cifs -home-node _node_name_ -home-port _port_name_ {-address _IP_address_ -netmask IP_address | -subnet-name _subnet_name_} -firewall-policy data -auto-revert {true|false}`
+
++
+|===
+
+
+| *ONTAP 9.5 und früher* 
+
+
+ a| 
+`network interface create -vserver _vserver_name_ -lif _lif_name_ -role data -data-protocol cifs -home-node _node_name_ -home-port _port_name_ {-address _IP_address_ -netmask _IP_address_ | -subnet-name _subnet_name_} -firewall-policy data -auto-revert {true|false}`
+
+|===
++
+|===
+
+
+| *ONTAP 9.6 und höher* 
+
+
+ a| 
+`network interface create -vserver _vserver_name_ -lif _lif_name_ -service-policy _service_policy_name_ -home-node _node_name_ -home-port _port_name_ {-address _IP_address_ -netmask _IP_address_ | -subnet-name _subnet_name_} -firewall-policy data -auto-revert {true|false}`
+
+|===
++
+** Der `-role` Parameter ist beim Erstellen einer LIF mithilfe einer Service-Richtlinie nicht erforderlich (beginnend mit ONTAP 9.6).
+** Der `-data-protocol` Der Parameter muss angegeben werden, wenn die LIF erstellt wird, und kann später nicht geändert werden, ohne die Daten-LIF zu zerstören und neu zu erstellen.
++
+Der `-data-protocol` Parameter ist beim Erstellen einer LIF mithilfe einer Service-Richtlinie nicht erforderlich (beginnend mit ONTAP 9.6).
+
+** `-home-node` Ist der Node, den das LIF zurückgibt, wenn das `network interface revert` Befehl wird auf dem LIF ausgeführt.
++
+Sie können auch angeben, ob die LIF automatisch auf den Home-Node und den Home-Port mit zurückgesetzt werden soll `-auto-revert` Option.
+
+** `-home-port` Ist der physische oder logische Port, an den das LIF zurückgibt, wenn das `network interface revert` Befehl wird auf dem LIF ausgeführt.
+** Sie können eine IP-Adresse mit dem angeben `-address` Und `-netmask` Optionen, oder Sie aktivieren die Zuweisung von einem Subnetz mit dem `-subnet_name` Option.
+** Wenn Sie zur Versorgung der IP-Adresse und Netzwerkmaske ein Subnetz verwenden, wird bei einem Gateway automatisch eine Standardroute zu diesem Gateway zur SVM hinzugefügt, wenn mithilfe dieses Subnetzes eine LIF erstellt wird.
+** Wenn Sie IP-Adressen manuell zuweisen (ohne ein Subnetz zu verwenden), müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, wenn Clients oder Domänen-Controller in einem anderen IP-Subnetz vorhanden sind. Der `network route create` Die man-Page enthält Informationen zum Erstellen einer statischen Route in einer SVM.
+** Für das `-firewall-policy` Wählen Sie die gleiche Standardeinstellung aus `data` Die LIF-Rolle.
++
+Sie können bei Bedarf später eine benutzerdefinierte Firewallrichtlinie erstellen und hinzufügen.
+
+** `-auto-revert` Ermöglicht Ihnen, anzugeben, ob eine Daten-LIF automatisch auf den Home-Node zurückgesetzt wird. Dies kann unter Umständen wie „Startvorgang“, ändert den Status der Management-Datenbank oder wenn die Netzwerkverbindung hergestellt wird. Die Standardeinstellung ist `false`, Aber Sie können es auf einstellen `false` Abhängig von Netzwerkmanagement-Richtlinien in Ihrer Umgebung.
+
+
+. Überprüfen Sie, ob das LIF erfolgreich erstellt wurde:
++
+`network interface show`
+
+. Vergewissern Sie sich, dass die konfigurierte IP-Adresse erreichbar ist:
++
+|===
+
+
+| Überprüfen einer... | Verwenden... 
+
+
+ a| 
+IPv4-Adresse
+ a| 
+`network ping`
+
+
+
+ a| 
+IPv6-Adresse
+ a| 
+`network ping6`
+
+|===
+
+
+Der folgende Befehl erstellt eine LIF und gibt die IP-Adresse und Netzwerkmaskenwerte mit dem an `-address` Und `-netmask` Parameter:
+
+[listing]
+----
+network interface create -vserver vs1.example.com -lif datalif1 -role data -data-protocol cifs -home-node node-4 -home-port e1c -address 192.0.2.145 -netmask 255.255.255.0 -firewall-policy data -auto-revert true
+----
+Mit dem folgenden Befehl wird eine LIF erstellt und dem angegebenen Subnetz (namens client1_sub) IP-Adresse und Netzwerkmaskenwerte zugewiesen:
+
+[listing]
+----
+network interface create -vserver vs3.example.com -lif datalif3 -role data -data-protocol cifs -home-node node-3 -home-port e1c -subnet-name client1_sub -firewall-policy data -auto-revert true
+----
+Mit dem folgenden Befehl werden alle LIFs in Cluster-1 angezeigt. Datenschnittstellen Datenschnittstellen Datenverbund Daten3 werden mit IPv4-Adressen konfiguriert und Daten3 wird mit einer IPv6-Adresse konfiguriert:
+
+[listing]
+----
+network interface show
+
+            Logical    Status     Network          Current      Current Is
+Vserver     Interface  Admin/Oper Address/Mask     Node         Port    Home
+----------- ---------- ---------- ---------------- ------------ ------- ----
+cluster-1
+            cluster_mgmt up/up    192.0.2.3/24     node-1       e1a     true
+node-1
+            clus1        up/up    192.0.2.12/24    node-1       e0a     true
+            clus2        up/up    192.0.2.13/24    node-1       e0b     true
+            mgmt1        up/up    192.0.2.68/24    node-1       e1a     true
+node-2
+            clus1        up/up    192.0.2.14/24    node-2       e0a     true
+            clus2        up/up    192.0.2.15/24    node-2       e0b     true
+            mgmt1        up/up    192.0.2.69/24    node-2       e1a     true
+vs1.example.com
+            datalif1     up/down  192.0.2.145/30   node-1       e1c     true
+vs3.example.com
+            datalif3     up/up    192.0.2.146/30   node-2       e0c     true
+            datalif4     up/up    2001::2/64       node-2       e0c     true
+5 entries were displayed.
+----
+Mit dem folgenden Befehl wird gezeigt, wie ein LIF mit NAS-Daten erstellt wird, das dem zugewiesen ist `default-data-files` Service-Richtlinie:
+
+[listing]
+----
+network interface create -vserver vs1 -lif lif2 -home-node node2 -homeport e0d -service-policy default-data-files -subnet-name ipspace1
+----

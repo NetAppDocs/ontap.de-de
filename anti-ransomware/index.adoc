@@ -1,0 +1,104 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/index.html 
+keywords: anti-ransomware overview, ransomware, security, introduce, autonomous, protection, arp, detect, detection, threat, attack, suspect, what ontap anti-ransomware detects, entropy, abnormal volume activity, ransomware, antiransomware, extension conformity, recover data after a ransomware attack, ransomware protection strategy 
+summary: 'Seit ONTAP 9.10.1 nutzt die Funktion Autonomous Ransomware Protection (ARP) Workload-Analysen in NAS-Umgebungen (NFS und SMB), um ungewöhnliche Aktivitäten, die auf einen Ransomware-Angriff hinweisen, proaktiv zu erkennen und zu warnen.' 
+---
+= Autonome Ransomware-Schutz – Übersicht
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Seit ONTAP 9.10.1 nutzt die Funktion Autonomous Ransomware Protection (ARP) Workload-Analysen in NAS-Umgebungen (NFS und SMB), um ungewöhnliche Aktivitäten, die auf einen Ransomware-Angriff hinweisen, proaktiv zu erkennen und zu warnen.
+
+Wenn ein Angriff vermutet wird, erstellt ARP zusätzlich zu dem bestehenden Schutz vor geplanten Snapshot-Kopien auch neue Snapshot-Kopien.
+
+Die ARP-Funktion ist mit den folgenden Lizenzen aktiviert.
+
+[cols="2*"]
+|===
+| ONTAP-Versionen | Lizenz 
+
+
+ a| 
+ONTAP 9.11.1 und höher
+ a| 
+Anti_Ransomware
+
+
+
+ a| 
+ONTAP 9.10.1
+ a| 
+MT_EK_MGMT (mandantenfähiger Schlüsselmanagement)
+
+|===
+* Wenn Sie ein Upgrade auf ONTAP 9.11.1 oder höher durchführen und ARP bereits auf Ihrem System konfiguriert ist, müssen Sie die neue Anti-Ransomware-Lizenz nicht erwerben. Für neue ARP-Konfigurationen ist die neue Lizenz erforderlich.
+* Wenn Sie von ONTAP 9.11.1 oder höher auf ONTAP 9.10.1 zurücksetzen und ARP mit der Anti-Ransomware-Lizenz aktiviert haben, wird eine Warnmeldung angezeigt und muss unter Umständen ARP neu konfigurieren. link:../revert/anti-ransomware-license-task.html["Erfahren Sie mehr über das Zurücksetzen von ARP"].
+
+
+Sie können ARP pro Volume konfigurieren, entweder mit ONTAP System Manager oder der ONTAP-Befehlszeilenschnittstelle (CLI).
+
+
+
+== ONTAP Strategie zum Schutz der Ransomware
+
+Eine effektive Strategie zur Erkennung von Ransomware sollte mehr als nur eine einzige Sicherungsebene umfassen.
+
+Eine Analogie wäre die Sicherheit eines Fahrzeugs. Sie möchten sich nicht auf eine einzige Funktion verlassen, wie z. B. einen Sicherheitsgurt, um Sie bei einem Unfall vollständig zu schützen. Airbags, Anti-Lock-Bremsen und Vorkollisionswarnung sind weitere Sicherheitsmerkmale, die zu einem viel besseren Ergebnis führen. Ransomware-Schutz sollte in der gleichen Weise betrachtet werden.
+
+ONTAP umfasst Funktionen wie FPolicy, Snapshot Kopien, SnapLock und Active IQ Digital Advisor für den Schutz vor Ransomware. Die folgenden Informationen konzentrieren sich auf die integrierte ONTAP ARP Funktion mit Machine-Learning-Funktionen.
+
+Weitere Informationen zu den anderen Anti-Ransomware-Funktionen von ONTAP finden Sie unter: https://www.netapp.com/media/7334-tr4572.pdf["TR-4572: NetApp Lösung gegen Ransomware"^]
+
+
+
+== Was ONTAP ARP erkennt
+
+Es gibt zwei Arten von Ransomware-Angriffen:
+
+. Denial-of-Service für Dateien durch Verschlüsselung von Daten Der Angreifer behält den Zugriff auf diese Daten vor, es sei denn, ein Lösegeld wird bezahlt.
+. Diebstahl sensibler proprietärer Daten. Der Angreifer droht, diese Daten der öffentlichen Domain freizugeben, wenn kein Lösegeld bezahlt wird.
+
+
+ONTAP ARP löst den ersten Typ mit einem Anti-Ransomware-Erkennungsmechanismus, der auf folgenden basiert:
+
+. Identifizierung der eingehenden Daten als verschlüsselt oder als Klartext.
+. Analytics, die erkennt
++
+** Hohe Daten _Entropy_ (eine Auswertung der Zufälligkeit von Daten in einer Datei)
+** Anstieg anormaler Volume-Aktivitäten bei der Datenverschlüsselung
+** Eine Erweiterung, die nicht dem normalen Erweiterungstyp entspricht
+
+
+
+
+
+NOTE: Kein Ransomware-Erkennungs- oder Präventionssystem kann die Sicherheit bei einem Ransomware-Angriff vollständig gewährleisten. Möglicherweise wird ein Angriff nicht erkannt, doch NetApp ARP fungiert als wichtige zusätzliche Abwehrschicht, falls die Virenschutz-Software ein Intrusion nicht erkennt. ARP erkennt die Ausbreitung der meisten Ransomware-Angriffe, nachdem nur wenige Dateien verschlüsselt sind, automatisch Maßnahmen zur Datensicherung ergreifen und Sie darauf aufmerksam machen, dass im Verdacht stehende Angriffe auf einen Angriff stattfindet.
+
+
+
+== Wiederherstellung von Daten im ONTAP nach einem Ransomware-Angriff
+
+Wenn ein Angriff vermutet wird, erstellt das System zu diesem Zeitpunkt eine Volume Snapshot Kopie und sperrt die Kopie. Wird der Angriff zu einem späteren Zeitpunkt bestätigt, kann das Volume auf diesen proaktiv aufgenommene Snapshot wiederhergestellt werden, wodurch der Datenverlust minimiert wird.
+
+Gesperrte Snapshot Kopien können nicht auf normale Weise gelöscht werden. Wenn Sie sich jedoch später entscheiden, den Angriff als falsch positiv zu markieren, wird die gesperrte Kopie gelöscht.
+
+Mit Kenntnis der betroffenen Dateien und dem Zeitpunkt des Angriffs können die betroffenen Dateien selektiv von verschiedenen Snapshot-Kopien wiederhergestellt werden, statt das gesamte Volume einfach auf einen der Snapshots zurücksetzen zu müssen.
+
+ARP baut auf bewährte ONTAP-Technologie zur Datensicherung und Disaster Recovery auf, um auf Ransomware-Angriffe zu reagieren. Weitere Informationen zur Wiederherstellung von Daten finden Sie in den folgenden Themen.
+
+* link:../task_dp_recover_snapshot.html["Wiederherstellen von Snapshot-Kopien (System Manager)"]
+* link:../data-protection/restore-contents-volume-snapshot-task.html["Wiederherstellen von Dateien aus Snapshot-Kopien (CLI)"]
+* link:https://www.netapp.com/blog/smart-ransomware-recovery["Intelligente Ransomware-Recovery"^]
+

@@ -1,0 +1,34 @@
+---
+permalink: concepts/san-path-failover-concept.html 
+sidebar: sidebar 
+keywords: san path failover 
+summary: 'Ein SAN-Host verwendet ALUA (Asymmetric Logical Unit Access) und MPIO (Multipath I/O), um den Datenverkehr auf eine übrig gebliebene LIF nach einem Link-Ausfall zu umleiten. Vordefinierte Pfade bestimmen die möglichen Routen zur von der SVM servierten LUN.' 
+---
+= Failover VON SAN-Pfaden
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein SAN-Host verwendet ALUA (Asymmetric Logical Unit Access) und MPIO (Multipath I/O), um den Datenverkehr auf eine übrig gebliebene LIF nach einem Link-Ausfall zu umleiten. Vordefinierte Pfade bestimmen die möglichen Routen zur von der SVM servierten LUN.
+
+In einer SAN-Umgebung werden Hosts als _Initiatoren_ von Anfragen an LUN _Targets angesehen._ MPIO ermöglicht mehrere Pfade von Initiatoren zu Zielen. ALUA identifiziert die direktesten Pfade, genannt _optimierte Pfade._
+
+Sie konfigurieren normalerweise mehrere optimierte Pfade zu LIFs auf dem eigenen Node der LUN und mehrere nicht optimierte Pfade zu LIFs auf seinem HA-Partner. Wenn ein Port auf dem entsprechenden Node ausfällt, wird der Host Datenverkehr zu den noch intakten Ports leiten. Wenn alle Ports ausfallen, leitet der Host den Datenverkehr über die nicht optimierten Pfade weiter.
+
+ONTAP Selective LUN Map (SLM) beschränkt standardmäßig die Anzahl der Pfade vom Host auf eine LUN. Auf eine neu erstellte LUN ist nur über Pfade zu dem Node zugegriffen werden kann, der der LUN oder seinem HA-Partner gehört. Sie können den Zugriff auf eine LUN ebenfalls einschränken, indem Sie LIFs für den Initiator in einem _Port Set_ konfigurieren.
+
+image::../media/san-host-rerouting.gif[san-Host-Rerouting]
+
+|===
+
+
+ a| 
+*_Volumes in SAN-Umgebungen verschieben_*
+
+Standardmäßig beschränkt ONTAP _Selective LUN Map (SLM)_ die Anzahl der Pfade von einem SAN-Host auf eine LUN. Auf eine neu erstellte LUN ist nur über Pfade zum Node zugegriffen werden kann, der der Eigentümer der LUN oder seines HA-Partners ist, die „_Reporting Nodes_“ für die LUN.
+
+Das heißt, wenn Sie ein Volume auf einen Node auf einem anderen HA-Paar verschieben, müssen Sie der LUN-Zuordnung Berichterstellungs-Nodes für das Ziel-HA-Paar hinzufügen. Sie können dann die neuen Pfade in Ihrem MPIO-Setup festlegen. Nach Abschluss der Verschiebung des Volumes können Sie die Reporting-Nodes für das HA-Quellpaar aus der Zuordnung löschen.
+
+|===

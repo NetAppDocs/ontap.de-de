@@ -1,0 +1,87 @@
+---
+permalink: flexgroup/create-svm-disaster-recovery-relationship-task.html 
+sidebar: sidebar 
+keywords: create, svm, disaster, recovery, relationship, flexgroup, volume, flex group, flexclone, flex clone 
+summary: 'Ab ONTAP 9.9 können Sie SVM Disaster-Recovery-Beziehungen (SVM-DR) mit FlexGroup Volumes erstellen. Eine SVM-DR-Beziehung gewährleistet Redundanz und bietet die Möglichkeit, FlexGroups im Notfall wiederherzustellen, indem die SVM-Konfiguration und ihre Daten synchronisiert und repliziert werden. Für SVM DR ist eine SnapMirror Lizenz erforderlich.' 
+---
+= Erstellung einer Disaster-Recovery-Beziehung zu SVM für FlexGroup Volumes
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.9 können Sie SVM Disaster-Recovery-Beziehungen (SVM-DR) mit FlexGroup Volumes erstellen. Eine SVM-DR-Beziehung gewährleistet Redundanz und bietet die Möglichkeit, FlexGroups im Notfall wiederherzustellen, indem die SVM-Konfiguration und ihre Daten synchronisiert und repliziert werden. Für SVM DR ist eine SnapMirror Lizenz erforderlich.
+
+Sie sollten die Bedingungen kennen, wenn keine FlexGroup SVM-DR-Beziehung erstellt werden kann.
+
+* Es ist eine FlexClone FlexGroup-Konfiguration vorhanden
+* Ein FlexGroup Volume enthält eine FabricPool-Konfiguration
+* Das FlexGroup-Volumen ist Teil einer Fanout- oder Kaskadenbeziehung
+
+
+.Über diese Aufgabe
+* Auf allen Nodes in beiden Clustern muss die ONTAP-Version mit dem Node ausgeführt werden, auf dem die SVM-DR-Unterstützung hinzugefügt wurde (ONTAP 9.9.1 oder höher).
+* Die SVM-DR-Beziehung zwischen dem primären und sekundären Standort sollte sich in einem ordnungsgemäßen Zustand befinden und auf den primären und sekundären SVMs genügend Speicherplatz zur Unterstützung der FlexGroup Volumes aufweisen.
+
+
+Informationen zum Erstellen einer SVM-DR-Beziehung finden Sie unter https://docs.netapp.com/us-en/ontap/data-protection/snapmirror-svm-replication-workflow-concept.html["Management der SnapMirror SVM-Replizierung"].
+
+.Schritte
+. SVM-DR-Beziehung erstellen oder eine vorhandene Beziehung verwenden
++
+https://docs.netapp.com/us-en/ontap/data-protection/replicate-entire-svm-config-task.html["Replizierung einer gesamten SVM-Konfiguration"]
+
+. Ein FlexGroup Volume am primären Standort mit der erforderlichen Anzahl an Komponenten erstellen.
++
+link:create-task.html["Erstellen eines FlexGroup Volume"].
+
++
+Warten Sie, bis FlexGroup und alle zugehörigen Komponenten erstellt werden, bevor Sie fortfahren.
+
+. Aktualisieren Sie die SVM am sekundären Standort, um das FlexGroup Volume zu replizieren: `snapmirror update -destination-path destination_svm_name: -source-path source_svm_name:`+ Sie können auch überprüfen, ob ein geplantes SnapMirror Update bereits vorhanden ist, indem Sie eingeben `snapmirror show -fields schedule`
+. Vergewissern Sie sich am sekundären Standort, dass die SnapMirror Beziehung sich in einem ordnungsgemäßen Zustand befindet: `snapmirror show`
++
+[listing]
+----
+cluster2::> snapmirror show
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs1:        XDP  vs1_dst:     Snapmirrored
+                                      Idle           -         true    -
+----
+. Stellen Sie vom sekundären Standort aus sicher, dass das neue FlexGroup Volume und seine Komponenten vorhanden sind: `snapmirror show -expand`
++
+[listing]
+----
+cluster2::> snapmirror show -expand
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs1:        XDP  vs1_dst:     Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src  XDP  vs1_dst:fg_src
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0001
+            XDP  vs1_dst:fg_src__0001
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0002
+            XDP  vs1_dst:fg_src__0002
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0003
+            XDP  vs1_dst:fg_src__0003
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0004
+            XDP  vs1_dst:fg_src__0004
+                              Snapmirrored
+                                      Idle           -         true    -
+6 entries were displayed.
+----
+

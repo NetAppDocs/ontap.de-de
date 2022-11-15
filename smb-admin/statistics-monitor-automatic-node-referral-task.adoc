@@ -1,0 +1,99 @@
+---
+permalink: smb-admin/statistics-monitor-automatic-node-referral-task.html 
+sidebar: sidebar 
+keywords: smb, connection, refer, monitor, automatic, node, referral, extent, locating, locate, host, redistribute, lif, local, access, cifs, use statistics to monitor automatic node referral activity 
+summary: Um festzustellen, wie viele SMB-Verbindungen angesprochen werden, können Sie die Aktivitäten zur automatischen Knotenverweisung mithilfe des Statistikbefehls überwachen. Durch die Überwachung von Empfehlungen können Sie bestimmen, inwieweit automatische Empfehlungen Verbindungen auf Knoten, die die Freigaben hosten, suchen und ob Sie Ihre Daten-LIFs neu verteilen sollten, um besseren lokalen Zugriff auf Freigaben auf dem CIFS-Server zu ermöglichen. 
+---
+= Mithilfe von Statistiken können Sie die Aktivitäten der automatischen Knotenverweisung überwachen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Um festzustellen, wie viele SMB-Verbindungen angesprochen werden, können Sie die Aktivitäten zur automatischen Knotenverweisung mithilfe von überwachen `statistics` Befehl. Durch die Überwachung von Empfehlungen können Sie bestimmen, inwieweit automatische Empfehlungen Verbindungen auf Knoten, die die Freigaben hosten, suchen und ob Sie Ihre Daten-LIFs neu verteilen sollten, um besseren lokalen Zugriff auf Freigaben auf dem CIFS-Server zu ermöglichen.
+
+Der `cifs` Das Objekt bietet mehrere Zähler auf der erweiterten Berechtigungsebene, die beim Monitoring von SMB-Empfehlungen für automatische Nodes hilfreich sind:
+
+* `node_referral_issued`
++
+Anzahl der Clients, die eine Empfehlung an den Knoten des Stammes der Freigabe erhalten haben, nachdem der Client mit einer logischen Schnittstelle verbunden wurde, die von einem anderen Knoten als dem Stammknoten der Freigabe gehostet wird.
+
+* `node_referral_local`
++
+Anzahl der Clients, die mit einer logischen Schnittstelle verbunden sind, die von demselben Node gehostet wird, der den Share-Root hostet. Lokaler Zugriff bietet in der Regel eine optimale Performance.
+
+* `node_referral_not_possible`
++
+Anzahl der Clients, die nach der Verbindung mit einer logischen Schnittstelle, die von einem anderen Node als dem Stammknoten der Freigabe gehostet wird, keine Empfehlung an den Knoten erteilt wurden, der den Stammverzeichnis hostet. Dies liegt daran, dass eine aktive Daten-LIF für den Node des Share-Root nicht gefunden wurde.
+
+* `node_referral_remote`
++
+Anzahl der Clients, die mit einer logischen Schnittstelle verbunden sind, die von einem Node gehostet wird, der sich vom Node unterscheidet, der das Share-Root hostet. Remote-Zugriff kann zu Performance-Beeinträchtigungen führen.
+
+
+
+Sie können die Statistiken zur automatischen Node-Empfehlungen für Ihre Storage Virtual Machine (SVM) überwachen, indem Sie Daten für einen bestimmten Zeitraum (ein Beispiel) erfassen und anzeigen. Sie können Daten aus der Probe anzeigen, wenn Sie die Datenerfassung nicht beenden. Wenn Sie die Datenerfassung anhalten, erhalten Sie eine feste Probe. Wenn Sie die Datenerfassung nicht stoppen, können Sie aktualisierte Daten abrufen, die Sie zum Vergleich mit früheren Abfragen verwenden können. Der Vergleich kann Ihnen dabei helfen, Performance-Trends zu identifizieren.
+
+[NOTE]
+====
+Zur Auswertung und Verwendung der Informationen, die Sie aus dem sammeln `statistics` Befehl, sollten Sie die Verteilung von Clients in Ihren Umgebungen verstehen.
+
+====
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`
+. Zeigen Sie die Statistiken zur automatischen Knotenverweisung mithilfe von an `statistics` Befehl.
++
+In diesem Beispiel werden die Statistiken zur automatischen Knotenverweisung angezeigt, indem Daten für einen Probenzeitraum erfasst und angezeigt werden:
+
++
+.. Starten Sie die Sammlung: `statistics start -object cifs -instance vs1 -sample-id sample1`
++
+[listing]
+----
+Statistics collection is being started for Sample-id: sample1
+----
+.. Warten Sie, bis die gewünschte Abholzeit abgelaufen ist.
+.. Beenden Sie die Sammlung: `statistics stop -sample-id sample1`
++
+[listing]
+----
+Statistics collection is being stopped for Sample-id: sample1
+----
+.. Anzeigen der Statistiken zur automatischen Knotenverweisung: `statistics show -sample-id sample1 -counter *node*`
++
+[listing]
+----
+Object: cifs
+Instance: vs1
+Start-time: 2/4/2013 19:27:02
+End-time: 2/4/2013 19:30:11
+Cluster: cluster1
+
+    Counter                                             Value
+    ----------------------------- ---------------------------
+    node_name                                          node1
+    node_referral_issued                                    0
+    node_referral_local                                     1
+    node_referral_not_possible                              2
+    node_referral_remote                                    2
+    ...
+
+    node_name                                          node2
+    node_referral_issued                                    2
+    node_referral_local                                     1
+    node_referral_not_possible                              0
+    node_referral_remote                                    2
+    ...
+----
++
+Die Ausgabe zeigt Zähler für alle an SVM vs1 teilnehmenden Nodes an. Um Klarheit zu schaffen, werden im Beispiel nur Ausgabefelder mit Statistiken zur automatischen Knotenverweisung bereitgestellt.
+
+
+
+. Zurück zur Administratorberechtigungsebene: `set -privilege admin`
+
+
+xref:display-statistics-task.adoc[Anzeigen von Statistiken]
+
+link:../performance-config/index.html["Einrichtung der Performance-Überwachung"]

@@ -1,0 +1,66 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_how_hardware-assisted_takeover_works.html 
+keywords: ontap, high, availability, hardware-assisted, hardware, assisted, takeovers 
+summary: 'Standardmäßig kann die Hardware-gestützte Übernahme den Takeover-Prozess mithilfe des Remote Management-Geräts (Service Processor) eines Node beschleunigen.' 
+---
+= Funktionsweise der Hardware-gestützten Übernahme
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Standardmäßig kann die Hardware-gestützte Übernahme den Takeover-Prozess mithilfe des Remote Management-Geräts (Service Processor) eines Node beschleunigen.
+
+Wenn das Remote Management-Gerät einen Ausfall erkennt, wird der Takeover schnell initiiert, anstatt auf ONTAP zu warten, dass der Herzschlag des Partners gestoppt wurde. Wenn ein Fehler auftritt, ohne dass diese Funktion aktiviert ist, wartet der Partner, bis er bemerkt, dass der Node nicht mehr einen Herzschlag erhält, den Verlust von Herzschlag bestätigt und dann den Takeover initiiert.
+
+Die Hardware-gestützte Übernahme nutzt den folgenden Prozess, um zu vermeiden, dass dieses warten muss:
+
+. Das Remote-Management-Gerät überwacht das lokale System auf bestimmte Arten von Fehlern.
+. Wenn ein Fehler erkannt wird, sendet das Remote-Management-Gerät sofort eine Warnmeldung an den Partner-Node.
+. Nach Erhalt der Warnmeldung leitet der Partner die Übernahme ein.
+
+
+
+
+== Systemereignisse, die eine Hardware-gestützte Übernahme auslösen
+
+Der Partner-Node kann eine Übernahme erzeugen, in Abhängigkeit von der Art der Warnmeldung, die er vom Remote-Management-Gerät (Service Processor) erhält.
+
+[cols="30,20,50"]
+|===
+
+
+| Alarm | Übernahme nach Erhalt initiiert? | Beschreibung 
+
+
+| Anormal_neu booten | Nein | Ein anormaler Neustart des Node ist aufgetreten. 
+
+
+| l2_Watchdog_Reset | Ja. | Die SystemWatchdog-Hardware hat einen L2-Reset erkannt. Das Remote-Verwaltungsgerät hat eine fehlende Reaktion von der System-CPU erkannt und das System zurückgesetzt. 
+
+
+| Loss_of_Heartbeat | Nein | Das Remote-Verwaltungsgerät empfängt nicht mehr die Heartbeat-Meldung vom Node. Diese Meldung bezieht sich nicht auf die Heartbeat-Meldungen zwischen den Nodes im HA-Paar. Dieser bezieht sich auf den Herzschlag zwischen dem Node und seinem lokalen Remote-Managementgerät. 
+
+
+| Periodisch_Nachricht | Nein | Während eines normalen Hardware-gestützten Übernahmvorgangs wird eine regelmäßige Meldung gesendet. 
+
+
+| Ein-/aus-Zyklus über_sp | Ja. | Das Remote-Managementgerät fuhr das System aus- und wieder ein. 
+
+
+| Stromausfall | Ja. | Auf dem Node ist ein Stromausfall aufgetreten. Das Remote-Verwaltungsgerät verfügt über eine Stromversorgung, die nach einem Stromausfall für kurze Zeit Strom hält und dem Partner den Stromausfall melden kann. 
+
+
+| Power_OFF_via_sp | Ja. | Das Remote-Verwaltungsgerät hat das System abgeschaltet. 
+
+
+| Reset_Via_sp | Ja. | Das Remote-Verwaltungsgerät setzt das System zurück. 
+
+
+| Test | Nein | Eine Testmeldung wird gesendet, um die Überprüfung eines hardwaregestützten Übernahmvorgangs zu überprüfen. 
+|===

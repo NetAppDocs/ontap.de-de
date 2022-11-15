@@ -1,0 +1,555 @@
+---
+permalink: performance-admin/guarantee-throughput-qos-task.html 
+sidebar: sidebar 
+keywords: guaranteeing, throughput, qos, understand, ceilings, floors, shared, policy, adaptive, general, support, workloads, 
+summary: 'Dank Storage-Servicequalität (QoS) kann die Performance kritischer Workloads nicht durch konkurrierende Workloads beeinträchtigt werden. Sie können eine Durchsatzbegrenzung für konkurrierende Workloads festlegen, um die Auswirkungen auf Systemressourcen zu begrenzen oder eine Durchsatzbegrenzung für einen kritischen Workload festzulegen. Somit kann sichergestellt werden, dass er unabhängig von der Nachfrage durch konkurrierende Workloads die Mindestdurchsatzziele erfüllt. Sie können sogar eine Decke und einen Boden für die gleiche Arbeitslast einstellen.' 
+---
+= Durchsatz garantieren mit QoS-Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dank Storage-Servicequalität (QoS) kann die Performance kritischer Workloads nicht durch konkurrierende Workloads beeinträchtigt werden. Sie können für einen konkurrierenden Workload eine Durchsatzbegrenzung festlegen, um die Auswirkungen auf Systemressourcen zu begrenzen oder für einen kritischen Workload einen Durchsatz _Floor_ festzulegen. So wird sichergestellt, dass er unabhängig von der Nachfrage durch konkurrierende Workloads ein Mindestziel für den Durchsatz erreicht. Sie können sogar eine Decke und einen Boden für die gleiche Arbeitslast einstellen.
+
+
+
+== Allgemeines zu Durchsatzbegrenzungen (QoS max.)
+
+Eine Durchsatzbegrenzung beschränkt den Durchsatz für einen Workload auf eine maximale Anzahl an IOPS oder MB/s oder IOPS und MB/Sek.. In der Abbildung unten stellt die Durchsatzobergrenze für Workload 2 sicher, dass die Workloads 1 und 3 nicht „problematische“ Workloads ausgeführt werden.
+
+Eine _Policy Group_ definiert die Durchsatzobergrenze für einen oder mehrere Workloads. Ein Workload repräsentiert die I/O-Vorgänge für ein Storage-Objekt:_ ein Volume, eine Datei, einen qtree oder eine LUN oder alle Volumes, Dateien, qtrees oder LUNs in einer SVM. Sie können beim Erstellen der Richtliniengruppe die Obergrenze festlegen oder warten, bis Sie die Workloads überwachen und sie angeben.
+
+[NOTE]
+====
+Der Durchsatz bei Workloads kann den angegebenen Höchstwert um bis zu 10 % überschreiten, insbesondere bei einem Workload, der einen schnellen Durchsatzwechsel aufweist. Die Decke könnte um bis zu 50 % überschritten werden, um mit Ausbrüchen zu umgehen. Stausbrüche erfolgen auf einzelnen Nodes, wenn sich Token bis zu 150 % ansammeln
+
+====
+image::../media/qos-ceiling.gif[qos-Obergrenze]
+
+
+
+== Allgemeines zu Durchsatzböden (QoS Min.)
+
+Eine Durchsatzboden sorgt dafür, dass der Durchsatz für einen Workload nicht unter eine Mindestanzahl von IOPS oder MB/s bzw. IOPS und MB/s fällt. In der nachfolgenden Abbildung stellen die Durchsatzböden für Workload 1 und Workload 3 sicher, dass sie die Mindestanforderungen für den Durchsatz erfüllen, unabhängig vom Bedarf nach Workload 2.
+
+[TIP]
+====
+Wie die Beispiele zeigen, wird der Durchsatz durch eine Durchsatzbegrenzung direkt gedrosselt. Ein Durchsatzboden drosselt den Durchsatz indirekt, indem den Workloads, für die das Boden festgelegt wurde, Priorität eingeräumt wird.
+
+====
+Eine Richtliniengruppe mit Durchsatzboden kann nicht auf eine SVM angewendet werden. Sie können den Boden beim Erstellen der Richtliniengruppe angeben oder warten, bis Sie die Workloads überwachen, um sie anzugeben.
+
+[NOTE]
+====
+In Releases vor ONTAP 9.7 werden Durchsatzböden garantiert, wenn genügend Performance-Kapazität zur Verfügung steht. In ONTAP 9.7 und höher kann auch bei unzureichender Performance-Kapazität der Durchsatzboden garantiert werden. Dieses neue Bodenverhalten wird Floors v2 genannt. Um die Garantien zu erfüllen, kann Floors v2 zu einer höheren Latenz bei Workloads ohne Durchsatzboden oder Arbeitsleistung führen, die die Bodeneinstellungen überschreitet. Fußböden v2 gelten sowohl für QoS als auch für anpassungsfähige QoS. Die Möglichkeit, das neue Verhalten von Floors v2 zu aktivieren/zu deaktivieren, ist in ONTAP 9.7P6 und höher verfügbar.bei kritischen Operationen wie z.B. Kann Eine Arbeitslast unter die angegebene Etage fallen `volume move trigger-cutover`. Auch wenn genügend Kapazität zur Verfügung steht und geschäftskritische Betriebsabläufe nicht stattfinden, kann der Durchsatz zu einem Workload um bis zu 5 % unter das angegebene Stockwerk fallen. Wenn Böden zu hoch sind und es keine Performance-Kapazität gibt, können einige Workloads unter die angegebene Etage fallen.
+
+====
+image::../media/qos-floor.gif[qos-Etage]
+
+
+
+== Allgemeines zu Shared-QoS-Richtliniengruppen und nicht gemeinsam genutzten QoS-Gruppen
+
+Ab ONTAP 9.4 können Sie mithilfe einer QoS-Richtliniengruppe ohne Shared_ angeben, dass die definierte Durchsatzdecke oder -Etage für jeden Workload der Mitglieder einzeln gilt. Das Verhalten von _shared_-Richtliniengruppen hängt vom Richtlinientyp ab:
+
+* Bei Durchsatzbegrenzungen kann der Gesamtdurchsatz der Workloads, die der gemeinsam genutzten Richtliniengruppe zugewiesen sind, die angegebene Obergrenze nicht überschreiten.
+* Bei Durchsatzböden kann die gemeinsame Richtliniengruppe nur auf einen einzelnen Workload angewendet werden.
+
+
+
+
+== Allgemeines zur anpassungsfähigen QoS
+
+Normalerweise wird der Wert der Richtliniengruppe, die Sie einem Storage-Objekt zuweisen, behoben. Sie müssen den Wert manuell ändern, wenn sich die Größe des Speicherobjekts ändert. Ein Anstieg des Platzansatzes, der z. B. auf einem Volumen genutzt wird, erfordert in der Regel eine entsprechende Erhöhung der für das Volumen angegebenen Durchsatzdecke.
+
+_Adaptive QoS_ skaliert den Richtliniengruppenwert automatisch auf die Workload-Größe und behält das Verhältnis von IOPS zu TBs bei sich änderter Workload-Größe bei. Wenn Sie Hunderte oder Tausende Workloads in einer großen Implementierung managen, bedeutet dies einen enormen Vorteil.
+
+Meist verwenden Kunden anpassungsfähige QoS zur Anpassung der Durchsatzdecken, allerdings können sie auch zum Managen von Durchsatzböden (bei einer Erhöhung der Workload-Größe) eingesetzt werden. Die Workload-Größe wird entweder als zugewiesener Speicherplatz für das Storage-Objekt oder als Speicherplatz angegeben, der vom Storage-Objekt verwendet wird.
+
+[NOTE]
+====
+Gebrauchte Flächen sind für Durchsatzböden in ONTAP 9.5 und höher verfügbar. Es wird bei Durchsatzböden in ONTAP 9.4 und früher nicht unterstützt.
+
+====
+* Eine Richtlinie „_zugewiesener Speicherplatz_“ behält das IOPS/TB-Verhältnis entsprechend der nominalen Größe des Storage-Objekts bei. Wenn das Verhältnis 100 IOPS/GB ist, wird ein 150 GB großes Volume eine Durchsatzgrenze von 15,000 IOPS aufweisen, solange das Volume diese Größe bleibt. Wenn die Volume-Größe auf 300 GB geändert wird, passt die anpassungsfähige QoS die Durchsatzdecke auf 30,000 IOPS an.
+* Eine Richtlinie „_Used space_“ (Standard) behält das Verhältnis von IOPS/TB GB entsprechend der Menge der tatsächlich gespeicherten Daten vor der Storage-Effizienz bei. Wenn das Verhältnis 100 IOPS/GB ist, würde ein 150 GB großes Volumen, das 100 GB gespeicherte Daten hat, eine Durchsatzdecke von 10,000 IOPS haben. Wenn sich die Menge des belegten Speicherplatzes ändert, passt die anpassungsfähige QoS die Durchsatzobergrenze dem Verhältnis an.
+
+
+Ab ONTAP 9.5 können Sie für Ihre Applikation eine I/O-Blockgröße angeben, die sowohl in IOPS als auch in MB/Sek. ein Durchsatzlimit angegeben. Die Größe des MB/s wird aus der Blockgröße berechnet, die mit dem IOPS-Limit multipliziert wird. Beispielsweise ergibt eine I/O-Blockgröße von 32.000 IOPS bei einem IOPS-Limit von 6144 IOPS/TB einen Grenzwert von 192 MB/s.
+
+Das folgende Verhalten kann sowohl bei Durchsatzdecken als auch bei Böden erwartet werden:
+
+* Wenn ein Workload einer anpassungsfähigen QoS-Richtliniengruppe zugewiesen wird, wird die Decke oder der Boden sofort aktualisiert.
+* Wenn die Größe eines Workloads in einer adaptiven QoS-Richtliniengruppe angepasst wird, werden die Decke oder der Boden in etwa fünf Minuten aktualisiert.
+
+
+Bevor Updates erfolgen, muss der Durchsatz um mindestens 10 IOPS erhöht werden.
+
+Adaptive QoS-Richtliniengruppen werden immer nicht gemeinsam genutzt: Die definierte Durchsatzdecke oder -Etage wird für jeden Workload der Mitglieder einzeln angewendet.
+
+Ab ONTAP 9.6 werden Durchsatzböden von ONTAP Select Premium mit SSD unterstützt.
+
+
+
+== Allgemeiner Support
+
+Die folgende Tabelle zeigt die Unterschiede bei der Unterstützung von Durchsatzdecken, Durchsatzböden und anpassungsfähiger QoS.
+
+|===
+
+
+| Ressource oder Funktion | Durchsatzdecke | Durchsatzboden | Durchsatzboden v2 | Anpassungsfähige QoS 
+
+
+ a| 
+ONTAP 9-Version
+ a| 
+Alle
+ a| 
+9.2 und höher
+ a| 
+9.7 und höher
+ a| 
+9.3 und höher
+
+
+
+ a| 
+Plattformen
+ a| 
+Alle
+ a| 
+* AFF
+* C190
+* ONTAP Select Premium mit SSD *
+
+ a| 
+* AFF
+* C190
+* ONTAP Select Premium mit SSD
+
+ a| 
+Alle
+
+
+
+ a| 
+Protokolle
+ a| 
+Alle
+ a| 
+Alle
+ a| 
+Alle
+ a| 
+Alle
+
+
+
+ a| 
+FabricPool
+ a| 
+Ja.
+ a| 
+Ja, wenn die Tiering-Richtlinie auf „keine“ eingestellt ist und keine Blöcke in der Cloud liegen.
+ a| 
+Ja, wenn die Tiering-Richtlinie auf „keine“ eingestellt ist und keine Blöcke in der Cloud liegen.
+ a| 
+Ja.
+
+
+
+ a| 
+SnapMirror Synchronous
+ a| 
+Ja.
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Ja.
+
+|===
+*C190 und ONTAP Select Support sind ab Version ONTAP 9.6 verfügbar.
+
+
+
+== Unterstützte Workloads bei Durchsatzbegrenzungen
+
+Die folgende Tabelle zeigt die Workload-Unterstützung für Durchsatzbegrenzungen mit der Version ONTAP 9. Root-Volumes, Spiegelungen zur Lastverteilung und Datensicherungsspiegelungen werden nicht unterstützt.
+
+|===
+
+
+| Workload Support - Decke | 9.0 | 9.1 | 9.2 | 9.3 | 9.4 und höher | 9.8 und höher 
+
+
+ a| 
+Datenmenge
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Datei
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+LUN
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+SVM
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+FlexGroup Volume
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Qtrees*
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+
+
+
+ a| 
+Mehrere Workloads pro Richtliniengruppe
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Nicht gemeinsam genutzte Richtliniengruppen
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+ a| 
+ja
+
+|===
+*Ab ONTAP 9.8 wird der NFS-Zugriff in qtrees in FlexVol und FlexGroup Volumes mit aktiviertem NFS unterstützt. Ab ONTAP 9.9 wird SMB-Zugriff auch in qtrees in FlexVol und FlexGroup Volumes mit aktiviertem SMB unterstützt.
+
+
+
+== Unterstützte Workloads für Durchsatzböden
+
+Die folgende Tabelle zeigt Workload-Support für Durchsatzböden mit ONTAP 9 Version. Root-Volumes, Spiegelungen zur Lastverteilung und Datensicherungsspiegelungen werden nicht unterstützt.
+
+|===
+
+
+| Workload Support – Floor | 9.2 | 9.3 | 9.4 und höher | 9.8 und höher 
+
+
+ a| 
+Datenmenge
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Datei
+ a| 
+Nein
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+LUN
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+SVM
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+FlexGroup Volume
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Qtrees *
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+
+
+
+ a| 
+Mehrere Workloads pro Richtliniengruppe
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Nicht gemeinsam genutzte Richtliniengruppen
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+ja
+ a| 
+ja
+
+|===
+*Ab ONTAP 9.8 wird der NFS-Zugriff in qtrees in FlexVol und FlexGroup Volumes mit aktiviertem NFS unterstützt. Ab ONTAP 9.9 wird SMB-Zugriff auch in qtrees in FlexVol und FlexGroup Volumes mit aktiviertem SMB unterstützt.
+
+
+
+== Unterstützte Workloads für anpassungsfähige QoS
+
+Die folgende Tabelle zeigt die Workload-Unterstützung für die adaptive QoS von ONTAP 9. Root-Volumes, Spiegelungen zur Lastverteilung und Datensicherungsspiegelungen werden nicht unterstützt.
+
+|===
+
+
+| Workload-Unterstützung: Anpassungsfähige QoS | 9.3 | 9.4 und höher 
+
+
+ a| 
+Datenmenge
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Datei
+ a| 
+Nein
+ a| 
+ja
+
+
+
+ a| 
+LUN
+ a| 
+Nein
+ a| 
+ja
+
+
+
+ a| 
+SVM
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+FlexGroup Volume
+ a| 
+Nein
+ a| 
+ja
+
+
+
+ a| 
+Mehrere Workloads pro Richtliniengruppe
+ a| 
+ja
+ a| 
+ja
+
+
+
+ a| 
+Nicht gemeinsam genutzte Richtliniengruppen
+ a| 
+ja
+ a| 
+ja
+
+|===
+
+
+== Maximale Anzahl an Workloads und Richtliniengruppen
+
+In der folgenden Tabelle wird die maximale Anzahl an Workloads und Richtliniengruppen nach Version ONTAP 9 angezeigt.
+
+|===
+
+
+| Workload-Unterstützung | 9.3 und früher | 9.4 und höher 
+
+
+ a| 
+Maximale Workloads pro Cluster
+ a| 
+12,000
+ a| 
+40,000
+
+
+
+ a| 
+Maximale Workloads pro Node
+ a| 
+12,000
+ a| 
+40,000
+
+
+
+ a| 
+Maximale Anzahl von Richtliniengruppen
+ a| 
+12,000
+ a| 
+12,000
+
+|===

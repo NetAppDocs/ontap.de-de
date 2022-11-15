@@ -1,0 +1,291 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_monitor_an_ha_pair_overview.html 
+keywords: ontap, high, availability, ha, pair, monitor 
+summary: Sie können ONTAP Befehle verwenden, um den Status des HA-Paars zu überwachen. 
+---
+= Befehle für die Überwachung eines HA-Paars
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Sie können ONTAP Befehle verwenden, um den Status des HA-Paars zu überwachen. Wenn ein Takeover eintritt, können Sie auch feststellen, welche Ursache das Takeover ist.
+
+|===
+
+
+| Wenn Sie überprüfen möchten | Verwenden Sie diesen Befehl 
+
+
+| Ob der Failover aktiviert ist oder stattgefunden hat oder warum ein Failover derzeit nicht möglich ist | `storage failover show` 
+
+
+| Zeigen Sie die Nodes an, auf denen die Storage Failover HA-Mode-Einstellung aktiviert ist, und müssen Sie den Wert auf ha festlegen, damit der Node an einer Storage-Failover-Konfiguration (HA-Paar) teilnehmen kann. Der `non-ha` Der Wert wird nur in einer Standalone- oder Single-Node-Cluster-Konfiguration verwendet. | `storage failover show -fields mode` 
+
+
+| Gibt an, ob die Hardware-gestützte Übernahme aktiviert ist | `storage failover hwassist show` 
+
+
+| Geschichte der Hardware-gestützten Übernahme | `storage failover hwassist stats show` 
+
+
+| Der Fortschritt eines Übernahmungvorgangs, wenn die Aggregate des Partners zu dem Knoten verschoben werden, der den Takeover durchgeführt | `storage failover show‑takeover` 
+
+
+| Der Fortschritt eines Giveback-Vorgangs beim Zurücksenden von Aggregaten zum Partner-Node | `storage failover show‑giveback` 
+
+
+| Egal, ob ein Aggregat während Übernahme- oder Giveback-Operationen zuhause ist | `aggregate show ‑fields home‑id,owner‑id,home‑name,owner‑name,is‑home` 
+
+
+| Gibt an, ob Cluster HA aktiviert ist (gilt nur für Cluster mit zwei Nodes) | `cluster ha show` 
+
+
+| Der HA-Status der Komponenten eines HA-Paars (auf Systemen, die den HA-Status verwenden) | `ha‑config show`Dies ist ein Befehl des Wartungsmodus. 
+|===
+
+
+== Durch Befehle des Storage-Failovers werden Node-Status angezeigt
+
+In der folgenden Liste werden die Status des Node beschrieben `storage failover show` Befehlsanzeigen.
+
+|===
+
+
+| Node-Status | Beschreibung 
+
+
+ a| 
+Mit Partner_Name verbunden, automatische Übernahme deaktiviert.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Die automatische Übernahme des Partners ist deaktiviert.
+
+
+
+ a| 
+Warten auf Partner_Name, GiveBack der Partner-Ersatzfestplatten ausstehend.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen. GiveBack von SFO-Aggregaten zum Partner ist erledigt, aber die Ersatzfestplatten von Partnern werden noch immer im Besitz des lokalen Knotens sein.
+
+* Führen Sie die aus `storage failover show-giveback` Befehl für weitere Informationen.
+
+
+
+
+ a| 
+Warten auf Partner_Name. Warten auf Synchronisierung mit Partnersperrung.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen und wartet, bis die Synchronisierung der Partnersperre stattfindet.
+
+
+
+ a| 
+Warten auf Partner_Name. Warten, bis Cluster-Anwendungen auf dem lokalen Node online geschaltet werden.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen und wartet, dass Cluster-Applikationen online geschaltet werden können.
+
+
+
+ a| 
+Übernahme geplant. Der Ziel-Node verlagert seine SFO-Aggregate in Vorbereitung der Übernahme.
+ a| 
+Die Takeover-Verarbeitung wurde gestartet. Der Ziel-Node verlagert die Eigentümerschaft der SFO-Aggregate zur Vorbereitung des Takeover.
+
+
+
+ a| 
+Übernahme geplant. Der Ziel-Node hat seine SFO-Aggregate in Vorbereitung der Übernahme verschoben.
+ a| 
+Die Takeover-Verarbeitung wurde gestartet. Der Ziel-Node hat seine SFO-Aggregate in Vorbereitung auf das Takeover verschoben.
+
+
+
+ a| 
+Übernahme geplant. Warten auf das Deaktivieren von Aktualisierungen der Festplatten-Firmware auf dem lokalen Node im Hintergrund. Auf dem Node wird gerade eine Firmware-Aktualisierung ausgeführt.
+ a| 
+Die Takeover-Verarbeitung wurde gestartet. Das System wartet darauf, dass das Update der Festplatten-Firmware im Hintergrund auf dem lokalen Node abgeschlossen wird.
+
+
+
+ a| 
+Verschieben von SFO-Aggregaten in die Übernahme von Nodes vor dem Takeover
+ a| 
+Zur Vorbereitung der Übernahme verlagert der lokalen Node die Eigentümerschaft der SFO-Aggregate auf den Taking-over-Node.
+
+
+
+ a| 
+SFO-Aggregate wurden in den Node verschoben. Warten, bis Node zur Übernahme übernommen wurde.
+ a| 
+Die Verschiebung der Eigentümerschaft von SFO-Aggregaten vom lokalen Node zum Übernehmen-Node ist abgeschlossen. Das System wartet auf die Übernahme durch den Takeover-Node.
+
+
+
+ a| 
+Verschieben von SFO-Aggregaten zu Partner_Name Warten auf die Deaktivierung von Firmware-Updates der Hintergrund-Festplatte auf dem lokalen Node. Auf dem Node wird gerade eine Firmware-Aktualisierung ausgeführt.
+ a| 
+Es läuft derzeit das verlagern der Eigentümerschaft von SFO-Aggregaten vom lokalen Node zum Übernehmen von Node. Das System wartet darauf, dass das Update der Festplatten-Firmware im Hintergrund auf dem lokalen Node abgeschlossen wird.
+
+
+
+ a| 
+Verschieben von SFO-Aggregaten zu Partner_Name Warten auf die Deaktivierung von Firmware-Updates der Hintergrund-Festplatte im Partner_Name. Auf dem Node wird gerade eine Firmware-Aktualisierung ausgeführt.
+ a| 
+Es läuft derzeit das verlagern der Eigentümerschaft von SFO-Aggregaten vom lokalen Node zum Übernehmen von Node. Das System wartet darauf, dass das Update der Festplatten-Firmware im Hintergrund des Partner-Node abgeschlossen wird.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Ein vorheriger Takeover-Versuch wurde aus dem Grund abgebrochen. Der lokale Node ist Eigentümer einiger SFO-Aggregate des Partners. Geben Sie eine Übernahme des Partners mit dem zurück `‑bypass-optimization` Parameter auf „true“ gesetzt für die Übernahme verbleibender Aggregate, oder geben Sie ein Giveback des Partners aus, um die verlagerten Aggregate zurückzugeben.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der vorherige Übernahmemversuch wurde abgebrochen, weil unter Grund dieses Fehlers angezeigt wurde. Der lokale Node besitzt einige SFO-Aggregate des Partners.
+
+* Geben Sie entweder eine Neuaufstellung des Partner-Node aus, indem Sie den ‑Bypass‑Optimierungsparameter auf „true“ setzen, um die verbleibenden SFO-Aggregate zu übernehmen, oder führen Sie ein Giveback des Partners durch, um verlagerte Aggregate zurückzugeben.
+
+
+
+
+ a| 
+Verbindung mit Partner_Name. Ein vorheriger Übernahmemversuch wurde abgebrochen. Der lokale Node ist Eigentümer einiger SFO-Aggregate des Partners. Geben Sie eine Übernahme des Partners mit dem zurück `‑bypass-optimization` Parameter auf „true“ gesetzt für die Übernahme verbleibender Aggregate, oder geben Sie ein Giveback des Partners aus, um die verlagerten Aggregate zurückzugeben.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der vorherige Übernahmemversuch wurde abgebrochen. Der lokale Node besitzt einige SFO-Aggregate des Partners.
+
+* Geben Sie entweder eine Neuaufstellung des Partner-Node aus, indem Sie den ‑Bypass‑Optimierungsparameter auf „true“ setzen, um die verbleibenden SFO-Aggregate zu übernehmen, oder führen Sie ein Giveback des Partners durch, um verlagerte Aggregate zurückzugeben.
+
+
+
+
+ a| 
+Warten auf Partner_Name. Ein vorheriger Takeover-Versuch wurde aus dem Grund abgebrochen. Der lokale Node ist Eigentümer einiger SFO-Aggregate des Partners. Geben Sie eine Neuübernahme des Partners mit dem Parameter „‑Bypass-Optimierung“, der auf die Übernahme der verbleibenden Aggregate setzt, oder geben Sie ein Giveback des Partners aus, um die umgelagerten Aggregate zurückzugeben.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen. Der vorherige Übernahmemversuch wurde abgebrochen, weil unter Grund dieses Fehlers angezeigt wurde. Der lokale Node besitzt einige SFO-Aggregate des Partners.
+
+* Geben Sie entweder eine Neuaufstellung des Partner-Node aus, indem Sie den ‑Bypass‑Optimierungsparameter auf „true“ setzen, um die verbleibenden SFO-Aggregate zu übernehmen, oder führen Sie ein Giveback des Partners durch, um verlagerte Aggregate zurückzugeben.
+
+
+
+
+ a| 
+Warten auf Partner_Name. Ein vorheriger Übernahmemversuch wurde abgebrochen. Der lokale Node ist Eigentümer einiger SFO-Aggregate des Partners. Geben Sie eine Neuübernahme des Partners mit dem Parameter „‑Bypass-Optimierung“, der auf die Übernahme der verbleibenden Aggregate setzt, oder geben Sie ein Giveback des Partners aus, um die umgelagerten Aggregate zurückzugeben.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen. Der vorherige Übernahmemversuch wurde abgebrochen. Der lokale Node besitzt einige SFO-Aggregate des Partners.
+
+* Geben Sie entweder eine Neuaufstellung des Partner-Node aus, indem Sie den ‑Bypass‑Optimierungsparameter auf „true“ setzen, um die verbleibenden SFO-Aggregate zu übernehmen, oder führen Sie ein Giveback des Partners durch, um verlagerte Aggregate zurückzugeben.
+
+
+
+
+ a| 
+Verbindung mit Partner_Name. Vorheriger Takeover-Versuch wurde abgebrochen, da das Update der Hintergrund-Festplatten-Firmware (BDFU) auf dem lokalen Knoten fehlgeschlagen ist.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der vorherige Übernahmemversuch wurde abgebrochen, da das Update der Festplatten-Firmware auf dem lokalen Node im Hintergrund nicht deaktiviert wurde.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Ein vorheriger Takeover-Versuch wurde aus dem Grund abgebrochen.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der vorherige Übernahmemversuch wurde abgebrochen, weil unter Grund dieses Fehlers angezeigt wurde.
+
+
+
+ a| 
+Warten auf Partner_Name. Ein vorheriger Takeover-Versuch wurde aus dem Grund abgebrochen.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen. Der vorherige Übernahmemversuch wurde abgebrochen, weil unter Grund dieses Fehlers angezeigt wurde.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Der vorherige Übernahmemuf von Partner_Name wurde abgebrochen, da Grund darauf lag.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der vorherige Übernahmemversuch des Partner-Node wurde abgebrochen, weil unter Grund dieses Fehlers angezeigt wurde.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Vorheriger Übernahmemversuch durch Partner_Name wurde abgebrochen.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der vorherige Übernahmeversuch des Partner-Node wurde abgebrochen.
+
+
+
+ a| 
+Warten auf Partner_Name. Der vorherige Übernahmemuf von Partner_Name wurde abgebrochen, da Grund darauf lag.
+ a| 
+Der lokale Node kann über den HA Interconnect keine Informationen mit dem Partner-Node austauschen. Der vorherige Übernahmemversuch des Partner-Node wurde abgebrochen, weil unter Grund dieses Fehlers angezeigt wurde.
+
+
+
+ a| 
+Vorheriges Giveback fehlgeschlagen im Modul: Modulname. Das automatische Giveback wird in Sekunden eingeleitet.
+ a| 
+Der vorherige Giveback-Versuch im Modul Module_Name fehlgeschlagen. Das automatische Giveback wird in Sekunden eingeleitet.
+
+* Führen Sie die aus `storage failover show-giveback` Befehl für weitere Informationen.
+
+
+
+
+ a| 
+Node ist Eigentümer der Aggregate des Partners im Rahmen des unterbrechungsfreien Controller-Upgrades.
+ a| 
+Der Node Eigentümer der Aggregate des Partners aufgrund des unterbrechungsfreien Controller-Upgrades, das derzeit in Bearbeitung ist.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Der Node besitzt Aggregate, die zu einem anderen Node im Cluster gehören.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Der Node besitzt Aggregate, die zu einem anderen Node im Cluster gehören.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Warten auf Synchronisierung mit Partnersperrung.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Das System wartet darauf, dass die Synchronisierung der Partnersperre abgeschlossen wird.
+
+
+
+ a| 
+Verbindung mit Partner_Name. Warten, bis Cluster-Anwendungen auf dem lokalen Node online geschaltet werden.
+ a| 
+Das HA Interconnect ist aktiv und kann Daten an den Partner-Node übertragen. Das System wartet darauf, dass Cluster-Anwendungen auf dem lokalen Node online geschaltet werden.
+
+
+
+ a| 
+Nicht-HA-Modus. Booten Sie neu, um den vollständigen NVRAM zu verwenden.
+ a| 
+Ein Storage-Failover ist nicht möglich. Die HA-Modus-Option ist als non_ha konfiguriert.
+
+* Sie müssen den Node neu booten, um den gesamten NVRAM zu verwenden.
+
+
+
+
+ a| 
+Non-HA-Modus. Node neu booten, um HA zu aktivieren
+ a| 
+Ein Storage-Failover ist nicht möglich.
+
+* Um die HA-Funktion zu aktivieren, muss der Node neu gebootet werden.
+
+
+
+
+ a| 
+Non-HA-Modus.
+ a| 
+Ein Storage-Failover ist nicht möglich. Die HA-Modus-Option ist als non_ha konfiguriert.
+
+* Sie müssen den ausführen `storage failover modify ‑mode ha ‑node nodename` Führen Sie auf beiden Nodes im HA-Paar einen Befehl aus, und booten Sie dann die Nodes neu, um die HA-Funktion zu aktivieren.
+
+
+|===

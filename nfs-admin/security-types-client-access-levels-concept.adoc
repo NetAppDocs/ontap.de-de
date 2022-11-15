@@ -1,0 +1,116 @@
+---
+permalink: nfs-admin/security-types-client-access-levels-concept.html 
+sidebar: sidebar 
+keywords: security, type, determine, client, access, level 
+summary: Der Sicherheitstyp, mit dem der Client authentifiziert wurde, spielt eine besondere Rolle in den Exportregeln. Sie müssen verstehen, wie der Sicherheitstyp die Zugriffsebenen bestimmt, die der Client zu einem Volume oder qtree erhält. 
+---
+= Wie Sicherheitstypen die Client-Zugriffsebenen bestimmen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Der Sicherheitstyp, mit dem der Client authentifiziert wurde, spielt eine besondere Rolle in den Exportregeln. Sie müssen verstehen, wie der Sicherheitstyp die Zugriffsebenen bestimmt, die der Client zu einem Volume oder qtree erhält.
+
+Die drei möglichen Zugriffsebenen sind wie folgt:
+
+. Schreibgeschützt
+. Lesen und schreiben
+. Superuser (für Clients mit Benutzer-ID 0)
+
+
+Da die Zugriffsebene nach Sicherheitstyp in dieser Reihenfolge ausgewertet wird, müssen Sie beim Erstellen von Parametern auf Zugriffsebene in Exportregeln folgende Regeln beachten:
+
+[cols="2*"]
+|===
+| Damit ein Client die Zugriffsebene abrufen kann... | Diese Zugriffsparameter müssen dem Sicherheitstyp des Clients entsprechen... 
+
+
+ a| 
+Normaler Benutzer schreibgeschützt
+ a| 
+Schreibgeschützt (`-rorule`)
+
+
+
+ a| 
+Normaler Benutzer Lese-/Schreibzugriff
+ a| 
+Schreibgeschützt (`-rorule`) Und lesen-schreiben (`-rwrule`)
+
+
+
+ a| 
+Schreibgeschützt für Superuser
+ a| 
+Schreibgeschützt (`-rorule`) Und `-superuser`
+
+
+
+ a| 
+Superuser lesen und schreiben
+ a| 
+Schreibgeschützt (`-rorule`) Und lesen-schreiben (`-rwrule`) Und `-superuser`
+
+|===
+Die folgenden Sicherheitstypen sind für jeden der folgenden drei Zugriffsparameter gültig:
+
+* `any`
+* `none`
+* `never`
++
+Dieser Sicherheitstyp ist für die Verwendung mit dem nicht gültig `-superuser` Parameter.
+
+* `krb5`
+* `krb5i`
+* `krb5p`
+* `ntlm`
+* `sys`
+
+
+Beim Abgleich des Sicherheitstyps eines Clients mit jedem der drei Zugriffsparameter gibt es drei mögliche Ergebnisse:
+
+[cols="2*"]
+|===
+| Falls der Sicherheitstyp des Clients... | Dann der Client... 
+
+
+ a| 
+Stimmt mit dem im Zugriffsparameter angegebenen überein.
+ a| 
+Erhält Zugriff auf dieses Level mit eigener Benutzer-ID.
+
+
+
+ a| 
+Stimmt nicht mit dem angegebenen überein, der Zugriffsparameter enthält jedoch die Option `none`.
+ a| 
+Ruft Zugriff auf diese Ebene, jedoch als anonymer Benutzer mit der von angegebenen Benutzer-ID ab `-anon` Parameter.
+
+
+
+ a| 
+Stimmt nicht mit dem angegebenen überein und der Zugriffsparameter enthält die Option nicht `none`.
+ a| 
+Für diese Ebene wird kein Zugriff erhalten.Dies gilt nicht für die `-superuser` Parameter, da er immer enthält `none` Auch wenn sie nicht angegeben werden.
+
+|===
+Die Exportrichtlinie enthält eine Exportregel mit den folgenden Parametern:
+
+* `-protocol` `nfs3`
+* `-clientmatch` `10.1.16.0/255.255.255.0`
+* `-rorule` `any`
+* `-rwrule` `sys,krb5`
+* `-superuser` `krb5`
+
+
+Client #1 hat die IP-Adresse 10.1.16.207, hat Benutzer-ID 0, sendet eine Zugriffsanfrage über das NFSv3-Protokoll und authentifiziert mit Kerberos v5.
+
+Client #2 hat die IP-Adresse 10.1.16.211, hat Benutzer-ID 0, sendet eine Zugriffsanfrage über das NFSv3-Protokoll und authentifiziert mit AUTH_SYS.
+
+Client #3 hat die IP-Adresse 10.1.16.234, hat Benutzer-ID 0, sendet eine Zugriffsanforderung über das NFSv3-Protokoll und authentifiziert nicht (AUTH_NONE).
+
+Das Client-Zugriffsprotokoll und die IP-Adresse stimmen mit allen drei Clients überein. Der schreibgeschützte Parameter ermöglicht den schreibgeschützten Zugriff auf alle Clients unabhängig vom Sicherheitstyp. Der Lese-Schreib-Parameter ermöglicht den Lese-Schreib-Zugriff auf Clients mit eigener Benutzer-ID, die mit AUTH_SYS oder Kerberos v5 authentifiziert wurden. Der Superuser-Parameter ermöglicht Superuser-Zugriff auf Clients mit Benutzer-ID 0, die mit Kerberos v5 authentifiziert wurden.
+
+Client #1 erhält daher Lese-/Schreibzugriff für Superuser, da er alle drei Zugriffsparameter einordnet. Client #2 erhält Lese-/Schreibzugriff, aber keinen Superuser-Zugriff. Client #3 erhält nur Lesezugriff, aber keinen Superuser-Zugriff.

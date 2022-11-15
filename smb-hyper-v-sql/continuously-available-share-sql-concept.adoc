@@ -1,0 +1,54 @@
+---
+permalink: smb-hyper-v-sql/continuously-available-share-sql-concept.html 
+sidebar: sidebar 
+keywords: continuously, share, requirements, considerations, sql, server, smb, nondisuptive, snapcenter plug-in 
+summary: Beachten Sie bestimmte Anforderungen und Überlegungen, wenn Sie kontinuierlich verfügbare Shares für SQL Server über SMB-Konfigurationen konfigurieren, die einen unterbrechungsfreien Betrieb unterstützen. 
+---
+= Kontinuierlich verfügbare Share-Anforderungen und Überlegungen für SQL Server über SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Beachten Sie bestimmte Anforderungen und Überlegungen, wenn Sie kontinuierlich verfügbare Shares für SQL Server über SMB-Konfigurationen konfigurieren, die einen unterbrechungsfreien Betrieb unterstützen.
+
+
+
+== Share-Anforderungen
+
+* Volumes, die zur Speicherung von Dateien virtueller Maschinen verwendet werden, müssen als NTFS Sicherheitsstil Volumes erstellt werden.
++
+Um für Applikationsserver einen unterbrechungsfreien Betrieb zu ermöglichen, der kontinuierlich verfügbare SMB-Verbindungen verwendet, muss das Volume, das den Share enthält, ein NTFS-Volume sein. Außerdem muss es immer ein NTFS-Volume gewesen sein. Ein Volume mit gemischtem Sicherheitsstil bzw. ein UNIX Volume kann nicht auf ein NTFS Sicherheitsstil Volume geändert und direkt für unterbrechungsfreien Betrieb über SMB-Freigaben verwendet werden. Wenn Sie ein Volume mit gemischtem Sicherheitsstil in ein NTFS-Sicherheitsstil-Volume ändern und diese für unterbrechungsfreien Betrieb über SMB-Freigaben verwenden möchten, müssen Sie manuell eine ACL oben auf dem Volume platzieren und diese ACL auf alle enthaltenen Dateien und Ordner übertragen. Andernfalls können Migrationen virtueller Maschinen oder Exporte von Datenbankdateien und Importe, wo Dateien auf ein anderes Volume verschoben werden, fehlschlagen, wenn entweder die Quell- oder Ziel-Volumes zunächst als gemischte oder UNIX-SicherheitsVolumes erstellt und später in NTFS-Sicherheitsstil geändert wurden.
+
+* Freigaben, die von den Anwendungsservern verwendet werden, müssen mit der kontinuierlich verfügbaren Eigenschaft konfiguriert werden.
++
+Applikations-Server, die sich mit kontinuierlich verfügbaren Shares verbinden, erhalten persistente Handles, über die sie sich unterbrechungsfrei mit SMB-Freigaben verbinden und Dateisperren nach Unterbrechungen wie Takeover, Giveback und Aggregatverschiebung wieder nutzbar machen können.
+
+* Obwohl das Volume, das die Datenbankdateien enthält, Verbindungen enthalten kann, kreuzen SQL Server beim Erstellen der Datenbank-Verzeichnisstruktur keine Verbindungen.
+* Damit das SnapCenter Plug-in für den Betrieb von Microsoft SQL Server erfolgreich ist, müssen Sie über genügend Speicherplatz auf dem Volume verfügen.
++
+Das Volume, auf dem sich die SQL Server Datenbankdateien befinden, muss groß genug sein, um die Verzeichnisstruktur und alle enthaltenen Dateien innerhalb der Freigabe zu speichern.
+
+* Die folgenden Freigabeigenschaften dürfen nicht auf kontinuierlich verfügbaren Freigaben festgelegt werden, die von den Anwendungsservern verwendet werden:
++
+** Home Directory damit füllt
+** Caching von Attributen
+** BranchCache
+
+
+
+
+
+
+== Überlegungen teilen
+
+* Kontingente werden für kontinuierlich verfügbare Aktien unterstützt.
+* Die folgende Funktion wird für SQL Server über SMB-Konfigurationen nicht unterstützt:
++
+** Prüfung
+** FPolicy
+
+
+* Der Virus-Scan wird nicht auf SMB-Freigaben mit dem durchgeführt `continuously-availability` Eigenschaftssatz freigeben.
+

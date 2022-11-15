@@ -1,0 +1,181 @@
+---
+permalink: san-admin/io-misalignments-properly-aligned-luns-concept.html 
+sidebar: sidebar 
+keywords: i/o misalignments, occur, properly, aligned, luns 
+summary: ONTAP meldet möglicherweise I/O-Fehlausrichtungen auf ordnungsgemäß ausgerichtete LUNs. Im Allgemeinen lassen sich diese Falschausrichtung von Warnungen außer Acht, wenn Sie sicher sind, dass Ihre LUN ordnungsgemäß bereitgestellt ist und Ihre Partitionierungstabelle korrekt ist. 
+---
+= I/O-Fehlausrichtungen auf korrekt ausgerichtete LUNs Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP meldet möglicherweise I/O-Fehlausrichtungen auf ordnungsgemäß ausgerichtete LUNs. Im Allgemeinen lassen sich diese Falschausrichtung von Warnungen außer Acht, wenn Sie sicher sind, dass Ihre LUN ordnungsgemäß bereitgestellt ist und Ihre Partitionierungstabelle korrekt ist.
+
+Sowohl LUNs als auch Festplatten bieten Storage als Blöcke. Da die Blockgröße für Festplatten auf dem Host 512 Byte ist, stellen LUNs Blöcke dieser Größe dem Host zur Verfügung, während tatsächlich größere 4-KB-Blöcke zum Speichern von Daten genutzt werden. Der vom Host verwendete 512-Byte-Datenblock wird als logischer Block bezeichnet. Der von der LUN zum Speichern von Daten verwendete 4-KB-Datenblock wird als physischer Block bezeichnet. Das heißt, es gibt acht logische 512-Byte-Blöcke in jedem physischen 4-KB-Block.
+
+image::../media/bsag-cmode-lbpb.gif[bsag cmode lbpb]
+
+Das Host-Betriebssystem kann einen I/O-Vorgang zum Lesen oder Schreiben an einem beliebigen logischen Block starten. I/O-Vorgänge gelten nur als ausgerichtet, wenn sie am ersten logischen Block im physischen Block beginnen. Wenn ein I/O-Vorgang auf einem logischen Block beginnt, der nicht unbedingt der Anfang eines physischen Blocks ist, gilt der I/O-Vorgang als falsch ausgerichtet. ONTAP erkennt Falschausrichtungen automatisch und meldet sie innerhalb der LUN. Dies bedeutet jedoch nicht zwangsläufig, dass die LUN auch falsch ausgerichtet ist. Es kann möglich sein, dass falsch ausgerichtete I/O-Vorgänge auf ordnungsgemäß ausgerichteten LUNs gemeldet werden.
+
+Wenn Sie weitere Untersuchungen benötigen, lesen Sie den Artikel in der Knowledge Base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_to_identify_unaligned_IO_on_LUNs["Wie identifizieren Sie nicht ausgerichtete I/O-Vorgänge auf LUNs?"^]
+
+Weitere Informationen zu Tools zur Korrektur von Ausrichtungsproblemen finden Sie in der folgenden Dokumentation: +
+
+* https://docs.netapp.com/us-en/ontap-sanhost/hu_wuhu_71.html["Windows Unified Host Utilitys 7.1"]
+* https://docs.netapp.com/ontap-9/topic/com.netapp.doc.exp-iscsi-esx-cpg/GUID-7428BD24-A5B4-458D-BD93-2F3ACD72CBBB.html["Virtual Storage Console for VMware vSphere Installations- und Administratorleitfaden"^]
+
+
+
+
+== I/O-Ausrichtung mit LUN-OS-Typen
+
+Um die I/O-Ausrichtung an Ihrem BS-Partitionierungsschema zu erreichen, sollten Sie die empfohlene ONTAP-LUN verwenden `ostype` Wert, der am ehesten zu Ihrem Betriebssystem passt.
+
+Das vom Host-Betriebssystem verwendete Partitionsschema ist ein wesentlicher Faktor für die I/O-Fehlausrichtungen. Einige ONTAP-LUNs `ostype` Werte verwenden einen speziellen Offset, der als „`PREFIX`“ bezeichnet wird, um die Ausrichtung des vom Host-Betriebssystem verwendeten Standardpartitionierungsschemas zu ermöglichen.
+
+[NOTE]
+====
+In manchen Fällen ist möglicherweise eine individuelle Partitionstabelle erforderlich, um die I/O-Ausrichtung zu erreichen. Jedoch für `ostype` Werte mit einem „`PREFIX`“-Wert größer als `0`, Eine benutzerdefinierte Partition kann falsch ausgerichtete I/O erstellen
+
+====
+Die LUN `ostype` Die Werte in der folgenden Tabelle sollten basierend auf Ihrem Betriebssystem verwendet werden.
+
+[cols="4*"]
+|===
+| LUN `ostype` | Präfix (Byte) | Präfix (Sektoren) | Betriebssystem 
+
+
+ a| 
+`windows`
+ a| 
+32,256
+ a| 
+63
+ a| 
+Windows 2000, 2003 (MBR-Format)
+
+
+
+ a| 
+`windows_gpt`
+ a| 
+17,408
+ a| 
+34
+ a| 
+Windows 2003 (GPT-Format)
+
+
+
+ a| 
+`windows_2008`
+ a| 
+0
+ a| 
+0
+ a| 
+Windows 2008 und höher
+
+
+
+ a| 
+`linux`
+ a| 
+0
+ a| 
+0
+ a| 
+Alle Linux-Distributionen
+
+
+
+ a| 
+`xen`
+ a| 
+0
+ a| 
+0
+ a| 
+Citrix XenServer
+
+
+
+ a| 
+`vmware`
+ a| 
+0
+ a| 
+0
+ a| 
+VMware ESX
+
+
+
+ a| 
+`solaris`
+ a| 
+1 MB
+ a| 
+2,048
+ a| 
+Solaris
+
+
+
+ a| 
+`solaris_efi`
+ a| 
+17,408
+ a| 
+34
+ a| 
+Solaris
+
+
+
+ a| 
+`hpux`
+ a| 
+0
+ a| 
+0
+ a| 
+HP-UX ERHÄLTLICH
+
+
+
+ a| 
+`aix`
+ a| 
+0
+ a| 
+0
+ a| 
+AIX
+
+|===
+
+
+== Besondere Überlegungen zur I/O-Ausrichtung für Linux
+
+Linux-Distributionen bieten eine Vielzahl von Möglichkeiten zur Verwendung einer LUN, einschließlich als Rohgeräte für Datenbanken, verschiedene Volume-Manager und Dateisysteme. Bei Verwendung als Raw Device bzw. als physisches Volume in einem logischen Volume sind keine Partitionen auf einer LUN erforderlich.
+
+Wenn bei RHEL 5 und älteren sowie SLES 10 und älteren Versionen die LUN ohne Volume Manager verwendet wird, sollten Sie die LUN partitionieren, um eine Partition zu haben, die bei einem ausgerichteten Offset beginnt, einem Sektor, der ein oder mehrere acht logische Blöcke ist.
+
+
+
+== Spezielle Überlegungen zur I/O-Ausrichtung für Solaris LUNs
+
+Bei der Entscheidung, ob Sie den verwenden sollten, müssen Sie verschiedene Faktoren berücksichtigen `solaris` Ostype oder der `solaris_efi` Ostype:
+
+Siehe http://mysupport.netapp.com/documentation/productlibrary/index.html?productID=61343["Installations- und Administrationsanleitung für Solaris Host Utilities"^] Ausführliche Informationen finden Sie unter.
+
+
+
+== Der Bericht für ESX Boot LUNs wurde falsch ausgerichtet
+
+LUNs, die als ESX Boot LUNs genutzt werden, werden von ONTAP in der Regel als falsch ausgerichtet gemeldet. ESX erstellt mehrere Partitionen auf der Boot LUN, was eine Ausrichtung sehr schwierig macht. Falsch ausgerichtete ESX Boot LUNs stellen in der Regel kein Performance-Problem dar, da die Gesamtzahl an falsch ausgerichteten I/O klein ist. Angenommen, die LUN wurde mit dem VMware ordnungsgemäß bereitgestellt `ostype`, Keine Aktion erforderlich.
+
+https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/Virtual_Storage_Console_for_VMware_vSphere/Guest_VM_file_system_partition%2F%2Fdisk_alignment_for_VMware_vSphere["Koordinierung von Gast-VM-Filesystem-Partition/Festplatten für VMware vSphere, andere virtuelle Umgebungen und NetApp Storage-Systeme"]

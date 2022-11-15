@@ -1,0 +1,60 @@
+---
+permalink: smb-hyper-v-sql/snapmanager-hyper-v-remote-backups-concept.html 
+sidebar: sidebar 
+keywords: snapmanager, hyper, v, remote, manage, vss, backup, smb 
+summary: Mithilfe von SnapManager für Hyper-V können Remote VSS-basierte Backup-Services gemanagt werden. Der Einsatz von SnapManager für einen gemanagten Backup-Service für Hyper-V zur Erstellung platzsparender Backup-Sets bietet zahlreiche Vorteile. 
+---
+= So managt SnapManager für Hyper-V Remote VSS-basierte Backups für Hyper-V über SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Mithilfe von SnapManager für Hyper-V können Remote VSS-basierte Backup-Services gemanagt werden. Der Einsatz von SnapManager für einen gemanagten Backup-Service für Hyper-V zur Erstellung platzsparender Backup-Sets bietet zahlreiche Vorteile.
+
+Die Optimierungen bei SnapManager für im Rahmen von Hyper-V gemanagte Backups umfassen Folgendes:
+
+* Die SnapDrive Integration in ONTAP ermöglicht bei der Ermittlung des SMB-Share-Speicherorts die Performance-Optimierung.
++
+ONTAP stellt SnapDrive den Namen des Volumes zur Verfügung, auf dem sich die Freigabe befindet.
+
+* SnapManager für Hyper-V gibt die Liste der Virtual Machine-Dateien in den SMB-Shares an, die der Schattenkopie-Service kopieren muss.
++
+Durch die Bereitstellung einer zielorientierten Liste von VM-Dateien muss der Dienst für Schattenkopien nicht von allen Dateien in der Freigabe Schattenkopien erstellen.
+
+* Die Storage Virtual Machine (SVM) bewahrt die Snapshot Kopien der SnapManager für Hyper-V für Restores auf.
++
+Es gibt keine Backup-Phase. Das Backup ist die platzsparende Snapshot Kopie.
+
+
+
+SnapManager für Hyper-V bietet mithilfe des folgenden Prozesses Backup- und Restore-Funktionen für HyperV über SMB:
+
+. Vorbereitung für den Schattenkopie-Vorgang
++
+Der VSS-Client der SnapManager für Hyper-V Applikation legt den Satz der Schattenkopien fest. Der VSS-Client sammelt Informationen darüber, welche Freigaben in den Schattenkopiesatz einbezogen werden sollen, und stellt diese Informationen ONTAP zur Verfügung. Ein Satz kann eine oder mehrere Schattenkopien enthalten, und eine Schattenkopie entspricht einer Freigabe.
+
+. Erstellen des SchattenkopieSatzes (bei automatischer Wiederherstellung)
++
+Für jeden Share im Shadow Copy-Set erstellt ONTAP eine Shadow-Kopie, die dann beschreibbar macht.
+
+. Legen Sie den Schattenkopiesatz fest
++
+Nachdem ONTAP die Schattenkopien erstellt hat, sind sie SnapManager für Hyper-V ausgesetzt, sodass VSS Writer die automatische Recovery durchführen können.
+
+. Automatisches Wiederherstellen des SchattenkopieSatzes
++
+Während der Erstellung des Schattenkopie-Satzes gibt es einen Zeitraum, in dem aktive Änderungen an den Dateien im Backup-Satz vorgenommen werden. Die VSS-Autoren der Applikation müssen die Schattenkopien aktualisieren, um sicherzustellen, dass sie sich vor dem Backup in einem vollständig konsistenten Zustand befinden.
+
++
+[NOTE]
+====
+Die Art und Weise, wie das automatische Recovery durchgeführt wird, ist applikationsspezifisch. Remote VSS ist in dieser Phase nicht beteiligt.
+
+====
+. Abschließen und Reinigen der Schattenkopie
++
+Der VSS-Client benachrichtigt ONTAP, nachdem die automatische Wiederherstellung abgeschlossen ist. Der Schattenkopiesatz wird schreibgeschützt gemacht und ist dann für die Sicherung bereit. Beim Einsatz von SnapManager für Hyper-V beim Backup werden die Dateien in einer Snapshot Kopie zum Backup. Somit wird für jedes Volume mit Freigaben des Backup-Satzes für die Backup-Phase eine Snapshot Kopie erstellt. Nachdem die Sicherung abgeschlossen ist, wird der Satz der Schattenkopien vom CIFS-Server entfernt.
+
+

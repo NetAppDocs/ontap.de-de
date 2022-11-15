@@ -1,0 +1,78 @@
+---
+permalink: fabricpool/replace-mirror-mcc-task.html 
+sidebar: sidebar 
+keywords: replacing, fabricpool, mirror, metrocluster, configuration 
+summary: Wenn einer der Objektspeicher in einer FabricPool-Spiegelung zerstört wird oder bei einer MetroCluster-Konfiguration permanent nicht mehr verfügbar ist, können Sie den Objektspeicher zur Spiegelung machen, wenn es sich nicht bereits um die Spiegelung handelt, entfernen Sie den beschädigten Objektspeicher aus der FabricPool-Spiegelung. Anschließend fügen Sie der FabricPool eine neue Objektspeicherspiegelung hinzu. 
+---
+= Ersetzen Sie eine FabricPool-Spiegelung auf einer MetroCluster-Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn einer der Objektspeicher in einer FabricPool-Spiegelung zerstört wird oder bei einer MetroCluster-Konfiguration permanent nicht mehr verfügbar ist, können Sie den Objektspeicher zur Spiegelung machen, wenn es sich nicht bereits um die Spiegelung handelt, entfernen Sie den beschädigten Objektspeicher aus der FabricPool-Spiegelung. Anschließend fügen Sie der FabricPool eine neue Objektspeicherspiegelung hinzu.
+
+.Schritte
+. Wenn der beschädigte Objektspeicher nicht bereits den Spiegel ist, den Objektspeicher mit dem zu speichern `storage aggregate object-store modify` Befehl.
++
+[listing]
+----
+storage aggregate object-store modify -aggregate -aggregate fp_aggr1_A01 -name mcc1_ostore1 -mirror-type mirror
+----
+. Entfernen Sie den Objektspeicherspiegel mithilfe des aus der FabricPool `storage aggregate object-store unmirror` Befehl.
++
+[listing]
+----
+storage aggregate object-store unmirror -aggregate <aggregate name> -name mcc1_ostore1
+----
+. Sie können das Tiering erzwingen, dass es auf dem primären Datenspeicher wieder aufgenommen wird, nachdem Sie den Mirror-Datenspeicher mit dem entfernt haben `storage aggregate object-store modify` Mit dem `-force-tiering-on-metrocluster true` Option.
++
+Das Fehlen eines Spiegels beeinträchtigt die Replikationsanforderungen einer MetroCluster-Konfiguration.
+
++
+[listing]
+----
+storage aggregate object-store modify -aggregate <aggregate name> -name mcc1_ostore1 -force-tiering-on-metrocluster true
+----
+. Erstellen Sie mithilfe des einen Ersatzobjektspeicher `storage aggregate object-store config create` Befehl.
++
+[listing]
+----
+storage aggregate object-store config create -object-store-name mcc1_ostore3 -cluster clusterA -provider-type SGWS -server <SGWS-server-1> -container-name <SGWS-bucket-1> -access-key <key> -secret-password <password> -encrypt <true|false> -provider <provider-type> -is-ssl-enabled <true|false> ipspace <IPSpace>
+----
+. Fügen Sie die Objektspeicherspiegelung mit dem zur FabricPool Spiegelung hinzu `storage aggregate object-store mirror` Befehl.
++
+[listing]
+----
+storage aggregate object-store mirror -aggregate aggr1 -name mcc1_ostore3-mc
+----
+. Zeigen Sie mithilfe des die Speicherinformationen des Objektes an `storage aggregate object-store show` Befehl.
++
+[listing]
+----
+storage aggregate object-store show -fields mirror-type,is-mirror-degraded
+----
++
+[listing]
+----
+aggregate      object-store-name mirror-type     is-mirror-degraded
+-------------- ----------------- ------------- ------------------
+aggr1          mcc1_ostore1-mc    primary           -
+               mcc1_ostore3-mc    mirror          true
+----
+. Überwachen Sie den Spiegelresync-Status mithilfe des `storage aggregate object-store show-resync-status` Befehl.
++
+[listing]
+----
+storage aggregate object-store show-resync-status -aggregate aggr1
+----
++
+[listing]
+----
+                                                  Complete
+      Aggregate    Primary        Mirror          Percentage
+      ---------    -----------    ----------      ----------
+      aggr1        mcc1_ostore1-mc mcc1_ostore3-mc   40%
+----
+

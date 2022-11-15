@@ -1,0 +1,173 @@
+---
+permalink: performance-admin/adaptive-qos-policy-groups-task.html 
+sidebar: sidebar 
+keywords: use, adaptive, qos, policy, groups 
+summary: Mithilfe einer anpassungsfähigen QoS-Richtliniengruppe können Sie die Durchsatzobergrenze oder -Ebene automatisch skalieren und das Verhältnis von IOPS zu TB-Werten beibehalten, wenn sich die Größe des Volumes ändert. Wenn Sie Hunderte oder Tausende Workloads in einer großen Implementierung managen, bedeutet dies einen enormen Vorteil. 
+---
+= Verwendung von adaptiven QoS-Richtliniengruppen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Mithilfe einer Richtliniengruppe „_Adaptive QoS_“ können Sie eine Durchsatzobergrenze oder -Stellfläche automatisch skalieren und bei sich änderungsem Volume das Verhältnis von IOPS zu GB/s. Wenn Sie Hunderte oder Tausende Workloads in einer großen Implementierung managen, bedeutet dies einen enormen Vorteil.
+
+.Was Sie und#8217;ll benötigen
+* Sie müssen ONTAP 9.3 verwenden. Adaptive QoS-Richtliniengruppen sind ab ONTAP 9.3 verfügbar.
+* Zum Erstellen einer Richtliniengruppe müssen Sie ein Cluster-Administrator sein.
+
+
+Ein Storage-Objekt kann Mitglied einer adaptiven Richtliniengruppe oder einer nicht-adaptiven Richtliniengruppe sein, jedoch nicht beides. Die SVM des Storage-Objekts und die Richtlinie müssen identisch sein. Das Storage-Objekt muss online sein.
+
+Adaptive QoS-Richtliniengruppen werden immer nicht gemeinsam genutzt: Die definierte Durchsatzdecke oder -Etage wird für jeden Workload der Mitglieder einzeln angewendet.
+
+Das Verhältnis der Durchsatzbegrenzungen zum Storage-Objektgröße wird durch die Interaktion der folgenden Felder bestimmt:
+
+* `expected-iops` Ist der erwartete Mindestwert für IOPS pro zugewiesenem TB GB.
++
+[NOTE]
+====
+ `expected-iops` Wird nur auf AFF Plattformen garantiert. `expected-iops` Wird für FabricPool nur garantiert, wenn die Tiering-Richtlinie auf „keine“ eingestellt ist und keine Blöcke in der Cloud liegen. `expected-iops` Ist garantiert für Volumes die nicht in einer SnapMirror synchronen Beziehung sind.
+
+====
+* `peak-iops` Ist die maximal mögliche IOPS pro zugewiesenem oder belegtem TB.
+* `expected-iops-allocation` Gibt an, ob der zugewiesene Speicherplatz (Standard) bzw. der genutzte Speicherplatz für erwartete iops verwendet wird.
++
+[NOTE]
+====
+`expected-iops-allocation` Ist in ONTAP 9.5 und höher verfügbar. Es wird nicht unterstützt in ONTAP 9.4 und früher.
+
+====
+* `peak-iops-allocation` Gibt an, ob der zugewiesene Speicherplatz oder der genutzte Speicherplatz (der Standard) für verwendet werden `peak-iops`.
+*  `absolute-min-iops` Ist die absolute Mindestanzahl an IOPS. Sie können dieses Feld mit sehr kleinen Speicherobjekten verwenden. Es überschreibt beide `peak-iops` Und/oder `expected-iops` Wenn `absolute-min-iops` Ist größer als der berechnete `expected-iops`.
++
+Beispiel: Wenn Sie einstellen `expected-iops` Bis zu 1,000 IOPS/TB, und die Volume-Größe beträgt weniger als 1 GB, wird der berechnet `expected-iops` Wird ein fraktionaler IOP sein. Der berechnet `peak-iops` Wird ein noch kleiner Bruchteil. Sie können dies durch die Einstellung vermeiden `absolute-min-iops` Auf einen realistischen Wert.
+
+* `block-size` Gibt die I/O-Blockgröße der Anwendung an. Der Standardwert ist 32K. Gültige Werte sind 8K, 16K, 32K, 64K, BELIEBIG. IRGENDWELCHE bedeutet, dass die Blockgröße nicht durchgesetzt wird.
+
+
+In der folgenden Tabelle sind drei Adaptive QoS-Richtliniengruppen verfügbar. Sie können diese Richtliniengruppen direkt auf ein Volume anwenden.
+
+|===
+
+
+| Standardrichtliniengruppe | Erwartete IOPS/TB | Max. IOPS/TB | Absolute IOPS-Minimum 
+
+
+ a| 
+`extreme`
+ a| 
+6,144
+ a| 
+12,288
+ a| 
+1000
+
+
+
+ a| 
+`performance`
+ a| 
+2,048
+ a| 
+4,096
+ a| 
+500
+
+
+
+ a| 
+`value`
+ a| 
+128
+ a| 
+512
+ a| 
+75
+
+|===
+Sie können einer Richtliniengruppe kein Speicherobjekt zuweisen, wenn das zugehörige Objekt oder seine untergeordneten Objekte einer Richtliniengruppe angehören. In der folgenden Tabelle sind die Einschränkungen aufgeführt.
+
+|===
+| Wenn Sie die folgende Zuordnung zuweisen: | Dann kann nicht zugewiesen werden... 
+
+
+ a| 
+SVM zu einer Richtliniengruppe
+ a| 
+Alle Storage-Objekte, die der SVM in einer Richtliniengruppe enthalten sind
+
+
+
+ a| 
+Volume zu einer Richtliniengruppe
+ a| 
+Das Volume enthält SVM oder untergeordnete LUNs einer Richtliniengruppe
+
+
+
+ a| 
+LUN einer Richtliniengruppe
+ a| 
+Die LUN enthält Volume oder SVM zu einer Richtliniengruppe
+
+
+
+ a| 
+Datei zu einer Richtliniengruppe
+ a| 
+Die Datei mit Volume oder SVM in einer Richtliniengruppe
+
+|===
+.Schritte
+. Erstellung einer anpassungsfähigen QoS-Richtliniengruppe:
++
+`qos adaptive-policy-group create -policy group _policy_group_ -vserver _SVM_ -expected-iops _number_of_iops_/TB|GB -peak-iops _number_of_iops_/TB|GB -expected-iops-allocation-space|used-space -peak-iops-allocation allocated-space|used-space -absolute-min-iops _number_of_iops_ -block-size 8K|16K|32K|64K|ANY`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+[NOTE]
+====
+`-expected-iops-allocation` Und `-block-size` Ist in ONTAP 9.5 und höher verfügbar. Diese Optionen werden in ONTAP 9.4 und früher nicht unterstützt.
+
+====
++
+Mit dem folgenden Befehl wird die adaptive QoS-Richtliniengruppe erstellt `adpg-app1` Mit `-expected-iops` Festlegen auf 300 IOPS/TB `-peak-iops` Festlegen auf 1,000 IOPS/TB `-peak-iops-allocation` Auf einstellen `used-space`, und `-absolute-min-iops` Auf 50 IOPS einstellen:
+
++
+[listing]
+----
+cluster1::> qos adaptive-policy-group create -policy group adpg-app1 -vserver vs2 -expected-iops 300iops/tb -peak-iops 1000iops/TB -peak-iops-allocation used-space -absolute-min-iops 50iops
+----
+. Anwenden einer anpassungsfähigen QoS-Richtliniengruppe auf ein Volume:
++
+`volume create -vserver SVM -volume _volume_ -aggregate _aggregate_ -size _number_of_ TB|GB -qos-adaptive-policy-group _policy_group_`
+
++
+Eine vollständige Befehlssyntax finden Sie in den man-Pages.
+
++
+Mit dem folgenden Befehl wird die adaptive QoS Policy Group angewendet `adpg-app1` Auf Volumen `app1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume app1 -aggregate aggr1 -size 2TB -qos-adaptive-policy-group adpg-app1
+----
++
+Mit den folgenden Befehlen wird die standardmäßige adaptive QoS-Richtliniengruppe angewendet `extreme` Zum neuen Volume `app4` Und zum vorhandenen Volume `app5`. Die für die Richtliniengruppe definierte Durchsatzobergrenze gilt für Volumes `app4` Und `app5` Individuell:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs4 -volume app4 -aggregate aggr4 -size 2TB -qos-adaptive-policy-group extreme
+----
++
+[listing]
+----
+cluster1::> volume modify -vserver vs5 -volume app5 -qos-adaptive-policy-group extreme
+----
+

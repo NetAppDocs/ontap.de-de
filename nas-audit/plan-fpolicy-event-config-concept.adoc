@@ -1,0 +1,225 @@
+---
+permalink: nas-audit/plan-fpolicy-event-config-concept.html 
+sidebar: sidebar 
+keywords: plan, fpolicy event configuration 
+summary: Bevor Sie FPolicy-Ereignisse konfigurieren, müssen Sie verstehen, was es bedeutet, ein FPolicy-Ereignis zu erstellen. Sie müssen festlegen, welche Protokolle das Ereignis überwachen soll, welche Ereignisse überwacht werden sollen und welche Ereignisfilter verwendet werden sollen. Mit diesen Informationen können Sie die Werte planen, die Sie festlegen möchten. 
+---
+= Planen Sie die FPolicy Event-Konfiguration im Überblick
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie FPolicy-Ereignisse konfigurieren, müssen Sie verstehen, was es bedeutet, ein FPolicy-Ereignis zu erstellen. Sie müssen festlegen, welche Protokolle das Ereignis überwachen soll, welche Ereignisse überwacht werden sollen und welche Ereignisfilter verwendet werden sollen. Mit diesen Informationen können Sie die Werte planen, die Sie festlegen möchten.
+
+
+
+== Was es bedeutet, ein FPolicy-Ereignis zu erstellen
+
+Erstellen des FPolicy-Ereignisses bedeutet, Informationen zu definieren, die der FPolicy-Prozess bestimmen muss, welche Dateizugriffsvorgänge überwacht werden und für welche der überwachten Ereignisse Benachrichtigungen an den externen FPolicy-Server gesendet werden sollen. Die FPolicy-Event-Konfiguration definiert die folgenden Konfigurationsinformationen:
+
+* Name der Storage Virtual Machine (SVM
+* Ereignis-Name
+* Welche Protokolle zu überwachen sind
++
+FPolicy kann SMB-, NFSv3- und NFSv4-Dateizugriff überwachen.
+
+* Welche Dateivorgänge zu überwachen sind
++
+Nicht alle Dateivorgänge sind für jedes Protokoll gültig.
+
+* Welche Dateifilter konfiguriert werden sollen
++
+Es sind nur bestimmte Kombinationen von Dateioperationen und Filtern gültig. Jedes Protokoll verfügt über einen eigenen Satz unterstützter Kombinationen.
+
+* Gibt an, ob die Volume-Mount- und Unmount-Vorgänge überwacht werden sollen
+
+
+[NOTE]
+====
+Es gibt eine Abhängigkeit mit drei Parametern (`-protocol`, `-file-operations`, `-filters`). Die folgenden Kombinationen gelten für die drei Parameter:
+
+* Sie können den angeben `-protocol` Und `-file-operations` Parameter.
+* Sie können alle drei Parameter angeben.
+* Sie können keinen Parameter angeben.
+
+
+====
+
+
+== Was die FPolicy-Event-Konfiguration enthält
+
+Sie können die folgende Liste der verfügbaren FPolicy Event-Konfigurationsparameter verwenden, um Ihre Konfiguration zu planen:
+
+[cols="70,30"]
+|===
+
+
+| Informationstyp | Option 
+
+
+ a| 
+_SVM_
+
+Gibt den SVM-Namen an, den Sie mit diesem FPolicy-Ereignis verknüpfen möchten.
+
+Jede FPolicy-Konfiguration ist innerhalb einer einzelnen SVM definiert. Die externe Engine, das Richtlinienereignis, der Richtlinienumfang und die Richtlinie, die gemeinsam eine FPolicy-Konfiguration erstellen, müssen mit derselben SVM verknüpft werden.
+ a| 
+`-vserver` `vserver_name`
+
+
+
+ a| 
+_Ereignisname_
+
+Gibt den Namen an, der dem FPolicy-Ereignis zugewiesen werden soll. Wenn Sie die FPolicy erstellen, verknüpfen Sie das FPolicy Ereignis mit der Richtlinie unter Verwendung des Ereignisnamens.
+
+Der Name kann bis zu 256 Zeichen lang sein.
+
+[NOTE]
+====
+Der Name sollte bis zu 200 Zeichen lang sein, wenn das Ereignis in einer Disaster-Recovery-Konfiguration mit MetroCluster oder SVM konfiguriert wird.
+
+====
+Der Name kann eine beliebige Kombination der folgenden Zeichen des ASCII-Bereichs enthalten:
+
+* `a` Bis `z`
+* `A` Bis `Z`
+* `0` Bis `9`
+* „ `_` „, „`-`", and "`.`“
+
+ a| 
+`-event-name` `event_name`
+
+
+
+ a| 
+_Protokoll_
+
+Gibt an, welches Protokoll für das FPolicy-Ereignis konfiguriert werden soll. Die Liste für `-protocol` Kann einen der folgenden Werte enthalten:
+
+* `cifs`
+* `nfsv3`
+* `nfsv4`
+
+
+[NOTE]
+====
+Wenn Sie angeben `-protocol`, Dann müssen Sie einen gültigen Wert im angeben `-file-operations` Parameter. Wenn sich die Protokollversion ändert, können sich die gültigen Werte ändern.
+
+==== a| 
+`-protocol` `protocol`
+
+
+
+ a| 
+_Dateivorgänge_
+
+Gibt die Liste der Dateivorgänge für das FPolicy-Ereignis an.
+
+Das Ereignis überprüft die in dieser Liste angegebenen Vorgänge von allen Client-Anforderungen mithilfe des in angegebenen Protokolls `-protocol` Parameter. Sie können ein oder mehrere Dateivorgänge mit einer durch Komma getrennten Liste auflisten. Die Liste für `-file-operations` Kann einen oder mehrere der folgenden Werte enthalten:
+
+* `close` Für Dateischließvorgänge
+* `create` Für Dateiererstellungsprozesse
+* `create-dir` Erstellen von Verzeichnisvorgängen
+* `delete` Für Dateilösch-Vorgänge
+* `delete_dir` Für Vorgänge zum Löschen von Verzeichnissen
+* `getattr` Für get-Attributvorgänge
+* `link` Für Verbindungsvorgänge
+* `lookup` Für Suchvorgänge
+* `open` Für Dateiöffnungsprozesse
+* `read` Für Dateilesevorgänge
+* `write` Für Dateischreibvorgänge
+* `rename` Für Dateiumbenennung
+* `rename_dir` Für Verzeichnisumbenennung
+* `setattr` Für Set-Attributvorgänge
+* `symlink` Für symbolische Link-Vorgänge
+
+
+[NOTE]
+====
+Wenn Sie angeben `-file-operations`, Dann müssen Sie ein gültiges Protokoll im angeben `-protocol` Parameter.
+
+==== a| 
+`-file-operations` `file_operations`,...
+
+
+
+ a| 
+_Filter_
+
+Gibt die Liste der Filter für einen bestimmten Dateivorgang für das angegebene Protokoll an. Die Werte in `-filters` Mit dem Parameter werden Client-Anforderungen gefiltert. Die Liste kann eine oder mehrere der folgenden Elemente enthalten:
+
+[NOTE]
+====
+Wenn Sie den angeben `-filters` Parameter, dann müssen Sie auch gültige Werte für das angeben `-file-operations` Und `-protocol` Parameter.
+
+====
+* `monitor-ads` Option zum Filtern der Clientanforderung nach alternativen Datenströmen.
+* `close-with-modification` Option zum Filtern der Clientanfrage nach Abschluss mit Änderung.
+* `close-without-modification` Option zum Filtern der Clientanfrage nach Abschluss ohne Änderung.
+* `first-read` Option zum Filtern der Client-Anforderung nach dem ersten Lesen.
+* `first-write` Option zum Filtern der Client-Anforderung nach dem ersten Schreibvorgang.
+* `offline-bit` Option zum Filtern der Client-Anforderung nach Offline-Bit-Set.
++
+Wenn Sie diesen Filter festlegen, wird der FPolicy-Server nur benachrichtigt, wenn auf Offline-Dateien zugegriffen wird.
+
+* `open-with-delete-intent` Option zum Filtern der Client-Anforderung nach „Open with delete Intent“.
++
+Wenn Sie diesen Filter festlegen, wird der FPolicy-Server nur benachrichtigt, wenn versucht wird, eine Datei mit der Absicht zu öffnen, sie zu löschen. Dies wird von Dateisystemen verwendet, wenn die `FILE_DELETE_ON_CLOSE` Flag ist angegeben.
+
+* `open-with-write-intent` Option zum Filtern der Client-Anforderung nach Open mit Write Intent.
++
+Die Einstellung dieses Filters führt dazu, dass der FPolicy-Server eine Benachrichtigung nur erhält, wenn versucht wird, eine Datei mit der Absicht zu öffnen, etwas darin zu schreiben.
+
+* `write-with-size-change` Option zum Filtern der Client-Anfrage nach Schreiben mit Größenänderung.
+
+ a| 
+`-filters` `filter`, ...
+
+
+
+ a| 
+_Filter_ Fortsetzung
+
+* `setattr-with-owner-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern des Inhabers einer Datei oder eines Verzeichnisses.
+* `setattr-with-group-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Gruppe einer Datei oder eines Verzeichnisses.
+* `setattr-with-sacl-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der SACL in einer Datei oder einem Verzeichnis.
++
+Dieser Filter ist nur für die SMB- und NFSv4-Protokolle verfügbar.
+
+* `setattr-with-dacl-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der DACL in einer Datei oder einem Verzeichnis.
++
+Dieser Filter ist nur für die SMB- und NFSv4-Protokolle verfügbar.
+
+* `setattr-with-modify-time-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Änderungszeit einer Datei oder eines Verzeichnisses.
+* `setattr-with-access-time-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Zugriffszeit einer Datei oder eines Verzeichnisses.
+* `setattr-with-creation-time-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Erstellungszeit einer Datei oder eines Verzeichnisses.
++
+Diese Option ist nur für das SMB-Protokoll verfügbar.
+
+* `setattr-with-mode-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Modus-Bits in einer Datei oder einem Verzeichnis.
+* `setattr-with-size-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Größe einer Datei.
+* `setattr-with-allocation-size-change` Option zum Filtern der Client-setattr-Anforderungen zum Ändern der Zuordnungsgröße einer Datei.
++
+Diese Option ist nur für das SMB-Protokoll verfügbar.
+
+* `exclude-directory` Option zum Filtern der Clientanforderungen nach Verzeichnisvorgängen.
++
+Wenn dieser Filter angegeben ist, werden die Verzeichnisvorgänge nicht überwacht.
+
+
+ a| 
+`-filters` `filter`, ...
+
+
+
+ a| 
+_Ist Volumenvorgang erforderlich_
+
+Gibt an, ob Monitoring für Volume-Mount- und Unmount-Vorgänge erforderlich ist. Die Standardeinstellung lautet `false`.
+ a| 
+`-volume-operation` {`true`|`false`}
+
+|===

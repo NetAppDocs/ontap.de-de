@@ -1,0 +1,114 @@
+---
+permalink: flexgroup/expand-destination-snapmirror-relationship-task.html 
+sidebar: sidebar 
+keywords: expand, destination, flexgroup, volume, snapmirror, relationship 
+summary: Sie können das FlexGroup Zielvolume erweitern und die SnapMirror Beziehung entweder automatisch oder manuell wiederherstellen. Standardmäßig ist die SnapMirror Beziehung für die automatische Erweiterung festgelegt und das Ziel-FlexGroup Volume wird automatisch erweitert, wenn das Quell-Volume erweitert wird. 
+---
+= Erweitern Sie das Ziel-FlexGroup Volume einer SnapMirror Beziehung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das FlexGroup Zielvolume erweitern und die SnapMirror Beziehung entweder automatisch oder manuell wiederherstellen. Standardmäßig ist die SnapMirror Beziehung für die automatische Erweiterung festgelegt und das Ziel-FlexGroup Volume wird automatisch erweitert, wenn das Quell-Volume erweitert wird.
+
+.Was Sie und#8217;ll benötigen
+* Das Quell-FlexGroup-Volume muss erweitert worden sein.
+* Die SnapMirror-Beziehung muss im enthalten sein `SnapMirrored` Bundesland.
++
+Die SnapMirror Beziehung darf nicht beschädigt oder gelöscht werden.
+
+
+
+.Über diese Aufgabe
+* Bei Erstellung des FlexGroup Ziel-Volume ist das Volume standardmäßig für die automatische Erweiterung eingerichtet.
++
+Sie können das FlexGroup Ziel-Volume bei Bedarf für eine manuelle Erweiterung ändern.
+
++
+[NOTE]
+====
+Als Best Practice empfiehlt es sich, das Ziel-FlexGroup-Volume automatisch zu erweitern.
+
+====
+* Alle SnapMirror Vorgänge scheitern, bis sowohl das FlexGroup Quell- als auch das Ziel-FlexGroup Volume erweitert sind und über dieselbe Anzahl von Komponenten verfügen.
+* Wenn Sie das Ziel-FlexGroup-Volumen erweitern nachdem die SnapMirror-Beziehung beschädigt oder gelöscht ist, können Sie die ursprüngliche Beziehung nicht mehr neu synchronisieren.
++
+Wenn Sie beabsichtigen, das Ziel-FlexGroup-Volumen wiederverwenden, dürfen Sie das Volumen nicht erweitern, nachdem Sie die SnapMirror-Beziehung gelöscht haben.
+
+
+
+.Wahlmöglichkeiten
+* Führen Sie einen Update-Transfer durch, um das Ziel-FlexGroup-Volume automatisch zu erweitern:
++
+.. Durchführen eines SnapMirror Update Transfers: `snapmirror update -destination-path svm:vol_name`
+.. Vergewissern Sie sich, dass der Status der SnapMirror-Beziehung im lautet `SnapMirrored` Bundesland: `snapmirror show`
++
+[listing]
+----
+cluster2::> snapmirror show
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs_src:src_fg
+            XDP  vs_dst:dst_fg
+                              Snapmirrored
+                                      Idle           -         true   -
+----
+
+
++
+Je nach Größe und Verfügbarkeit der Aggregate werden die Aggregate automatisch ausgewählt. Dem Ziel-FlexGroup Volume werden neue Komponenten, die die Komponenten des Quell-FlexGroup-Volumes entsprechen, hinzugefügt. Nach der Erweiterung wird automatisch eine Neusynchronisierung ausgelöst.
+
+* Manuelles erweitern des Ziel-FlexGroup-Volumes:
++
+.. Wenn sich die SnapMirror-Beziehung im Modus für die automatische Erweiterung befindet, legen Sie die SnapMirror-Beziehung auf den manuellen Expand-Modus fest: `snapmirror modify -destination-path svm:vol_name -is-auto-expand-enabled false`
++
+[listing]
+----
+cluster2::> snapmirror modify -destination-path vs_dst:dst_fg -is-auto-expand-enabled false
+Operation succeeded: snapmirror modify for the relationship with destination "vs_dst:dst_fg".
+----
+.. Stilllegen der SnapMirror Beziehung: `snapmirror quiesce -destination-path svm:vol_name`
++
+[listing]
+----
+cluster2::> snapmirror quiesce -destination-path vs_dst:dst_fg
+Operation succeeded: snapmirror quiesce for destination "vs_dst:dst_fg".
+----
+.. Erweitern Sie den FlexGroup Zieldatenträger: `+volume expand -vserver vserver_name -volume fg_name -aggr-list aggregate name,... [-aggr-list-multiplier constituents_per_aggr]+`
++
+[listing]
+----
+cluster2::> volume expand -volume dst_fg -aggr-list aggr1 -aggr-list-multiplier 2  -vserver vs_dst
+
+Warning: The following number of constituents of size 50GB will be added to FlexGroup "dst_fg": 2.
+Do you want to continue? {y|n}: y
+[Job 68] Job succeeded: Successful
+----
+.. SnapMirror Beziehung neu synchronisieren: `snapmirror resync -destination-path svm:vol_name`
++
+[listing]
+----
+cluster2::> snapmirror resync -destination-path vs_dst:dst_fg
+Operation is queued: snapmirror resync to destination "vs_dst:dst_fg".
+----
+.. Vergewissern Sie sich, dass der Status der SnapMirror-Beziehung lautet `SnapMirrored`: `snapmirror show`
++
+[listing]
+----
+cluster2::> snapmirror show
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs_src:src_fg
+            XDP  vs_dst:dst_fg
+                              Snapmirrored
+                                      Idle           -         true   -
+----
+
+
+

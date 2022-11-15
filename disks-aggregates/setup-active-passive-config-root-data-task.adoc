@@ -1,0 +1,136 @@
+---
+permalink: disks-aggregates/setup-active-passive-config-root-data-task.html 
+sidebar: sidebar 
+keywords: setting, active-passive, configuration, node, root-data, partitioning, configure, active passive, 
+summary: 'Wenn ein HA-Paar für die Verwendung der Root-Daten-Partitionierung durch die Fabrik konfiguriert ist, werden die Datenpartitionen auf beide Nodes im Paar aufgeteilt, um in einer aktiv/aktiv-Konfiguration verwendet zu werden. Wenn Sie das HA-Paar in einer aktiv/Passiv-Konfiguration verwenden möchten, müssen Sie die Eigentümerschaft der Partition aktualisieren, bevor Sie die Daten-lokale Tier (Aggregat) erstellen.' 
+---
+= Richten Sie eine aktiv/Passiv-Konfiguration auf Nodes mithilfe der Root-Daten-Partitionierung ein
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn ein HA-Paar für die Verwendung der Root-Daten-Partitionierung durch die Fabrik konfiguriert ist, werden die Datenpartitionen auf beide Nodes im Paar aufgeteilt, um in einer aktiv/aktiv-Konfiguration verwendet zu werden. Wenn Sie das HA-Paar in einer aktiv/Passiv-Konfiguration verwenden möchten, müssen Sie die Eigentümerschaft der Partition aktualisieren, bevor Sie die Daten-lokale Tier (Aggregat) erstellen.
+
+.Was Sie und#8217;ll benötigen
+* Sie sollten sich entscheiden, welcher Node der aktive Node sein wird und welcher Node der passive Node sein wird.
+* Storage Failover muss auf dem HA-Paar konfiguriert werden.
+
+
+Diese Aufgabe wird auf zwei Knoten durchgeführt: Knoten A und Knoten B.
+
+Dieses Verfahren ist auf Nodes ausgelegt, für die keine lokale Daten-Tier (Aggregat) aus den partitionierten Festplatten erstellt wurde.
+
+Alle Befehle werden an der Cluster-Shell eingegeben.
+
+. Aktuelle Eigentümerschaft der Datenpartitionen anzeigen:
++
+`storage aggregate show-spare-disks`
+
++
+Die Ausgabe zeigt, dass die Hälfte der Daten-Partitionen im Besitz eines Node und der Hälfte im Besitz des anderen Node ist. Alle Daten-Partitionen sollten frei sein.
+
++
+[listing]
+----
+
+cluster1::> storage aggregate show-spare-disks
+
+Original Owner: cluster1-01
+ Pool0
+  Partitioned Spares
+                                                            Local    Local
+                                                             Data     Root Physical
+ Disk                        Type     RPM Checksum         Usable   Usable     Size
+ --------------------------- ----- ------ -------------- -------- -------- --------
+ 1.0.0                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.1                       BSAS    7200 block           753.8GB  73.89GB  828.0GB
+ 1.0.5                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.6                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.10                      BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.11                      BSAS    7200 block           753.8GB       0B  828.0GB
+
+Original Owner: cluster1-02
+ Pool0
+  Partitioned Spares
+                                                            Local    Local
+                                                             Data     Root Physical
+ Disk                        Type     RPM Checksum         Usable   Usable     Size
+ --------------------------- ----- ------ -------------- -------- -------- --------
+ 1.0.2                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.3                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.4                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.7                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.8                       BSAS    7200 block           753.8GB  73.89GB  828.0GB
+ 1.0.9                       BSAS    7200 block           753.8GB       0B  828.0GB
+12 entries were displayed.
+----
+. Geben Sie die erweiterte Berechtigungsebene ein:
++
+`set advanced`
+
+. Weisen Sie ihn für jede Datenpartition des Node, der der passive Node ist, dem aktiven Node zu:
++
+`storage disk assign -force -data true -owner _active_node_name_ -disk _disk_name_`
+
++
+Sie müssen die Partition nicht als Teil des Festplattennamens einschließen.
+
++
+Geben Sie einen Befehl ein, der dem folgenden Beispiel ähnelt, für jede Datenpartition, die Sie neu zuweisen müssen:
+
++
+`storage disk assign -force -data true -owner cluster1-01 -disk 1.0.3`
+
+. Vergewissern Sie sich, dass dem aktiven Knoten alle Partitionen zugewiesen sind.
++
+[listing]
+----
+cluster1::*> storage aggregate show-spare-disks
+
+Original Owner: cluster1-01
+ Pool0
+  Partitioned Spares
+                                                            Local    Local
+                                                             Data     Root Physical
+ Disk                        Type     RPM Checksum         Usable   Usable     Size
+ --------------------------- ----- ------ -------------- -------- -------- --------
+ 1.0.0                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.1                       BSAS    7200 block           753.8GB  73.89GB  828.0GB
+ 1.0.2                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.3                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.4                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.5                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.6                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.7                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.8                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.9                       BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.10                      BSAS    7200 block           753.8GB       0B  828.0GB
+ 1.0.11                      BSAS    7200 block           753.8GB       0B  828.0GB
+
+Original Owner: cluster1-02
+ Pool0
+  Partitioned Spares
+                                                            Local    Local
+                                                             Data     Root Physical
+ Disk                        Type     RPM Checksum         Usable   Usable     Size
+ --------------------------- ----- ------ -------------- -------- -------- --------
+ 1.0.8                       BSAS    7200 block                0B  73.89GB  828.0GB
+13 entries were displayed.
+----
++
+Beachten Sie, dass cluster1-02 immer noch eine freie Root-Partition besitzt.
+
+. Zurück zur Administratorberechtigung:
++
+`set admin`
+
+. Erstellen Sie Ihr Datenaggregat, wobei mindestens eine Datenpartition als Ersatz bleibt:
++
+`storage aggregate create _new_aggr_name_ -diskcount _number_of_partitions_ -node _active_node_name_`
+
++
+Das Datenaggregat wird erstellt und ist Eigentum des aktiven Nodes.
+
+

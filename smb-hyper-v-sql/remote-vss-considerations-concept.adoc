@@ -1,0 +1,62 @@
+---
+permalink: smb-hyper-v-sql/remote-vss-considerations-concept.html 
+sidebar: sidebar 
+keywords: remote, vss, consideration, hyper, v, smb, configuration, backup, solution, automatic, recovery, shadow, copy 
+summary: Beachten Sie bei der Verwendung von Remote VSS-fähigen Backup-Lösungen für Hyper-V über SMB-Konfigurationen bestimmte Überlegungen. 
+---
+= Überlegungen zu Remote VSS für Hyper-V über SMB-Konfigurationen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Beachten Sie bei der Verwendung von Remote VSS-fähigen Backup-Lösungen für Hyper-V über SMB-Konfigurationen bestimmte Überlegungen.
+
+
+
+== Allgemeine Überlegungen zu Remote VSS
+
+* Pro Microsoft Applikations-Server können maximal 64 Shares konfiguriert werden.
++
+Der Vorgang der Schattenkopie schlägt fehl, wenn mehr als 64 Shares in einem Schattenkopiesatz vorhanden sind. Dies ist eine Anforderung von Microsoft.
+
+* Pro CIFS-Server ist nur ein aktiver Schattenkopiesatz zulässig.
++
+Ein Vorgang der Schattenkopie schlägt fehl, wenn auf demselben CIFS-Server kontinuierlich eine Schattenkopie durchgeführt wird. Dies ist eine Anforderung von Microsoft.
+
+* In der Verzeichnisstruktur, in der Remote VSS eine Schattenkopie erstellt, sind keine Verbindungen zulässig.
++
+** Im Fall der automatischen Wiederherstellung schlägt die Erstellung von Schattenkopien fehl, wenn beim Überfahren der Freigabe eine Verbindung auftritt.
+** In einem Fall eines nicht automatischen Recovery schlägt die Erstellung von Schattenkopien nicht fehl, aber die Verbindung weist keinen Punkt auf.
+
+
+
+
+
+
+== Überlegungen zu Remote-VSS, die nur für Schattenkopien mit automatischem Recovery gelten
+
+Bestimmte Grenzwerte gelten nur für Schattenkopien mit automatischer Recovery.
+
+* Für die Erstellung von Schattenkopien ist eine maximale Verzeichnistiefe von fünf Unterverzeichnissen zulässig.
++
+Dies ist die Verzeichnistiefe, über die der Service für Schattenkopien einen Backup-Satz erstellt. Die Erstellung von Schattenkopien schlägt fehl, wenn Verzeichnisse, die eine virtuelle Maschinendatei enthalten, tiefer als fünf Ebenen geschachtelt sind. Dies soll den Verzeichnistversal beim Klonen der Freigabe begrenzen. Die maximale Verzeichnistiefe kann über eine CIFS-Serveroption geändert werden.
+
+* Die Menge an verfügbarem Speicherplatz auf dem Volume muss ausreichend sein.
++
+Der verfügbare Speicherplatz muss mindestens so groß sein wie der kombinierte Speicherplatz, der von allen Dateien, Verzeichnissen und Unterverzeichnissen genutzt wird, die sich in den Freigaben befinden, die in der Sicherungskopie der Schattenkopie enthalten sind.
+
+* Innerhalb der Verzeichnisstruktur, auf der Remote VSS eine Schattenkopie erstellt, sind keine Links oder nicht reguläre Dateien zulässig.
++
+Die Erstellung von Schattenkopien schlägt fehl, wenn sich Links oder nicht-normale Dateien in der Freigabe zur Schattenkopie befinden. Sie werden vom Klonprozess nicht unterstützt.
+
+* Auf Verzeichnissen sind keine NFSv4-ACLs zulässig.
++
+Obwohl durch die Erstellung von Schattenkopien die NFSv4 ACLs auf Dateien erhalten bleiben, gehen die NFSv4 ACLs auf Verzeichnissen verloren.
+
+* Maximal 60 Sekunden können Schattenkopien erstellt werden.
++
+Microsoft-Spezifikationen erlauben die Erstellung des SchattenkopieSatzes auf maximal 60 Sekunden. Wenn der VSS-Client nicht innerhalb dieses Zeitraums den Schattenkopiesatz erstellen kann, schlägt der Vorgang der Schattenkopie fehl. Dadurch wird die Anzahl der Dateien in einem Schattenkopiesatz eingeschränkt. Die tatsächliche Anzahl der Dateien oder Virtual Machines, die in einem Backup-Satz enthalten sein können, variiert. Diese Zahl ist von vielen Faktoren abhängig und muss für die jeweilige Kundenumgebung festgelegt werden.
+
+

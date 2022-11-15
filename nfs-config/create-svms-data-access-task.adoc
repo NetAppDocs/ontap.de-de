@@ -1,0 +1,77 @@
+---
+permalink: nfs-config/create-svms-data-access-task.html 
+sidebar: sidebar 
+keywords: create, svm 
+summary: Wenn nicht bereits mindestens eine SVM in einem Cluster vorhanden ist, um den Datenzugriff für NFS-Clients zu ermöglichen, müssen Sie eine SVM erstellen. 
+---
+= Erstellen einer SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn nicht bereits mindestens eine SVM in einem Cluster vorhanden ist, um den Datenzugriff für NFS-Clients zu ermöglichen, müssen Sie eine SVM erstellen.
+
+.Schritte
+. SVM erstellen:
++
+`vserver create -vserver _vserver_name_ -rootvolume _root_volume_name_ -aggregate _aggregate_name_ -rootvolume-security-style unix -language C.UTF-8 -ipspace _ipspace_name_`
+
++
+** Verwenden Sie die UNIX-Einstellung für den `-rootvolume-security-style` Option.
+** Verwenden Sie die Standard-C.UTF-8 `-language` Option.
+** Der `ipspace` Die Einstellung ist optional.
+
+
+. Konfiguration und Status der neu erstellten SVM überprüfen:
++
+`vserver show -vserver _vserver_name_`
+
++
+Der `Allowed Protocols` Feld muss NFS enthalten. Sie können diese Liste später bearbeiten.
+
++
+Der `Vserver Operational State` Das Feld muss angezeigt werden `running` Bundesland. Wenn der angezeigt wird `initializing` Zustand: Einiger Zwischenvorgang wie z. B. die Erstellung des Root-Volumes ist fehlgeschlagen. Außerdem müssen Sie die SVM löschen und erneut erstellen.
+
+
+
+Mit dem folgenden Befehl wird eine SVM für den Datenzugriff im IPspace ipspace A erstellt:
+
+[listing]
+----
+cluster1::> vserver create -vserver vs1.example.com -rootvolume root_vs1 -aggregate aggr1
+-rootvolume-security-style unix -language C.UTF-8 -ipspace ipspaceA
+
+[Job 2059] Job succeeded:
+Vserver creation completed
+----
+Der folgende Befehl zeigt, dass eine SVM mit einem Root-Volume von 1 GB erstellt wurde und dass sie automatisch gestartet wurde und sich in befindet `running` Bundesland. Das Root-Volume verfügt über eine standardmäßige Exportrichtlinie, die keine Regeln enthält, sodass das Root-Volume bei der Erstellung nicht exportiert wird.
+
+[listing]
+----
+cluster1::> vserver show -vserver vs1.example.com
+                                    Vserver: vs1.example.com
+                               Vserver Type: data
+                            Vserver Subtype: default
+                               Vserver UUID: b8375669-19b0-11e5-b9d1-00a0983d9736
+                                Root Volume: root_vs1
+                                  Aggregate: aggr1
+                                 NIS Domain: -
+                 Root Volume Security Style: unix
+                                LDAP Client: -
+               Default Volume Language Code: C.UTF-8
+                            Snapshot Policy: default
+                                    Comment:
+                               Quota Policy: default
+                List of Aggregates Assigned: -
+ Limit on Maximum Number of Volumes allowed: unlimited
+                        Vserver Admin State: running
+                  Vserver Operational State: running
+   Vserver Operational State Stopped Reason: -
+                          Allowed Protocols: nfs, cifs, fcp, iscsi, ndmp
+                       Disallowed Protocols: -
+                           QoS Policy Group: -
+                                Config Lock: false
+                               IPspace Name: ipspaceA
+----

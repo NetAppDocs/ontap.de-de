@@ -1,0 +1,85 @@
+---
+sidebar: sidebar 
+permalink: networking/monitor_the_health_of_network_ports.html 
+keywords: monitor, monitoring, manage, managing, automatic, health, port, monitor the health of network ports, automatic health monitoring and a set of health monitors help you identify network ports that might not be suitable for hosting lifs, network options port-health-monitor modify 
+summary: Automatische Statusüberwachung und eine Reihe von Zustandsmonitoren helfen Ihnen dabei, Netzwerk-Ports zu identifizieren, die möglicherweise nicht für das Hosting von LIFs geeignet sind 
+---
+= Überwachen Sie den Systemzustand von Netzwerk-Ports
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Das ONTAP Management von Netzwerk-Ports umfasst eine automatische Statusüberwachung und eine Reihe von Zustandsmonitoren, mit denen Sie Netzwerk-Ports identifizieren können, die möglicherweise nicht für das Hosting von LIFs geeignet sind.
+
+Wenn eine Systemzustandsüberwachung feststellt, dass ein Netzwerkanschluss fehlerhaft ist, werden Administratoren über eine EMS-Meldung gewarnt oder der Port wird als beeinträchtigt markiert. ONTAP vermeidet das Hosten von LIFs auf beeinträchtigten Netzwerk-Ports, wenn es gesunde alternative Failover-Ziele für diese LIF gibt. Ein Port kann aufgrund eines Soft-Failure-Ereignisses beeinträchtigt werden, z. B. das Überfüllen von Links (die schnell zwischen oben und unten hin- und herspringt) oder die Netzwerkpartitionierung:
+
+* Netzwerkanschlüsse im IPspace des Clusters werden als beeinträchtigt markiert, wenn es zu Verbindungsverlusten oder Verlust der Reachabilität von Layer 2 (L2) zu anderen Netzwerkports in der Broadcast-Domäne kommt.
+* Netzwerkports in nicht-Cluster-IPspaces werden als beeinträchtigt gekennzeichnet, wenn Link-flattern.
+
+
+Sie müssen die folgenden Verhaltensweisen eines beeinträchtigten Ports kennen:
+
+* Ein eingeschränkter Port kann nicht in ein VLAN oder eine Schnittstellengruppe aufgenommen werden.
++
+Wenn ein Mitglied-Port einer Interface-Gruppe als beeinträchtigt gekennzeichnet ist, die Interface-Gruppe jedoch noch als ordnungsgemäß gekennzeichnet ist, können LIFs auf dieser Interface-Gruppe gehostet werden.
+
+* LIFs werden automatisch von Ports migriert, deren Betrieb nicht beeinträchtigt ist, auf gesunde Ports.
+* Während eines Failover-Ereignisses wird ein beeinträchtigter Port nicht als Failover-Ziel betrachtet. Wenn keine ordnungsgemäßen Ports verfügbar sind, hosten degradierte Ports LIFs gemäß der normalen Failover-Richtlinie.
+* Sie können eine LIF nicht zu einem beeinträchtigten Port erstellen, migrieren oder zurücksetzen.
++
+Sie können den ändern `ignore-health-status` Einstellen des Netzwerkports auf `true`. Sie können dann eine LIF auf den gesunden Ports hosten.
+
+
+
+.Schritte
+. Melden Sie sich im erweiterten Berechtigungsmodus an:
++
+....
+set -privilege advanced
+....
+. Überprüfen Sie, welche Integritätsmonitore für das Monitoring des Netzwerkports aktiviert sind:
++
+....
+network options port-health-monitor show
+....
++
+Der Integritätsstatus eines Ports wird durch den Wert der Integritätsmonitore bestimmt.
+
++
+Die folgenden Integritätsmonitore sind in ONTAP standardmäßig verfügbar und aktiviert:
+
++
+** Link-flatternder Systemzustandsüberwachung: Überwacht das Umfüllen von Links
++
+Wenn ein Port in fünf Minuten mehr als einmal über Verbindungsflattern verfügt, wird dieser Port als beeinträchtigt markiert.
+
+** L2-Statusüberwachung: Überwacht, ob alle Ports, die in derselben Broadcast-Domäne konfiguriert sind, L2-Erreichbarkeit aufweisen
++
+Diese Systemzustandsüberwachung meldet Probleme mit der L2-Erreichbarkeit in allen IPspaces. Es markiert jedoch nur die Ports im Cluster-IPspace als beeinträchtigt.
+
+** CRC-Monitor: Überwacht die CRC-Statistiken auf den Ports
++
+Diese Systemzustandsüberwachung markiert einen Port nicht als beeinträchtigt, generiert aber eine EMS-Meldung, wenn eine sehr hohe CRC-Fehlerrate beobachtet wird.
+
+
+
+. Aktivieren oder deaktivieren Sie eine der Integritätsmonitore für einen IPspace nach Bedarf mithilfe des `network options port-health-monitor modify` Befehl.
+. Anzeigen des detaillierten Systemzustands eines Ports:
++
+....
+network port show -health
+....
+
+
+In der Ausgabe des Befehls wird der Systemzustand des Ports angezeigt, `ignore health status` Einstellung und eine Liste der Gründe, warum der Port als beeinträchtigt gekennzeichnet ist.
+
+Ein Port-Integritätsstatus kann sein `healthy` Oder `degraded`.
+
+Wenn der `ignore health status` Einstellung lautet `true`, Zeigt an, dass der Status des Ports von geändert wurde `degraded` Bis `healthy` Vom Administrator.
+
+Wenn der `ignore health status` Einstellung lautet `false`, Der Zustand des Ports wird automatisch vom System ermittelt.

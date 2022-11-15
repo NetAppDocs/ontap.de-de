@@ -1,0 +1,99 @@
+---
+permalink: volumes/flexvol-fullness-overallocation-alerts-concept.html 
+sidebar: sidebar 
+keywords: how to, address, flexvol, volume, fullness, overallocation, alerts 
+summary: ONTAP gibt EMS-Nachrichten aus wenn FlexVol Volumen über keinen freien Platz verfügt, sodass Sie Korrekturmaßnahmen ergreifen können, indem Sie mehr Platz für das komplette Volumen zur Verfügung stellen. Wenn Sie die Art der Warnungen kennen und wissen, wie Sie diese beheben können, können Sie die Verfügbarkeit Ihrer Daten sicherstellen. 
+---
+= FlexVol-Volume-Fülle und Überzuweisungswarnungen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP gibt EMS-Nachrichten aus wenn FlexVol Volumen über keinen freien Platz verfügt, sodass Sie Korrekturmaßnahmen ergreifen können, indem Sie mehr Platz für das komplette Volumen zur Verfügung stellen. Wenn Sie die Art der Warnungen kennen und wissen, wie Sie diese beheben können, können Sie die Verfügbarkeit Ihrer Daten sicherstellen.
+
+Wenn ein Volume als _voll_ beschrieben wird, bedeutet dies, dass der Prozentsatz des Speicherplatzes im Volume, der für das aktive Dateisystem zur Nutzung verfügbar ist (Benutzerdaten) unter einen (konfigurierbaren) Schwellenwert gefallen ist. Wenn ein Volume _überlastet_, wurde der Speicherplatz, den ONTAP für Metadaten verwendet, und der grundlegende Datenzugriff ermöglicht. Manchmal kann Speicherplatz, der normalerweise für andere Zwecke reserviert ist, verwendet werden, um das Volume funktionsfähig zu halten, aber die Speicherplatzreservierung oder Datenverfügbarkeit kann gefährdet sein.
+
+Überzuweisung kann entweder logisch oder physisch sein. _Logische Überzuweisung_ bedeutet, dass für einen anderen Zweck der Raum, der zur Einhaltung zukünftiger Speicherplatzzusagen wie beispielsweise der Platzreservierung reserviert wurde. _Physische Überzuweisung_ bedeutet, dass das Volume nicht mehr über physische Blöcke zu verwenden ist. Volumes in diesem Zustand sind gefährdet, Schreibvorgänge abzulehnen, offline zu gehen oder möglicherweise eine Controller-Unterbrechung zu verursachen.
+
+Ein Volume kann aufgrund des verwendeten oder von Metadaten reservierten Speicherplatzes mehr als 100 % belegt sein. Ein Volume, das zu mehr als 100 % voll ist, kann jedoch unter Umständen überzugewiesen werden. Wenn Shares auf qtree- und Volume-Ebene auf demselben FlexVol oder SCVMM Pool vorhanden sind, werden die qtrees als Verzeichnisse auf der FlexVol-Freigabe angezeigt. Daher müssen Sie darauf achten, nicht versehentlich zu löschen.
+
+In der folgenden Tabelle werden die Warnmeldungen zur Volume-Fülle und -Zuweisung, die Maßnahmen für das Problem und die Risiken beschrieben, die mit Nichtmaßnahmen verbunden sind:
+
+[cols="6*"]
+|===
+| Alarmtyp | EMS-Stufe | Konfigurierbar? | Definition | Ansprache | Risiko, wenn keine Maßnahmen ergriffen werden 
+
+
+ a| 
+Fast voll
+ a| 
+Debuggen
+ a| 
+Y
+ a| 
+Das Dateisystem hat den Schwellenwert für diese Warnmeldung überschritten (Standard ist 95 %). Der Prozentsatz ist der `Used` Gesamtgröße abzüglich der Snapshot-Reserve.
+ a| 
+* Größere Volumes
+* Reduzierung von Benutzerdaten
+
+ a| 
+Kein Risiko für Schreibvorgänge oder Datenverfügbarkeit.
+
+
+
+ a| 
+Voll
+ a| 
+Debuggen
+ a| 
+Y
+ a| 
+Das Dateisystem hat den Schwellenwert für diese Warnmeldung überschritten (Standard ist 98 %). Der Prozentsatz ist der `Used` Gesamtgröße abzüglich der Snapshot-Reserve.
+ a| 
+* Größere Volumes
+* Reduzierung von Benutzerdaten
+
+ a| 
+Zwar besteht kein Risiko für Schreibvorgänge oder Datenverfügbarkeit, das Volume nähert sich jedoch dem Stadium, in dem Schreibvorgänge gefährdet sein könnten.
+
+
+
+ a| 
+Logisch überzugewiesen
+ a| 
+SVC-Fehler
+ a| 
+N
+ a| 
+Zusätzlich zum vollen File-System ist der Speicherplatz im Volume, das für Metadaten verwendet wird, erschöpft.
+ a| 
+* Größere Volumes
+* Snapshot Kopien werden gelöscht
+* Reduzierung von Benutzerdaten
+* Deaktivieren der Speicherplatzreservierung für Dateien oder LUNs
+
+ a| 
+Schreibvorgänge in nicht reservierte Dateien können fehlschlagen.
+
+
+
+ a| 
+Physisch überzugewiesen
+ a| 
+Node-Fehler
+ a| 
+N
+ a| 
+Das Volume besteht aus physikalischen Blöcken, auf die es schreiben kann.
+ a| 
+* Größere Volumes
+* Snapshot Kopien werden gelöscht
+* Reduzierung von Benutzerdaten
+
+ a| 
+Schreibvorgänge sind gefährdet sowie die Datenverfügbarkeit, während das Volume offline geschaltet werden kann.
+
+|===
+Jedes Mal, wenn ein Schwellenwert für ein Volumen überschritten wird, unabhängig davon, ob der Prozentsatz der Fülle steigt oder fällt, wird eine EMS-Nachricht generiert. Wenn die Auslastungsstufe des Volumens unter einen Schwellenwert fällt, wird A angezeigt `volume ok` EMS-Nachricht wird generiert.

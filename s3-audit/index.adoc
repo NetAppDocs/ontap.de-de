@@ -1,0 +1,69 @@
+---
+permalink: s3-audit/index.html 
+sidebar: sidebar 
+keywords: S3, audit, management events 
+summary: In diesem Artikel wird erläutert, wie Daten- und Management-Ereignisse in ONTAP S3-Umgebungen geprüft werden. 
+---
+= Prüfung von S3-Ereignissen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.10.1 können Daten- und Managementereignisse in ONTAP S3 Umgebungen geprüft werden. Die S3-Audit-Funktion ähnelt den vorhandenen NAS-Audit-Funktionen. Zudem können S3- und NAS-Audits in einem Cluster nebeneinander bestehen.
+
+Wenn Sie eine S3-Audit-Konfiguration auf einer SVM erstellen und aktivieren, werden S3-Ereignisse in einer Protokolldatei aufgezeichnet. Die Sie können die folgenden zu protokollierenden Ereignisse angeben:
+
+* Objektzugriff (Daten) Ereignisse
++
+GetObject, PutObject und DeleteObject
+
+* Management-Ereignisse
++
+PutBucket und DeleteBucket
+
+
+
+Das Protokollformat ist JavaScript Object Notation (JSON).
+
+Der kombinierte Grenzwert für S3- und NFS-Audit-Konfigurationen beträgt 50 SVMs pro Cluster.
+
+Das folgende Lizenzpaket ist erforderlich:
+
+* Core Bundle für ONTAP S3-Protokoll und Storage
+
+
+Weitere Informationen finden Sie unter link:../nas-audit/auditing-process-concept.html["Funktionsweise des ONTAP-Prüfprozesses"].
+
+
+
+== Garantierte Audits
+
+S3- und NAS-Audits sind standardmäßig gewährleistet. ONTAP garantiert, dass alle prüffähigen Bucket-Zugriffsereignisse aufgezeichnet werden, selbst wenn ein Node nicht verfügbar ist. Ein angeforderter Bucket-Vorgang kann erst abgeschlossen werden, wenn der Prüfdatensatz für diesen Vorgang im Staging-Volume auf persistentem Storage gespeichert wird. Wenn Audit-Datensätze nicht in den Staging-Dateien übergeben werden können, entweder aufgrund von unzureichendem Speicherplatz oder wegen anderer Probleme, werden Client-Vorgänge verweigert.
+
+
+
+== Speicherplatzanforderungen für Auditing
+
+Im ONTAP-Auditersystem werden die Audit-Datensätze zunächst in binären Staging-Dateien auf einzelnen Knoten gespeichert. Sie werden in regelmäßigen Abständen konsolidiert und in benutzerlesbare Ereignisprotokolle umgewandelt, die im Verzeichnis der Auditereignisse für die SVM gespeichert sind.
+
+Die Staging-Dateien werden in einem dedizierten Staging-Volume gespeichert, das von ONTAP beim Erstellen der Audit-Konfiguration erstellt wird. Es gibt ein Staging-Volume pro Aggregat.
+
+In der Überwachungskonfiguration müssen ausreichend Platz vorhanden sein:
+
+* Für die Staging-Volumes in Aggregaten, die geprüfte Buckets enthalten
+* Für das Volume, das das Verzeichnis enthält, in dem konvertierte Ereignisprotokolle gespeichert werden.
+
+
+Sie können die Anzahl der Ereignisprotokolle und damit den verfügbaren Speicherplatz im Volume mit einer von zwei Methoden zum Erstellen der S3-Überwachungskonfiguration steuern:
+
+* Eine numerische Begrenzung; die `-rotate-limit` Parameter steuert die minimale Anzahl von Überwachungsdateien, die beibehalten werden müssen.
+* Ein Zeitlimit; das `-retention-duration` Parameter steuert den maximalen Zeitraum, in dem Dateien aufbewahrt werden können.
+
+
+In beiden Parametern können nach dem Überschreiten der Konfiguration ältere Audit-Dateien gelöscht werden, um Platz für neuere zu schaffen. Für beide Parameter ist der Wert 0, was bedeutet, dass alle Dateien gepflegt werden müssen. Um ausreichend Platz zu gewährleisten, empfiehlt es sich daher, einen der Parameter auf einen Wert ohne Null zu setzen.
+
+Aus Gründen der garantierten Prüfung kann es nicht möglich sein, neue Audit-Daten zu erstellen, wenn der für Audit-Daten verfügbare Speicherplatz vor dem jeweiligen Rotationslimit überschritten wird, was zu einem Ausfall des Clients, der auf Daten zugreift, führt. Daher muss die Auswahl dieses Werts und des Platzes, der für die Prüfung zugewiesen wird, sorgfältig ausgewählt werden, und Sie müssen auf Warnungen über den verfügbaren Speicherplatz des Auditsystems reagieren.
+
+Weitere Informationen finden Sie unter link:../nas-audit/basic-auditing-concept.html["Grundlegende Prüfungskonzepte"].

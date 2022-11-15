@@ -1,0 +1,225 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_automatic_giveback_commands.html 
+keywords: ontap, high, availability, ha, pair, automatic, giveback, commands 
+summary: Befehle für das automatische Giveback 
+---
+= Befehle für das automatische Giveback
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Standardmäßig gibt der Partner-Node bei Übernahme automatisch Storage zurück, wenn der Offline-Node wieder in den Online-Modus versetzt wird, sodass die Hochverfügbarkeitspaarbeziehung wiederhergestellt wird. In den meisten Fällen ist dies das gewünschte Verhalten. Wenn Sie das automatische Giveback deaktivieren müssen - zum Beispiel, wenn Sie die Ursache der Übernahme vor der Rückgabe untersuchen wollen - müssen Sie sich über die Interaktion der nicht-Standardeinstellungen im Klaren sein.
+
+|===
+
+
+| Ihr Ziel ist | Befehl 
+
+
+ a| 
+Aktivieren Sie das automatische Giveback. So tritt das Giveback ein, sobald der überneitge Knoten gebootet wurde, erreicht den Status Warten auf GiveBack und die Verzögerung vor Ablauf der automatischen GiveBack-Periode.
+
+Die Standardeinstellung lautet true.
+ a| 
+`storage failover modify ‑node _nodename_ ‑auto‑giveback true`
+
+
+
+ a| 
+Deaktivieren Sie das automatische Giveback. Die Standardeinstellung lautet true.
+
+*Hinweis:* diesen Parameter auf false zu setzen, deaktiviert das automatische Giveback nach Übernahme in Panik nicht; automatisches Giveback nach Übernahme in Panik muss durch Setzen des deaktiviert werden `‑auto‑giveback‑after‑panic` Parameter auf FALSE.
+ a| 
+`storage failover modify ‑node _nodename_ ‑auto‑giveback false`
+
+
+
+ a| 
+Deaktivieren Sie das automatische Giveback nach dem Übernehmen in Panik (diese Einstellung ist standardmäßig aktiviert).
+ a| 
+`storage failover modify ‑node _nodename_ ‑auto‑giveback‑after‑panic false`
+
+
+
+ a| 
+Automatische Rückübertragung für eine bestimmte Anzahl von Sekunden verzögern (Standardeinstellung ist 600). Diese Option bestimmt die Mindestzeit, die ein Node vor dem automatischen Giveback verbleibt.
+ a| 
+`storage failover modify ‑node _nodename_ ‑delay‑seconds _seconds_`
+
+|===
+
+
+== Änderungen des Befehls zum Storage Failover wirken sich auf die automatische Rückgabe aus
+
+Der Betrieb der automatischen Rückgabe hängt davon ab, wie Sie die Parameter des Änderungsbefehls für das Storage Failover konfigurieren.
+
+In der folgenden Tabelle sind die Standardeinstellungen für das aufgeführt `storage failover modify` Befehlsparameter, die auf Takeover-Ereignisse angewendet werden und nicht durch einen Panikzustand verursacht wurden.
+
+|===
+
+
+| Parameter | Standardeinstellung 
+
+
+ a| 
+`-auto-giveback _true_ | _false_`
+ a| 
+`_true_`
+
+
+
+ a| 
+`-delay-seconds _integer_ (seconds)`
+ a| 
+600
+
+
+
+ a| 
+`-onreboot _true_ | _false_`
+ a| 
+`_true_`
+
+|===
+In der folgenden Tabelle wird beschrieben, wie die Kombinationen des beschrieben werden `-onreboot` Und `-auto-giveback` Parameter wirken sich auf die automatische Rückgabe von Takeover-Ereignissen aus, die nicht durch Panikzustand verursacht wurden.
+
+|===
+
+
+| `storage failover modify` Verwendete Parameter | Ursache des Übernahmens | Findet ein automatisches Giveback statt? 
+
+
+ a| 
+`-onreboot _true_`
+
+`-auto-giveback _true_`
+| Befehl „neu booten“ | Ja. 
+
+
+| Stoppen Sie den Befehl, oder schalten Sie den Vorgang aus und wieder ein, der vom Service Processor ausgegeben wird | Ja. 
+
+
+ a| 
+`-onreboot _true_`
+
+`-auto-giveback _false_`
+| Befehl „neu booten“ | Ja. 
+
+
+| Stoppen Sie den Befehl, oder schalten Sie den Vorgang aus und wieder ein, der vom Service Processor ausgegeben wird | Nein 
+
+
+ a| 
+`-onreboot _false_`
+
+`-auto-giveback _true_`
+| Befehl „neu booten“ | K. A. in diesem Fall erfolgt Übernahme nicht 
+
+
+| Stoppen Sie den Befehl, oder schalten Sie den Vorgang aus und wieder ein, der vom Service Processor ausgegeben wird | Ja. 
+
+
+ a| 
+`-onreboot _false_`
+
+`-auto-giveback _false_`
+| Befehl „neu booten“ | Nein 
+
+
+| Stoppen Sie den Befehl, oder schalten Sie den Vorgang aus und wieder ein, der vom Service Processor ausgegeben wird | Nein 
+|===
+Der `-auto-giveback` Parameter steuert die Rückübertragung nach Panik und allen anderen automatischen Takovern. Wenn der `-onreboot` Parameter ist auf festgelegt `true` Darüber hinaus wird ein Takeover aufgrund eines Neustarts durchgeführt – dann wird das automatische Giveback immer durchgeführt, unabhängig davon, ob der `-auto-giveback` Parameter ist auf festgelegt `true`.
+
+Der `-onreboot` Der Parameter gilt für Neustart und Stopp-Befehle, die von ONTAP ausgegeben werden. Wenn der `-onreboot` Parameter ist auf false gesetzt, eine Übernahme findet nicht im Fall eines Node-Neubootens statt. Daher kann ein automatisches Giveback nicht auftreten, unabhängig davon, ob der `-auto-giveback` Parameter ist auf „true“ gesetzt. Eine Client-Störung tritt auf.
+
+
+
+== Die Auswirkungen der automatischen Giveback-Parameterkombinationen, die für Panikfälle gelten.
+
+In der folgenden Tabelle sind die aufgeführt `storage failover modify` Befehlsparameter, die für Panikfälle gelten:
+
+|===
+
+
+| Parameter | Standardeinstellung 
+
+
+ a| 
+`-onpanic _true | false_`
+ a| 
+`_true_`
+
+
+
+ a| 
+`-auto-giveback-after-panic _true | false_`
+
+(Berechtigung: Erweitert)
+ a| 
+`_true_`
+
+
+
+ a| 
+`-auto-giveback _true | false_`
+ a| 
+`_true_`
+
+|===
+In der folgenden Tabelle wird beschrieben, wie die Parameterkombinationen des beschrieben werden `storage failover modify` Befehl beeinflusst die automatische Rückgabe in Panikfällen.
+
+
+NOTE: Achten Sie darauf, dass ein Takeover aus anderen Gründen im Falle eines Node-Panikzustands auftreten kann. Wenn beispielsweise ein Node eine Panik erzeugt, das Panikpaket aber nicht von seinem Partner empfangen wird, kann der Partner einen Herzschlag Ausfall durchführen. In diesem Fall würde die Rückübertragung nicht vom gesteuert werden `-auto-giveback-after-panic` Parameter aber würde stattdessen vom gesteuert werden `-onfailure` Parameter.
+
+[cols="60,40"]
+|===
+
+
+| `storage failover` Verwendete Parameter | Findet nach einem Panikzustand die automatische Rückgabe statt? 
+
+
+| `-onpanic true`
+`-auto-giveback true`
+`-auto-giveback-after-panic true` | Ja. 
+
+
+| `-onpanic true`
+`-auto-giveback true`
+`-auto-giveback-after-panic false` | Ja. 
+
+
+| `-onpanic true`
+`-auto-giveback false`
+`-auto-giveback-after-panic true` | Ja. 
+
+
+| `-onpanic true`
+`-auto-giveback false`
+`-auto-giveback-after-panic false` | Nein 
+
+
+| `-onpanic false`Wenn `-onpanic` Ist auf festgelegt `false`, Übernahme/Rückgabe geschieht nicht, unabhängig vom eingestellten Wert `-auto-giveback` Oder `-auto-giveback-after-panic` | Nein 
+|===
+[NOTE]
+====
+Wenn Sie die Standardeinstellungen ändern, wird das angezeigt `-onpanic` Der Parameter kann die automatische Rückgabe überschreiben, wie in der obigen Tabelle dargestellt.
+
+* Wenn der `-onpanic` Parameter ist auf festgelegt `true`, Die automatische Rückgabe wird immer durchgeführt, wenn ein Panikzustand auftritt, es sei denn, Sie haben die Standardeinstellungen für die geändert `-auto-giveback` Und `-auto-giveback-after-panic` Parameter. Wenn beide Parameter von ihrer Standardeinstellung geändert werden  `true`) Bis `false`, Dann wird ein automatisches Giveback nicht nach einem Panikzustand auftreten, selbst wenn die `-onpanic` Parameter ist auf festgelegt `true`.
+* Wenn der `-onpanic` Parameter ist auf festgelegt `false`, Eine Übernahme findet nicht statt und Kunden erleben eine Störung der ONTAP Datenservices. Daher kann kein automatisches Giveback erfolgen, selbst wenn der `-auto-giveback-after-panic` Parameter ist auf festgelegt `true`.
+
+
+====
+[NOTE]
+====
+* Übernahme kann aus anderen Gründen während Knoten-Panik auftreten. In solchen Fällen wird das Giveback nicht vom gesteuert `auto-giveback-after-panic` Einstellung.
+* Wenn der `-onpanic` Parameter ist auf festgelegt `true`, Die automatische Rückgabe wird immer durchgeführt, wenn ein Panikzustand auftritt, es sei denn, Sie haben die Standardeinstellungen für die geändert `-auto-giveback` Und `-auto-giveback-after-panic` Parameter. Wenn beide Parameter von ihrer Standardeinstellung geändert werden  `true`) Bis `false`, Dann wird ein automatisches Giveback nicht nach einem Panikzustand auftreten, selbst wenn die `-onpanic` Parameter ist auf festgelegt `true`.
+* Wenn der `-onpanic` Parameter ist auf festgelegt `false`, Übernahme erfolgt nicht. Daher kann kein automatisches Giveback erfolgen, selbst wenn der `-auto-giveback-after-panic` Parameter ist auf festgelegt `true`. Eine Client-Störung tritt auf.
+
+
+====

@@ -1,0 +1,869 @@
+---
+permalink: data-protection/snapmirror-svm-replication-concept.html 
+sidebar: sidebar 
+keywords: understand, snapmirror, svm, replication, SVM DR storage limits 
+summary: Mit SnapMirror können Sie eine Datensicherungsbeziehung zwischen SVM erstellen. Bei dieser Art der Datensicherungsbeziehung wird die gesamte oder Teile der Konfiguration der SVM, von NFS-Exporten und SMB-Shares zu RBAC, sowie die Daten in den Volumes repliziert, die die SVM besitzt. 
+---
+= Allgemeines zur SnapMirror SVM-Replizierung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Mit SnapMirror können Sie eine Datensicherungsbeziehung zwischen SVMs erstellen. In dieser Art der Datensicherungsbeziehung wird die gesamte Konfiguration oder Teile der SVM, von NFS-Exporten und SMB-Freigaben bis hin zur rollenbasierten Zugriffssteuerung, repliziert sowie die Daten in den Volumes, die die SVM besitzt.
+
+
+
+== Unterstützte Beziehungstypen
+
+Es können nur SVMs mit Datenbereitungsdaten repliziert werden. Die folgenden Typen von Datensicherungsbeziehungen werden unterstützt:
+
+* _SnapMirror DR,_, in der das Ziel normalerweise nur die Snapshot-Kopien enthält, die sich derzeit auf der Quelle befinden.
++
+Ab ONTAP 9.9 ändert sich dieses Verhalten, wenn Sie die Mirror-Vault-Richtlinie verwenden. Ab ONTAP 9.9 können Sie unterschiedliche Snapshot Richtlinien auf Quelle und Ziel erstellen. Die Snapshot Kopien auf dem Ziel werden nicht durch Snapshot Kopien auf der Quelle überschrieben:
+
++
+** Sie werden während normaler geplanter Vorgänge, Updates und Neusynchronisierung nicht vom Quell- zum Ziel überschrieben
+** Sie werden während der Pausen nicht gelöscht.
+** Sie werden während der Flip-Resynchronisierung nicht gelöscht. Wenn Sie eine SVM-DR-Beziehung mithilfe der Mirror-Vault-Richtlinie über ONTAP 9.9.1 und höher konfigurieren, verhält sich die Richtlinie wie folgt:
+** Benutzerdefinierte Richtlinien für Snapshot Kopien an der Quelle werden nicht auf das Ziel kopiert.
+** Systemdefinierte Snapshot Kopien werden nicht auf das Ziel kopiert.
+** Eine Volume-Zuordnung mit Benutzer- und systemdefinierten Snapshot-Richtlinien wird nicht auf das Ziel kopiert. + SVM.
+
+
+* Beginnend mit ONTAP 9.2, _SnapMirror Unified Replication,_ in der das Ziel für DR und langfristige Aufbewahrung konfiguriert ist.
+
+
+Details zu diesen Beziehungstypen finden Sie hier: link:snapmirror-replication-concept.html["Allgemeines zur Replizierung von SnapMirror Volumes"].
+
+Der Typ_Policy_ der Replikationsrichtlinie bestimmt die Art der von ihr unterstützten Beziehung. In der folgenden Tabelle sind die verfügbaren Richtlinientypen aufgeführt.
+
+[cols="2*"]
+|===
+
+
+| Richtlinientyp | Beziehungstyp 
+
+
+ a| 
+Asynchrone Spiegelung
+ a| 
+SnapMirror DR
+
+
+
+ a| 
+Mirror-Vault
+ a| 
+Einheitliche Replizierung
+
+|===
+
+
+== XDP ersetzt DP als Standardvorgabe für die SVM-Replizierung in ONTAP 9.4
+
+Seit ONTAP 9.4 ist bei den SVM-Datensicherungsbeziehungen standardmäßig der XDP-Modus aktiviert. Beziehungen für die SVM-Datensicherung setzen weiterhin in ONTAP 9.3 und früher den DP-Modus ein.
+
+Vorhandene Beziehungen sind von der neuen Standardeinstellung nicht betroffen. Wenn bereits eine Beziehung vom Typ DP verwendet wird, ist diese weiterhin vom Typ DP. Die folgende Tabelle zeigt das Verhalten, das Sie erwarten können.
+
+[cols="3*"]
+|===
+
+
+| Wenn Sie angeben... | Der Typ ist... | Die Standardrichtlinie (wenn Sie keine Richtlinie angeben) lautet... 
+
+
+ a| 
+DATENSICHERUNG
+ a| 
+XDP
+ a| 
+MirrorAllSnapshots (SnapMirror DR)
+
+
+
+ a| 
+Nichts
+ a| 
+XDP
+ a| 
+MirrorAllSnapshots (SnapMirror DR)
+
+
+
+ a| 
+XDP
+ a| 
+XDP
+ a| 
+MirrorAndVault (einheitliche Replizierung)
+
+|===
+Details zu den Änderungen im Standard finden Sie hier: link:version-flexible-snapmirror-default-concept.html["XDP ersetzt DP als SnapMirror-Standard"].
+
+[NOTE]
+====
+Die Versionsunabhängigkeit wird bei der SVM-Replizierung nicht unterstützt. In einer SVM-DR-Konfiguration muss sich die Ziel-SVM auf einem Cluster befinden, auf dem dieselbe ONTAP-Version wie das Quell-SVM-Cluster ausgeführt wird, um Failover- und Failback-Vorgänge zu unterstützen.
+
+====
+link:compatible-ontap-versions-snapmirror-concept.html["Kompatible ONTAP Versionen für SnapMirror Beziehungen"]
+
+
+
+== Replizierung von SVM-Konfigurationen
+
+Der Inhalt einer SVM-Replizierungsbeziehung wird durch die Interaktion der folgenden Felder bestimmt:
+
+* Der `-identity-preserve true` Option des `snapmirror create` Befehl repliziert die gesamte SVM-Konfiguration.
++
+Der `-identity-preserve false` Die Option repliziert nur die Volumes und die Authentifizierungs- und Autorisierungskonfigurationen der SVM sowie die in aufgeführten Protokoll- und Namensdiensteinstellungen link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-dr-relationships["Konfigurationen in SVM-DR-Beziehungen repliziert"].
+
+* Der `-discard-configs network` Option des `snapmirror policy create` Der Befehl schließt LIFs und zugehörige Netzwerkeinstellungen aus der SVM-Replizierung aus und kann dort verwendet werden, wo sich die Quell- und Ziel-SVMs in unterschiedlichen Subnetzen befinden.
+* Der `-vserver-dr-protection unprotected` Option des `volume modify` Der Befehl schließt das angegebene Volume von der SVM-Replizierung aus.
+
+
+Andernfalls ist die SVM-Replizierung nahezu identisch mit der Volume-Replizierung. Sie können nahezu denselben Workflow für die SVM-Replizierung einsetzen wie bei der Volume-Replizierung.
+
+
+
+== Support-Details
+
+Die folgende Tabelle enthält Support-Details zur SnapMirror SVM-Replizierung.
+
+[cols="2*"]
+|===
+
+
+| Ressource oder Funktion | Support-Details 
+
+
+ a| 
+Beziehungstypen
+ a| 
+* SnapMirror DR
+* Ab ONTAP 9.2 ist die einheitliche Replizierung mit SnapMirror möglich
+
+
+
+
+ a| 
+Replizierungsumfang
+ a| 
+Nur Intercluster. Sie können SVMs nicht in demselben Cluster replizieren.
+
+
+
+ a| 
+Versionsunabhängigkeit
+ a| 
+Nicht unterstützt.
+
+
+
+ a| 
+Bereitstellungstypen
+ a| 
+* Von einer einzelnen Quelle zu einem einzigen Ziel
+* Ab ONTAP 9.4 Fan-out: Sie können nur an zwei Zielorten Fan-out.
++
+Standardmäßig ist pro Quell-SVM nur eine -Identity-Preserve True Relationship zulässig.
+
+
+
+
+
+ a| 
+Autonomer Schutz Durch Ransomware
+ a| 
+* Unterstützt ab ONTAP 9.12.1. Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html["Autonomer Schutz Durch Ransomware"]
+
+
+
+
+ a| 
+Volume-Verschlüsselung
+ a| 
+* Verschlüsselte Volumes auf der Quelle werden auf dem Ziel verschlüsselt.
+* Onboard Key Manager oder KMIP-Server müssen auf dem Ziel konfiguriert sein.
+* Neue Verschlüsselungsschlüssel werden am Zielspeicherort generiert.
+* Wenn das Ziel keinen Knoten enthält, der Volume .Encryption unterstützt, ist die Replikation erfolgreich, aber die Ziel-Volumes sind nicht verschlüsselt.
+
+
+
+
+ a| 
+FabricPool
+ a| 
+Ab ONTAP 9.6 wird die SnapMirror SVM-Replizierung mit FabricPool unterstützt.
+
+
+
+ a| 
+MetroCluster
+ a| 
+Ab ONTAP 9.11.1 können beide Seiten einer SVM DR-Beziehung innerhalb einer MetroCluster Konfiguration als Quelle für zusätzliche SVM DR-Konfigurationen fungieren.
+
+Ab ONTAP 9.5 wird die SnapMirror SVM-Replizierung auf MetroCluster Konfigurationen unterstützt.
+
+* Eine MetroCluster Konfiguration kann kein Ziel einer SVM DR-Beziehung sein.
+* Nur eine aktive SVM innerhalb einer MetroCluster-Konfiguration kann als Quelle einer SVM-DR-Beziehung verwendet werden.
++
+Eine Quelle kann eine synchrone Quell-SVM vor der Umschaltung oder eine synchrone Ziel-SVM nach der Umschaltung sein.
+
+* Wenn eine MetroCluster-Konfiguration sich in einem stabilen Zustand befindet, kann die MetroCluster SVM, die synchrone Ziel-SVM, nicht als Quelle für eine SVM-DR-Beziehung dienen, da die Volumes nicht online sind.
+* Wenn die synchrone SVM-Quelle die Quelle einer SVM-DR-Beziehung ist, werden die Quell-SVM-DR-Beziehungsinformationen zum MetroCluster Partner repliziert.
+* Während der Switchover- und Switchover-Prozesse kann die Replizierung zur SVM-DR-Ziel fehlschlagen.
++
+Nach Abschluss des Switchover- oder Switch-Prozesses werden jedoch die nächsten geplanten SVM-DR-Updates erfolgreich durchgeführt.
+
+
+
+
+
+ a| 
+SnapMirror Synchronous
+ a| 
+Nicht unterstützt durch SVM DR.
+
+|===
+
+
+== Konfigurationen in SVM-DR-Beziehungen repliziert
+
+Die folgende Tabelle zeigt die Interaktion des `snapmirror create `-identity-preserve` Option und das `snapmirror policy create` -Verwerfen-Konfigurationen Netzwerk` Option:
+
+[cols="5*"]
+|===
+
+
+2+| Konfiguration repliziert 2+| `*‑identity‑preserve true*` | `*‑identity‑preserve false*` 
+
+
+|  |  | *Richtlinie ohne `-discard-configs network` Set* | *Richtlinien mit `-discard-configs network` Set* |  
+
+
+ a| 
+Netzwerk
+ a| 
+NAS-LIFs
+ a| 
+Ja.
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+LIF-Kerberos-Konfiguration
+ a| 
+Ja.
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+SAN LIFs
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Firewallrichtlinien
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Routen
+ a| 
+Ja.
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Broadcast-Domäne
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Subnetz
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+IP-Bereich
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+SMB
+ a| 
+SMB Server
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Lokale Gruppen und lokaler Benutzer
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Berechtigung
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Schattenkopie
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+BranchCache
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Serveroptionen
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Serversicherheit
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Home Directory damit füllt
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Symbolischer Link
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+FPolicy, Fsicherheitsrichtlinie und Fsicherheitsrichtlinien NTFS
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Namenszuweisung und Gruppenzuordnung
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Audit-Informationen
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+NFS
+ a| 
+Exportrichtlinien
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Exportrichtlinien
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+NFS-Server
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+RBAC
+ a| 
+Sicherheitszertifikate
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Benutzer anmelden, öffentlichen Schlüssel, Rolle und Rollenkonfiguration
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+SSL
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Name Services
+ a| 
+DNS- und DNS-Hosts
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+UNIX-Benutzer und UNIX-Gruppe
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Kerberos-Bereich und Kerberos-Keyblockes
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+LDAP- und LDAP-Client
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Netzgruppe
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+NIS
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Web- und Webzugriff
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+
+
+ a| 
+Datenmenge
+ a| 
+Objekt
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Snapshot Kopien, Snapshot-Richtlinien und Autodelete-Richtlinien
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Effizienzrichtlinie
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Kontingentrichtlinie und Kontingentrichtlinie
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Wiederherstellungswarteschlange
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Root-Volume
+ a| 
+Namespace
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Benutzerdaten
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Qtrees
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Kontingente
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+QoS auf Dateiebene
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Attribute: Zustand des Root-Volumes, der Platzgarantie, der Größe, der Autosize und der Gesamtzahl der Dateien
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Storage-QoS
+ a| 
+QoS-Richtliniengruppe
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+Fibre Channel (FC)
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+ISCSI
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+LUNs
+ a| 
+Objekt
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Ja.
+
+
+
+ a| 
+igroups
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Portsätze
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+Seriennummern
+ a| 
+Nein
+ a| 
+Nein
+ a| 
+Nein
+
+
+
+ a| 
+SNMP
+ a| 
+v3-Benutzer
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+Nein
+
+|===
+
+
+== DR-Storage-Einschränkungen für SVM
+
+In der folgenden Tabelle ist die empfohlene maximale Anzahl an Volumes und unterstützten SVM-DR-Beziehungen pro Storage-Objekt aufgeführt. Grenzen sollten häufig plattformabhängig sein. Siehe link:https://hwu.netapp.com/["Hardware Universe"^] Lernen Sie die Grenzen für Ihre spezifische Konfiguration kennen.
+
+[cols="2*"]
+|===
+
+
+| Storage Objekt | Grenze 
+
+
+ a| 
+SVM
+ a| 
+300 flexible Volumes
+
+
+
+ a| 
+HA-Paar
+ a| 
+1,000 Flexible Volumes
+
+
+
+ a| 
+Cluster
+ a| 
+128 DR-Beziehungen zu SVM
+
+|===

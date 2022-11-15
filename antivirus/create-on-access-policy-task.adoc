@@ -1,0 +1,68 @@
+---
+permalink: antivirus/create-on-access-policy-task.html 
+sidebar: sidebar 
+keywords: create, on-access, policy 
+summary: Eine Zugriffsrichtlinie definiert den Umfang eines Scans beim Zugriff. Sie können die maximale Größe der zu scannenden Dateien, die Erweiterungen der Dateien, die in den Scan aufgenommen werden sollen, sowie die Erweiterungen und Pfade der Dateien angeben, die vom Scan ausgeschlossen werden sollen. Sie können eine On-Access-Richtlinie für eine einzelne SVM oder für alle SVMs in einem Cluster erstellen. 
+---
+= Erstellen einer Zugriffsrichtlinie
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Eine Zugriffsrichtlinie definiert den Umfang eines Scans beim Zugriff. Sie können die maximale Größe der zu scannenden Dateien, die Erweiterungen der Dateien, die in den Scan aufgenommen werden sollen, sowie die Erweiterungen und Pfade der Dateien angeben, die vom Scan ausgeschlossen werden sollen. Sie können eine On-Access-Richtlinie für eine einzelne SVM oder für alle SVMs in einem Cluster erstellen.
+
+ONTAP erstellt standardmäßig eine Zugriffsrichtlinie mit dem Namen „`default_CIFS`“ und ermöglicht sie für alle SVMs in einem Cluster.
+
+Sie können die einstellen `scan-mandatory` Option „aus“, um festzulegen, dass der Dateizugriff zulässig ist, wenn keine Vscan-Server für Virenprüfungen verfügbar sind. Beachten Sie, dass alle Dateien, die für den Scan-Ausschluss auf Basis des qualifiziert sind `paths-to-exclude`, `file-ext-to-exclude`, Oder `max-file-size` Parameter werden nicht für das Scannen berücksichtigt, auch wenn der `scan-mandatory` Die Option ist auf ein eingestellt.
+
+[NOTE]
+====
+Für potenzielle Probleme im Zusammenhang mit dem `scan-mandatory` Option, siehe xref:vscan-server-connection-concept.adoc[Mögliche Verbindungsprobleme bei der Option „Scannen erforderlich“].
+
+====
+Standardmäßig werden nur Lese- und Schreib-Volumes gescannt. Sie können Filter festlegen, die das Scannen von schreibgeschützten Volumes ermöglichen oder das Scannen auf Dateien beschränken, die mit dem Zugriff ausführen geöffnet wurden.
+
+.Schritte
+. Erstellen einer Richtlinie für den Zugriff:
++
+`vserver vscan on-access-policy create -vserver _data_SVM|cluster_admin_SVM_ -policy-name _policy_name_ -protocol CIFS -max-file-size _max_size_of_files_to_scan_ –filters [scan-ro-volume,][scan-execute-access] -file-ext-to-include _extensions_of_files_to_include_ -file-ext-to-exclude _extensions_of_files_to_exclude_ -scan-files-with-no-ext true|false -paths-to-exclude _paths_of_files_to_exclude_ -scan-mandatory on|off`
+
++
+** Legen Sie eine Daten-SVM für eine Richtlinie fest, die für eine einzelne SVM, einen Cluster-Admin-SVM für eine Richtlinie festgelegt ist, die für alle SVMs in einem Cluster definiert ist.
+** Der `-file-ext-to-exclude` Die Einstellung überschreibt den `-file-ext-to-include` Einstellung.
+** Einstellen `-scan-files-with-no-ext` Um Dateien ohne Erweiterungen zu scannen. Mit dem folgenden Befehl wird eine Richtlinie mit dem Namen für den Zugriff erstellt `Policy1` Auf dem ``vs1``SVM:
+
+
++
+[listing]
+----
+cluster1::> vserver vscan on-access-policy create -vserver vs1 -policy-name Policy1 -protocol CIFS -filters scan-ro-volume -max-file-size 3GB -file-ext-to-include “mp*”,"tx*" -file-ext-to-exclude "mp3","txt" -scan-files-with-no-ext false -paths-to-exclude "\vol\a b\","\vol\a,b\"
+----
+. Überprüfen Sie, ob die Richtlinie für den Zugriff auf den Zugriff erstellt wurde: `vserver vscan on-access-policy show -instance _data_SVM|cluster_admin_SVM_ -policy-name policy_name`
++
+Eine vollständige Liste der Optionen finden Sie auf der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl werden die Details für das angezeigt `Policy1` Richtlinie:
+
++
+[listing]
+----
+cluster1::> vserver vscan on-access-policy show -instance vs1 -policy-name Policy1
+
+                           Vserver: vs1
+                            Policy: Policy1
+                     Policy Status: off
+               Policy Config Owner: vserver
+              File-Access Protocol: CIFS
+                           Filters: scan-ro-volume
+                    Mandatory Scan: on
+Max File Size Allowed for Scanning: 3GB
+            File Paths Not to Scan: \vol\a b\, \vol\a,b\
+       File Extensions Not to Scan: mp3, txt
+           File Extensions to Scan: mp*, tx*
+      Scan Files with No Extension: false
+----
+

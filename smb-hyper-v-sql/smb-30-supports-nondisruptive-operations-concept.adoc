@@ -1,0 +1,20 @@
+---
+permalink: smb-hyper-v-sql/smb-30-supports-nondisruptive-operations-concept.html 
+sidebar: sidebar 
+keywords: smb, functionality, support, nondisruptive, operations, shares, clients, hyper, v, sql, server 
+summary: SMB 3.0 bietet entscheidende Funktionen, die einen unterbrechungsfreien Betrieb für Hyper-V und SQL Server über SMB-Freigaben ermöglichen. Dazu gehören die kontinuierlich verfügbare Share-Eigenschaft und ein Dateityp-Handle, der als persistenter Handle bezeichnet wird, mit dem SMB-Clients den offenen Zustand von Dateien zurückgewinnen und SMB-Verbindungen transparent wiederherstellen können. 
+---
+= Funktionsweise von SMB 3.0 unterstützt unterbrechungsfreien Betrieb über SMB-Freigaben
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+SMB 3.0 bietet entscheidende Funktionen, die einen unterbrechungsfreien Betrieb für Hyper-V und SQL Server über SMB-Freigaben ermöglichen. Dazu gehört auch die `continuously-available` Eigenschaft gemeinsam nutzen und Dateihandle als _persistenter Handle_ kennen, mit denen SMB-Clients den offenen Status von Dateien zurückgewinnen und SMB-Verbindungen transparent wiederherstellen können.
+
+Persistente Handles können SMB 3.0-fähigen Clients zugewiesen werden, die eine Verbindung zu einem Share mit der kontinuierlich verfügbaren Share-Eigenschaft herstellen. Wenn die SMB-Sitzung getrennt wird, speichert der CIFS-Server Informationen über den Status eines persistenten Handle. Der CIFS-Server blockiert andere Client-Anforderungen während der 60-Sekunden-Periode, in der der Client wieder verbunden werden darf. Dadurch kann der Client mit dem persistenten Griff nach einer Netzwerkverbindung das Handle zurückfordern. Clients mit persistenten Griffen können die Verbindung mithilfe einer der Daten-LIFs auf der Storage Virtual Machine (SVM) wiederherstellen, indem sie entweder eine erneute Verbindung über dieselbe LIF oder über andere LIF herstellen.
+
+Aggregatverschiebung, -Übernahme und -Rückgabe werden allesamt zwischen SFO-Paaren durchgeführt. Um die Trennung und erneute Verbindung von Sitzungen mit Dateien, die permanente Handles haben, nahtlos zu verwalten, behält der Partner-Knoten eine Kopie aller persistenten Informationen zur Sperre bei. Unabhängig davon, ob das Ereignis geplant oder ungeplant ist, kann der SFO-Partner die Persistent-Handle-Verbindung unterbrechungsfrei managen. Mit dieser neuen Funktion können SMB 3.0-Verbindungen zum CIFS-Server bei klassischen Unterbrechungen transparent und unterbrechungsfrei ein Failover auf eine andere Daten-LIF ausführen, die der SVM zugewiesen ist.
+
+Durch die Verwendung persistenter Handles kann der CIFS-Server ein transparentes Failover von SMB 3.0-Verbindungen durchführen. Wenn ein Ausfall dazu führt, dass die Hyper-V-Applikation ein Failover auf einen anderen Knoten im Windows Server-Cluster durchführt, kann der Client die Dateihandles dieser getrennten Griffe nicht zurückfordern. In diesem Szenario können Datei-Handles im getrennten Status den Zugriff auf die Hyper-V Applikation potenziell blockieren, wenn sie auf einem anderen Node neu gestartet wird. „`Failover Clustering`“ ist ein Bestandteil von SMB 3.0, der dieses Szenario durch die Bereitstellung eines Mechanismus zum ungültig erklären veralteter, konfliktverursachter Griffe behebt. Über diesen Mechanismus kann ein Hyper-V Cluster im Falle eines Hyper-V Cluster Nodes rasch wiederhergestellt werden.

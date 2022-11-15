@@ -1,0 +1,54 @@
+---
+permalink: system-admin/manage-cluster-time-concept.html 
+sidebar: sidebar 
+keywords: manage, cluster, time, administrator, ntp, network, time, protocol, zone 
+summary: 'Wenn die Cluster-Zeit nicht stimmt, können Probleme auftreten. ONTAP ermöglicht Ihnen das manuelle Einstellen der Zeitzone, des Datums und der Uhrzeit auf dem Cluster, sollten Sie NTP-Server (Network Time Protocol) so konfigurieren, dass die Cluster-Zeit synchronisiert wird.' 
+---
+= Cluster-Zeit managen (nur Cluster-Administratoren)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn die Cluster-Zeit nicht stimmt, können Probleme auftreten. ONTAP ermöglicht Ihnen das manuelle Einstellen der Zeitzone, des Datums und der Uhrzeit auf dem Cluster, sollten Sie NTP-Server (Network Time Protocol) so konfigurieren, dass die Cluster-Zeit synchronisiert wird.
+
+Ab ONTAP 9.5 können Sie Ihren NTP-Server mit symmetrischer Authentifizierung konfigurieren.
+
+NTP ist immer aktiviert. Es ist jedoch nach wie vor eine Konfiguration erforderlich, damit der Cluster mit einer externen Datenquelle synchronisiert werden kann. ONTAP ermöglicht es Ihnen, die NTP-Konfiguration des Clusters wie folgt zu verwalten:
+
+* Sie können dem Cluster maximal 10 externe NTP-Server zuweisen (`cluster time-service ntp server create`).
++
+** Um Redundanz und Qualität des Zeitdienstes zu gewährleisten, sollten Sie mindestens drei externe NTP-Server mit dem Cluster verbinden.
+** Sie können einen NTP-Server mit seiner IPv4- oder IPv6-Adresse oder dem vollqualifizierten Host-Namen angeben.
+** Sie können die zu verwendende NTP-Version (v3 oder v4) manuell angeben.
++
+Standardmäßig wählt ONTAP automatisch die NTP-Version aus, die für einen bestimmten externen NTP-Server unterstützt wird.
+
++
+Wenn die angegebene NTP-Version für den NTP-Server nicht unterstützt wird, kann kein Zeitaustausch stattfinden.
+
+** Auf der erweiterten Berechtigungsebene können Sie einen externen NTP-Server angeben, der mit dem Cluster verbunden ist und als primäre Datenquelle für die Korrektur und Anpassung der Cluster-Zeit dient.
+
+
+* Sie können die NTP-Server anzeigen, die mit dem Cluster verbunden sind (`cluster time-service ntp server show`).
+* Sie können die NTP-Konfiguration des Clusters ändern (`cluster time-service ntp server modify`).
+* Sie können die Verbindung des Clusters von einem externen NTP-Server beenden (`cluster time-service ntp server delete`).
+* Sie können die Konfiguration auf der erweiterten Berechtigungsebene zurücksetzen, indem Sie die Zuordnung aller externen NTP-Server zum Cluster löschen (`cluster time-service ntp server reset`).
+
+
+Ein Knoten, der einem Cluster Beitritt, nimmt automatisch die NTP-Konfiguration des Clusters an.
+
+Über die Verwendung von NTP hinaus können Sie mit ONTAP auch die Cluster-Zeit manuell verwalten. Diese Funktion ist hilfreich, wenn Sie eine falsche Uhrzeit korrigieren müssen (beispielsweise ist die Zeit eines Node nach einem Neubooten deutlich falsch). In diesem Fall können Sie eine ungefähre Zeit für das Cluster angeben, bis NTP mit einem externen Zeitserver synchronisieren kann. Die manuell eingestellte Zeit wirkt sich auf alle Nodes im Cluster aus.
+
+Sie haben folgende Möglichkeiten, die Cluster-Zeit manuell zu verwalten:
+
+* Sie können für das Cluster die Zeitzone, das Datum und die Uhrzeit einstellen oder ändern (`cluster date modify`).
+* Sie können die aktuellen Zeitzonen-, Datums- und Zeiteinstellungen des Clusters anzeigen (`cluster date show`).
+
+
+[NOTE]
+====
+Job-Zeitpläne passen nicht auf manuelle Cluster-Datums- und -Zeitänderungen an. Diese Jobs werden planmäßig ausgeführt, basierend auf der aktuellen Cluster-Zeit, zu der der Job erstellt wurde oder zum Zeitpunkt der letzten Ausführung des Jobs. Wenn Sie deshalb das Cluster-Datum oder die -Zeit manuell ändern, müssen Sie das verwenden `job show` Und `job history show` Befehle zur Überprüfung, ob alle geplanten Jobs entsprechend Ihren Anforderungen in eine Warteschlange verschoben und abgeschlossen werden.
+
+====

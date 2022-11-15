@@ -1,0 +1,91 @@
+---
+permalink: system-admin/troubleshoot-autosupport-http-https-task.html 
+sidebar: sidebar 
+keywords: troubleshoot, autosupport, message, delivery, http, https, check, settings, resolve, problem 
+summary: Wenn das System nicht die erwartete AutoSupport-Meldung sendet und Sie HTTP oder HTTPS verwenden, können Sie zum Beheben des Problems eine Reihe von Einstellungen überprüfen. 
+---
+= Fehlerbehebung bei der Bereitstellung von AutoSupport Meldungen über HTTP oder HTTPS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn das System die erwartete AutoSupport-Meldung nicht sendet und Sie HTTP oder HTTPS verwenden oder die Funktion zum automatischen Aktualisieren nicht funktioniert, können Sie eine Reihe von Einstellungen überprüfen, um das Problem zu beheben.
+
+Sie sollten die grundlegende Netzwerkverbindung und das DNS-Lookup bestätigt haben:
+
+* Die Node-Management-LIF muss den Status „Betriebs“ und „Administration“ aufweisen.
+* Sie müssen in der Lage sein, einen funktionierenden Host in demselben Subnetz von der Cluster-Management-LIF zu pingen (keine LIF auf keinem der Nodes).
+* Sie müssen in der Lage sein, einen funktionierenden Host außerhalb des Subnetzes von der Cluster-Management-LIF zu pingen.
+* Sie müssen in der Lage sein, einen funktionierenden Host außerhalb des Subnetzes von der Cluster-Management-LIF mit dem Namen des Hosts (nicht die IP-Adresse) anzupingen.
+
+
+Diese Schritte sind für Fälle, in denen Sie festgestellt haben, dass AutoSupport die Meldung generieren kann, die Meldung jedoch nicht über HTTP oder HTTPS übermitteln kann.
+
+Wenn bei diesem Vorgang Fehler auftreten oder ein Schritt nicht ausgeführt werden kann, ermitteln und beheben Sie das Problem, bevor Sie mit dem nächsten Schritt fortfahren.
+
+.Schritte
+. Anzeigen des detaillierten Status des AutoSupport-Subsystems:
++
+`system node autosupport check show-details`
+
++
+Dazu gehört auch die Überprüfung der Verbindung zu AutoSupport Zielen durch Senden von Testmeldungen und Bereitstellen einer Liste möglicher Fehler in Ihren AutoSupport Konfigurationseinstellungen.
+
+. Überprüfen Sie den Status der Node-Management-LIF:
++
+`network interface show -home-node local -role node-mgmt -fields vserver,lif,status-oper,status-admin,address,role`
+
++
+Der `status-oper` Und `status-admin` Felder sollten „`up`“ zurückgeben.
+
+. Notieren Sie den SVM-Namen, den LIF-Namen und die LIF-IP-Adresse für die spätere Verwendung.
+. Stellen Sie sicher, dass DNS richtig aktiviert und konfiguriert ist:
++
+`vserver services name-service dns show`
+
+. Beheben Sie alle Fehler, die von der AutoSupport Meldung zurückgegeben werden:
++
+`system node autosupport history show -node * -fields node,seq-num,destination,last-update,status,error`
+
++
+Informationen zur Fehlerbehebung bei zurückgegebenen Fehlern finden Sie im link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/ONTAP_AutoSupport_(Transport_HTTPS_and_HTTP)_Resolution_Guide["ONTAP AutoSupport (Transport HTTPS und HTTP) Auflösungsleitfaden"^].
+
+. Vergewissern Sie sich, dass das Cluster sowohl auf die Server zugreifen kann, die es benötigt, als auch auf das Internet:
++
+.. `network traceroute -lif node-management_LIF -destination DNS server`
+.. `network traceroute -lif node_management_LIF -destination support.netapp.com`
++
+[NOTE]
+====
+Die Adresse `support.netapp.com` Selbst reagiert nicht auf Ping/Traceroute, aber die Informationen pro Hop sind wertvoll.
+
+====
+.. `system node autosupport show -fields proxy-url`
+.. `network traceroute -node node_management_LIF -destination proxy_url`
+
+
++
+Wenn eine dieser Routen nicht funktioniert, versuchen Sie die gleiche Route von einem funktionierenden Host im selben Subnetz wie das Cluster, indem Sie das Dienstprogramm „`traceroute`“ oder „`tracert`“ verwenden, das auf den meisten Netzwerk-Clients von Drittanbietern gefunden wurde. Dadurch können Sie herausfinden, ob das Problem in Ihrer Netzwerkkonfiguration oder der Cluster-Konfiguration vorliegt.
+
+. Wenn Sie HTTPS für Ihr AutoSupport-Transportprotokoll verwenden, stellen Sie sicher, dass HTTPS-Datenverkehr das Netzwerk beenden kann:
++
+.. Konfigurieren Sie einen Web-Client im gleichen Subnetz wie die Cluster-Management-LIF.
++
+Stellen Sie sicher, dass alle Konfigurationsparameter dieselben Werte wie für die AutoSupport-Konfiguration sind, einschließlich der Verwendung desselben Proxy-Servers, Benutzernamens, Passworts und Ports.
+
+.. Datenzugriff `+https://support.netapp.com+` Mit dem Web-Client.
++
+Der Zugriff sollte erfolgreich sein. Wenn nicht, stellen Sie sicher, dass alle Firewalls richtig konfiguriert sind, um HTTPS- und DNS-Datenverkehr zu ermöglichen, und dass der Proxy-Server korrekt konfiguriert ist. Weitere Informationen zum Konfigurieren der statischen Namensauflösung für support.netapp.com finden Sie im Knowledge Base-Artikel https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_would_a_HOST_entry_be_added_in_ONTAP_for_support.netapp.com%3F["Wie würde ein HOST-Eintrag in ONTAP für support.netapp.com? hinzugefügt werden"^]
+
+
+
+. Wenn Sie mit ONTAP 9.10.1 die Funktion Automatische Aktualisierung aktiviert haben, stellen Sie sicher, dass Sie über eine HTTPS-Verbindung zu den folgenden zusätzlichen URLs verfügen:
++
+** \https://support-sg-emea.netapp.com
+** \https://support-sg-naeast.netapp.com
+** \https://support-sg-nawest.netapp.com
+
+
+

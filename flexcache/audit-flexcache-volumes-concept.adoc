@@ -1,0 +1,33 @@
+---
+permalink: flexcache/audit-flexcache-volumes-concept.html 
+sidebar: sidebar 
+keywords: considerations, auditing, flexcache, volumes 
+summary: Ab ONTAP 9.7 können Sie NFS-Dateizugriff-Ereignisse in FlexCache Beziehungen mit nativem ONTAP-Auditing und Datei-Richtlinien-Management mit FPolicy prüfen. FPolicy wird für FlexCache Volumes mit SMB nicht unterstützt. Native Audits und FPolicy werden mit denselben CLI-Befehlen konfiguriert und gemanagt, die für FlexVol Volumes verwendet werden. Jedoch gibt es ein paar verschiedene Verhaltensweisen mit FlexCache-Volumes. 
+---
+= Überlegungen für das Auditing von FlexCache Volumes
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.7 können Sie NFS-Dateizugriff-Ereignisse in FlexCache Beziehungen mit nativem ONTAP-Auditing und Datei-Richtlinien-Management mit FPolicy prüfen. FPolicy wird für FlexCache Volumes mit SMB nicht unterstützt. Native Audits und FPolicy werden mit denselben CLI-Befehlen konfiguriert und gemanagt, die für FlexVol Volumes verwendet werden. Jedoch gibt es ein paar verschiedene Verhaltensweisen mit FlexCache-Volumes.
+
+* * Native Auditing*
++
+** Sie können ein FlexCache Volume nicht als Ziel für Prüfprotokolle verwenden.
+** Wenn Sie Lese- und Schreibvorgänge auf FlexCache-Volumes prüfen möchten, müssen Sie sowohl für die Cache-SVM als auch für die Ursprungs-SVM prüfen.
++
+Der Grund dafür ist, dass Dateisystemvorgänge dort geprüft werden, wo sie verarbeitet werden. Das heißt, Lesevorgänge werden auf der Cache-SVM geprüft und Schreibvorgänge werden auf der ursprünglichen SVM geprüft.
+
+** Um den Ursprung von Schreibvorgängen zu verfolgen, werden die SVM-UUID und MSID im Audit-Protokoll angehängt, um das FlexCache-Volume zu identifizieren, aus dem der Schreibvorgang stammt.
+** Obwohl die System-Zugriffssteuerungslisten (SACLs) für eine Datei mit NFSv4- oder SMB-Protokollen eingestellt werden können, unterstützen FlexCache Volumes nur NFSv3. Daher können SACLs nur auf das Ursprungsvolumen eingestellt werden.
+
+
+* *FPolicy*
++
+** Obwohl Schreibvorgänge auf ein FlexCache Volume auf dem Ursprungs-Volume ausgeführt werden, überwachen FPolicy Konfigurationen die Schreibvorgänge auf dem Cache-Volume. Dies unterscheidet sich vom nativen Audit, bei dem die Schreibvorgänge auf das Ursprungs-Volume geprüft werden.
+** Während ONTAP nicht die gleiche FPolicy Konfiguration auf Cache und Ursprungs-SVMs erfordert, wird jedoch empfohlen, dass Sie zwei ähnliche Konfigurationen implementieren. Dies ist möglich, indem Sie eine neue FPolicy für den Cache erstellen, die wie die der ursprünglichen SVM konfiguriert ist, aber mit dem Umfang der neuen Richtlinie auf die Cache-SVM beschränkt ist.
+
+
+

@@ -1,0 +1,231 @@
+---
+permalink: smb-admin/monitor-encryption-statistics-task.html 
+sidebar: sidebar 
+keywords: monitor, smb, encryption, statistics, determine, establish, session, share, connection, encrypt, monitor smb encryption statistics 
+summary: Sie können die SMB-Verschlüsselungsstatistiken überwachen und festlegen, welche festgelegten Sitzungen und Verbindungen verschlüsselt sind und welche nicht. 
+---
+= Überwachen Sie die SMB-Verschlüsselungsstatistiken
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die SMB-Verschlüsselungsstatistiken überwachen und festlegen, welche festgelegten Sitzungen und Verbindungen verschlüsselt sind und welche nicht.
+
+Der `statistics` Mit dem Befehl auf der erweiterten Berechtigungsebene werden die folgenden Zähler angezeigt, mit denen Sie die Anzahl der verschlüsselten SMB-Sessions überwachen und Verbindungen gemeinsam nutzen können:
+
+|===
+| Zählername | Beschreibungen 
+
+
+ a| 
+`encrypted_sessions`
+ a| 
+Zeigt die Anzahl der verschlüsselten SMB 3.0-Sitzungen an
+
+
+
+ a| 
+`encrypted_share_connections`
+ a| 
+Gibt die Anzahl der verschlüsselten Freigaben an, auf denen eine Baumverbindung stattgefunden hat
+
+
+
+ a| 
+`rejected_unencrypted_sessions`
+ a| 
+Gibt die Anzahl der aufgrund fehlender Client-Verschlüsselungsfunktion abgelehnten Sitzungseinstellungen an
+
+
+
+ a| 
+`rejected_unencrypted_shares`
+ a| 
+Gibt die Anzahl der zurückgewiesenen Freigaberattierungen an, da die Client-Verschlüsselungsfunktion nicht verfügbar ist
+
+|===
+Diese Zähler sind mit den folgenden Statistikobjekten verfügbar:
+
+* `cifs` Ermöglicht Ihnen das Monitoring der SMB-Verschlüsselung für alle SMB 3.0-Sitzungen.
++
+[NOTE]
+====
+Die SMB 3.0-Statistiken sind in der Ausgabe für das enthalten `cifs` Objekt: Wenn Sie die Anzahl der verschlüsselten Sitzungen mit der Gesamtanzahl der Sitzungen vergleichen möchten, können Sie die Ausgabe für den vergleichen `encrypted_sessions` Gegenhalten mit der Ausgabe für das `established_sessions` Zähler.
+
+ If you want to compare the number of encrypted share connections to the total number of share connections, you can compare output for the `encrypted_share_connections` counter with the output for the `connected_shares` counter.
+====
+* `rejected_unencrypted_sessions` Gibt die Anzahl an Fällen an, in denen versucht wurde, eine SMB-Sitzung einzurichten, für die Verschlüsselung von einem Client erforderlich ist, der keine SMB-Verschlüsselung unterstützt.
+* `rejected_unencrypted_shares` Bietet die Anzahl der Versuche, eine Verbindung zu einer SMB-Freigabe herzustellen, die Verschlüsselung von einem Client erfordert, der keine SMB-Verschlüsselung unterstützt.
+
+
+Sie müssen eine Statistik-Probensammlung starten, bevor Sie die resultierenden Daten anzeigen können. Sie können Daten aus der Probe anzeigen, wenn Sie die Datenerfassung nicht beenden. Wenn Sie die Datenerfassung anhalten, erhalten Sie eine feste Probe. Wenn Sie die Datenerfassung nicht stoppen, können Sie aktualisierte Daten abrufen, die Sie zum Vergleich mit früheren Abfragen verwenden können. Der Vergleich kann Ihnen dabei helfen, Trends zu erkennen.
+
+link:../performance-admin/index.html["Performance Management"]
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`
+. Datenerfassung starten: `statistics start -object {cifs|smb1|smb2} -instance _instance_ -sample-id _sample_ID_ [-node _node_name_]`
++
+Wenn Sie den nicht angeben `-sample-id` Parameter: Der Befehl generiert eine Proben-ID für Sie und definiert diese Probe als Standardbeispiel für die CLI-Sitzung. Der Wert für `-sample-id` Ist eine Textzeichenfolge. Wenn Sie diesen Befehl während derselben CLI-Sitzung ausführen und den nicht angeben `-sample-id` Parameter: Der Befehl überschreibt das vorherige Standardbeispiel.
+
++
+Optional können Sie den Node angeben, auf dem Sie Statistiken sammeln möchten. Wenn Sie den Node nicht angeben, sammelt der Probe Statistiken für alle Nodes im Cluster.
+
+. Verwenden Sie die `statistics stop` Befehl zum Beenden des Datensammelns für die Probe.
+. SMB-Verschlüsselungsstatistiken anzeigen:
++
+|===
+| Wenn Sie Informationen anzeigen möchten für... | Eingeben... 
+
+
+ a| 
+Verschlüsselte Sitzungen
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_sessions|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Verschlüsselte Sitzungen und etablierte Sitzungen
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_sessions|established_sessions|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Verschlüsselte Verbindungen für Freigaben
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_share_connections|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Verschlüsselte Verbindungen für Freigaben und verbundene Freigaben
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_share_connections|connected_shares|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Abgelehnte unverschlüsselte Sitzungen
+ a| 
+`show -sample-id _sample_ID_ -counter rejected_unencrypted_sessions|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Abgelehnte unverschlüsselte Verbindungen für die Freigabe
+ a| 
+`show -sample-id _sample_ID_ -counter rejected_unencrypted_share|_node_name_ [-node _node_name_]`
+
+|===
++
+Wenn Sie nur Informationen für einen einzelnen Node anzeigen möchten, geben Sie die Option an `-node` Parameter.
+
+. Zurück zur Administratorberechtigungsebene: `set -privilege admin`
+
+
+Das folgende Beispiel zeigt, wie Sie die Verschlüsselungsstatistiken von SMB 3.0 auf Storage Virtual Machine (SVM) vs1 überwachen können.
+
+Der folgende Befehl bewegt sich auf die erweiterte Berechtigungsebene:
+
+[listing]
+----
+cluster1::> set -privilege advanced
+
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by support personnel.
+Do you want to continue? {y|n}: y
+----
+Mit dem folgenden Befehl wird die Datenerfassung für einen neuen Probe gestartet:
+
+[listing]
+----
+cluster1::*> statistics start -object cifs -sample-id smbencryption_sample -vserver vs1
+Statistics collection is being started for Sample-id: smbencryption_sample
+----
+Mit dem folgenden Befehl wird die Datenerfassung für diesen Probe angehalten:
+
+[listing]
+----
+cluster1::*> statistics stop -sample-id smbencryption_sample
+Statistics collection is being stopped for Sample-id: smbencryption_sample
+----
+Mit dem folgenden Befehl werden verschlüsselte SMB-Sitzungen und etablierte SMB-Sessions nach Node aus dem Beispiel angezeigt:
+
+[listing]
+----
+cluster2::*> statistics show -object cifs -counter established_sessions|encrypted_sessions|node_name –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 11:17:45
+End-time: 4/12/2016 11:21:45
+Scope: vsim2
+
+    Counter                               Value
+    ----------------------------  ----------------------
+    established_sessions                     1
+    encrypted_sessions                       1
+
+2 entries were displayed
+----
+Mit dem folgenden Befehl wird die Anzahl der abgelehnten nicht verschlüsselten SMB-Sessions des Node aus dem Beispiel angezeigt:
+
+[listing]
+----
+clus-2::*> statistics show -object cifs -counter rejected_unencrypted_sessions –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 11:17:45
+End-time: 4/12/2016 11:21:51
+Scope: vsim2
+
+    Counter                                    Value
+    ----------------------------    ----------------------
+    rejected_unencrypted_sessions                1
+
+1 entry was displayed.
+----
+Mit dem folgenden Befehl wird die Anzahl der verbundenen SMB-Freigaben und verschlüsselten SMB-Freigaben durch den Node im Beispiel angezeigt:
+
+[listing]
+----
+clus-2::*> statistics show -object cifs -counter connected_shares|encrypted_share_connections|node_name –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 10:41:38
+End-time: 4/12/2016 10:41:43
+Scope: vsim2
+
+    Counter                                     Value
+    ----------------------------    ----------------------
+    connected_shares                              2
+    encrypted_share_connections                   1
+
+2 entries were displayed.
+----
+Mit dem folgenden Befehl wird die Anzahl der abgelehnten nicht verschlüsselten SMB-Share-Verbindungen pro Node im Beispiel angezeigt:
+
+[listing]
+----
+clus-2::*> statistics show -object cifs -counter rejected_unencrypted_shares –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 10:41:38
+End-time: 4/12/2016 10:42:06
+Scope: vsim2
+
+    Counter                                     Value
+    --------------------------------    ----------------------
+    rejected_unencrypted_shares                   1
+
+1 entry was displayed.
+----
+xref:determine-statistics-objects-counters-available-task.adoc[Ermitteln, welche Statistikobjekte und Zähler verfügbar sind]
+
+link:../performance-config/index.html["Express-Setup zur Performance-Überwachung"]

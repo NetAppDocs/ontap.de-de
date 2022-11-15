@@ -1,0 +1,158 @@
+---
+permalink: peering/configure-intercluster-lifs-share-data-ports-task.html 
+sidebar: sidebar 
+keywords: configure, intercluster, lifs, shared, data, ports 
+summary: Sie können Intercluster-LIFs an Ports konfigurieren, die gemeinsam mit dem Datennetzwerk verwendet werden. Auf diese Weise wird die Anzahl der Ports reduziert, die Sie für Intercluster-Netzwerke benötigen. 
+---
+= Konfigurieren Sie Intercluster-LIFs an gemeinsam genutzten Datenports
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Intercluster-LIFs an Ports konfigurieren, die gemeinsam mit dem Datennetzwerk verwendet werden. Auf diese Weise wird die Anzahl der Ports reduziert, die Sie für Intercluster-Netzwerke benötigen.
+
+.Schritte
+. Liste der Ports im Cluster:
++
+`network port show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden die Netzwerkports in angezeigt `cluster01`:
+
++
+[listing]
+----
+
+cluster01::> network port show
+                                                             Speed (Mbps)
+Node   Port      IPspace      Broadcast Domain Link   MTU    Admin/Oper
+------ --------- ------------ ---------------- ----- ------- ------------
+cluster01-01
+       e0a       Cluster      Cluster          up     1500   auto/1000
+       e0b       Cluster      Cluster          up     1500   auto/1000
+       e0c       Default      Default          up     1500   auto/1000
+       e0d       Default      Default          up     1500   auto/1000
+cluster01-02
+       e0a       Cluster      Cluster          up     1500   auto/1000
+       e0b       Cluster      Cluster          up     1500   auto/1000
+       e0c       Default      Default          up     1500   auto/1000
+       e0d       Default      Default          up     1500   auto/1000
+----
+. Intercluster-LIFs auf der System-SVM erstellen:
++
+|===
+| Option | Beschreibung 
+
+
+ a| 
+*Im ONTAP 9.6 und höher:*
+ a| 
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -service-policy default-intercluster -home-node _node_ -home-port port -address _port_IP_ -netmask _netmask_`
+
+
+
+ a| 
+*In ONTAP 9.5 und früher:*
+ a| 
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -role intercluster -home-node _node_ -home-port _port_ -address _port_IP_ -netmask _netmask_`
+
+|===
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel werden Intercluster-LIFs erstellt `cluster01_icl01` Und `cluster01_icl02`:
+
++
+[listing]
+----
+
+cluster01::> network interface create -vserver cluster01 -lif cluster01_icl01 -service-
+policy default-intercluster -home-node cluster01-01 -home-port e0c -address 192.168.1.201
+-netmask 255.255.255.0
+
+cluster01::> network interface create -vserver cluster01 -lif cluster01_icl02 -service-
+policy default-intercluster -home-node cluster01-02 -home-port e0c -address 192.168.1.202
+-netmask 255.255.255.0
+----
+. Überprüfen Sie, ob die Intercluster-LIFs erstellt wurden:
++
+|===
+| Option | Beschreibung 
+
+
+ a| 
+*Im ONTAP 9.6 und höher:*
+ a| 
+`network interface show -service-policy default-intercluster`
+
+
+
+ a| 
+*In ONTAP 9.5 und früher:*
+ a| 
+`network interface show -role intercluster`
+
+|===
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+[listing]
+----
+cluster01::> network interface show -service-policy default-intercluster
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+cluster01
+            cluster01_icl01
+                       up/up      192.168.1.201/24   cluster01-01  e0c     true
+            cluster01_icl02
+                       up/up      192.168.1.202/24   cluster01-02  e0c     true
+----
+. Vergewissern Sie sich, dass die Intercluster-LIFs redundant sind:
++
+|===
+| Option | Beschreibung 
+
+
+ a| 
+*Im ONTAP 9.6 und höher:*
+ a| 
+`network interface show –service-policy default-intercluster -failover`
+
+
+
+ a| 
+*In ONTAP 9.5 und früher:*
+ a| 
+`network interface show -role intercluster -failover`
+
+|===
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Das folgende Beispiel zeigt, dass die Intercluster-LIFs sind `cluster01_icl01` Und `cluster01_icl02` Auf dem `e0c` Ein Failover des Ports zum erfolgt `e0d` Port:
+
++
+[listing]
+----
+cluster01::> network interface show -service-policy default-intercluster –failover
+         Logical         Home                  Failover        Failover
+Vserver  Interface       Node:Port             Policy          Group
+-------- --------------- --------------------- --------------- --------
+cluster01
+         cluster01_icl01 cluster01-01:e0c   local-only      192.168.1.201/24
+                            Failover Targets: cluster01-01:e0c,
+                                              cluster01-01:e0d
+         cluster01_icl02 cluster01-02:e0c   local-only      192.168.1.201/24
+                            Failover Targets: cluster01-02:e0c,
+                                              cluster01-02:e0d
+----
+

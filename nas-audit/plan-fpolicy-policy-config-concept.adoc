@@ -1,0 +1,190 @@
+---
+permalink: nas-audit/plan-fpolicy-policy-config-concept.html 
+sidebar: sidebar 
+keywords: plan, fpolicy, policy, configuration 
+summary: Bevor Sie die FPolicy konfigurieren, müssen Sie verstehen, welche Parameter beim Erstellen der Richtlinie erforderlich sind sowie warum Sie bestimmte optionale Parameter konfigurieren möchten. Anhand dieser Informationen können Sie festlegen, welche Werte für jeden Parameter festgelegt werden sollen. 
+---
+= Planen Sie die FPolicy-Konfiguration im Überblick
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie die FPolicy konfigurieren, müssen Sie verstehen, welche Parameter beim Erstellen der Richtlinie erforderlich sind sowie warum Sie bestimmte optionale Parameter konfigurieren möchten. Anhand dieser Informationen können Sie festlegen, welche Werte für jeden Parameter festgelegt werden sollen.
+
+Beim Erstellen einer FPolicy verknüpfen Sie die Richtlinie mit der folgenden:
+
+* Die Storage Virtual Machine (SVM)
+* Ein oder mehrere FPolicy Events
+* Eine externe FPolicy Engine
+
+
+Sie können auch mehrere optionale Richtlinieneinstellungen konfigurieren.
+
+
+
+== Was die FPolicy-Konfiguration enthält
+
+Sie können die folgende Liste der erforderlichen FPolicy und optionalen Parameter verwenden, um Ihre Konfiguration zu planen:
+
+[cols="40,20,20,20"]
+|===
+
+
+| Informationstyp | Option | Erforderlich | Standard 
+
+
+ a| 
+_SVM Name_
+
+Gibt den Namen der SVM an, auf der eine FPolicy erstellt werden soll.
+ a| 
+`-vserver` `vserver_name`
+ a| 
+Ja.
+ a| 
+Keine
+
+
+
+ a| 
+_Name der Richtlinie_
+
+Gibt den Namen der FPolicy an.
+
+Der Name kann bis zu 256 Zeichen lang sein.
+
+[NOTE]
+====
+Wenn die Richtlinie in einer MetroCluster- oder SVM-Disaster-Recovery-Konfiguration konfiguriert ist, sollte der Name bis zu 200 Zeichen lang sein.
+
+====
+Der Name kann eine beliebige Kombination der folgenden Zeichen des ASCII-Bereichs enthalten:
+
+* `a` Bis `z`
+* `A` Bis `Z`
+* `0` Bis `9`
+* „`_`“, „`-`", and "`.`“
+
+ a| 
+`-policy-name` `policy_name`
+ a| 
+Ja.
+ a| 
+Keine
+
+
+
+ a| 
+_Ereignisnamen_
+
+Gibt eine kommagetrennte Liste von Ereignissen an, die mit der FPolicy verknüpft werden sollen.
+
+* Sie können einer Richtlinie mehrere Ereignisse zuordnen.
+* Ein Ereignis ist spezifisch für ein Protokoll.
+* Sie können eine einzelne Richtlinie verwenden, um Dateizugriffsereignisse für mehr als ein Protokoll zu überwachen, indem Sie für jedes Protokoll, das die Richtlinie überwachen soll, ein Ereignis erstellen und dann die Ereignisse mit der Richtlinie verknüpfen.
+* Die Ereignisse müssen bereits vorhanden sein.
+
+ a| 
+`-events` `event_name`, ...
+ a| 
+Ja.
+ a| 
+Keine
+
+
+
+ a| 
+_Name der externen Engine_
+
+Gibt den Namen der externen Engine an, die mit der FPolicy verknüpft werden soll.
+
+* Eine externe Engine enthält die vom Knoten benötigten Informationen zum Senden von Benachrichtigungen an einen FPolicy-Server.
+* Sie können FPolicy so konfigurieren, dass die native externe ONTAP Engine zum einfachen Blockieren von Dateien oder zur Verwendung einer externen Engine verwendet wird, die für die Verwendung von externen FPolicy-Servern (FPolicy-Servern) konfiguriert ist, um anspruchsvollere Datei-Blockierung und Dateimanagement zu ermöglichen.
+* Wenn Sie die native externe Engine verwenden möchten, können Sie entweder keinen Wert für diesen Parameter angeben oder angeben `native` Als Wert.
+* Wenn Sie FPolicy-Server verwenden möchten, muss die Konfiguration für die externe Engine bereits vorhanden sein.
+
+ a| 
+`-engine` `engine_name`
+ a| 
+Ja (es sei denn, diese Richtlinie nutzt die interne ONTAP-native Engine)
+ a| 
+`native`
+
+
+
+ a| 
+_Ist obligatorisches Screening erforderlich_
+
+Gibt an, ob eine obligatorische Überprüfung des Dateizugriffs erforderlich ist.
+
+* Die obligatorische Screening-Einstellung legt fest, welche Maßnahmen bei einem Dateizugriff getroffen werden sollen, wenn alle primären und sekundären Server ausgefallen sind oder keine Antwort von den FPolicy-Servern innerhalb eines bestimmten Zeitlimits erhalten wird.
+* Wenn eingestellt auf `true`, Dateizugriffsereignisse werden verweigert.
+* Wenn eingestellt auf `false`, Dateizugriffsereignisse sind erlaubt.
+
+ a| 
+`-is-mandatory` {`true`|`false`}
+ a| 
+Nein
+ a| 
+`true`
+
+
+
+ a| 
+_Privilegierten Zugriff zulassen_
+
+Gibt an, ob der FPolicy-Server über eine privilegierte Datenverbindung privilegierten Zugriff auf die überwachten Dateien und Ordner haben soll.
+
+Bei entsprechender Konfiguration können FPolicy Server über die privilegierte Datenverbindung auf Dateien vom Root der SVM zugreifen, die die überwachten Daten enthalten.
+
+Für den privilegierten Datenzugriff muss SMB auf dem Cluster lizenziert sein. Alle Daten-LIFs für die Verbindung mit den FPolicy Servern müssen konfiguriert werden `cifs` Als eines der zulässigen Protokolle.
+
+Wenn Sie die Richtlinie so konfigurieren möchten, dass ein privilegierter Zugriff möglich ist, müssen Sie auch den Benutzernamen für das Konto angeben, das der FPolicy-Server für privilegierten Zugriff verwenden soll.
+ a| 
+`-allow-privileged-access` {`yes`|`no`}
+ a| 
+Nein (es sei denn, Passthrough-read ist aktiviert)
+ a| 
+`no`
+
+
+
+ a| 
+_Privilegierter Benutzername_
+
+Gibt den Benutzernamen des Kontos an, das FPolicy-Server für privilegierten Datenzugriff verwenden.
+
+* Der Wert für diesen Parameter sollte das Format „`domain\user Name`“ verwenden.
+* Wenn `-allow-privileged-access` Ist auf festgelegt `no`, Jeder für diesen Parameter eingestellte Wert wird ignoriert.
+
+ a| 
+`-privileged-user-name` `user_name`
+ a| 
+Nein (sofern der privilegierte Zugriff nicht aktiviert ist)
+ a| 
+Keine
+
+
+
+ a| 
+_Passthrough-read_ zulassen
+
+Gibt an, ob die FPolicy-Server PassThrough-Read-Services für Dateien bereitstellen können, die von den FPolicy-Servern in sekundären Speicher (Offline-Dateien) archiviert wurden:
+
+* Passthrough-read ist eine Möglichkeit, Daten von Offline-Dateien zu lesen, ohne die Daten auf den primären Speicher wiederherzustellen.
++
+Durch das Passthrough-Lesevorgang werden die Reaktionszeiten reduziert, da vor der Reaktion auf die Leseanforderung keine Dateien zurück auf den primären Storage zurückgerufen werden müssen. Zusätzlich optimiert das Passthrough-Lesevorgang die Storage-Effizienz, da es nicht mehr erforderlich ist, primären Storage mit Dateien zu belegen, die ausschließlich für Lesezugriffe abgerufen werden.
+
+* Wenn diese Option aktiviert ist, stellen die FPolicy-Server die Daten für die Datei über einen separaten privilegierten Datenkanal bereit, der speziell für Passdurchlesevorgänge geöffnet wurde.
+* Wenn Sie Passthrough-read konfigurieren möchten, muss die Richtlinie auch so konfiguriert werden, dass ein privilegierter Zugriff möglich ist.
+
+ a| 
+`-is-passthrough-read-enabled` {`true`|`false`}
+ a| 
+Nein
+ a| 
+`false`
+
+|===

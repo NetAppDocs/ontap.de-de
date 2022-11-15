@@ -1,0 +1,105 @@
+---
+permalink: nfs-rdma/configure-lifs-task.html 
+sidebar: sidebar 
+keywords: networking, LIF, NFS over RDMA, NVIDIA, NFS, RDMA, ROCE, network interface, system manager 
+summary: 'Dieser Artikel erläutert die Konfiguration einer LIF (Netzwerkschnittstelle) für RDMA-fähig.' 
+---
+= Konfigurieren Sie LIFs für NFS über RDMA
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Um NFS über RDMA zu verwenden, müssen Sie Ihre LIFs (Netzwerkschnittstelle) so konfigurieren, dass sie RDMA-kompatibel sind. RDMA muss sowohl die LIF als auch das Failover-Paar unterstützen.
+
+
+
+== Erstellen Sie ein neues LIF
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Um ein Netzwerkschnittstelle für NFS über RDMA mit System Manager zu erstellen, müssen Sie ONTAP 9.12.1 oder höher verwenden.
+
+.Schritte
+. Wählen Sie *Netzwerk > Übersicht > Netzwerkschnittstellen*.
+. Wählen Sie image:icon_add.gif["Symbol hinzufügen"].
+. Wenn Sie *NFS,SMB/CIFS,S3* auswählen, haben Sie die Möglichkeit *RoCE-Ports verwenden*. Aktivieren Sie das Kontrollkästchen für *RoCE-Ports verwenden*.
+. Wählen Sie die Storage-VM und den Home-Node aus. Weisen Sie einen Namen zu. Geben Sie die IP-Adresse und die Subnetzmaske ein.
+. Sobald Sie die IP-Adresse und die Subnetzmaske eingegeben haben, filtert System Manager die Liste der Broadcast-Domänen auf solche mit RoCE-fähigen Ports. Wählen Sie eine Broadcast-Domäne aus. Sie können optional ein Gateway hinzufügen.
+. Wählen Sie *Speichern*.
+
+
+--
+.CLI
+--
+.Schritte
+. LIF erstellen:
++
+`network interface create -vserver _SVM_name_ -lif _lif_name_ -service-policy _service_policy_name_ -home-node _node_name_ -home-port _port_name_ {-address _IP_address_ -netmask _netmask_value_ | -subnet-name _subnet_name_} -firewall-policy _policy_name_ -auto-revert {true|false} -rdma-protocols roce`
+
++
+** Die Service-Richtlinie muss entweder Standarddatendateien oder eine benutzerdefinierte Richtlinie sein, die den Daten-nfs-Netzwerkschnittstellungsservice enthält.
+** Der `-rdma-protocols` Der Parameter akzeptiert eine Liste. Diese ist standardmäßig leer. Wenn `roce` Wird als Wert hinzugefügt, kann die LIF nur auf Ports konfiguriert werden, die RoCE-Offload unterstützen. Dies wirkt sich auf die bot-LIF-Migration und Failover aus.
+
+
+
+
+--
+====
+
+
+== Ändern Sie ein LIF
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Um ein Netzwerkschnittstelle für NFS über RDMA mit System Manager zu erstellen, müssen Sie ONTAP 9.12.1 oder höher verwenden.
+
+.Schritte
+. Wählen Sie *Netzwerk > Übersicht > Netzwerkschnittstellen*.
+. Wählen Sie image:icon_kabob.gif["Kabob-Symbol"] *> Bearbeiten* neben der Netzwerkschnittstelle, die Sie ändern möchten.
+. Aktivieren Sie * RoCE-Ports verwenden*, um NFS über RDMA zu aktivieren oder deaktivieren Sie das Kontrollkästchen, um es zu deaktivieren. Wenn sich die Netzwerkschnittstelle auf einem RoCE-fähigen Port befindet, wird neben *RoCE-Ports verwenden* ein Kontrollkästchen angezeigt.
+. Ändern Sie die anderen Einstellungen nach Bedarf.
+. Wählen Sie *Speichern*, um Ihre Änderungen zu bestätigen.
+
+
+--
+.CLI
+--
+. Mit dem können Sie den Status Ihrer LIFs überprüfen `network interface show` Befehl. Die Service-Richtlinie muss den Daten-nfs-Netzwerkschnittstellungsservice enthalten. Der `-rdma-protocols` Liste sollte enthalten `roce`. Wenn eine dieser Bedingungen nicht wahr ist, ändern Sie das LIF.
+. Um das LIF zu ändern, führen Sie folgende Schritte aus:
++
+`network interface modify vserver _SVM_name_ -lif _lif_name_ -service-policy _service_policy_name_ -home-node _node_name_ -home-port _port_name_ {-address _IP_address_ -netmask _netmask_value_ | -subnet-name _subnet_name_} -firewall-policy _policy_name_ -auto-revert {true|false} -rdma-protocols roce`
+
+
+
+
+NOTE: Das Ändern eines LIF erfordert ein bestimmtes Offload-Protokoll, wenn das LIF derzeit keinem Port zugewiesen ist, der dieses Protokoll unterstützt, zu einem Fehler führt.
+
+--
+====
+
+
+== Migrieren eines LIF
+
+Mit ONTAP können Sie darüber hinaus Netzwerkschnittstellen (LIFs) migrieren, um NFS über RDMA zu nutzen. Bei dieser Migration müssen Sie sicherstellen, dass der Ziel-Port RoCE-fähig ist. Ab ONTAP 9.12.1 können Sie diese Prozedur in System Manager durchführen. Bei Auswahl eines Ziel-Ports für die Netzwerkschnittstelle bestimmt System Manager, ob Ports RoCE-fähig sind.
+
+Sie können LIF nur über RDMA-Konfiguration migrieren, wenn:
+
+* Es handelt sich um eine NFS-RDMA-Netzwerkschnittstelle (LIF), die auf einem RoCE-fähigen Port gehostet wird.
+* Es handelt sich um eine NFS TCP Network Interface (LIF), die auf einem RoCE-fähigen Port gehostet wird.
+* Es handelt sich um eine NFS-TCP-Netzwerkschnittstelle (LIF), die auf einem nicht-RoCE-fähigen Port gehostet wird.
+
+
+Weitere Informationen zum Migrieren einer Netzwerkschnittstelle finden Sie unter xref:../networking/migrate_a_lif.html[Migrieren eines LIF].
+
+.Weitere Informationen
+* xref:../networking/create_a_lif.html[Erstellen eines LIF]
+* xref:../networking/create_a_lif.html[Erstellen eines LIF]
+* xref:../networking/modify_a_lif.html[Ändern Sie ein LIF]
+* xref:../networking/migrate_a_lif.html[Migrieren eines LIF]
+

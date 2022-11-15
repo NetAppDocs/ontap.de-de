@@ -1,0 +1,71 @@
+---
+permalink: system-admin/forward-command-history-log-file-destination-task.html 
+sidebar: sidebar 
+keywords: forward, audit, log, destination, cluster, forwarding, splunk 
+summary: Sie können das Audit-Protokoll an maximal 10 Ziele weiterleiten. Sie können das Protokoll beispielsweise an einen Splunk oder Syslog-Server für Monitoring-, Analyse- und Backup-Zwecke weiterleiten. 
+---
+= Verwalten von Zielen für Überwachungsprotokolle
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das Audit-Protokoll an maximal 10 Ziele weiterleiten. Sie können das Protokoll beispielsweise an einen Splunk oder Syslog-Server für Monitoring-, Analyse- und Backup-Zwecke weiterleiten.
+
+Für die Konfiguration der Weiterleitung müssen Sie die IP-Adresse des Syslog- oder Splunk-Hosts, seine Portnummer, ein Übertragungsprotokoll sowie die Syslog-Einrichtung für die weitergeleiteten Protokolle angeben. https://datatracker.ietf.org/doc/html/rfc5424["Hier erfahren Sie mehr über Syslog-Funktionen"^].
+
+Sie können einen der folgenden Übertragungswerte auswählen:
+
+UDP unverschlüsselt:: User Datagram Protocol ohne Sicherheit (Standard)
+TCP unverschlüsselt:: Übertragungsprotokoll ohne Sicherheit
+TCP verschlüsselt:: Transmission Control Protocol mit Transport Layer Security (TLS) + A *Verify Server* Option ist verfügbar, wenn das TCP verschlüsselte Protokoll ausgewählt ist.
+
+
+Sie können die Prüfprotokolle von der ONTAP CLI, und beginnend mit ONTAP 9.11.1, von System Manager weiterleiten.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+* Um die Ziele des Prüfprotokolls anzuzeigen, wählen Sie *Cluster >Einstellungen*. + die Anzahl der Protokollziele wird in der Kachel *Benachrichtigungsmanagement* angezeigt. Klicken Sie Auf image:../media/icon_kabob.gif["Kebab-Symbol"] Um Details anzuzeigen.
+* Um Ziele für das Auditprotokoll hinzuzufügen, zu ändern oder zu löschen, wählen Sie *Events & Jobs > Audit Logs* und klicken Sie dann rechts oben auf dem Bildschirm auf *Audit-Ziele verwalten*. + Klicken image:icon_add.gif["Symbol hinzufügen"], Oder klicken Sie auf image:../media/icon_kabob.gif["Kebab-Symbol"] In der Spalte *Host Address* können Sie Einträge bearbeiten oder löschen.
+
+
+--
+.CLI
+--
+. Geben Sie für jedes Ziel, an das Sie das Prüfprotokoll weiterleiten möchten, die Ziel-IP-Adresse oder den Host-Namen und alle Sicherheitsoptionen an.
++
+[listing]
+----
+cluster1::> cluster log-forwarding create -destination 192.168.123.96
+-port 514 -facility user
+
+cluster1::> cluster log-forwarding create -destination 192.168.123.98
+-port 514 -protocol tcp-encrypted -facility user
+----
++
+** Wenn der `cluster log-forwarding create` Der Befehl kann den Ziel-Host nicht pingen, um die Verbindung zu überprüfen. Der Befehl schlägt mit einem Fehler fehl. Obwohl nicht empfohlen, verwenden Sie die `-force` Parameter mit dem Befehl umgeht die Konnektivitätsprüfung.
+** Wenn Sie die einstellen `-verify-server` Parameter an `true`, Die Identität des Protokollweiterleitungsziels wird durch die Validierung seines Zertifikats überprüft. Sie können den Wert auf einstellen `true` Nur wenn Sie das auswählen `tcp-encrypted` Wert im `-protocol` Feld.
+
+
+. Überprüfen Sie, ob die Zieldatensätze korrekt sind, indem Sie die verwenden `cluster log-forwarding show` Befehl.
++
+[listing]
+----
+cluster1::> cluster log-forwarding show
+
+                                                 Verify Syslog
+Destination Host          Port   Protocol        Server Facility
+------------------------- ------ --------        ------ --------
+192.168.123.96            514    udp-unencrypted false  user
+192.168.123.98            514    tcp-encrypted   true   user
+2 entries were displayed.
+----
+
+
+Weitere Informationen finden Sie auf den man-Pages.
+
+--
+====

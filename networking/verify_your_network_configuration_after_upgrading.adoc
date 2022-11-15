@@ -1,0 +1,91 @@
+---
+sidebar: sidebar 
+permalink: networking/verify_your_network_configuration.html 
+keywords: verify, upgrade, considerations, network, configuration, upgrading, physical, wire, wiring, cable, cabling, layer 2, reachability, port, results, verify your networking configuration after upgrading to ontap 9.8 or later, network port reachability show -detail, repair reachability decision tree, layer 2 reachability, assigned broadcast domain, reachability-status, unexpected ports, unavailable ports, reachability repair 
+summary: Überprüfen Sie Ihre Netzwerkkonfiguration nach einem Upgrade auf ONTAP 9.8 oder höher 
+---
+= Überprüfen Sie Ihre Netzwerkkonfiguration nach einem Upgrade auf ONTAP 9.8 oder höher
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Nach einem Upgrade auf ONTAP 9.8 sollten Sie die Netzwerkkonfiguration überprüfen. Nach dem Upgrade überwacht ONTAP automatisch die Erreichbarkeit von Ebene 2.
+
+Mit dem folgenden Befehl können Sie überprüfen, ob jeder Port seine erwartete Broadcast-Domäne wieder verfügbar ist:
+
+....
+network port reachability show -detail
+....
+Die Befehlsausgabe enthält Ergebnisse zur Wiederherstellung. Verwenden Sie die folgende Entscheidungsstruktur und Tabelle, um die Ergebnisse der Nachachbarkeit (Status der Erreichbarkeit) zu verstehen und zu bestimmen, welche, wenn überhaupt, als Nächstes zu tun.
+
+image:ontap_nm_image1.png["Entscheidungsbaum für Reparaturfähigkeit"]
+
+[cols="20,80"]
+|===
+
+
+| Erreichbarkeit-Status | Beschreibung 
+
+
+ a| 
+ok
+ a| 
+Der Port verfügt über eine Layer 2-Erreichbarkeit für seine zugewiesene Broadcast-Domäne.
+
+Wenn der Status der Erreichbarkeit „ok“ ist, aber es „unerwartete Ports“ gibt, sollten Sie eine oder mehrere Broadcast-Domänen zusammenführen. Weitere Informationen finden Sie unter link:merge_broadcast_domains.html["Broadcast-Domänen zusammenführen"].
+
+Wenn der Status „Erreichbarkeit“ „ok“ lautet, aber „nicht erreichbare Ports“ vorhanden sind, sollten Sie eine oder mehrere Broadcast-Domänen aufteilen. Weitere Informationen finden Sie unter link:split_broadcast_domains.html["Teilen von Broadcast-Domänen auf"].
+
+Wenn der Status „Erreichbarkeit“ „ok“ lautet und keine unerwarteten oder nicht erreichbaren Ports vorhanden sind, ist die Konfiguration korrekt.
+
+
+
+ a| 
+Falsch konfigurierte Erreichbarkeit
+ a| 
+Der Port verfügt nicht über eine Ebene 2-Erreichbarkeit seiner zugewiesenen Broadcast-Domäne; der Port besitzt jedoch Layer 2-Erreichbarkeit zu einer anderen Broadcast-Domäne.
+
+Sie können die Anschlussfähigkeit reparieren. Wenn Sie den folgenden Befehl ausführen, weist das System den Port der Broadcast-Domäne zu, der sie nachzuweisen kann:
+
+`network port reachability repair -node -port`
+
+Weitere Informationen finden Sie unter link:repair_port_reachability.html["Port-Erreichbarkeit reparieren"].
+
+
+
+ a| 
+Keine Erreichbarkeit
+ a| 
+Der Port verfügt nicht über eine Ebene 2-Erreichbarkeit für eine vorhandene Broadcast-Domäne.
+
+Sie können die Anschlussfähigkeit reparieren. Wenn Sie den folgenden Befehl ausführen, weist das System den Port einer neuen automatisch erstellten Broadcast-Domäne im Standard-IPspace zu:
+
+`network port reachability repair -node -port`
+
+Weitere Informationen finden Sie unter link:repair_port_reachability.html["Port-Erreichbarkeit reparieren"].
+
+
+
+ a| 
+Multi-Domain-Erreichbarkeit
+ a| 
+Der Port verfügt über eine Layer-2-Erreichbarkeit für seine zugewiesene Broadcast-Domäne; er verfügt jedoch auch über eine Layer-2-Erreichbarkeit von mindestens einer anderen Broadcast-Domäne.
+
+Überprüfen Sie die physische Konnektivität und die Switch-Konfiguration, um festzustellen, ob sie falsch ist oder ob die zugewiesene Broadcast-Domain des Ports mit einer oder mehreren Broadcast-Domänen zusammengeführt werden muss.
+
+Weitere Informationen finden Sie unter link:merge_broadcast_domains.html["Broadcast-Domänen zusammenführen"] Oder link:repair_port_reachability.html["Port-Erreichbarkeit reparieren"].
+
+
+
+ a| 
+Unbekannt
+ a| 
+Wenn der Status „unbekannt“ lautet, warten Sie einige Minuten, und versuchen Sie den Befehl erneut.
+
+|===
+Nachdem Sie einen Port repariert haben, müssen Sie die vertriebenen LIFs und VLANs überprüfen und beheben. Wenn der Port Teil einer Schnittstellengruppe war, müssen Sie auch verstehen, was mit dieser Schnittstellengruppe passiert ist. Weitere Informationen finden Sie unter link:repair_port_reachability.html["Port-Erreichbarkeit reparieren"].

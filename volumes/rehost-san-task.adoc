@@ -1,0 +1,67 @@
+---
+permalink: volumes/rehost-san-task.html 
+sidebar: sidebar 
+keywords: rehost, san volumes 
+summary: Sie können Volumes mit zugeordneten LUNs neu hosten. Nach dem erneuten Erstellen der Initiatorgruppe in der Ziel-SVM kann das Volume Rehosting automatisch das Volume auf derselben SVM zuordnen. 
+---
+= San-Volumes neu hosten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Volumes mit zugeordneten LUNs neu hosten. Nach dem erneuten Erstellen der Initiatorgruppe in der Ziel-SVM kann das Volume Rehosting automatisch das Volume auf derselben SVM zuordnen.
+
+.Was Sie und#8217;ll benötigen
+* Das Volume muss sich online sein.
+* Volume-Managementvorgänge wie das Verschieben von Volumes oder LUNs dürfen nicht ausgeführt werden.
+* Es darf keine aktive I/O-Vorgänge auf den Volumes oder LUNs vorhanden sein.
+* Sie müssen überprüfen, ob die Ziel-SVM über keine Initiatorgruppe desselben Namens, sondern unterschiedliche Initiatoren verfügt.
++
+Wenn die Initiatorgruppe denselben Namen hat, müssen Sie die Initiatorgruppe in einer der SVMs (Quelle oder Ziel) umbenannt haben.
+
+* Sie müssen die aktiviert haben `force-unmap-luns` Option.
++
+** Der Standardwert des `force-unmap-luns` Option ist `false`.
+** Beim Einstellen des wird keine Warnung oder Bestätigung angezeigt `force-unmap-luns` Option auf `true`.
+
+
+
+
+.Über diese Aufgabe
+* Das Rehosting ist ein störender Betrieb.
+* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
+* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
++
+** Virenschutz-Richtlinien
+** Volume-Effizienzrichtlinie
+** Quality of Service-Richtlinien (QoS
+** Snapshot-Richtlinien
+** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
+** Benutzer- und Gruppen-IDs
+
+
+
+
+.Schritte
+. Erfassen Sie die LUN-Zuordnungsinformationen für das Ziel-Volume:
++
+`lun mapping show–volume volume to be rehosted-vserver source vserver`
+
++
+Dies ist ein vorsorgender Schritt, um zu vermeiden, dass Informationen über die LUN-Zuordnung verloren gehen, falls das Rehosting des Volumes fehlschlägt.
+
+. Löschen der dem Ziel-Volume zugeordneten Initiatorgruppen.
+. Erneutes Hosten des Ziel-Volume auf die Ziel-SVM:
++
+`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+
+. Ordnen Sie LUNs auf dem Ziel-Volume entsprechenden Initiatorgruppen zu.
++
+** Das Volume Rehosting erhält die LUNs auf dem Ziel-Volume, jedoch bleibt die Zuordnung der LUNs aufgehoben.
+** Verwenden Sie den Ziel-SVM-Portsatz beim Zuordnen der LUNs.
+** Wenn der `auto-remap-luns` Die Option ist auf festgelegt `true`, Die LUNs werden nach dem Rehosting automatisch zugeordnet.
+
+
+

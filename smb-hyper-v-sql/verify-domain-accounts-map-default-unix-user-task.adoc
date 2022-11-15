@@ -1,0 +1,111 @@
+---
+permalink: smb-hyper-v-sql/verify-domain-accounts-map-default-unix-user-task.html 
+sidebar: sidebar 
+keywords: verfiy, domain, account, default, unix, server, smb, share, user 
+summary: Hyper-V und SQL Server verwenden Domänenkonten, um SMB-Verbindungen für kontinuierlich verfügbare Freigaben zu erstellen. Um die Verbindung erfolgreich zu erstellen, muss das Computerkonto einem UNIX-Benutzer erfolgreich zugeordnet werden. Der bequemste Weg dies zu erreichen ist, das Computerkonto dem standardmäßigen UNIX-Benutzer zuzuordnen. 
+---
+= Stellen Sie sicher, dass Domänenkonten dem UNIX-Standardbenutzer zugeordnet sind
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Hyper-V und SQL Server verwenden Domänenkonten, um SMB-Verbindungen für kontinuierlich verfügbare Freigaben zu erstellen. Um die Verbindung erfolgreich zu erstellen, muss das Computerkonto einem UNIX-Benutzer erfolgreich zugeordnet werden. Der bequemste Weg dies zu erreichen ist, das Computerkonto dem standardmäßigen UNIX-Benutzer zuzuordnen.
+
+Hyper-V und SQL Server verwenden die Domänencomputer-Konten, um SMB-Verbindungen zu erstellen. Darüber hinaus verwendet SQL Server ein Domain-Benutzerkonto als Dienstkonto, das auch SMB-Verbindungen erstellt.
+
+Beim Erstellen einer Storage Virtual Machine (SVM) erstellt ONTAP automatisch den Standardbenutzer „`pcuser`“ (mit einer UID von) `65534`) Und die Gruppe mit dem Namen "`pcuser`" (mit einer GID von `65534`), und fügt den Standardbenutzer der Gruppe „`pcuser`“ hinzu. Wenn Sie eine Hyper-V über SMB-Lösung auf einer SVM konfigurieren, die vor dem Upgrade des Clusters auf Data ONTAP 8.2 vorhanden war, sind Benutzer und Gruppen möglicherweise nicht vorhanden. Wenn dies nicht der Fall ist, müssen Sie diese erstellen, bevor Sie den UNIX-Standardbenutzer des CIFS-Servers konfigurieren.
+
+.Schritte
+. Legen Sie fest, ob ein UNIX-Standardbenutzer vorhanden ist:
++
+`*vserver cifs options show -vserver _vserver_name_*`
+
+. Wenn die Standardbenutzeroption nicht festgelegt ist, legen Sie fest, ob ein UNIX-Benutzer als Standardbenutzer festgelegt werden kann:
++
+`*vserver services unix-user show -vserver _vserver_name_*`
+
+. Wenn die Standardbenutzeroption nicht festgelegt ist und kein UNIX-Benutzer als Standard-UNIX-Benutzer angegeben werden kann, erstellen Sie den Standard-UNIX-Benutzer und die Standardgruppe und fügen Sie den Standardbenutzer der Gruppe hinzu.
++
+Im Allgemeinen erhält der Standardbenutzer den Benutzernamen „`pcuser`“ und muss der UID von zugewiesen werden `65534`. Die Standardgruppe erhält in der Regel den Gruppennamen „`pcuser`“. Die der Gruppe zugewiesene GID muss sein `65534`.
+
++
+.. Erstellen Sie die Standardgruppe: +
+`*vserver services unix-group create -vserver _vserver_name_ -name pcuser -id 65534*`
+.. Erstellen Sie den Standardbenutzer und fügen Sie den Standardbenutzer zur Standardgruppe hinzu: +
+`*vserver services unix-user create -vserver _vserver_name_ -user pcuser -id 65534 -primary-gid 65534*`
+.. Überprüfen Sie, ob der Standardbenutzer und die Standardgruppe richtig konfiguriert sind: +
+`*vserver services unix-user show -vserver _vserver_name_*`+
+`*vserver services unix-group show -vserver _vserver_name_ -members*`
+
+
+. Wenn der Standardbenutzer des CIFS-Servers nicht konfiguriert ist, führen Sie Folgendes aus:
++
+.. Konfigurieren Sie den Standardbenutzer:
++
+`*vserver cifs options modify -vserver *vserver_name* -default-unix-user pcuser*`
+
+.. Vergewissern Sie sich, dass der UNIX-Standardbenutzer richtig konfiguriert ist:
++
+`*vserver cifs options show -vserver _vserver_name_*`
+
+
+
+. Um zu überprüfen, ob das Computerkonto des Anwendungsservers dem Standardbenutzer korrekt zugeordnet ist, ordnen Sie ein Laufwerk einer auf der SVM vorhandenen Freigabe zu, und bestätigen Sie die Zuordnung des Windows-Benutzers zu UNIX mit der `vserver cifs session show` Befehl.
++
+Weitere Informationen über diese Verwendung dieses Befehls finden Sie in den man-Pages.
+
+
+
+Die folgenden Befehle bestimmen, dass der Standardbenutzer des CIFS-Servers nicht festgelegt ist, sondern bestimmt, dass die Gruppe „`pcuser`“ Benutzer und „`pcuser`“ vorhanden sind. Der Benutzer „`pcuser`“ wird als Standardbenutzer des CIFS-Servers für SVM vs1 zugewiesen.
+
+[listing]
+----
+cluster1::> vserver cifs options show
+
+Vserver: vs1
+
+  Client Session Timeout : 900
+  Default Unix Group     : -
+  Default Unix User      : -
+  Guest Unix User        : -
+  Read Grants Exec       : disabled
+  Read Only Delete       : disabled
+  WINS Servers           : -
+
+
+
+cluster1::> vserver services unix-user show
+          User            User   Group  Full
+Vserver   Name            ID     ID     Name
+--------- --------------- ------ ------ ----------------
+vs1       nobody          65535  65535  -
+vs1       pcuser          65534  65534  -
+vs1       root            0      1      -
+
+cluster1::> vserver services unix-group show -members
+Vserver        Name                ID
+vs1            daemon              1
+       Users: -
+vs1            nobody              65535
+       Users: -
+vs1            pcuser              65534
+       Users: -
+vs1            root                0
+       Users: -
+
+cluster1::> vserver cifs options modify -vserver vs1 -default-unix-user pcuser
+
+cluster1::> vserver cifs options show
+
+Vserver: vs1
+
+  Client Session Timeout : 900
+  Default Unix Group     : -
+  Default Unix User      : pcuser
+  Guest Unix User        : -
+  Read Grants Exec       : disabled
+  Read Only Delete       : disabled
+  WINS Servers           : -
+----

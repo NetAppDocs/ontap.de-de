@@ -1,0 +1,51 @@
+---
+permalink: nas-audit/fpolicy-passthrough-read-enhances-usability-concept.html 
+sidebar: sidebar 
+keywords: fpolicy, passthrough-read, enhances, usability, hierarchical, storage management 
+summary: 'PassThrough-Read ermöglicht es dem FPolicy Server (funktioniert als hierarchischer Storage Management (HSM) Server) Lesezugriff auf Offline-Dateien zu bieten, ohne die Datei vom sekundären Storage-System auf das primäre Storage-System zurückrufen zu müssen.' 
+---
+= FPolicy Passthrough-Read verbessert die Benutzerfreundlichkeit für hierarchisches Storage-Management
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+PassThrough-Read ermöglicht es dem FPolicy Server (funktioniert als hierarchischer Storage Management (HSM) Server) Lesezugriff auf Offline-Dateien zu bieten, ohne die Datei vom sekundären Storage-System auf das primäre Storage-System zurückrufen zu müssen.
+
+Wenn ein FPolicy Server so konfiguriert wird, dass HSM für Dateien auf einem SMB-Server bereitgestellt wird, erfolgt eine richtlinienbasierte Dateimigration, bei der die Dateien offline auf dem Sekundärspeicher gespeichert werden, während nur eine Stub-Datei im Primärspeicher bleibt. Obwohl eine Stub-Datei für Clients als normale Datei erscheint, handelt es sich eigentlich um eine spärliche Datei, die die gleiche Größe der ursprünglichen Datei hat. In der spärlichen Datei ist das SMB-Offline-Bit gesetzt und verweist auf die eigentliche Datei, die zum sekundären Storage migriert wurde.
+
+Wenn eine Leseanfrage für eine Offline-Datei eingeht, muss der angeforderte Inhalt in der Regel zurück im primären Storage abgerufen werden. Der Zugriff erfolgt dann über den Primär-Storage. Der Rückruf von Daten auf den primären Storage hat mehrere unerwünschte Auswirkungen. Zu den unerwünschten Auswirkungen gehört die höhere Latenz bei Client-Anfragen, die durch das Abrufen des Inhalts vor der Reaktion auf die Anforderung verursacht werden, und der höhere Verbrauch an Speicherplatz, der für abgerufene Dateien im primären Storage benötigt wird.
+
+FPolicy Passthrough-read ermöglicht dem HSM-Server (der FPolicy Server) einen Lesezugriff auf migrierte Offline-Dateien, ohne die Datei vom sekundären Storage-System auf das primäre Storage-System zurückrufen zu müssen. Statt die Dateien zurück auf den Primär-Storage zu zurückrufen, können Leseanforderungen direkt aus dem Sekundärspeicher abgerufen werden.
+
+[NOTE]
+====
+Copy Offload (ODX) wird bei FPolicy-Passthrough-Vorgang nicht unterstützt.
+
+====
+Passthrough-read verbessert die Benutzerfreundlichkeit durch die folgenden Vorteile:
+
+* Lesezugriffe können auch dann bedient werden, wenn der primäre Storage nicht über genügend Speicherplatz verfügt, um die angeforderten Daten zurück auf den primären Storage abzurufen.
+* Besseres Kapazitäts- und Performance-Management, wenn eine Zunahme des Datenaufrufs auftreten kann, beispielsweise wenn ein Skript oder eine Backup-Lösung auf viele Offline-Dateien zugreifen muss.
+* Leseanforderungen für Offline-Dateien in Snapshot Kopien können verarbeitet werden.
++
+Da Snapshot-Kopien nur leseverwendet werden, kann der FPolicy Server die ursprüngliche Datei nicht wiederherstellen, wenn die Stub-Datei in einer Snapshot-Kopie befindet. Dieses Problem wird durch die Verwendung von Passthrough-Read behoben.
+
+* Richtlinien können eingerichtet werden, die steuern, wenn Leseanforderungen über den Zugriff auf die Datei im sekundären Storage verarbeitet werden und wann die Offline-Datei an den primären Storage abgerufen werden soll.
++
+Beispielsweise kann eine Richtlinie auf dem HSM-Server erstellt werden, die die Anzahl der Zugriffszeiten für die Offline-Datei in einem bestimmten Zeitraum angibt, bis die Datei zurück zum primären Storage migriert wurde. Diese Art von Richtlinie verhindert das Abrufen von Dateien, auf die selten zugegriffen wird.
+
+
+
+
+
+== Wie Leseanforderungen gemanagt werden, wenn FPolicy Passthrough-read aktiviert ist
+
+Sie sollten verstehen, wie Leseanforderungen gemanagt werden, wenn FPolicy Passthrough-Read aktiviert ist, damit Sie die Konnektivität zwischen der Storage Virtual Machine (SVM) und den FPolicy Servern optimal konfigurieren können.
+
+Wenn FPolicy Passthrough-Read aktiviert ist und die SVM eine Anfrage für eine Offline-Datei erhält, sendet FPolicy über den Standard-Verbindungskanal eine Benachrichtigung an den FPolicy-Server (HSM-Server).
+
+Nach Erhalt der Benachrichtigung liest der FPolicy-Server die Daten aus dem in der Benachrichtigung gesendeten Dateipfad und sendet die angeforderten Daten über die Verbindung mit privilegierten Lesevorgängen mit Passthrough-Lesevorgängen, die zwischen der SVM und dem FPolicy-Server hergestellt wurde.
+
+Nach dem Senden der Daten reagiert der FPolicy-Server dann auf die Leseanforderung als ZULASSEN oder ABLEHNEN. Basierend darauf, ob die Leseanforderung zulässig oder verweigert wird, sendet ONTAP entweder die angeforderten Informationen oder sendet eine Fehlermeldung an den Client.

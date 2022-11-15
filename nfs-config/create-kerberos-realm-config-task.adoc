@@ -1,0 +1,45 @@
+---
+permalink: nfs-config/create-kerberos-realm-config-task.html 
+sidebar: sidebar 
+keywords: create, nfs, kerberos, realm, configuration 
+summary: Wenn ONTAP auf externe Kerberos-Server in Ihrer Umgebung zugreifen soll, müssen Sie zunächst die SVM so konfigurieren, dass sie einen vorhandenen Kerberos-Bereich verwendet. Dazu müssen Sie die Konfigurationswerte für den Kerberos-KDC-Server erfassen und dann den vserver nfs-kerberos-Bereich erstellen Befehl verwenden, um die Kerberos-Bereichskonfiguration auf einer SVM zu erstellen. 
+---
+= Erstellen Sie eine NFS-Kerberos-Bereichskonfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn ONTAP auf externe Kerberos-Server in Ihrer Umgebung zugreifen soll, müssen Sie zunächst die SVM so konfigurieren, dass sie einen vorhandenen Kerberos-Bereich verwendet. Dazu müssen Sie Konfigurationswerte für den Kerberos-KDC-Server erfassen und dann den verwenden `vserver nfs kerberos realm create` Befehl zum Erstellen der Kerberos-Bereichskonfiguration auf einer SVM.
+
+Der Cluster-Administrator sollte NTP auf dem Speichersystem, Client und KDC-Server konfiguriert haben, um Authentifizierungsprobleme zu vermeiden. Zeitunterschiede zwischen Client und Server (Taktabweichung) sind eine häufige Ursache für Authentifizierungsfehler.
+
+.Schritte
+. Wenden Sie sich an Ihren Kerberos-Administrator, um die entsprechenden Konfigurationswerte für das zu ermitteln `vserver nfs kerberos realm create` Befehl.
+. Erstellen einer Kerberos-Bereichskonfiguration auf der SVM:
++
+`vserver nfs kerberos realm create -vserver _vserver_name_ -realm _realm_name_ _{AD_KDC_server_values |AD_KDC_server_values}_ -comment "_text_"`
+
+. Vergewissern Sie sich, dass die Kerberos-Bereichskonfiguration erfolgreich erstellt wurde:
++
+`vserver nfs kerberos realm show`
+
+
+
+Mit dem folgenden Befehl wird eine NFS-Kerberos-Bereichskonfiguration für die SVM vs1 erstellt, die einen Microsoft Active Directory-Server als KDC-Server verwendet. Der Kerberos-Bereich ist AUTH.EXAMPLE.COM. Der Active Directory-Server hat den Namen ad-1 und seine IP-Adresse lautet 10.10.8.14. Die zulässige Taktschiefe beträgt 300 Sekunden (Standardeinstellung). Die IP-Adresse des KDC-Servers ist 10.10.8.14 und seine Portnummer ist 88 (Standard). „Microsoft Kerberos config“ ist der Kommentar.
+
+[listing]
+----
+vs1::> vserver nfs kerberos realm create -vserver vs1 -realm AUTH.EXAMPLE.COM -adserver-name ad-1
+-adserver-ip 10.10.8.14 -clock-skew 300 -kdc-ip 10.10.8.14 -kdc-port 88 -kdc-vendor Microsoft
+-comment "Microsoft Kerberos config"
+----
+Mit dem folgenden Befehl wird eine NFS Kerberos-Bereichskonfiguration für die SVM vs1 erstellt, die einen mit KDC verwendet. Der Kerberos-Bereich ist SECURITY.EXAMPLE.COM. Die zulässige Taktschiefe beträgt 300 Sekunden. Die IP-Adresse des KDC-Servers ist 10.10.9.1 und seine Portnummer ist 88. Der KDC-Anbieter weist auf einen UNIX-Anbieter hin. Die IP-Adresse des Verwaltungsservers ist 10.10.9.1, und seine Portnummer ist 749 (die Standardeinstellung). Die IP-Adresse des Kennwortservers lautet 10.10.9.1 und seine Portnummer ist 464 (Standard). „UNIX Kerberos config“ ist der Kommentar.
+
+[listing]
+----
+vs1::> vserver nfs kerberos realm create -vserver vs1 -realm SECURITY.EXAMPLE.COM. -clock-skew 300
+-kdc-ip 10.10.9.1 -kdc-port 88 -kdc-vendor Other -adminserver-ip 10.10.9.1 -adminserver-port 749
+-passwordserver-ip 10.10.9.1 -passwordserver-port 464 -comment "UNIX Kerberos config"
+----

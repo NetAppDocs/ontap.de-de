@@ -1,0 +1,124 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_manual_takeover.html 
+keywords: ontap, high, availability, ha, pair, manual, takeover, moving, move, epislon, manually, initiated 
+summary: Sie können eine Übernahme manuell durchführen, wenn für den Partner Wartungsarbeiten erforderlich sind und in anderen ähnlichen Situationen. 
+---
+= Manuelle Takeover-Befehle
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Sie können eine Übernahme manuell durchführen, wenn für den Partner Wartungsarbeiten erforderlich sind und in anderen ähnlichen Situationen. Je nach Status des Partners ist der Befehl, mit dem Sie die Übernahme durchführen, unterschiedlich.
+
+|===
+
+
+| Ihr Ziel ist | Befehl 
+
+
+| Übernehmen Sie den Partner-Node | `storage failover takeover` 
+
+
+| Überwachen Sie den Fortschritt der Übernahme, wenn die Aggregate des Partners zu dem Knoten verschoben werden, der die Übernahme macht | `storage failover show‑takeover` 
+
+
+| Zeigt den Storage-Failover-Status für alle Nodes im Cluster an | `storage failover show` 
+
+
+| Übernehmen Sie den Partner-Node, ohne LIFs zu migrieren | `storage failover takeover ‑skip‑lif‑migration‑before‑takeover true` 
+
+
+| Übernehmen Sie den Partner-Knoten, selbst wenn eine Festplatte nicht stimmt | `storage failover takeover ‑skip‑lif‑migration‑before‑takeover true` 
+
+
+| Übernehmen Sie den Partner-Knoten, auch wenn es eine nicht übereinstimmende ONTAP-Version gibt *Hinweis:* Diese Option wird nur während des unterbrechungsfreien ONTAP-Upgrades verwendet. | `storage failover takeover ‑option allow‑version‑mismatch` 
+
+
+| Übernehmen Sie den Partner-Node ohne die Durchführung einer Aggregatverschiebung | `storage failover takeover ‑bypass‑optimization true` 
+
+
+| Übernehmen Sie den Partner-Node, bevor der Partner die Zeit hat, seine Storage-Ressourcen ordnungsgemäß zu schließen | `storage failover takeover ‑option immediate` 
+|===
+[NOTE]
+====
+Bevor Sie den Befehl zum Storage-Failover mit der Option „sofort“ ausgeben, müssen Sie die Daten-LIFs mit dem folgenden Befehl auf einen anderen Node migrieren: `network interface migrate-all -node _node_`
+
+Wenn Sie den angeben `storage failover takeover ‑option immediate` Befehl ohne die erste Migration der Daten-LIFs erfolgt die Daten-LIF-Migration vom Node erheblich, selbst wenn der `skip‑lif‑migration‑before‑takeover` Option wurde nicht angegeben.
+
+Ebenso wird, wenn Sie die sofortige Option angeben, die ausgehandelte Übernahme Optimierung übergangen, auch wenn die Option Bypass‑Optimierung auf _false_ gesetzt ist.
+
+====
+
+
+== Verschieben von Epsilon für bestimmte manuell initiierte Übernahmen
+
+Sie sollten Epsilon verschieben, wenn bei manuell initiierten Übernahmen erwartet wird, dass ein unerwarteter Node-Ausfall des Speichersystems weg von einem clusterweiten Verlust von Quorum auftritt.
+
+Um geplante Wartungsarbeiten durchzuführen, müssen Sie einen der Nodes in einem HA-Paar übernehmen. Um Unterbrechungen von ungeplanten Client-Daten für die übrigen Nodes zu vermeiden, muss Cluster-weite Quorum beibehalten werden. In manchen Fällen kann die Übernahme zu einem Cluster führen, das einen unerwarteten Node-Ausfall von dem clusterweiten Verlust von Quorum darstellt.
+
+Dies kann auftreten, wenn der übernonder Node das Epsilon hält oder wenn der Knoten mit Epsilon nicht ordnungsgemäß ist. Um ein robusteres Cluster aufrechtzuerhalten, können Sie Epsilon auf einen gesunden Node übertragen, der nicht übernommen wird. In der Regel ist dies der HA-Partner.
+
+An der Quorum-Abstimmung nehmen nur gesunde und berechtigte Knoten Teil. Zur Aufrechterhaltung des clusterweiten Quorums sind mehr als N/2 Stimmen erforderlich (wobei _N_ die Summe gesunder, berechtigter Online-Nodes darstellt). Bei Clustern mit einer geraden Anzahl von Online-Nodes fügt Epsilon zusätzliches Stimmgewicht hinzu, um das Quorum für den Node zu wahren, dem er zugewiesen ist.
+
+
+NOTE: Obwohl das Abstimmen der Cluster-Formation mit dem geändert werden kann `cluster modify ‑eligibility false` Mit dem Befehl sollten Sie dies vermeiden, ausgenommen Situationen wie das Wiederherstellen der Node-Konfiguration oder verlängerte Node-Wartung. Wenn Sie einen Node als nicht teilnahmeberechtigt festlegen, stellt er keine SAN-Daten mehr bereit, bis der Node auf „teilnahmeberechtigt“ zurückgesetzt und neu gebootet wird. Der Zugriff auf NAS-Daten auf den Node kann auch beeinträchtigt werden, wenn der Node nicht verfügbar ist.
+
+.Schritte
+. Überprüfen Sie den Cluster-Status und bestätigen Sie, dass das Epsilon von einem gesunden Node gehalten wird, der nicht übernommen wird:
++
+.. Ändern Sie die erweiterte Berechtigungsebene, und bestätigen Sie, dass Sie fortfahren möchten, wenn die Eingabeaufforderung für den erweiterten Modus (*>) angezeigt wird:
++
+`set -privilege advanced`
+
+.. Bestimmen Sie, auf welchem Node das Epsilon enthalten ist:
++
+`cluster show`
+
++
+Im folgenden Beispiel hält Node1 Epsilon:
+
++
+|===
+
+
+| Knoten | Systemzustand | Teilnahmevoraussetzungen | Epsilon 
+
+
+ a| 
+Node1 Node2
+ a| 
+Richtig
+ a| 
+Richtig
+ a| 
+Richtig falsch
+
+|===
++
+Wenn der Knoten, den Sie übernehmen möchten, das Epsilon nicht hält, fahren Sie mit Schritt 4 fort.
+
+
+
+. Entfernen Sie das Epsilon vom Knoten, den Sie übernehmen möchten:
++
+`cluster modify -node Node1 -epsilon false`
+
+. Weisen Sie dem Partner-Node Epsilon zu (in diesem Beispiel Node2):
++
+`cluster modify -node Node2 -epsilon true`
+
+. Durchführen des Übernahmevorgangs:
++
+`storage failover takeover -ofnode _node_name_`
+
+. Zurück zur Administratorberechtigungsebene:
++
+`set -privilege admin`
+
+

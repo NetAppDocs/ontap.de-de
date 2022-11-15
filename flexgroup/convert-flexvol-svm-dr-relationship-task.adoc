@@ -1,0 +1,83 @@
+---
+permalink: flexgroup/convert-flexvol-svm-dr-relationship-task.html 
+sidebar: sidebar 
+keywords: convert, flexvol, flexgroup, svm-dr 
+summary: Ab ONTAP 9.10.1 können Sie ein FlexVol Volume in ein FlexGroup Volume auf einer SVM-DR-Quelle konvertieren. 
+---
+= Konvertieren eines FlexVol Volumes in ein FlexGroup Volume innerhalb einer SVM-DR-Beziehung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.10.1 können Sie ein FlexVol Volume in ein FlexGroup Volume auf einer SVM-DR-Quelle konvertieren.
+
+.Was Sie benötigen
+* Das zu konvertierenden FlexVol Volume muss online sein.
+* Die Vorgänge und Konfigurationen auf dem FlexVol Volume müssen mit dem Konvertierungsprozess kompatibel sein.
++
+Wenn das FlexVol-Volume nicht kompatibel ist und die Volume-Konvertierung abgebrochen wird, wird eine Fehlermeldung erzeugt. Sie können Korrekturmaßnahmen ergreifen und die Konvertierung erneut versuchen. Weitere Informationen finden Sie unter xref:convert-flexvol-concept.html#considerations-for-converting-flexvol-volumes-to-flexgroup-volumes [Überlegungen für die Konvertierung von FlexVol Volumes in FlexGroup Volumes]
+
+
+
+.Schritte
+. Aktualisieren Sie über das Ziel die SVM-DR-Beziehung:
++
+`*snapmirror update -destination-path destination_svm_name: -source-path source_svm_name:*`
+
+. Sicherstellen, dass die SVM-DR-Beziehung in einem SnapMirror Zustand ist und nicht unterbrochen wird:
++
+`*snapmirror show*`
+
+. Vergewissern Sie sich von der Ziel-SVM, dass das FlexVol Volume zur Konvertierung bereit ist:
++
+`*volume conversion start -vserver svm_name -volume vol_name -check-only true*`
+
+. Deaktivieren Sie vom Ziel aus Transfers für die SVM-DR-Beziehung:
++
+`*snapmirror quiesce -destination-path dest_svm:*`
+
+. Konvertierung starten:
++
+`*volume conversion start -vserver svm_name -volume vol_name*`
+
+. Vergewissern Sie sich, dass die Konvertierung erfolgreich ist:
++
+`*volume show vol_name -fields -volume-style-extended,state*`
+
++
+[listing]
+----
+cluster-1::*> volume show my_volume -fields volume-style-extended,state
+
+vserver   volume     state    volume-style-extended
+-------       ---------     ------    ---------------------
+vs0     my_volume  online  flexgroup
+----
+. Setzen Sie Transfer im Ziel-Cluster für die Beziehung fort:
++
+`*snapmirror resume -destination-path dest_svm:*`
+
+. Führen Sie vom Ziel-Cluster ein Update aus, um die Konvertierung an das Ziel zu übertragen:
++
+`*snapmirror update -destination-path dest_svm:*`
+
+. Stellen Sie sicher, dass die SVM-DR-Beziehung in einem SnapMirror Zustand ist und nicht abgebrochen wird:
++
+`*snapmirror show*`
+
+. Stellen Sie sicher, dass die Konvertierung auf dem Ziel aufgetreten ist:
++
+`*volume show vol_name -fields -volume-style-extended,state*`
+
++
+[listing]
+----
+cluster-2::*> volume show my_volume -fields volume-style-extended,state
+
+vserver    volume       state     volume-style-extended
+-------       -------           ------     ---------------------
+vs0_dst   my_volume  online  flexgroup
+----
+

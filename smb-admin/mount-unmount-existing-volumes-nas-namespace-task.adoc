@@ -1,0 +1,76 @@
+---
+permalink: smb-admin/mount-unmount-existing-volumes-nas-namespace-task.html 
+sidebar: sidebar 
+keywords: volume, mount, nas, namespace, configure, client, access, data, contain, storage, virtual, machine, svm, junction, point, mount, unmount, mount or unmount existing volumes in the nas namespace 
+summary: 'Ein Volume muss auf dem NAS Namespace gemountet werden, bevor Sie den NAS-Client-Zugriff auf Daten in den Storage Virtual Machine (SVM)-Volumes konfigurieren können. Sie können ein Volume an einen Verbindungspunkt mounten, wenn es derzeit nicht angehängt ist. Sie können auch die Bereitstellung von Volumes aufheben.' 
+---
+= Mounten oder Unmounten vorhandener Volumes im NAS Namespace
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein Volume muss auf dem NAS Namespace gemountet werden, bevor Sie den NAS-Client-Zugriff auf Daten in den Storage Virtual Machine (SVM)-Volumes konfigurieren können. Sie können ein Volume an einen Verbindungspunkt mounten, wenn es derzeit nicht angehängt ist. Sie können auch die Bereitstellung von Volumes aufheben.
+
+Wenn Sie ein Volume unmounten und offline schalten, sind alle Daten innerhalb des Verbindungspunkts, einschließlich Daten in Volumes mit Verbindungspunkten im Namespace des abgehängt Volumes, für NAS-Clients nicht verfügbar.
+
+[NOTE]
+====
+Um den NAS-Client-Zugriff auf ein Volume zu beenden, reicht es nicht aus, das Volume einfach zu entmounten. Sie müssen das Volume offline schalten oder andere Schritte Unternehmen, um sicherzustellen, dass Client-seitige Datei-Handle-Caches nicht validiert werden. Weitere Informationen finden Sie im folgenden Knowledge Base-Artikel:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/NFSv3_clients_still_have_access_to_a_volume_after_being_removed_from_the_namespace_in_ONTAP[NFSv3 Clients haben nach dem Entfernen aus dem Namespace in ONTAP weiterhin Zugriff auf ein Volume.
+
+====
+Wenn Sie ein Volume unmounten und offline schalten, gehen die Daten innerhalb des Volume nicht verloren. Zusätzlich bleiben vorhandene Volume-Exportrichtlinien und SMB-Freigaben, die auf dem Volume oder auf Verzeichnissen und Verbindungspunkten innerhalb des nicht abgehängt Volume erstellt wurden, erhalten. Wenn Sie das nicht abgesetzte Volume erneut mounten, können NAS-Clients mithilfe vorhandener Exportrichtlinien und SMB-Freigaben auf die Daten im Volume zugreifen.
+
+.Schritte
+. Führen Sie die gewünschte Aktion aus:
++
+|===
+| Ihr Ziel ist | Geben Sie die Befehle ein... 
+
+
+ a| 
+Mounten Sie ein Volume
+ a| 
+`volume mount -vserver _svm_name_ -volume _volume_name_ -junction-path _junction_path_`
+
+
+
+ a| 
+Unmount eines Volumes aufheben
+ a| 
+`volume unmount -vserver _svm_name_ -volume _volume_name_ volume offline -vserver _svm_name_ -volume _volume_name_`
+
+|===
+. Vergewissern Sie sich, dass sich das Volume im gewünschten Mount-Status befindet: `volume show -vserver _vserver_name_ -volume _volume_name_ -fields state,junction-path,junction-active`
+
+
+Das folgende Beispiel hängt ein Volume mit dem Namen „`sales`“ auf der SVM vs1 bis zum Verbindungspunkt ab `/sales`:
+
+[listing]
+----
+cluster1::> volume mount -vserver vs1 -volume sales -junction-path /sales
+
+cluster1::> volume show -vserver vs1 state,junction-path,junction-active
+
+vserver   volume     state     junction-path   junction-active
+--------- ---------- -------- --------------- ----------------
+vs1       data       online    /data           true
+vs1       home4      online    /eng/home       true
+vs1       sales      online    /sales          true
+----
+Im folgenden Beispiel wird ein Volume mit dem Namen „`data`“ auf SVM vs1 abgehängt und offline gesetzt:
+
+[listing]
+----
+cluster1::> volume unmount -vserver vs1 -volume data
+cluster1::> volume offline -vserver vs1 -volume data
+
+cluster1::> volume show -vserver vs1 -fields state,junction-path,junction-active
+
+vserver   volume     state     junction-path   junction-active
+--------- ---------- --------- --------------- ---------------
+vs1       data       offline   -               -
+vs1       home4      online    /eng/home       true
+vs1       sales      online    /sales          true
+----

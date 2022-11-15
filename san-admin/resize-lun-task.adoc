@@ -1,0 +1,98 @@
+---
+permalink: san-admin/resize-lun-task.html 
+sidebar: sidebar 
+keywords: decrease, increase, resize, size, modify, change, lun 
+summary: Sie können eine LUN vergrößern oder verkleinern. 
+---
+= Ändern der Größe einer LUN
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können eine LUN vergrößern oder verkleinern.
+
+[NOTE]
+====
+Die Größe von Solaris LUNs kann nicht geändert werden.
+
+====
+
+
+== Vergrößern einer LUN
+
+Die Größe, in der Sie Ihre LUN vergrößern können, hängt von Ihrer Version von ONTAP ab.
+
+[cols="2"]
+|===
+| ONTAP-Version | Maximale LUN-Größe 
+
+
+| ONTAP 9.8 und höher  a| 
+* 128 TB für alle SAN Arrays (ASAs)
+* 16 TB für nicht-ASAs
+
+
+
+
+| 9.5. ONTAP 9.6, 9.7 | 16 TB 
+
+
+| ONTAP 9.4 oder früher | 10 mal die ursprüngliche LUN-Größe, aber nicht größer als 16 TB, was die maximale LUN-Größe ist. Wenn Sie beispielsweise eine 100-GB-LUN erstellen, können Sie sie nur auf 1,000 GB erweitern. Die tatsächliche maximale Größe der LUN beträgt möglicherweise nicht genau 16 TB. ONTAP rundet das Limit auf etwas weniger ab. 
+|===
+Sie müssen die LUN nicht in den Offline-Modus versetzen, um die Größe zu erhöhen. Nachdem Sie die Größe jedoch erhöht haben, müssen Sie die LUN auf dem Host erneut scannen, damit der Host die Größenänderung erkennen kann.
+
+Auf der Seite Command Reference finden Sie Informationen zum `lun resize` Befehl Weitere Informationen zum Ändern der Größe einer LUN.
+
+[role="tabbed-block"]
+.Schritte
+====
+.System Manager
+--
+Vergrößern Sie die Größe einer LUN mit ONTAP System Manager (9.7 und höher).
+
+. Klicken Sie im System Manager auf *Storage > LUNs*.
+. Klicken Sie Auf image:icon_kabob.gif["Kabob-Symbol"] Und wählen Sie *Bearbeiten*.
+. Erhöhen Sie unter *Speicherung und Optimierung* die Größe der LUN und *Speichern*.
+
+
+--
+.CLI
+--
+Vergrößern Sie die Größe einer LUN mit der ONTAP-CLI.
+
+. Vergrößern Sie die LUN:
++
+`lun resize -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -size _lun_size_`
+
+. Überprüfen Sie die erweiterte LUN-Größe:
++
+`lun show -vserver _vserver_name_`
+
++
+[NOTE]
+====
+Die ONTAP-Vorgänge runden die tatsächliche maximale Größe der LUN ab, sodass sie etwas kleiner als der erwartete Wert ist. Außerdem kann die tatsächliche LUN-Größe je nach OS-Typ der LUN leicht variieren. Führen Sie im erweiterten Modus die folgenden Befehle aus, um den Wert der genauen Größe zu ermitteln:
+
++
+`set -unit B`
+
++
+`lun show -fields max-resize-size -volume _volume_name_ -lun _lun_name_`
+
+====
+. Scannen Sie die LUN auf dem Host erneut.
+. Befolgen Sie die Host-Dokumentation, um die neu erstellte LUN-Größe für das Host-Dateisystem sichtbar zu machen.
+
+
+--
+====
+
+
+== Verkleinern Sie die Größe einer LUN
+
+[role="lead"]
+Bevor Sie die Größe einer LUN verkleinern, muss der Host die Blöcke mit den LUN-Daten an die Grenze der kleineren LUN-Größe migrieren. Sie sollten ein Tool wie SnapDrive für Windows verwenden, um sicherzustellen, dass die LUN ordnungsgemäß reduziert wird, ohne Blöcke mit LUN-Daten zu beeinträchtigen. Es wird nicht empfohlen, die Größe Ihrer LUN manuell zu verringern.
+
+Nach der Verkleinerung der LUN wird der Initiator automatisch von ONTAP benachrichtigt, dass die LUN-Größe gesunken ist. Auf Ihrem Host sind jedoch möglicherweise zusätzliche Schritte erforderlich, damit der Host die neue LUN-Größe erkennt. Informationen zur Reduzierung der Größe der Host-Dateistruktur finden Sie in der Hostdokumentation.

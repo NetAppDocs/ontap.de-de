@@ -1,0 +1,78 @@
+---
+permalink: encryption-at-rest/restore-external-encryption-keys-93-later-task.html 
+sidebar: sidebar 
+keywords: restoring, external key management, encryption keys 
+summary: Sie können externe Verschlüsselungsmanagementschlüssel manuell wiederherstellen und sie auf einen anderen Node verschieben. Dies sollten Sie tun, wenn Sie einen Node neu starten, der während des Erstellungsens der Schlüssel für das Cluster vorübergehend nicht verfügbar war. 
+---
+= Wiederherstellung der externen Verschlüsselungsschlüssel für das Verschlüsselungsmanagement
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die Verschlüsselungsschlüssel für das externe Verschlüsselungsmanagement manuell wiederherstellen und sie „`Push`“ auf einen anderen Node verschieben. Dies sollten Sie tun, wenn Sie einen Node neu starten, der während des Erstellungsens der Schlüssel für das Cluster vorübergehend nicht verfügbar war.
+
+Sie müssen ein Cluster- oder SVM-Administrator sein, um diese Aufgabe durchzuführen.
+
+In ONTAP 9.6 und höher können Sie die verwenden `security key-manager key query -node node_name` Befehl zum Überprüfen, ob Ihr Schlüssel wiederhergestellt werden muss.
+
+In ONTAP 9.5 und früher können Sie die verwenden `security key-manager key show` Befehl zum Überprüfen, ob Ihr Schlüssel wiederhergestellt werden muss.
+
+.Schritte
+. Wenn Sie ONTAP 9.8 oder höher verwenden und Ihr Root-Volume verschlüsselt ist, gehen Sie wie folgt vor:
++
+Wenn Sie ONTAP 9.7 oder früher oder ONTAP 9.8 oder höher verwenden und Ihr Root-Volume nicht verschlüsselt ist, überspringen Sie diesen Schritt.
+
++
+.. Legen Sie die Bootargs fest: +
+`setenv kmip.init.ipaddr <ip-address>`+
+`setenv kmip.init.netmask <netmask>`+
+`setenv kmip.init.gateway <gateway>`+
+`setenv kmip.init.interface e0M`+
+`boot_ontap`
+.. Starten Sie den Knoten im Startmenü, und wählen Sie Option `(11) Configure node for external key management`.
+.. Befolgen Sie die Anweisungen zum Eingeben des Managementzertifikats.
++
+Nachdem alle Informationen zum Managementzertifikat eingegeben wurden, kehrt das System zum Boot-Menü zurück.
+
+.. Wählen Sie im Startmenü Option `(1) Normal Boot`.
+
+
+. Wiederherstellen des Schlüssels:
++
+[cols="35,65"]
+|===
+
+
+| Für diese ONTAP-Version... | Befehl 
+
+
+ a| 
+ONTAP 9.6 und höher
+ a| 
+`security key-manager external restore -vserver SVM -node node -key-server host_name|IP_address:port -key-id key_id -key-tag key_tag`
+
+
+
+ a| 
+ONTAP 9.5 und früher
+ a| 
+`security key-manager restore -node node -address IP_address -key-id key_id -key-tag key_tag`
+
+|===
++
+[NOTE]
+====
+`node` Standardeinstellung für alle Knoten. Eine vollständige Befehlssyntax finden Sie in den man-Pages. Dieser Befehl wird nicht unterstützt, wenn das integrierte Verschlüsselungsmanagement aktiviert ist.
+
+====
++
+Mit dem folgenden ONTAP 9.6-Befehl werden die Authentifizierungsschlüssel des externen Schlüsselmanagements auf alle Nodes in wiederhergestellt `cluster1`:
+
++
+[listing]
+----
+clusterl::> security key-manager external restore
+----
+

@@ -1,0 +1,143 @@
+---
+sidebar: sidebar 
+permalink: high-availability/halt-reboot-node-wo-takeover-task.html 
+keywords: high availability pair, hair, inhibit-takeover, reboot, epsilon, HA 
+summary: Sie halten einen Node in einem Cluster mit zwei Nodes an oder starten neu, ohne die Übernahme zu initiieren, wenn Sie bestimmte Hardware-Wartungsarbeiten auf einem Node oder Shelf durchführen. Und Sie möchten die Ausfallzeiten begrenzen, indem Sie den Partner-Node aktiv halten. Oder wenn es Probleme gibt, eine manuelle Übernahme zu verhindern und Sie wollen die Aggregate des Partner-Knotens auf und stellen Daten bereit zu halten. Wenn Ihnen der technische Support bei der Behebung von Problemen hilft, sollten Sie dieses Verfahren möglicherweise im Rahmen dieser Bemühungen durchführen. 
+---
+= Stoppen oder starten Sie einen Node neu, ohne Übernahme in einem Cluster mit zwei Nodes zu initiieren
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie halten einen Node in einem Cluster mit zwei Nodes an oder starten neu, ohne die Übernahme zu initiieren, wenn Sie bestimmte Hardware-Wartungsarbeiten auf einem Node oder Shelf durchführen. Und Sie möchten die Ausfallzeiten begrenzen, indem Sie den Partner-Node aktiv halten. Oder wenn es Probleme gibt, eine manuelle Übernahme zu verhindern und Sie wollen die Aggregate des Partner-Knotens auf und stellen Daten bereit zu halten. Wenn Ihnen der technische Support bei der Behebung von Problemen hilft, sollten Sie dieses Verfahren möglicherweise im Rahmen dieser Bemühungen durchführen.
+
+.Über diese Aufgabe
+* Bevor Sie die Übernahme sperren (mit dem `-inhibit-takeover true` Parameter), deaktivieren Sie Cluster HA.
+
+
+[CAUTION]
+====
+* In einem Cluster mit zwei Nodes stellt Cluster HA sicher, dass der Ausfall eines Node das Cluster nicht deaktiviert. Wenn Sie jedoch Cluster HA nicht vor Verwendung des deaktivieren  `-inhibit-takeover true` Parameter, beide Nodes stellen nicht mehr Daten bereit.
+* Wenn Sie versuchen, einen Node vor dem Deaktivieren von Cluster HA anzuhalten oder neu zu booten, gibt ONTAP eine Warnung aus und weist Sie an, die Cluster-HA zu deaktivieren.
+
+
+====
+* Sie migrieren LIFs (logische Schnittstellen) zum Partner-Node, der online bleiben soll.
+* Wenn auf dem Node, den Sie beenden oder neu booten, gibt es Aggregate, die Sie behalten möchten, verschieben Sie sie auf den Node, der online bleiben soll.
+
+
+.Schritte
+. Vergewissern Sie sich, dass beide Nodes in einem ordnungsgemäßen Zustand sind:
+`cluster show`
++
+Für beide Nodes `true` Wird im angezeigt `Health` Spalte.
+
++
+[listing]
+----
+cluster::> cluster show
+Node         Health  Eligibility
+------------ ------- ------------
+node1        true     true
+node2        true     true
+----
+. Migrieren Sie alle LIFs vom Node, den Sie anhalten oder neu auf den Partner-Node starten:
+`network interface migrate-all -node _node_name_`
+. Wenn auf dem Node unterbrochen oder neu gebootet werden soll, gibt es Aggregate, die Sie beim Ausfall des Nodes online halten möchten, verschieben Sie sie auf den Partner-Node. Anderenfalls fahren Sie mit dem nächsten Schritt fort.
++
+.. Zeigen Sie die Aggregate auf dem Knoten, den Sie anhalten oder neu starten möchten:
+`storage aggregates show -node _node_name_`
++
+Beispielsweise ist node1 der Node, der angehalten oder neu gebootet werden wird:
+
++
+[listing]
+----
+cluster::> storage aggregates show -node node1
+Aggregate  Size  Available  Used%  State  #Vols   Nodes   RAID  Status
+---------  ----  ---------  -----  -----  -----   -----   ----  ------
+aggr0_node_1_0
+           744.9GB   32.68GB   96% online       2 node1    raid_dp,
+                                                                normal
+aggr1       2.91TB    2.62TB   10% online       8 node1    raid_dp,
+                                                                normal
+aggr2
+            4.36TB    3.74TB   14% online      12 node1    raid_dp,
+                                                                normal
+test2_aggr  2.18TB    2.18TB    0% online       7 node1    raid_dp,
+                                                                normal
+4 entries were displayed.
+----
+.. Verschieben Sie die Aggregate auf den Partner-Node:
+`storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
++
+Zum Beispiel werden die Aggregate aggr1, aggr2 und test2_aggr von node1 auf node2 verschoben:
+
++
+`storage aggregate relocation start -node _node1_ -destination _node2_ -aggregate-list _aggr1_,_aggr2_,_test2_aggr_`
+
+
+
+. Deaktivieren von Cluster-HA:
+`cluster ha modify -configured false`
++
+Die Rückgabeausgabe bestätigt, dass HA deaktiviert ist: `Notice: HA is disabled`
+
++
+
+NOTE: Dieser Vorgang deaktiviert nicht das Storage-Failover.
+
+. Stoppen oder booten Sie neu und hemmen Sie die Übernahme des Ziel-Nodes mithilfe des entsprechenden Befehls:
++
+** `system node halt -node _node_name_ -inhibit-takeover true`
+** `system node reboot -node _node_name_ -inhibit-takeover true`
++
+
+NOTE: In der Befehlsausgabe wird eine Warnung angezeigt. Sie werden gefragt, ob Sie fortfahren möchten, und geben Sie ein `y`.
+
+
+
+. Vergewissern Sie sich, dass der Node, der noch online ist, sich in einem ordnungsgemäßen Zustand befindet (während der Partner ausfällt):
+`cluster show`
++
+Für den Online-Node: `true` Wird im angezeigt `Health` Spalte.
+
++
+
+NOTE: In der Ausgabe des Befehls finden Sie eine Warnung, dass für die Cluster-HA nicht konfiguriert ist. Sie können die Warnung derzeit ignorieren.
+
+. Führen Sie die Aktionen durch, die zum Anhalten oder Neustarten des Knotens erforderlich sind.
+. Booten Sie den Offline-Node über die LOADER-Eingabeaufforderung:
+`boot_ontap`
+. Vergewissern Sie sich, dass beide Nodes in einem ordnungsgemäßen Zustand sind:
+`cluster show`
++
+Für beide Nodes `true` Wird im angezeigt `Health` Spalte.
+
++
+
+NOTE: In der Ausgabe des Befehls finden Sie eine Warnung, dass für die Cluster-HA nicht konfiguriert ist. Sie können die Warnung derzeit ignorieren.
+
+. Erneute Aktivierung von Cluster HA:
+`cluster ha modify -configured true`
+. Wenn Sie zuvor in diesem Verfahren Aggregate zum Partner-Node verschoben haben, verschieben Sie sie zurück zu ihrem Home-Node. Andernfalls fahren Sie mit dem nächsten Schritt fort:
+`storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
++
+Zum Beispiel werden Aggregate aggr1, aggr2 und test2_aggr von Node node2 auf Node node1 verschoben:
+`storage aggregate relocation start -node _node2_ -destination _node1_ -aggregate-list _aggr1_,_aggr2_,_test2_aggr_`
+
+. Zurücksetzen von LIFs auf ihre Home Ports:
++
+.. Zeigen Sie LIFs an, die nicht zu Hause sind:
+`network interface show -is-home false`
+.. Wenn keine Home-LIFs wurden, die nicht vom ausgefallenen Node migriert wurden, vergewissern Sie sich, dass sie vor dem Zurücksetzen geschützt sind.
+.. Wenn dies sicher ist, stellen Sie alle LIFs nach Hause zurück.
+`network interface revert *`
+
+
+

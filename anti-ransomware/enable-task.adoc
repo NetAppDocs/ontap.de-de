@@ -1,0 +1,122 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/enable-task.html 
+keywords: anti-ransomware overview, ransomware, security, introduce, autotonomous, protection, arp, detection, threat, attack, suspect, what ontap anti-ransomware detects, entropy, abnormal volume activity, extension conformity, how to recover data in after a ransomware attack, ransomware protection strategy 
+summary: 'Autonomer Ransomware-Schutz (ARP) kann auf neuen oder vorhandenen Volumes aktiviert werden. Sie aktivieren zuerst ARP im Learning-Modus, in dem das System die Workloads analysiert, um das normale Verhalten zu charakterisieren, dann wechseln Sie in den aktiven Modus, in dem anormale Aktivitäten für Ihre Bewertung markiert sind.' 
+---
+= Autonomer Schutz Vor Ransomware
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Ab ONTAP 9.10.1 kann der autonome Ransomware-Schutz (ARP) auf neuen oder bestehenden Volumes aktiviert werden. Sie aktivieren zuerst ARP im Learning-Modus, in dem das System die Workloads analysiert, um das normale Verhalten zu charakterisieren, dann wechseln Sie in den aktiven Modus, in dem anormale Aktivitäten für Ihre Bewertung markiert sind.
+
+.Was Sie und#8217;ll benötigen
+* Eine Storage-VM, die für NFS oder SMB (oder beides) aktiviert ist
+* Für Ihre ONTAP-Version wird die korrekte Lizenz installiert.
++
+[cols="2*"]
+|===
+| ONTAP-Versionen | Lizenz 
+
+
+ a| 
+ONTAP 9.8-9.10.1
+ a| 
+MT_EK_MGMT (mandantenfähiger Schlüsselmanagement)
+
+
+
+ a| 
+ONTAP 9.11.1 und höher
+ a| 
+Anti_Ransomware
+
+|===
+* Ein NAS-Workload mit konfigurierten Clients.
+* Das zu sicherende Volume muss über einen aktiven Verbindungspfad verfügen.
+* Optional, aber empfohlen: Das EMS-System ist so konfiguriert, dass es E-Mail-Benachrichtigungen sendet, die Benachrichtigungen über ARP-Aktivitäten enthalten. Weitere Informationen finden Sie unter link:../error-messages/configure-ems-events-send-email-task.html["Konfigurieren Sie EMS-Ereignisse zum Senden von E-Mail-Benachrichtigungen"].
+
+
+NetApp ARP beinhaltet einen ersten Lernzeitraum (auch „dry run“ genannt), in dem ein ONTAP-System lernt, welche Dateiendungen gültig sind, und verwendet die analysierten Daten zur Entwicklung von Alarmprofilen. Nachdem Sie ARP im Learning-Modus ausreichend Zeit ausgeführt haben, um Workload-Merkmale zu bewerten, können Sie in den aktiven Modus wechseln und mit dem Schutz Ihrer Daten beginnen. Ransomware erfasst und analysiert weiterhin Daten, um Alarm-Profile zu verfeinern.
+
+Während des Lernzeitraums lernt das System automatisch die Workload-Merkmale eines konfigurierten Volumes und führt spezielle Beobachtungen und Musteranalysen durch.
+
+Es wird eine Lerndauer von 30 Tagen empfohlen. Obwohl Sie jederzeit vom Lernen in den aktiven Modus wechseln können, kann ein frühes Schalten zu vielen Fehlalarme führen.
+
+In der ONTAP-CLI können Sie den verwenden `security anti-ransomware volume workload-behavior show` Befehl zum Anzeigen der bisher erkannten Dateierweiterungen. Es wird jedoch empfohlen, dass Sie dieses Tool nicht verwenden, um den Lernzeitraum zu verkürzen.
+
+Sie können ARP auf einem vorhandenen Volume aktivieren, oder Sie können ein neues Volume erstellen und ARP von Anfang an aktivieren.
+
+
+NOTE: In vorhandenen Volumes gelten die Lern- und aktiven Modi nur für neu geschriebene Daten, nicht für bereits vorhandene Daten im Volume. Die vorhandenen Daten werden nicht gescannt und analysiert, da die Merkmale eines früheren normalen Datenverkehrs auf der Grundlage der neuen Daten angenommen werden, nachdem das Volume für ARP aktiviert wurde.
+
+In der ONTAP CLI wurde eine neue Befehlfamilie eingeführt, um diese Funktion zu managen: `security anti-ransomware volume`. Sie können auch die verwenden `volume modify` Befehl mit dem `-anti-ransomware` Parameter zum Verwalten der Funktion.
+
+[role="tabbed-block"]
+.Schritte
+====
+.System Manager
+--
+. Klicken Sie auf *Storage > Volumes* und wählen Sie dann das Volume aus, das Sie schützen möchten.
+. Klicken Sie auf der Registerkarte *Sicherheit* der *Volumes* Übersicht auf *Status*, um im Feld *Anti-Ransomware* von deaktiviert auf aktiviert zu wechseln.
+. Wenn der Lernzeitraum vorbei ist, schalten Sie ARP in den aktiven Modus um.
++
+.. Klicken Sie auf *Storage > Volumes* und wählen Sie dann das Volume aus, das für den aktiven Modus bereit ist.
+.. Klicken Sie auf der Registerkarte *Sicherheit* der *Bände* Übersicht in der Anti-Ransomware Box auf *Switch* to Active Mode.
+
+
+. Sie können den ARP-Zustand des Volumens immer in der *Anti-Ransomware* Box überprüfen. Um den ARP-Status für alle Volumes anzuzeigen: Klicken Sie im Fensterbereich *Volumes* auf *ein-/Ausblenden*, und stellen Sie dann sicher, dass der Status *Anti-Ransomware* aktiviert ist.
+
+
+--
+.CLI
+--
+. Ändern Sie ein vorhandenes Volume, um Ransomware-Schutz im Learning-Modus zu ermöglichen:
++
+`security anti-ransomware volume dry-run -volume _vol_name_ -vserver _svm_name_`
+
++
+Ransomware kann auch mit dem aktiviert werden `volume modify` Befehl:
+
++
+`volume modify -volume _vol_name_ -vserver _svm_name_ -anti-ransomware-state dry-run`
+
++
+Zudem besteht die Möglichkeit, vor der Bereitstellung von Daten ein neues Volume mit aktivierter Ransomware-Sicherung zu erstellen.
+
++
+`volume create -volume _vol_name_ -vserver _svm_name_  -aggregate _aggr_name_ -size _nn_ -anti-ransomware-state dry-run -junction-path /_path_name_`
+
++
+
+NOTE: Sie sollten ARP immer zunächst im Status Dry-run aktivieren. Beginnend mit dem aktiven Zustand kann zu überhöhten falsch positiven Berichten führen.
+
+. Wenn der Lernzeitraum zu Ende ist, ändern Sie das geschützte Volume, um in den aktiven Modus zu wechseln:
++
+`security anti-ransomware volume enable -volume _vol_name_ -vserver _svm_name_`
+
++
+Sie können auch mit dem Befehl „Volume ändern“ in den aktiven Modus wechseln:
+
++
+`volume modify -volume _vol_name_ -vserver _svm_name_ -anti-ransomware-state active`
+
+. Überprüfen Sie den ARP-Status des Volumes.
++
+`security anti-ransomware volume show`
+
+
+
+--
+====

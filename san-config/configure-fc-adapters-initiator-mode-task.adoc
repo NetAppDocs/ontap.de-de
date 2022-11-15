@@ -1,0 +1,53 @@
+---
+permalink: san-config/configure-fc-adapters-initiator-mode-task.html 
+sidebar: sidebar 
+keywords: configure, fc adapters, initiator mode 
+summary: 'Sie können individuelle FC-Ports der integrierten Adapter und bestimmte FC-Adapterkarten für den Initiator-Modus konfigurieren. Der Initiator-Modus wird verwendet, um die Ports mit Bandlaufwerken, Tape Libraries oder Storage von Drittanbietern mit FlexArray Virtualisierung oder dem Import fremder LUNs (Foreign LUN Import, FLI) zu verbinden.' 
+---
+= Konfigurieren Sie FC-Adapter für den Initiator-Modus
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können individuelle FC-Ports der integrierten Adapter und bestimmte FC-Adapterkarten für den Initiator-Modus konfigurieren. Der Initiator-Modus wird verwendet, um die Ports mit Bandlaufwerken, Tape Libraries oder Storage von Drittanbietern mit FlexArray Virtualisierung oder dem Import fremder LUNs (Foreign LUN Import, FLI) zu verbinden.
+
+.Was Sie und#8217;ll benötigen
+* LIFs auf dem Adapter müssen von allen Port-Sets, deren Mitglieder sie sind, entfernt werden.
+* Alle LIFs von jeder Storage Virtual Machine (SVM), die den zu ändernden physischen Port verwendet, müssen migriert oder zerstört werden, bevor sie die Persönlichkeit des physischen Ports von Ziel zu Initiator ändern.
+
+
+Jeder integrierte FC-Port kann individuell als Initiator oder Ziel konfiguriert werden. Die Ports auf bestimmten FC-Adaptern können auch einzeln als Ziel-Port oder als Initiator-Port konfiguriert werden, genau wie die integrierten FC-Ports. Eine Liste der Adapter, die für den Zielmodus konfiguriert werden können, ist in verfügbar https://hwu.netapp.com["NetApp Hardware Universe"^].
+
+[NOTE]
+====
+NVMe/FC unterstützt Initiatormodus.
+
+====
+.Schritte
+. Entfernen Sie alle LIFs vom Adapter:
++
+`network interface delete -vserver _SVM_name_ -lif _lif_name_,_lif_name_`
+
+. Versetzen Sie Ihren Adapter in den Offline-Modus:
++
+`network fcp adapter modify -node _node_name_ -adapter _adapter_port_ -status-admin down`
+
++
+Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+
+. Ändern Sie den Adapter von Ziel zu Initiator:
++
+`system hardware unified-connect modify -t initiator _adapter_port_`
+
+. Booten Sie den Node neu, der den Adapter hostet, den Sie geändert haben.
+. Vergewissern Sie sich, dass die FC-Ports für Ihre Konfiguration im richtigen Status konfiguriert sind:
++
+`system hardware unified-connect show`
+
+. Versetzen Sie den Adapter wieder in den Online-Modus:
++
+`node run -node _node_name_ storage enable adapter _adapter_port_`
+
+

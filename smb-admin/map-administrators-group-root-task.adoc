@@ -1,0 +1,41 @@
+---
+permalink: smb-admin/map-administrators-group-root-task.html 
+sidebar: sidebar 
+keywords: cifs, client, environment, storage, virtual, machine, svm, multiprotocol, storage, system, windows, account, root, privilege, svm, sufficient, user, right, map the administrators group to root 
+summary: 'Wenn in Ihrer Umgebung nur CIFS-Clients vorhanden sind und Ihre Storage Virtual Machine (SVM) als Speichersystem mit mehreren Protokollen eingerichtet wurde, müssen Sie über mindestens ein Windows-Konto mit Root-Berechtigung für den Zugriff auf Dateien auf der SVM verfügen. Andernfalls können Sie die SVM nicht managen, da Sie nicht über ausreichende Benutzerrechte verfügen.' 
+---
+= Ordnen Sie die Administratorgruppe dem Root zu
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn in Ihrer Umgebung nur CIFS-Clients vorhanden sind und Ihre Storage Virtual Machine (SVM) als Speichersystem mit mehreren Protokollen eingerichtet wurde, müssen Sie über mindestens ein Windows-Konto mit Root-Berechtigung für den Zugriff auf Dateien auf der SVM verfügen. Andernfalls können Sie die SVM nicht managen, da Sie nicht über ausreichende Benutzerrechte verfügen.
+
+Wenn Ihr Storage-System als NTFS-only eingerichtet wurde, jedoch mit `/etc` Verzeichnis verfügt über eine ACL auf Dateiebene, die es den Administratoren-Gruppen ermöglicht, auf die ONTAP-Konfigurationsdateien zuzugreifen.
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`
+. Konfigurieren Sie die CIFS-Serveroption, die die Administratorgruppe je nach Bedarf dem Root zuordnet:
++
+|===
+| Ihr Ziel ist | Dann... 
+
+
+ a| 
+Ordnen Sie die Mitglieder der Administratorgruppe dem Root zu
+ a| 
+`vserver cifs options modify -vserver _vserver_name_ -is-admin-users-mapped-to-root-enabled true` Alle Konten in der Administratorengruppe werden als root betrachtet, selbst wenn Sie kein haben `/etc/usermap.cfg` Eintrag, der die Konten dem Stammverzeichnis zugeordnet. Wenn Sie eine Datei mit einem Konto erstellen, das zur Gruppe Administratoren gehört, gehört die Datei Root, wenn Sie die Datei von einem UNIX-Client aus anzeigen.
+
+
+
+ a| 
+Deaktivieren Sie das Zuordnen der Mitglieder der Administratorengruppe zum Root
+ a| 
+`vserver cifs options modify -vserver _vserver_name_ -is-admin-users-mapped-to-root-enabled false` Konten in der Administratorgruppe werden nicht mehr dem Root zugeordnet. Sie können einen einzelnen Benutzer nur explizit dem Root zuordnen.
+
+|===
+. Vergewissern Sie sich, dass die Option auf den gewünschten Wert eingestellt ist: `vserver cifs options show -vserver _vserver_name_`
+. Zurück zur Administratorberechtigungsebene: `set -privilege admin`
+

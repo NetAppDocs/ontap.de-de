@@ -1,0 +1,119 @@
+---
+permalink: tape-backup/transfer-data-ndmpcopy-task.html 
+sidebar: sidebar 
+keywords: transfer, data, ndmpcopy, incremental, full, qtree, directory, files, v4, ndmp 
+summary: Der Befehl ndmpcopy überträgt Daten zwischen Storage-Systemen, die NDMP v4 unterstützen. Sie können vollständige und inkrementelle Datentransfers durchführen. Sie können komplette oder partielle Volumes, qtrees, Verzeichnisse oder einzelne Dateien übertragen. 
+---
+= Übertragen Sie die Daten mit NDMPcopy Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Der `ndmpcopy` Der nodeshell Befehl überträgt Daten zwischen Storage-Systemen, die NDMP v4 unterstützen. Sie können vollständige und inkrementelle Datentransfers durchführen. Sie können komplette oder partielle Volumes, qtrees, Verzeichnisse oder einzelne Dateien übertragen.
+
+Bei Verwendung von ONTAP 8.x und früheren Versionen sind inkrementelle Transfers auf maximal zwei Ebenen begrenzt (ein vollständiger und bis zu zwei inkrementelle Backups).
+
+Ab ONTAP 9.0 und neueren Versionen sind inkrementelle Transfers auf maximal neun Ebenen begrenzt (ein vollständiger und bis zu neun inkrementelle Backups).
+
+Sie können laufen `ndmpcopy` In der nodeshell Befehlszeile der Quell- und Ziel-Speichersysteme oder ein Speichersystem, das weder die Quelle noch das Ziel des Datentransfers ist. Sie können auch ausführen `ndmpcopy` Auf einem einzelnen Storage-System, das sowohl die Quelle als auch das Ziel des Datentransfers ist.
+
+Sie können IPv4- oder IPv6-Adressen der Quell- und Zielspeichersysteme im verwenden `ndmpcopy` Befehl. Das Pfadformat lautet `/vserver_name/volume_name \[path\]`.
+
+.Schritte
+. Aktivieren des NDMP-Service auf Quell- und Ziel-Storage-Systemen:
++
+|===
+
+
+| Wenn Sie den Datentransfer an der Quelle oder am Ziel in durchführen... | Verwenden Sie den folgenden Befehl... 
+
+
+ a| 
+NDMP-Modus mit SVM-Umfang
+ a| 
+`vserver services ndmp on`
+
+[NOTE]
+====
+Für die NDMP-Authentifizierung in der Administrator-SVM lautet das Benutzerkonto `admin` Und die Benutzerrolle lautet `admin` Oder `backup`. In der Daten-SVM lautet das Benutzerkonto `vsadmin` Und die Benutzerrolle lautet `vsadmin` Oder `vsadmin-backup` Rolle:
+
+====
+
+
+ a| 
+Node-Scoped NDMP-Modus
+ a| 
+`system services ndmp on`
+
+|===
+. Übertragen von Daten innerhalb eines Storage-Systems oder zwischen Storage-Systemen mithilfe von `ndmpcopy` Befehl im nodeshell:
++
+`*::> system node run -node <node_name> < ndmpcopy [options] source_IP:source_path destination_IP:destination_path [-mcs {inet|inet6}] [-mcd {inet|inet6}] [-md {inet|inet6}]*`
+
++
+[NOTE]
+====
+DNS-Namen werden in NDMPcopy nicht unterstützt. Sie müssen die IP-Adresse der Quelle und des Ziels angeben. Die Loopback-Adresse (127.0.0.1) wird für die Quell-IP-Adresse oder die Ziel-IP-Adresse nicht unterstützt.
+
+====
++
+** Der `ndmpcopy` Befehl legt den Adressmodus für Steuerverbindungen wie folgt fest:
++
+*** Der Adressmodus für die Steuerverbindung entspricht der angegebenen IP-Adresse.
+*** Sie können diese Regeln mit der überschreiben `-mcs` Und `-mcd` Optionen:
+
+
+** Handelt es sich bei der Quelle oder dem Ziel um das ONTAP System, verwenden Sie abhängig vom NDMP-Modus (Node-Scoped oder SVM-Scoped) eine IP-Adresse, die den Zugriff auf das Ziel-Volume ermöglicht.
+** `source_path` Und `destination_path` Sind die absoluten Pfadnamen bis zur granularen Ebene von Volume, qtree, Verzeichnis oder Datei.
+** `-mcs` Gibt den bevorzugten Adressierungmodus für die Steuerverbindung zum Quell-Speichersystem an.
++
+`inet` Zeigt den IPv4-Adressmodus und an `inet6` Zeigt einen IPv6-Adressmodus an.
+
+** `-mcd` Gibt den bevorzugten Adressierungmodus für die Steuerverbindung zum Zielspeichersystem an.
++
+`inet` Zeigt den IPv4-Adressmodus und an `inet6` Zeigt einen IPv6-Adressmodus an.
+
+** `-md` Gibt den bevorzugten Adressierungmodus für Datentransfers zwischen Quell- und Zielspeichersystemen an.
++
+`inet` Zeigt den IPv4-Adressmodus und an `inet6` Zeigt einen IPv6-Adressmodus an.
+
++
+Wenn Sie den nicht verwenden `-md` Wählen Sie im `ndmpcopy` Befehl, der Adressierungmodus für die Datenverbindung wird wie folgt bestimmt:
+
++
+*** Wenn eine der für die Steuerverbindungen angegebenen Adressen eine IPv6-Adresse ist, ist der Adressmodus für die Datenverbindung IPv6.
+*** Wenn die für die Steuerverbindungen angegebenen beiden Adressen IPv4-Adressen sind, liefert das `ndmpcopy` Befehl versucht zunächst einen IPv6-Adressmodus für die Datenverbindung.
++
+Wenn dies fehlschlägt, verwendet der Befehl einen IPv4-Adressmodus.
+
++
+[NOTE]
+====
+Eine IPv6-Adresse, falls angegeben, muss in eckigen Klammern eingeschlossen sein.
+
+====
++
+Mit diesem Beispielbefehl werden Daten von einem Quellpfad migriert (`source_path`) Zu einem Zielpfad (`destination_path`).
+
++
+[listing]
+----
+> ndmpcopy -sa admin:<ndmp_password> -da admin:<ndmp_password>
+ -st md5 -dt md5 192.0.2.129:/<src_svm>/<src_vol> 192.0.2.131:/<dst_svm>/<dst_vol>
+----
++
+Mit diesem Beispielbefehl werden die Steuerverbindungen und die Datenverbindung explizit auf den IPv6-Adressmodus eingestellt:
+
++
+[listing]
+----
+> ndmpcopy -sa admin:<ndmp_password> -da admin:<ndmp_password> -st md5 -dt md5 -mcs inet6 -mcd inet6 -md
+ inet6 [2001:0db8:1:1:209:6bff:feae:6d67]:/<src_svm>/<src_vol> [2001:0ec9:1:1:200:7cgg:gfdf:7e78]:/<dst_svm>/<dst_vol>
+----
+
+
+
+
+

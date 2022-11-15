@@ -1,0 +1,36 @@
+---
+permalink: data-protection/example-snapshot-copies-exceed-reserve-concept.html 
+sidebar: sidebar 
+keywords: delete, protected, files, less file space 
+summary: Eine Snapshot-Kopie verweist auf einen Block, sogar nachdem Sie die Datei gelöscht haben, die den Block verwendet hat. Dies erklärt, warum eine ausgeschöpfte Snapshot Kopie-Reserve zum gegenintuitiven Ergebnis führen könnte, wobei das Löschen eines gesamten File-Systems dazu führt, dass weniger Speicherplatz verfügbar ist als das belegte File-System. 
+---
+= Das Löschen von geschützten Dateien kann zu weniger Dateispeicherplatz führen als erwartet
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Eine Snapshot-Kopie verweist auf einen Block, sogar nachdem Sie die Datei gelöscht haben, die den Block verwendet hat. Dies erklärt, warum eine ausgeschöpfte Snapshot Kopie-Reserve zum gegenintuitiven Ergebnis führen könnte, wobei das Löschen eines gesamten File-Systems dazu führt, dass weniger Speicherplatz verfügbar ist als das belegte File-System.
+
+Betrachten wir das folgende Beispiel. Bevor Sie Dateien löschen, wird der `df` Die Befehlsausgabe ist wie folgt:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 3000000 0       100%
+/vol/vol0/.snapshot 1000000 500000  500000   50%
+----
+Nach dem Löschen des gesamten Dateisystems und dem Erstellen einer Snapshot Kopie des Volume, wird der angezeigt `df` Der Befehl generiert die folgende Ausgabe:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 2500000 500000   83%
+/vol/vol0/.snapshot 1000000 3500000 0       350%
+----
+Wie die Ausgabe zeigt, werden jetzt zusätzlich zu den 0.5 GB vor dem Löschen auch die gesamten 3 GB, die zuvor vom aktiven File-System verwendet wurden, für Snapshot-Kopien verwendet.
+
+Da der von den Snapshot-Kopien verwendete Festplattenspeicher nun die Snapshot-Kopie-Reserve überschreitet, erfolgt der Überlauf von 2.5 GB „`sPills`“ in den für aktive Dateien reservierten Speicherplatz. Dadurch verfügen Sie über 0.5 GB freien Speicherplatz für Dateien, bei denen Sie vernünftigerweise 3 GB erwartet haben.

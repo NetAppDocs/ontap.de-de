@@ -1,0 +1,47 @@
+---
+permalink: volumes/default-tree-quotas-volume-create-concept.html 
+sidebar: sidebar 
+keywords: how, default, tree quotas, flexvol volume, create, derived tree quotas 
+summary: Wenn Sie ein Standard-Baumkontingent auf einem FlexVol-Volumen erstellen, werden automatisch die entsprechenden abgeleiteten Tree Quotas für jeden qtree in diesem Volume erstellt. 
+---
+= Wie standardmäßige Baumkontingente auf einem FlexVol-Volumen abgeleitete Baumkontingente erstellen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie ein Standard-Baumkontingent auf einem FlexVol-Volumen erstellen, werden automatisch die entsprechenden abgeleiteten Tree Quotas für jeden qtree in diesem Volume erstellt.
+
+Diese abgeleiteten Baumkontingente haben die gleichen Grenzen wie die Standardstrukturkontingente. Wenn keine zusätzlichen Quoten vorhanden sind, haben die Grenzwerte folgende Auswirkungen:
+
+* Benutzer können auf einem qtree so viel Speicherplatz verwenden, wie sie für das gesamte Volume zugeteilt werden (vorausgesetzt, sie überschreiten das Limit für das Volume nicht durch die Nutzung von Speicherplatz im Root-Verzeichnis oder einem anderen qtree).
+* Jede qtrees kann entsprechend dem jeweiligen Volume erweitert werden.
+
+
+Die Existenz einer Standard-Baumquote auf einem Volume wirkt sich weiterhin auf alle neuen qtrees aus, die dem Volume hinzugefügt werden. Jedes Mal, wenn ein neuer qtree erstellt wird, wird auch ein abgeleitetes Baumkontingent erstellt.
+
+Wie alle abgeleiteten Quoten zeigen abgeleitete Baumquoten folgende Verhaltensweisen an:
+
+* Werden nur erstellt, wenn das Ziel noch keine explizite Quote hat.
+* Erscheint in Quotenberichten, wird aber nicht angezeigt, wenn Sie Quotenregeln mit dem anzeigen `volume quota policy rule show` Befehl.
+
+
+Sie haben ein Volumen mit drei qtrees (proj1, proj2 und proj3) und die einzige Baumquote ist ein explizites Kontingent auf dem proj1 qtree, das seine Festplattengröße auf 10 GB begrenzt. Wenn Sie ein Standard-Baumkontingent auf dem Volume erstellen und Quoten für das Volume neu initialisieren, enthält der Quotenbericht jetzt vier Baumkontingente:
+
+[listing]
+----
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1     proj1     tree    1           0B   10GB       1       -   proj1
+vol1               tree    *           0B   20GB       0       -   *
+vol1     proj2     tree    2           0B   20GB       1       -   proj2
+vol1     proj3     tree    3           0B   20GB       1       -   proj3
+...
+----
+Die erste Zeile zeigt die ursprüngliche explizite Quote auf dem proj1 qtree. Diese Quote bleibt unverändert.
+
+Die zweite Zeile zeigt das neue Standard-Baumkontingent auf dem Volume. Das Sternchen (*) Quota-Specifizierer zeigt an, dass es sich um ein Standardkontingent handelt. Diese Quote ist das Ergebnis der Kontingentregel, die Sie erstellt haben.
+
+Die letzten beiden Zeilen zeigen neue abgeleitete Baumquoten für die proj2 und proj3 qtrees. ONTAP hat diese Quoten automatisch als Ergebnis des Standard Tree Quotas auf dem Volume erstellt. Diese abgeleiteten Baumkontingente haben das gleiche 20-GB-Datenträgerlimit wie das Standardbaumkontingent auf dem Volumen. ONTAP hat keine abgeleitete Baumquote für den proj1 qtree erzeugt, da der proj1-qtree bereits eine explizite Quote hatte.

@@ -1,0 +1,80 @@
+---
+permalink: upgrade/task_verifying_the_lif_failover_configuration.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, verifying, verify, lif, failover, configuration 
+summary: Bevor Sie ein Upgrade durchführen, müssen Sie überprüfen, ob die Failover-Richtlinien und Failover-Gruppen korrekt konfiguriert sind. 
+---
+= Überprüfen der LIF Failover-Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie ein Upgrade durchführen, müssen Sie überprüfen, ob die Failover-Richtlinien und Failover-Gruppen korrekt konfiguriert sind.
+
+
+NOTE: Während des Upgrades werden LIFs basierend auf der Upgrade-Methode migriert. Je nach Upgrade-Methode kann oder wird die LIF Failover-Richtlinie möglicherweise nicht verwendet.
+
+Bei 8 oder mehr Nodes im Cluster wird das automatisierte Upgrade mit der Batch-Methode durchgeführt. Bei dem Batch Upgrade-Verfahren wird das Cluster in mehrere Upgrade-Batches aufgeteilt. Anschließend werden die Nodes im ersten Batch-Satz aktualisiert, die HA-Partner aktualisiert und der Prozess für die verbleibenden Batches wiederholt. Wenn in ONTAP 9.7 und älteren Versionen die Batch-Methode verwendet wird, werden LIFs zum HA-Partner des Node migriert, der aktualisiert wird. Wenn in ONTAP 9.8 und höher die Batch-Methode verwendet wird, werden LIFs zur anderen Batch-Gruppe migriert.
+
+Wenn Sie weniger als 8 Nodes in Ihrem Cluster haben, wird das automatisierte Upgrade mit der Rolling-Methode durchgeführt. Die Rolling Upgrade-Methode beinhaltet, einen Failover-Vorgang auf jedem Knoten eines HA-Paars zu initiieren, den „ausgefallenen“ Knoten zu aktualisieren, Giveback zu initiieren und dann den Prozess für jedes HA-Paar im Cluster zu wiederholen. Wenn die Rolling-Methode verwendet wird, werden LIFs gemäß der LIF Failover-Richtlinie zu dem Failover-Ziel-Node migriert.
+
+. Zeigen Sie die Failover-Richtlinie für jede Daten-LIF an:
++
+[cols="2*"]
+|===
+| Lautet Ihre ONTAP Version... | Verwenden Sie diesen Befehl 
+
+
+| 9.6 oder höher  a| 
+`network interface show -service-policy data -failover`
+
+
+
+| 9.5 oder früher  a| 
+`network interface show -role data -failover`
+
+|===
++
+Dieses Beispiel zeigt die standardmäßige Failover-Konfiguration für ein 2-Node-Cluster mit zwei Daten-LIFs:
+
++
+[listing]
+----
+cluster1::> network interface show -role data -failover
+         Logical         Home                  Failover        Failover
+Vserver  Interface       Node:Port             Policy          Group
+-------- --------------- --------------------- --------------- ---------------
+vs0
+         lif0            node0:e0b             nextavail       system-defined
+                         Failover Targets: node0:e0b, node0:e0c,
+                                           node0:e0d, node0:e0e,
+                                           node0:e0f, node1:e0b,
+                                           node1:e0c, node1:e0d,
+                                           node1:e0e, node1:e0f
+vs1
+         lif1            node1:e0b             nextavail       system-defined
+                         Failover Targets: node1:e0b, node1:e0c,
+                                           node1:e0d, node1:e0e,
+                                           node1:e0f, node0:e0b,
+                                           node0:e0c, node0:e0d,
+                                           node0:e0e, node0:e0f
+----
++
+Das Feld *Failover Targets* enthält eine priorisierte Liste von Failover-Zielen für jede LIF. Wenn lif0 zum Beispiel von seinem Home Port (e0b auf node0) ausfällt, wird es zum ersten Versuch unternommen, Port e0c auf node0 zu scheitern. Wenn lif0 nicht Failover zu e0c kann, wird als nächstes versucht, Failover zu Port e0d auf node0 und so weiter zu machen.
+
+. Wenn die Failover-Richtlinie für alle LIFs außer SAN LIFs auf deaktiviert festgelegt ist, aktivieren Sie das Failover mithilfe des Befehls „Network Interface modify“.
+. Überprüfen Sie für jede logische Schnittstelle, ob das Feld *Failover Targets* Datenports eines anderen Knotens enthält, der während des Upgrades des Home-Node der LIF weiterhin verfügbar ist.
++
+Sie können das verwenden `network interface failover-groups modify` Befehl zum Hinzufügen eines Failover-Ziels zur Failover-Gruppe.
+
++
+.Beispiel
+[listing]
+----
+network interface failover-groups modify -vserver vs0 -failover-group fg1 -targets sti8-vsim-ucs572q:e0d,sti8-vsim-ucs572r:e0d
+----
+
+
+link:../networking/networking_reference.html["Netzwerk- und LIF-Management"]

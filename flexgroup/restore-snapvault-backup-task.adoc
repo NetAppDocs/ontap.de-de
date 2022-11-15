@@ -1,0 +1,41 @@
+---
+permalink: flexgroup/restore-snapvault-backup-task.html 
+sidebar: sidebar 
+keywords: restore, flexgroup, volume, snapvault, backup 
+summary: Sie können FlexGroup Volumes aus einer Snapshot Kopie im sekundären SnapVault Volume wiederherstellen. Sie können das FlexGroup-Volume entweder im ursprünglichen Quell-Volume oder auf einem neuen FlexGroup-Volume wiederherstellen. 
+---
+= Wiederherstellung eines FlexGroup Volumes aus einem SnapVault-Backup
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können FlexGroup Volumes aus einer Snapshot Kopie im sekundären SnapVault Volume wiederherstellen. Sie können das FlexGroup-Volume entweder im ursprünglichen Quell-Volume oder auf einem neuen FlexGroup-Volume wiederherstellen.
+
+Bei der Wiederherstellung aus SnapVault Backups für FlexGroup Volumes müssen bestimmte Überlegungen berücksichtigt werden.
+
+* Es wird nur die Basis-Wiederherstellung mit teilweisen Snapshot Kopien aus einem SnapVault Backup unterstützt. Die Anzahl der Komponenten im Ziel-Volume muss der Anzahl der Komponenten im Quell-Volume entsprechen, als die Snapshot Kopie erstellt wurde.
+* Wenn ein Wiederherstellungsvorgang fehlschlägt, sind keine weiteren Vorgänge zulässig, bis der Wiederherstellungsvorgang abgeschlossen ist. Sie können entweder den Wiederherstellungsvorgang wiederholen oder den Wiederherstellungsvorgang mit dem ausführen `cleanup` Parameter.
+* Ein FlexGroup Volume kann das Quell-Volume nur einer Backup-Beziehung oder einer Restore-Beziehung sein. Ein FlexGroup Volume kann nicht aus zwei SnapVault Beziehungen, zwei Restore-Beziehungen oder einer SnapVault Beziehung und einer Restore-Beziehung stammen.
+* Backup- und Restore-Vorgänge für SnapVault können nicht parallel ausgeführt werden. Wenn entweder ein Basis-Restore-Vorgang oder ein inkrementeller Restore-Vorgang läuft, sollten Sie die Backup-Vorgänge stilllegen.
+* Sie müssen einen Wiederherstellungsvorgang für eine partielle Snapshot Kopie auf dem Ziel-FlexGroup Volume abbrechen. Sie können den Wiederherstellungsvorgang einer partiellen Snapshot Kopie nicht vom Quell-Volume abbrechen.
+* Wenn Sie einen Wiederherstellungsvorgang abbrechen, müssen Sie den Wiederherstellungsvorgang mit derselben Snapshot Kopie, die für den vorherigen Wiederherstellungsvorgang verwendet wurde, neu starten.
+
+
+Sämtliche aktiven Kontingentregeln für das Ziel-FlexGroup-Volume werden vor der Wiederherstellung deaktiviert.
+
+Sie können das verwenden `volume quota modify` Befehl zum Reaktivieren von Quota-Regeln, nachdem der Wiederherstellungsvorgang abgeschlossen ist.
+
+.Schritte
+. Wiederherstellen des FlexGroup Volume: `snapmirror restore -source-path _src_svm:src_flexgroup_ -destination-path _dest_svm:dest_flexgroup_ -snapshot _snapshot_name_`
+`snapshot_name` Ist die Snapshot Kopie, die vom Quell-Volume auf das Ziel-Volume wiederhergestellt werden soll. Wenn die Snapshot Kopie nicht angegeben wird, wird das Ziel-Volume aus der neuesten Snapshot Kopie wiederhergestellt.
++
+[listing]
+----
+vserverA::> snapmirror restore -source-path vserverB:dstFG -destination-path vserverA:newFG -snapshot daily.2016-07-15_0010
+Warning: This is a disruptive operation and the volume vserverA:newFG will be read-only until the operation completes
+Do you want to continue? {y|n}: y
+----
+

@@ -1,0 +1,32 @@
+---
+permalink: system-admin/enable-telnet-rsh-access-cluster-task.html 
+sidebar: sidebar 
+keywords: enable, telnet, rsh, access, cluster, mgmt, management, firewall, policy 
+summary: 'Als Best Practice für Sicherheit werden Telnet und RSH in der vordefinierten Management-Firewall-Richtlinie (Mgmt) deaktiviert. Um es dem Cluster zu ermöglichen, Telnet- oder RSH-Anfragen zu akzeptieren, müssen Sie eine neue Management Firewall-Richtlinie erstellen, über die Telnet- oder RSH-Anfragen aktiviert sind, und die neue Richtlinie dann der Cluster-Management-LIF zuordnen.' 
+---
+= Aktivieren Sie Telnet- oder RSH-Zugriff auf den Cluster
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Als Best Practice für Sicherheit sind Telnet und RSH in der vordefinierten Management-Firewall-Richtlinie deaktiviert (`mgmt`). Um es dem Cluster zu ermöglichen, Telnet- oder RSH-Anfragen zu akzeptieren, müssen Sie eine neue Management Firewall-Richtlinie erstellen, über die Telnet- oder RSH-Anfragen aktiviert sind, und die neue Richtlinie dann der Cluster-Management-LIF zuordnen.
+
+ONTAP verhindert das Ändern vordefinierter Firewall-Richtlinien, doch Sie können durch das Klonen vordefinierter Richtlinien eine neue Richtlinie erstellen `mgmt` Management-Firewall-Richtlinie und dann die Aktivierung von Telnet oder RSH unter der neuen Richtlinie Allerdings sind Telnet und RSH keine sicheren Protokolle. Daher sollten Sie erwägen, SSH zum Zugriff auf den Cluster zu verwenden. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung.
+
+Führen Sie die folgenden Schritte durch, um Telnet- oder RSH-Zugriff auf die Cluster zu aktivieren:
+
+.Schritte
+. Wechseln Sie in den erweiterten Berechtigungsmodus:
+`*set advanced*`
+. Aktivieren eines Sicherheitsprotokolls (RSH oder Telnet):
+`*security protocol modify -application _security_protocol_ -enabled true*`
+. Erstellen Sie eine neue Management-Firewall-Richtlinie auf der Grundlage von `mgmt` Management-Firewallrichtlinie:
+`*system services firewall policy clone -policy mgmt -destination-policy _policy-name_*`
+. Aktivieren Sie Telnet oder RSH unter der neuen Management Firewall-Richtlinie:
+`*system services firewall policy create -policy _policy-name_ -service _security_protocol_ -action allow -ip-list _ip_address/netmask_*`Um alle IP-Adressen zuzulassen, sollten Sie angeben `-ip-list 0.0.0.0/0`
+. Zuordnen der neuen Richtlinie zu der Cluster-Management-LIF:
+`*network interface modify -vserver _cluster_management_LIF_ -lif cluster_mgmt -firewall-policy _policy-name_*`
+

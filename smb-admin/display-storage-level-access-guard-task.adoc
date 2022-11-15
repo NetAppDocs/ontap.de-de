@@ -1,0 +1,115 @@
+---
+permalink: smb-admin/display-storage-level-access-guard-task.html 
+sidebar: sidebar 
+keywords: storage-level, access, guard, third, layer, security, applied, apply, qtree, view, windows, properties, window, troubleshoot, configuration, display information about storage-level access guard 
+summary: Storage-Level Access Guard ist eine dritte Sicherheitsschicht, die auf einem Volume oder qtree angewendet wird. Die Einstellungen für den Zugriffschutz auf Speicherebene können nicht über das Fenster „Windows-Eigenschaften“ angezeigt werden. Sie müssen die ONTAP-CLI verwenden, um Informationen zur Sicherheit des Zugriffschutzes auf Storage-Ebene anzuzeigen, mit der Sie die Konfiguration validieren oder Probleme beim Dateizugriff beheben können. 
+---
+= Zeigen Sie Informationen zum Storage-Level Access Guard an
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Storage-Level Access Guard ist eine dritte Sicherheitsschicht, die auf einem Volume oder qtree angewendet wird. Die Einstellungen für den Zugriffschutz auf Speicherebene können nicht über das Fenster „Windows-Eigenschaften“ angezeigt werden. Sie müssen die ONTAP-CLI verwenden, um Informationen zur Sicherheit des Zugriffschutzes auf Storage-Ebene anzuzeigen, mit der Sie die Konfiguration validieren oder Probleme beim Dateizugriff beheben können.
+
+Sie müssen den Namen der Storage Virtual Machine (SVM) und den Pfad zum Volume oder qtree angeben, dessen Sicherheitsinformationen auf Storage-Level Access Guard angezeigt werden sollen. Sie können die Ausgabe als Übersichtsformular oder als detaillierte Liste anzeigen.
+
+.Schritt
+. Die Sicherheitseinstellungen der Speicherebene für den Access Guard mit der gewünschten Detailebene anzeigen:
++
+|===
+| Informationen anzeigen... | Geben Sie den folgenden Befehl ein... 
+
+
+ a| 
+In zusammengefassener Form
+ a| 
+`vserver security file-directory show -vserver _vserver_name_ -path _path_`
+
+
+
+ a| 
+Mit mehr Details
+ a| 
+`vserver security file-directory show -vserver _vserver_name_ -path _path_ -expand-mask true`
+
+|===
+
+
+Im folgenden Beispiel werden Sicherheitsinformationen auf Speicherebene für das NTFS-Sicherheitsvolumen mit dem Pfad angezeigt `/datavol1` In SVM vs1:
+
+[listing]
+----
+cluster::> vserver security file-directory show -vserver vs1 -path /datavol1
+
+                Vserver: vs1
+              File Path: /datavol1
+      File Inode Number: 77
+         Security Style: ntfs
+        Effective Style: ntfs
+         DOS Attributes: 10
+ DOS Attributes in Text: ----D---
+Expanded Dos Attributes: -
+           Unix User Id: 0
+          Unix Group Id: 0
+         Unix Mode Bits: 777
+ Unix Mode Bits in Text: rwxrwxrwx
+                   ACLs: NTFS Security Descriptor
+                         Control:0x8004
+                         Owner:BUILTIN\Administrators
+                         Group:BUILTIN\Administrators
+                         DACL - ACEs
+                           ALLOW-Everyone-0x1f01ff
+                           ALLOW-Everyone-0x10000000-OI|CI|IO
+
+
+                         Storage-Level Access Guard security
+                         SACL (Applies to Directories):
+                           AUDIT-EXAMPLE\Domain Users-0x120089-FA
+                           AUDIT-EXAMPLE\engineering-0x1f01ff-SA
+                         DACL (Applies to Directories):
+                           ALLOW-EXAMPLE\Domain Users-0x120089
+                           ALLOW-EXAMPLE\engineering-0x1f01ff
+                           ALLOW-NT AUTHORITY\SYSTEM-0x1f01ff
+                         SACL (Applies to Files):
+                           AUDIT-EXAMPLE\Domain Users-0x120089-FA
+                           AUDIT-EXAMPLE\engineering-0x1f01ff-SA
+                         DACL (Applies to Files):
+                           ALLOW-EXAMPLE\Domain Users-0x120089
+                           ALLOW-EXAMPLE\engineering-0x1f01ff
+                           ALLOW-NT AUTHORITY\SYSTEM-0x1f01ff
+----
+Im folgenden Beispiel werden die Informationen der Storage-Level Access Guard zum Volume mit gemischtem Sicherheitsstil auf dem Pfad angezeigt `/datavol5` In SVM vs1. Die oberste Ebene dieses Volumens besitzt effektive UNIX-Sicherheit. Das Volume verfügt über Sicherheit auf Storage-Ebene beim Access Guard.
+
+[listing]
+----
+cluster1::> vserver security file-directory show -vserver vs1 -path /datavol5
+                Vserver: vs1
+              File Path: /datavol5
+      File Inode Number: 3374
+         Security Style: mixed
+        Effective Style: unix
+         DOS Attributes: 10
+ DOS Attributes in Text: ----D---
+Expanded Dos Attributes: -
+           Unix User Id: 0
+          Unix Group Id: 0
+         Unix Mode Bits: 755
+ Unix Mode Bits in Text: rwxr-xr-x
+                   ACLs: Storage-Level Access Guard security
+                         SACL (Applies to Directories):
+                           AUDIT-EXAMPLE\Domain Users-0x120089-FA
+                           AUDIT-EXAMPLE\engineering-0x1f01ff-SA
+                         DACL (Applies to Directories):
+                           ALLOW-EXAMPLE\Domain Users-0x120089
+                           ALLOW-EXAMPLE\engineering-0x1f01ff
+                           ALLOW-NT AUTHORITY\SYSTEM-0x1f01ff
+                         SACL (Applies to Files):
+                           AUDIT-EXAMPLE\Domain Users-0x120089-FA
+                           AUDIT-EXAMPLE\engineering-0x1f01ff-SA
+                         DACL (Applies to Files):
+                           ALLOW-EXAMPLE\Domain Users-0x120089
+                           ALLOW-EXAMPLE\engineering-0x1f01ff
+                           ALLOW-NT AUTHORITY\SYSTEM-0x1f01ff
+----

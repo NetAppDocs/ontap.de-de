@@ -1,0 +1,115 @@
+---
+permalink: system-admin/verify-digital-certificates-valid-ocsp-task.html 
+sidebar: sidebar 
+keywords: verfiy, digital, certificate, valid, ocsp, online, status, protocol, transport, layer, security, tls, enable, disable 
+summary: 'Ab ONTAP 9.2 ermöglicht OCSP (Online Certificate Status Protocol) ONTAP-Anwendungen, die TLS-Kommunikation (Transport Layer Security) nutzen, den digitalen Zertifikatsstatus zu erhalten, wenn OCSP aktiviert ist. Sie können OCSP-Zertifikatsprüfungen für bestimmte Anwendungen jederzeit aktivieren oder deaktivieren. Standardmäßig ist die Überprüfung des OCSP-Zertifikatsstatus deaktiviert.' 
+---
+= Überprüfen Sie, ob digitale Zertifikate mit OCSP gültig sind
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.2 ermöglicht OCSP (Online Certificate Status Protocol) ONTAP-Anwendungen, die TLS-Kommunikation (Transport Layer Security) nutzen, den digitalen Zertifikatsstatus zu erhalten, wenn OCSP aktiviert ist. Sie können OCSP-Zertifikatsprüfungen für bestimmte Anwendungen jederzeit aktivieren oder deaktivieren. Standardmäßig ist die Überprüfung des OCSP-Zertifikatsstatus deaktiviert.
+
+Diese Befehle müssen auf der erweiterten Berechtigungsebene ausgeführt werden.
+
+OCSP unterstützt folgende Anwendungen:
+
+* AutoSupport
+* Event Management System (EMS)
+* LDAP über TLS
+* Key Management Interoperability Protocol (KMIP)
+* Audit-Protokollierung
+* FabricPool
+
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`.
+. Um OCSP-Zertifikatsprüfungen für bestimmte ONTAP-Anwendungen zu aktivieren oder zu deaktivieren, verwenden Sie den entsprechenden Befehl.
++
+|===
+| Wenn Sie möchten, dass OCSP-Zertifikatsprüfungen für einige Anwendungen... | Verwenden Sie den Befehl... 
+
+
+ a| 
+Aktiviert
+ a| 
+`security config ocsp enable -app`
+
+`app name`
+
+
+
+ a| 
+Deaktiviert
+ a| 
+`security config ocsp disable -app`
+
+`app name`
+
+|===
++
+Mit dem folgenden Befehl wird OCSP-Unterstützung für AutoSupport und EMS aktiviert.
+
++
+[listing]
+----
+cluster::*> security config ocsp enable -app asup,ems
+----
++
+Wenn OCSP aktiviert ist, erhält die Anwendung eine der folgenden Antworten:
+
++
+** Gut - das Zertifikat ist gültig und die Kommunikation wird fortgesetzt.
+** Widerrufen: Das Zertifikat wird von der ausstellenden Zertifizierungsstelle dauerhaft als nicht vertrauenswürdig eingestuft und die Kommunikation kann nicht fortgesetzt werden.
+** Unbekannt – der Server verfügt über keine Statusinformationen zum Zertifikat und die Kommunikation kann nicht fortgesetzt werden.
+** OCSP-Serverinformationen fehlen im Zertifikat - der Server fungiert als deaktiviert und fährt mit der TLS-Kommunikation fort, aber es erfolgt keine Statusüberprüfung.
+** Keine Antwort vom OCSP-Server - die Anwendung schlägt fehl.
+
+
+. Verwenden Sie den entsprechenden Befehl, um OCSP-Zertifikatsprüfungen für alle Anwendungen mithilfe von TLS-Kommunikation zu aktivieren oder zu deaktivieren.
++
+|===
+| Wenn Sie möchten, dass OCSP-Zertifikatsprüfungen für alle Anwendungen durchgeführt werden... | Verwenden Sie den Befehl... 
+
+
+ a| 
+Aktiviert
+ a| 
+`security config ocsp enable`
+
+`-app all`
+
+
+
+ a| 
+Deaktiviert
+ a| 
+`security config ocsp disable`
+
+`-app all`
+
+|===
++
+Wenn alle Applikationen aktiviert sind, wird eine signierte Antwort empfangen, die angibt, dass das angegebene Zertifikat in Ordnung, annulliert oder unbekannt ist. Im Fall eines annulliert Zertifikats kann die Anwendung nicht fortgesetzt werden. Wenn die Anwendung keine Antwort vom OCSP-Server erhält oder der Server nicht erreichbar ist, wird die Anwendung nicht fortgesetzt.
+
+. Verwenden Sie die `security config ocsp show` Befehl zur Anzeige aller Applikationen, die OCSP unterstützen, und ihres Supportstatus.
++
+[listing]
+----
+cluster::*> security config ocsp show
+         Application                        OCSP Enabled?
+         --------------------               ---------------------
+         autosupport                        false
+         audit_log                          false
+         fabricpool                         false
+         ems                                false
+         kmip                               false
+         ldap_ad                            true
+         ldap_nis_namemap                   true
+
+         7 entries were displayed.
+----
+

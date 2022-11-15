@@ -1,0 +1,76 @@
+---
+permalink: snaplock/event-based-retention-feature-task.html 
+sidebar: sidebar 
+keywords: event, based, retention, ebr, feature, snaplock, file, snap lock, worm 
+summary: 'Ab ONTAP 9.3 können Sie mit der Funktion „SnapLock Event Based Retention“ (EBR) festlegen, wie lange eine Datei nach dem Auftreten eines Ereignisses aufbewahrt wird.' 
+---
+= Verwenden Sie die Ereignisbasierte Aufbewahrungsfunktion (EBR)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.3 können Sie mit der Funktion SnapLock _ereignisbasierte Aufbewahrung (EBR)_ festlegen, wie lange eine Datei nach dem Auftreten eines Ereignisses aufbewahrt wird.
+
+.Was Sie und#8217;ll benötigen
+* Sie müssen ein SnapLock-Administrator sein, um diese Aufgabe auszuführen.
++
+link:create-compliance-administrator-account-task.html["Erstellen Sie ein SnapLock-Administratorkonto"]
+
+* Sie müssen sich mit einer sicheren Verbindung (SSH, Konsole oder ZAPI) angemeldet haben.
+
+
+Die Richtlinie_Event Retention_ definiert den Aufbewahrungszeitraum für die Datei nach dem Ereignis. Die Richtlinie kann auf eine einzelne Datei oder alle Dateien in einem Verzeichnis angewendet werden.
+
+* Handelt es sich bei einer Datei nicht um EINE WORM-Datei, wird sie im IN der Richtlinie definierten Aufbewahrungszeitraum im WORM-Status versetzt.
+* Wenn es sich bei einer Datei um EINE WORM-Datei oder EINE WORM-Dateien handelt, verlängert sich deren Aufbewahrungszeitraum um den in der Richtlinie definierten Aufbewahrungszeitraum.
+
+
+Es können ein Compliance-Modus oder ein Enterprise-Mode Volume verwendet werden.
+
+[NOTE]
+====
+EBR-Richtlinien können nicht auf Dateien angewendet werden, die sich in einer Legal Hold befinden.
+
+====
+Weitere Informationen zur erweiterten Verwendung finden Sie unter link:https://www.netapp.com/us/media/tr-4526.pdf["Worm-Speicherung gemäß NetApp SnapLock"].
+
+|===
+
+
+| *_Verwendung von EBR, um den Aufbewahrungszeitraum bereits vorhandener WORM-Dateien zu verlängern_* 
+
+
+ a| 
+EBR ist praktisch, wenn Sie den Aufbewahrungszeitraum bereits vorhandener WORM-Dateien verlängern möchten. So könnte es z. B. sein, dass Ihr Unternehmen die Richtlinie hat, W-4-Datensätze von Mitarbeitern in unveränderter Form für drei Jahre zu speichern, nachdem der Mitarbeiter eine Quellwahl geändert hat. Eine andere Unternehmensrichtlinie kann verlangen, dass W-4-Datensätze fünf Jahre nach Beendigung des Mitarbeiters aufbewahrt werden.
+
+In diesem Fall könnten Sie eine EBR-Richtlinie mit einer Aufbewahrungsfrist von fünf Jahren erstellen. Nach Beendigung des Mitarbeiters (das „`Event`“) wenden Sie die EBR-Richtlinie auf den W-4-Datensatz des Mitarbeiters an, wodurch die Aufbewahrungsfrist verlängert wird. Das ist in der Regel einfacher als die manuelle Verlängerung des Aufbewahrungszeitraums, insbesondere dann, wenn eine große Anzahl von Dateien beteiligt ist.
+
+|===
+.Schritte
+. EBR-Richtlinie erstellen:
++
+`*snaplock event-retention policy create -vserver _SVM_name_ -name _policy_name_ -retention-period _retention_period_*`
+
++
+Mit dem folgenden Befehl wird die EBR-Richtlinie erstellt `employee_exit` Ein `vs1` Mit einer Aufbewahrungsfrist von zehn Jahren:
+
++
+[listing]
+----
+cluster1::>snaplock event-retention policy create -vserver vs1 -name employee_exit -retention-period 10years
+----
+. Anwenden einer EBR-Richtlinie:
++
+`*snaplock event-retention apply -vserver _SVM_name_ -name _policy_name_ -volume _volume_name_ -path _path_name_*`
+
++
+Der folgende Befehl wendet die EBR-Richtlinie an `employee_exit` Ein `vs1` Zu allen Dateien im Verzeichnis `d1`:
+
++
+[listing]
+----
+cluster1::>snaplock event-retention apply -vserver vs1 -name employee_exit -volume vol1 -path /d1
+----
+

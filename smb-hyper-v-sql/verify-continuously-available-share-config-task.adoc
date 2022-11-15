@@ -1,0 +1,77 @@
+---
+permalink: smb-hyper-v-sql/verify-continuously-available-share-config-task.html 
+sidebar: sidebar 
+keywords: verify, continuously, available, smb, share, configuration, hyper, v, sql, server, nondisruptive, application 
+summary: Zur Unterstützung eines unterbrechungsfreien Betriebs müssen Hyper-V und SQL Server SMB-Freigaben als kontinuierlich verfügbare Freigaben konfiguriert werden. Darüber hinaus gibt es bestimmte andere Freigabeinstellungen, die Sie überprüfen müssen. Sie sollten überprüfen, ob die Freigaben ordnungsgemäß konfiguriert sind, um einen unterbrechungsfreien Betrieb für die Applikations-Server sicherzustellen, falls geplante oder ungeplante Unterbrechungen vorliegen. 
+---
+= Überprüfen Sie die kontinuierlich verfügbare Konfiguration der SMB-Freigaben
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Zur Unterstützung eines unterbrechungsfreien Betriebs müssen Hyper-V und SQL Server SMB-Freigaben als kontinuierlich verfügbare Freigaben konfiguriert werden. Darüber hinaus gibt es bestimmte andere Freigabeinstellungen, die Sie überprüfen müssen. Sie sollten überprüfen, ob die Freigaben ordnungsgemäß konfiguriert sind, um einen unterbrechungsfreien Betrieb für die Applikations-Server sicherzustellen, falls geplante oder ungeplante Unterbrechungen vorliegen.
+
+Sie müssen überprüfen, ob die beiden folgenden Freigabeparameter richtig eingestellt sind:
+
+* Der `-offline-files` Der Parameter ist entweder auf festgelegt `manual` (Standard) oder `none`.
+* Symlinks müssen deaktiviert sein.
+
+
+Für einen ordnungsgemäßen unterbrechungsfreien Betrieb müssen die folgenden Freigabeigenschaften festgelegt werden:
+
+* `continuously-available`
+* `oplocks`
+
+
+Die folgenden Freigabeigenschaften dürfen nicht festgelegt werden:
+
+* `homedirectory`
+* `attributecache`
+* `branchcache`
+* `access-based-enumeration`
+
+
+.Schritte
+. Vergewissern Sie sich, dass die Offline-Dateien auf festgelegt sind `manual` Oder `disabled` Und dass Symlinks deaktiviert sind:
++
+`*vserver cifs shares show -vserver _vserver_name_*`
+
+. Vergewissern Sie sich, dass die SMB-Freigaben für kontinuierliche Verfügbarkeit konfiguriert sind:
++
+`*vserver cifs shares properties show -vserver _vserver_name_*`
+
+
+
+Im folgenden Beispiel wird die Share-Einstellung für einen Share mit dem Namen „`share1`“ auf Storage Virtual Machine (SVM, früher als Vserver bezeichnet) vs1 angezeigt. Offline-Dateien werden auf festgelegt `manual` Und die Symlinks sind deaktiviert (durch einen Bindestrich im gekennzeichnet `Symlink Properties` Feldausgabe):
+
+[listing]
+----
+cluster1::> vserver cifs share show -vserver vs1 -share-name share1
+                      Vserver: vs1
+                        Share: share1
+     CIFS Server NetBIOS Name: VS1
+                         Path: /data/share1
+             Share Properties: oplocks
+                               continuously-available
+           Symlink Properties: -
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+----
+Im folgenden Beispiel werden die Share-Eigenschaften für eine Freigabe mit dem Namen „`share1`“ auf SVM vs1 angezeigt:
+
+[listing]
+----
+cluster1::> vserver cifs share properties show -vserver vs1 -share-name share1
+Vserver    Share   Properties
+---------  ------  ----------
+vs1        share1  oplocks
+                   continuously-available
+----

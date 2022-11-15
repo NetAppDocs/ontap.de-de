@@ -1,0 +1,106 @@
+---
+sidebar: sidebar 
+permalink: task_nvme_provision_suse_linux.html 
+keywords: netapp, ontap, nvme, SUSE, linux, servers, Provision NVMe storage, namespace, SCSI disk service 
+summary: Erstellen von Namespaces, um Storage für einen SUSE Linux-Server mit dem NVMe-Protokoll bereitzustellen. Namespaces werden Linux als SCSI-Festplattengeräte angezeigt. 
+---
+= Bereitstellen von NVMe-Storage für SUSE Linux
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Erstellen von Namespaces, um Storage für einen SUSE Linux-Server mit dem NVMe-Protokoll bereitzustellen. Namespaces werden Linux als SCSI-Festplattengeräte angezeigt.
+
+Durch dieses Verfahren werden neue Namespaces auf einer vorhandenen Storage-VM erstellt. Ihre Storage VM muss für NVME konfiguriert sein, und Ihr FC- oder TCP-Transport sollte bereits eingerichtet sein.
+
+Ab ONTAP 9.8 ist bei der Bereitstellung von Storage QoS standardmäßig aktiviert. Sie können die QoS deaktivieren oder während des Bereitstellungsprozesses oder zu einem späteren Zeitpunkt eine individuelle QoS-Richtlinie auswählen.
+
+[role="tabbed-block"]
+.Schritte
+====
+.System Manager
+--
+Erstellung von Namespaces, um Storage über das NVMe-Protokoll mit ONTAP System Manager bereitzustellen (9.7 und höher).
+
+. Klicken Sie im System Manager auf *Storage > NVMe Namesaces* und dann auf *Add*.
++
+.. Wenn Sie ein neues Subsystem erstellen möchten, klicken Sie auf *Weitere Optionen*.
+.. Wenn Sie ONTAP 9.8 oder höher verwenden und QoS deaktivieren oder eine benutzerdefinierte QoS-Richtlinie auswählen möchten, klicken Sie auf *Mehr Optionen* und wählen Sie dann unter *Speicher und Optimierung* die Option *Performance Service Level*.
+
+
+
+
+. Zonen der FC-Switches anhand des WWPN. Verwenden Sie eine Zone pro Initiator und schließen Sie alle Ziel-Ports in jeder Zone an.
+. Entdecken Sie auf Ihrem Linux-Server die neuen Namespaces.
+. Initialisieren Sie den Namespace und formatieren Sie ihn mit einem Dateisystem.
+. Überprüfen Sie, ob der Linux-Server Daten schreiben und im Namespace lesen kann.
+
+
+--
+.CLI
+--
+Erstellen von Namespaces, um Storage über das NVMe-Protokoll mit der ONTAP-CLI bereitzustellen.
+
+Dabei wird ein NVMe Namespace und -Subsystem für eine vorhandene Storage-VM erstellt, die bereits für das NVMe-Protokoll konfiguriert wurde. Anschließend wird der Namespace dem Subsystem zugeordnet, um den Datenzugriff über das Host-System zu ermöglichen.
+
+Informationen zum Konfigurieren der Storage-VM für NVMe finden Sie unter link:san-admin/configure-svm-nvme-task.html["Konfigurieren Sie eine SVM für NVMe"].
+
+.Schritte
+. Vergewissern Sie sich, dass die SVM für NVMe konfiguriert ist:
++
+`vserver show -vserver _SVM_name_ -fields allowed-protocols`
+
++
+`NVMe` Sollte unter angezeigt werden `allowed-protocols` Spalte.
+
+. NVMe-Namespace erstellen:
++
+`vserver nvme namespace create -vserver _SVM_name_ -path _path_ -size _size_of_namespace_ -ostype _OS_type_`
+
+. NVMe-Subsystem erstellen:
++
+`vserver nvme subsystem create -vserver _SVM_name_ -subsystem _name_of_subsystem_ -ostype _OS_type_`
+
++
+Bei dem NVMe-Subsystem-Namen wird die Groß-/Kleinschreibung berücksichtigt. Er muss 1 bis 96 Zeichen enthalten. Sonderzeichen sind zulässig.
+
+. Überprüfen Sie, ob das Subsystem erstellt wurde:
++
+`vserver nvme subsystem show -vserver _SVM_name_`
+
++
+Der `nvme` Das Subsystem sollte unter dem angezeigt werden `Subsystem` Spalte.
+
+. Beziehen Sie das NQN vom Host.
+. Fügen Sie den Host-NQN zum Subsystem hinzu:
++
+`vserver nvme subsystem host add -vserver _SVM_name_ -subsystem _subsystem_name_ -host-nqn _Host_NQN_:subsystem._subsystem_name_`
+
+. Den Namespace dem Subsystem zuordnen:
++
+`vserver nvme subsystem map add -vserver _SVM_name_ -subsystem _subsystem_name_ -path _path_`
+
++
+Ein Namespace kann nur einem einzelnen Subsystem zugeordnet werden.
+
+. Vergewissern Sie sich, dass der Namespace dem Subsystem zugeordnet ist:
++
+`vserver nvme namespace show -vserver _SVM_name_ -instance`
+
++
+Das Subsystem sollte als aufgeführt werden `Attached subsystem`.
+
+
+
+--
+====

@@ -1,0 +1,99 @@
+---
+permalink: volumes/enable-data-compression-volume-task.html 
+sidebar: sidebar 
+keywords: enable, data, compression, on a volume 
+summary: Sie können die Datenkomprimierung auf einem FlexVol Volume aktivieren und mit dem Befehl „Volume Efficiency modify“ Platzeinsparungen erzielen. Sie können Ihrem Volume auch einen Komprimierungstyp zuweisen, wenn der Standardkomprimierungstyp nicht aktiviert werden soll. 
+---
+= Aktivieren Sie die Datenkomprimierung auf einem Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die Datenkomprimierung auf einem FlexVol Volume aktivieren und mit dem Platzeinsparungen erzielen `volume efficiency modify` Befehl. Sie können Ihrem Volume auch einen Komprimierungstyp zuweisen, wenn der Standardkomprimierungstyp nicht aktiviert werden soll.
+
+Die Deduplizierung auf dem Volume muss aktiviert sein.
+
+[NOTE]
+====
+* Die Deduplizierung muss nur aktiviert sein und nicht auf dem Volume ausgeführt werden.
+* Der Komprimierungsscanner muss verwendet werden, um die vorhandenen Daten auf den Volumes zu komprimieren, die sich auf AFF Plattformen vorhanden sind.
+
+
+====
+link:enable-deduplication-volume-task.html["Aktivierung der Deduplizierung auf einem Volume"]
+
+.Über diese Aufgabe
+* Bei HDD-Aggregaten und Flash Pool-Aggregaten können Sie sowohl die Inline- als auch die nachgelagerte Komprimierung oder nur die nachgelagerte Komprimierung auf einem Volume aktivieren.
++
+Wenn Sie beide aktivieren, müssen Sie die nachgelagerte Komprimierung auf dem Volume aktivieren, bevor Sie die Inline-Komprimierung aktivieren.
+
+* In AFF Plattformen wird nur Inline-Komprimierung unterstützt.
++
+Vor Aktivierung der Inline-Komprimierung müssen Sie die nachgelagerte Komprimierung auf dem Volume aktivieren. Da die nachgelagerte Komprimierung in AFF-Plattformen jedoch nicht unterstützt wird, findet auf diesen Volumes keine nachgelagerte Komprimierung statt. Außerdem wird eine EMS-Nachricht generiert, die Sie darüber informiert, dass die nachgelagerte Komprimierung ausgelassen wurde.
+
+* Die temperaturempfindliche Speichereffizienz wird in ONTAP 9.8 eingeführt. Diese Funktion sorgt dafür, dass je nachdem, ob „heiße“ oder „kalte“ Daten gespeichert sind, die Storage-Effizienz angewendet wird. Bei weniger häufig verwendeten Daten werden größere Datenblöcke komprimiert und bei „heißen“ Daten, die häufiger überschrieben werden, werden kleinere Datenblöcke komprimiert, wodurch der Prozess effizienter wird. Temperaturabhängige Storage-Effizienz wird automatisch auf neu erstellten AFF Volumes mit Thin Provisioning aktiviert.
+* Der Komprimierungstyp wird automatisch auf Grundlage der Aggregatplattform zugewiesen:
++
+[cols="2*"]
+|===
+| Plattform/Aggregate | Komprimierungstyp 
+
+
+ a| 
+AFF
+ a| 
+Anpassungsfähige Komprimierung
+
+
+
+ a| 
+Flash Pool-Aggregate
+ a| 
+Anpassungsfähige Komprimierung
+
+
+
+ a| 
+HDD-Aggregate
+ a| 
+Sekundäre Komprimierung
+
+|===
+
+
+.Wahlmöglichkeiten
+* Verwenden Sie die `volume efficiency modify` Befehl zum Aktivieren der Datenkomprimierung mit dem Standardkomprimierungstyp.
++
+Mit dem folgenden Befehl wird die nachgelagerte Komprimierung auf Volume Vola der SVM vs1 aktiviert:
+
++
+`volume efficiency modify -vserver vs1 -volume VolA -compression true`
+
++
+Mit dem folgenden Befehl werden sowohl die nachgelagerte als auch die Inline-Komprimierung auf Volume Vola von SVM vs1 aktiviert:
+
++
+`volume efficiency modify -vserver vs1 -volume VolA -compression true -inline-compression true`
+
+* Verwenden Sie die `volume efficiency modify` Befehl auf der erweiterten Berechtigungsebene, um die Datenkomprimierung mit einem bestimmten Komprimierungstyp zu aktivieren.
++
+.. Verwenden Sie die `set -privilege advanced` Befehl zum Ändern der Berechtigungsebene in „Advanced“.
+.. Verwenden Sie die `volume efficiency modify` Befehl zum Zuweisen eines Komprimierungstyps zu einem Volume
++
+Mit dem folgenden Befehl wird die nachgelagerte Komprimierung aktiviert und der anpassungsfähige Komprimierungstyp wird Volume Vola von SVM vs1 zugewiesen:
+
++
+`volume efficiency modify -vserver vs1 -volume VolA -compression true -compression-type adaptive`
+
++
+Mit dem folgenden Befehl wird sowohl die nachgelagerte als auch die Inline-Komprimierung aktiviert und Volume Vola von SVM vs1 zugewiesen:
+
++
+`volume efficiency modify -vserver vs1 -volume VolA -compression true -compression-type adaptive -inline-compression true`
+
+.. Verwenden Sie die `set -privilege admin` Befehl zum Ändern der Berechtigungsebene in den Administrator.
+
+
+

@@ -1,0 +1,171 @@
+---
+permalink: peering/create-cluster-relationship-93-later-task.html 
+sidebar: sidebar 
+keywords: create, cluster, peer, relationship 
+summary: Mit dem Befehl Cluster Peer create können Sie eine Peer-Beziehung zwischen einem lokalen und einem Remote-Cluster erstellen. Nachdem die Peer-Beziehung erstellt wurde, können Sie Cluster Peer Creation im Remote-Cluster ausführen, um sie für den lokalen Cluster zu authentifizieren. 
+---
+= Erstellen einer Cluster-Peer-Beziehung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `cluster peer create` Befehl zum Erstellen einer Peer-Beziehung zwischen einem lokalen und einem Remote-Cluster. Nachdem die Peer-Beziehung erstellt wurde, können Sie ausführen `cluster peer create` Im Remote-Cluster zur Authentifizierung beim lokalen Cluster.
+
+.Bevor Sie beginnen
+* Sie müssen auf jedem Node in den Clustern, die Peering durchführen, Intercluster LIFs erstellt haben.
+* Die Cluster müssen ONTAP 9.3 oder höher ausführen. (Wenn auf den Clustern ONTAP 9.2 oder eine frühere Version ausgeführt wird, lesen Sie die Verfahren in link:https://library.netapp.com/ecm/ecm_download_file/ECMLP2494079["Dieses archivierte Dokument"^].)
+
+
+.Schritte
+. Erstellen Sie auf dem Ziel-Cluster eine Peer-Beziehung mit dem Quell-Cluster:
++
+`cluster peer create -generate-passphrase -offer-expiration _MM/DD/YYYY HH:MM:SS_|1...7days|1...168hours -peer-addrs _peer_LIF_IPs_ -initial-allowed-vserver-peers _svm_name_,..|* -ipspace _ipspace_`
+
++
+Wenn Sie beides angeben `-generate-passphrase` Und `-peer-addrs`, Nur der Cluster, dessen Intercluster LIFs in angegeben sind `-peer-addrs` Kann das generierte Passwort verwenden.
+
++
+Sie können die ignorieren `-ipspace` Option, wenn kein benutzerdefinierter IPspace verwendet wird. Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Wenn Sie die Peering-Beziehung in ONTAP 9.6 oder höher erstellen und keine clusterübergreifende Peering-Kommunikation verschlüsselt werden soll, müssen Sie den verwenden `-encryption-protocol-proposed none` Option zum Deaktivieren der Verschlüsselung.
+
++
+Im folgenden Beispiel wird eine Cluster-Peer-Beziehung mit einem nicht festgelegten Remote-Cluster erstellt und Peer-Beziehungen zu SVMs vorab autorisiert `vs1` Und `vs2` Auf dem lokalen Cluster:
+
++
+[listing]
+----
+cluster02::> cluster peer create -generate-passphrase -offer-expiration 2days -initial-allowed-vserver-peers vs1,vs2
+
+                     Passphrase: UCa+6lRVICXeL/gq1WrK7ShR
+                Expiration Time: 6/7/2017 08:16:10 EST
+  Initial Allowed Vserver Peers: vs1,vs2
+            Intercluster LIF IP: 192.140.112.101
+              Peer Cluster Name: Clus_7ShR (temporary generated)
+
+Warning: make a note of the passphrase - it cannot be displayed again.
+----
++
+Im folgenden Beispiel wird eine Cluster-Peer-Beziehung zum Remote-Cluster unter LIF IP-Adressen 192.140.112.103 und 192.140.112.104 erstellt und eine Peer-Beziehung mit jeder SVM auf dem lokalen Cluster vorab autorisiert:
+
++
+[listing]
+----
+cluster02::> cluster peer create -generate-passphrase -peer-addrs 192.140.112.103,192.140.112.104 -offer-expiration 2days -initial-allowed-vserver-peers *
+
+                     Passphrase: UCa+6lRVICXeL/gq1WrK7ShR
+                Expiration Time: 6/7/2017 08:16:10 EST
+  Initial Allowed Vserver Peers: vs1,vs2
+            Intercluster LIF IP: 192.140.112.101,192.140.112.102
+              Peer Cluster Name: Clus_7ShR (temporary generated)
+
+Warning: make a note of the passphrase - it cannot be displayed again.
+----
++
+Im folgenden Beispiel wird eine Cluster-Peer-Beziehung mit einem nicht festgelegten Remote-Cluster erstellt und Peer-Beziehungen zu SVMs vorab autorisiert``vs1`` Und `vs2` Auf dem lokalen Cluster:
+
++
+[listing]
+----
+cluster02::> cluster peer create -generate-passphrase -offer-expiration 2days -initial-allowed-vserver-peers vs1,vs2
+
+                     Passphrase: UCa+6lRVICXeL/gq1WrK7ShR
+                Expiration Time: 6/7/2017 08:16:10 EST
+  Initial Allowed Vserver Peers: vs1,vs2
+            Intercluster LIF IP: 192.140.112.101
+              Peer Cluster Name: Clus_7ShR (temporary generated)
+
+Warning: make a note of the passphrase - it cannot be displayed again.
+----
+. Authentifizierung des Quellclusters auf dem Quellcluster beim Ziel-Cluster:
++
+`cluster peer create -peer-addrs _peer_LIF_IPs_ -ipspace ipspace`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel wird der lokale Cluster an den Remote-Cluster unter LIF-IP-Adressen 192.140.112.101 und 192.140.112.102 authentifiziert:
+
++
+[listing]
+----
+cluster01::> cluster peer create -peer-addrs 192.140.112.101,192.140.112.102
+
+Notice: Use a generated passphrase or choose a passphrase of 8 or more characters.
+        To ensure the authenticity of the peering relationship, use a phrase or sequence of characters that would be hard to guess.
+
+Enter the passphrase:
+Confirm the passphrase:
+
+Clusters cluster02 and cluster01 are peered.
+----
++
+Geben Sie die Passphrase für die Peer-Beziehung ein, wenn Sie dazu aufgefordert werden.
+
+. Vergewissern Sie sich, dass die Cluster-Peer-Beziehung erstellt wurde:
++
+`cluster peer show -instance`
+
++
+[listing]
+----
+cluster01::> cluster peer show -instance
+
+                               Peer Cluster Name: cluster02
+                   Remote Intercluster Addresses: 192.140.112.101, 192.140.112.102
+              Availability of the Remote Cluster: Available
+                             Remote Cluster Name: cluster2
+                             Active IP Addresses: 192.140.112.101, 192.140.112.102
+                           Cluster Serial Number: 1-80-123456
+                  Address Family of Relationship: ipv4
+            Authentication Status Administrative: no-authentication
+               Authentication Status Operational: absent
+                                Last Update Time: 02/05 21:05:41
+                    IPspace for the Relationship: Default
+----
+. Prüfen Sie die Konnektivität und den Status der Knoten in der Peer-Beziehung:
++
+`cluster peer health show`
+
++
+[listing]
+----
+cluster01::> cluster peer health show
+Node       cluster-Name                Node-Name
+             Ping-Status               RDB-Health Cluster-Health  Avail…
+---------- --------------------------- ---------  --------------- --------
+cluster01-01
+           cluster02                   cluster02-01
+             Data: interface_reachable
+             ICMP: interface_reachable true       true            true
+                                       cluster02-02
+             Data: interface_reachable
+             ICMP: interface_reachable true       true            true
+cluster01-02
+           cluster02                   cluster02-01
+             Data: interface_reachable
+             ICMP: interface_reachable true       true            true
+                                       cluster02-02
+             Data: interface_reachable
+             ICMP: interface_reachable true       true            true
+----
+
+
+
+
+== Weitere Möglichkeiten dies in ONTAP zu tun
+
+[cols="2"]
+|===
+| So führen Sie diese Aufgaben durch: | Inhalt anzeigen... 
+
+
+| Der neu gestaltete System Manager (verfügbar ab ONTAP 9.7) | link:https://docs.netapp.com/us-en/ontap/task_dp_prepare_mirror.html["Bereiten Sie sich auf Spiegelung und Vaulting vor"^] 
+
+
+| System Manager Classic (verfügbar mit ONTAP 9.7 und älter) | link:https://docs.netapp.com/us-en/ontap-sm-classic/volume-disaster-prep/index.html["Überblick über die Vorbereitung der Volume Disaster Recovery"^] 
+|===

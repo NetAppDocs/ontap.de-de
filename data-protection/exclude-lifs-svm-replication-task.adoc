@@ -1,0 +1,140 @@
+---
+permalink: data-protection/exclude-lifs-svm-replication-task.html 
+sidebar: sidebar 
+keywords: lifs, network, settings, svm, replication 
+summary: Wenn sich die Quell- und Ziel-SVMs in unterschiedlichen Subnetzen befinden, können Sie die Netzwerkoption -discard-configs des Befehls „snapmirror Policy create“ verwenden, um LIFs und zugehörige Netzwerkeinstellungen von der SVM-Replizierung auszuschließen. 
+---
+= Schließt LIFs und zugehörige Netzwerkeinstellungen von der SVM-Replizierung aus
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn sich die Quell- und Ziel-SVMs in unterschiedlichen Subnetzen befinden, können Sie das verwenden `-discard-configs network` Option des `snapmirror policy create` Befehl zum Ausschließen von LIFs und zugehörigen Netzwerkeinstellungen von der SVM-Replizierung.
+
+Quell- und Ziel-Cluster sowie SVMs müssen Peering durchgeführt werden.
+
+Weitere Informationen finden Sie unter link:../peering/create-cluster-relationship-93-later-task.html["Erstellen einer Cluster-Peer-Beziehung"] Und link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM-Peer-Beziehung"].
+
+Der `-identity-preserve` Option des `snapmirror create` Der Befehl muss auf festgelegt sein `true` Wenn Sie die SVM-Replizierungsbeziehung erstellen.
+
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
+.Schritte
+. Ziel-SVM erstellen:
++
+`vserver create -vserver _SVM_ -subtype dp-destination`
+
++
+Der SVM-Name muss über die Quell- und Ziel-Cluster hinweg eindeutig sein.
+
++
+Im folgenden Beispiel wird eine Ziel-SVM mit dem Namen erstellt `svm_backup`:
+
++
+[listing]
+----
+cluster_dst:> vserver create -vserver svm_backup -subtype dp-destination
+----
+. Erstellen Sie aus dem Ziel-Cluster eine SVM-Peer-Beziehung mit dem `vserver peer create` Befehl.
++
+Weitere Informationen finden Sie unter link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM-Peer-Beziehung"].
+
+. Job-Zeitplan erstellen:
++
+`job schedule cron create -name _job_name_ -month _month_ -dayofweek _day_of_week_ -day _day_of_month_ -hour _hour_ -minute _minute_`
+
++
+Für `-month`, `-dayofweek`, und `-hour`, Sie können angeben `all` Zum Ausführen des Jobs jeden Monat, Wochentag und Stunde.
+
++
+Im folgenden Beispiel wird ein Job-Zeitplan mit dem Namen erstellt `my_weekly` Das läuft samstags um 3:00 Uhr:
+
++
+[listing]
+----
+cluster_dst::> job schedule cron create -name my_weekly -dayofweek "Saturday" -hour 3 -minute 0
+----
+. Erstellen einer benutzerdefinierten Replizierungsrichtlinie:
++
+`snapmirror policy create -vserver _SVM_ -policy _policy_ -type async-mirror|vault|mirror-vault -comment _comment_ -tries transfer_tries -transfer-priority low|normal -is-network-compression-enabled true|false -discard-configs network`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel wird eine benutzerdefinierte Replizierungsrichtlinie für SnapMirror DR erstellt, die LIFs ausschließt:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy create -vserver svm1 -policy DR_exclude_LIFs -type async-mirror -discard-configs network
+----
++
+Im folgenden Beispiel wird eine benutzerdefinierte Replizierungsrichtlinie für die einheitliche Replizierung erstellt, bei der LIFs ausgeschlossen sind:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy create -vserver svm1 -policy unified_exclude_LIFs -type mirror-vault -discard-configs network
+----
+. Führen Sie auf der Ziel-SVM oder dem Ziel-Cluster den folgenden Befehl aus, um eine Replizierungsbeziehung zu erstellen:
++
+`snapmirror create -source-path _SVM_: -destination-path _SVM_: -type DP|XDP -schedule _schedule_ -policy _policy_ -identity-preserve true|false`
+
++
+[NOTE]
+====
+Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Sehen Sie sich die Beispiele unten an.
+
+====
++
+Im folgenden Beispiel wird eine SnapMirror DR-Beziehung erstellt, bei der LIFs ausgeschlossen sind:
+
++
+[listing]
+----
+cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy DR_exclude_LIFs -identity-preserve true
+----
++
+Im folgenden Beispiel wird eine SnapMirror Replizierungsbeziehung erstellt, die LIFs nicht ausschließt:
+
++
+[listing]
+----
+cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy unified_exclude_LIFs -identity-preserve true
+----
+. Ziel-SVM stoppen:
++
+`vserver stop`
+
++
+`_SVM name_`
+
++
+Im folgenden Beispiel wird eine Ziel-SVM namens dvs1 angehalten:
+
++
+[listing]
+----
+cluster_dst::> vserver stop -vserver dvs1
+----
+. Initialisieren Sie von der Ziel-SVM oder dem Ziel-Cluster eine Replizierungsbeziehung:
++
+`snapmirror initialize -source-path _SVM_: -destination-path _SVM_:`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Das folgende Beispiel initialisiert die Beziehung zwischen der Quelle, `svm1` Und dem Ziel, `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror initialize -source-path svm1: -destination-path svm_backup:
+----
+
+
+Sie müssen das Netzwerk und die Protokolle auf der Ziel-SVM für den Datenzugriff bei einem Ausfall konfigurieren.

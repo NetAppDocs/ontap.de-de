@@ -1,0 +1,121 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/use-cases-restrictions-concept.html 
+keywords: anti-ransomware use cases and restrictions, anti-ransomware performance and frequency considerations, anti-ransomware workloads, anti-ransomware volume requirements, anti-ransomware performance, volumes, anti-ransomware encryption, anti-ransomware system configurations, autonomous ransomware protection, arp 
+summary: In der aktuellen Version ist Ransomware-Schutz in NAS-Umgebungen am besten geeignet. Zukünftige Versionen unterstützen Support für andere Umgebungen. 
+---
+= Anwendungsfälle und Überlegungen zum autonomen Ransomware-Schutz
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Unterstützung für ONTAP Plattformen:
+
+* Die Funktion Autonomous Ransomware Protection (ARP) ist für alle lokalen ONTAP Systeme ab ONTAP 9.10.1 verfügbar.
+* ARP ist derzeit nicht in den folgenden Cloud Volumes ONTAP-Umgebungen verfügbar:
++
+** Amazon FSX
+** Azure
+** Google Cloud
+
+
+
+
+Geeignete Workloads:
+
+* Datenbanken auf NFS-Storage
+* Home Directorys für Windows oder Linux
++
+Da Benutzer Dateien mit Erweiterungen erstellen könnten, die nicht im Lernzeitraum erkannt wurden, gibt es eine größere Möglichkeit von False positive in diesem Workload.
+
+* Bilder und Video
++
+Beispielsweise Daten aus dem Gesundheitswesen und EDA-Daten (Electronic Design Automation).
+
+
+
+Ab ONTAP 9.12.1 ist ARP für die folgenden Konfigurationen verfügbar:
+
+* Volumes sind mit SnapMirror geschützt
+* SVMs sind durch SnapMirror geschützt
+* Aktivierte SVMs für die Migration (SVM-Datenmobilität)
+
+
+Ungeeignete Workloads:
+
+* Workloads mit sehr hoher Häufigkeit zum Erstellen oder Löschen von Dateien (Hunderttausende Dateien in wenigen Sekunden, z. B. Workloads für Test/Entwicklung)
+* ARP hängt von der Fähigkeit ab, einen ungewöhnlichen Anstieg in der Datei-Erzeugen oder -Löschung zu erkennen. Ist die Applikation die Quelle der Dateiaktivitäten, können sie nicht effektiv von Ransomware-Aktivitäten unterschieden werden
+* Workloads, bei denen die Applikation oder der Host die Daten-ARP verschlüsselt, hängt von der Unterscheidung der eingehenden Daten als verschlüsselt oder unverschlüsselt ab. Wenn die Applikation selbst die Daten verschlüsselt, wird die Effektivität der Funktion verringert. Die Funktion kann jedoch weiterhin basierend auf Dateiaktivitäten (Erstellen, Löschen und Überschreiben) und Dateityp verwendet werden.
+
+
+Nicht unterstützte Systemkonfigurationen:
+
+* SAN-Umgebungen
+* ONTAP S3-Umgebungen
+* VMDKs auf NFS
+
+
+Volume-Anforderungen:
+
+* Weniger als 100 % voll
+* Verbindungspfad muss aktiv sein
+
+
+Nicht unterstützte Volume-Typen:
+
+* Offline-Volumes
+* Eingeschränkte Volumes
+* SnapMirror-geschützte Volumes (ONTAP 9.11.1 und frühere Versionen)
+* SnapLock Volumes
+* FlexGroup Volumes
+* FlexCache Volumes (die Anti-Ransomware-Funktion wird auf FlexVol-Ursprungs-Volumes unterstützt, jedoch nicht auf Cache-Volumes).
+* REINE SAN-Volumes
+* Volumes von angestoppten Storage VMs
+* Root-Volumes von Storage-VMs
+
+
+
+
+== SnapMirror und ARP-Interoperabilität
+
+Ab ONTAP 9.12.1 wird ARP auf SnapMirror Ziel-Volumes unterstützt. Wenn ein SnapMirror Quell-Volume ARP-aktiviert ist, übernimmt das SnapMirror Ziel-Volume automatisch den ARP-Konfigurationsstatus des Quell-Volume.
+
+Während das Zielvolume aus schreibgeschützten (RO) Snapshot Kopien besteht, wird auf seinen Daten keine ARP Verarbeitung durchgeführt. Wenn das SnapMirror Ziel-Volume jedoch in Read-Write (RW) konvertiert wird, wird ARP automatisch auf dem RW-konvertierten Zielvolume aktiviert. Das Zielvolumen erfordert neben dem, was bereits auf dem Quellvolumen aufgezeichnet wurde, keine zusätzlichen Lernverfahren.
+
+
+
+== ARP-Performance- und Frequenzüberlegungen
+
+Die ARP-Funktion kann, wie im Datendurchsatz und bei den IOPS-Spitzen gemessen, nur minimale Auswirkungen auf die System-Performance haben. Die Auswirkungen der Anti-Ransomware-Funktion sind stark von Volume-Workloads abhängig. Für die meisten typischen oder gängigen Workloads werden folgende Konfigurationsgrenzwerte empfohlen:
+
+[cols="30,20,30"]
+|===
+| Workload-Merkmale | Empfohlene Volume-Beschränkung pro Node | Performance-Verschlechterung bei Überschreitung der Grenze des Volume pro Node:[*] 
+
+
+| Leseintensiv oder die Daten komprimiert werden können. | 150 | 4 % der maximalen IOPS 
+
+
+| Schreibintensiv und die Daten können nicht komprimiert werden. | 60 | 10 % der maximalen IOPS 
+|===
+Pass:[*] die Systemleistung wird unabhängig von der Anzahl der hinzugefügten Volumes, die über den empfohlenen Grenzwerten liegen, nicht über diesen Prozentwerten hinaus beeinträchtigt.
+
+Da ARP-Analysen in einer priorisierten Reihenfolge ausgeführt werden, da sich die Anzahl der geschützten Volumes erhöht, werden die Analysen auf jedem Volume weniger häufig ausgeführt.
+
+
+
+== Automatische Snapshot-Kopien sind nötig, wenn Ransomware erkannt wird
+
+Um den bestmöglichen Recovery-Punkt zu erhalten, erstellt ARP eine automatische Snapshot-Kopie, sobald anormale Dateiaktivitäten erkannt werden. ARP kennzeichnet jedoch nicht sofort eine Warnmeldung. Vielmehr müssen Analysen ausgeführt werden und bestätigen, dass die verdächtigen Aktivitäten mit einem Ransomware-Profil übereinstimmen, bevor eine Warnung erstellt wird. Dieser Vorgang kann bis zu 60 Minuten dauern. Wenn die Analyse feststellt, dass die Aktivität nicht verdächtig ist, wird keine Meldung generiert, die automatisch erstellte Snapshot Kopie jedoch mindestens zwei Tage lang im Filesystem vorhanden bleibt.
+
+Ab ONTAP 9.11.1 können Sie die Anzahl und den Aufbewahrungszeitraum für ARP Snapshot-Kopien kontrollieren, die automatisch als Antwort auf vermutete Ransomware-Angriffe erzeugt werden. Erfahren Sie, wie Sie link:modify-automatic-shapshot-options-task.html["Optionen für automatische Snapshot-Kopien ändern"].

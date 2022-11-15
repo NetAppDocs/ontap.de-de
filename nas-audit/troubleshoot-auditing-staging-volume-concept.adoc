@@ -1,0 +1,83 @@
+---
+permalink: nas-audit/troubleshoot-auditing-staging-volume-concept.html 
+sidebar: sidebar 
+keywords: troubleshoot, audit, stage, volume space, issues 
+summary: Probleme können auftreten, wenn entweder auf den Staging-Volumes oder auf dem Volume, das die Audit-Ereignisprotokolle enthält, nicht genügend Speicherplatz vorhanden ist. Wenn nicht genügend Speicherplatz vorhanden ist, können keine neuen Audit-Datensätze erstellt werden. Dies verhindert, dass Clients auf Daten zugreifen und Zugriffsanforderungen fehlschlagen. Sie sollten wissen, wie Sie diese Probleme mit Volume-Speicherplatz beheben und beheben. 
+---
+= Fehlerbehebung bei Problemen mit Auditing und Staging von Volume-Speicherplatz
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Probleme können auftreten, wenn entweder auf den Staging-Volumes oder auf dem Volume, das die Audit-Ereignisprotokolle enthält, nicht genügend Speicherplatz vorhanden ist. Wenn nicht genügend Speicherplatz vorhanden ist, können keine neuen Audit-Datensätze erstellt werden. Dies verhindert, dass Clients auf Daten zugreifen und Zugriffsanforderungen fehlschlagen. Sie sollten wissen, wie Sie diese Probleme mit Volume-Speicherplatz beheben und beheben.
+
+
+
+== Behebung von Platzproblemen im Zusammenhang mit den Ereignisprotokollvolumes
+
+Wenn Volumes mit Ereignisprotokolldateien nicht mehr genügend Speicherplatz haben, können Protokolldatensätze durch Auditing nicht in Protokolldateien konvertiert werden. Dies führt zu einem Ausfall des Client-Zugriffs. Sie müssen wissen, wie die Behebung von Platzproblemen im Zusammenhang mit Ereignisprotokollvolumen behoben wird.
+
+* Storage Virtual Machine (SVM) und Cluster-Administratoren können feststellen, ob ein unzureichender Volume-Speicherplatz vorhanden ist, indem Informationen über die Auslastung und Konfiguration der Volumes und Aggregate angezeigt werden.
+* Falls in den Volumes, die Ereignisprotokolle enthalten, nicht genügend Speicherplatz verfügbar ist, können SVM- und Cluster-Administratoren diese Platzprobleme beheben, indem sie einige der Ereignisprotokolldateien entfernen oder die Größe des Volume erhöhen.
++
+[NOTE]
+====
+Wenn das Aggregat, das das Ereignisprotokoll enthält, voll ist, muss die Größe des Aggregats erhöht werden, bevor Sie die Größe des Volumes erhöhen können. Nur ein Cluster-Administrator kann die Größe eines Aggregats erhöhen.
+
+====
+* Der Zielpfad für die Ereignisprotokolldateien kann durch Ändern der Überwachungskonfiguration in ein Verzeichnis auf einem anderen Volume geändert werden.
++
+[NOTE]
+====
+Der Datenzugriff wird in den folgenden Fällen verweigert:
+
+** Wenn das Zielverzeichnis gelöscht wird.
+** Wenn die Dateibegrenzung für ein Volume, das das Zielverzeichnis hostet, die Höchststufe erreicht.
+
+
+====
+
+
+Weitere Informationen zum Anzeigen von Informationen zu Volumes und zur Vergrößerung von Volumes finden Sie im link:../volumes/index.html["Logisches Storage-Management"]
+
+Weitere Informationen zum Anzeigen von Informationen über Aggregate und zum Verwalten von Aggregaten finden Sie unter link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"].
+
+
+
+== Behebung von Platzproblemen im Zusammenhang mit den Staging-Volumes
+
+Sollte einer der Volumes, die Staging-Dateien für die SVM (Storage Virtual Machine) enthalten, nicht mehr genügend Speicherplatz haben, kann die Prüfung Protokolldatensätze nicht in Staging-Dateien schreiben. Dies führt zu einem Ausfall des Client-Zugriffs. Um dieses Problem zu beheben, müssen Sie ermitteln, ob die in der SVM verwendeten Staging-Volumes durch die Anzeige von Informationen zur Volume-Nutzung vollständig sind.
+
+Wenn das Volume, das die konsolidierten Ereignisprotokolldateien enthält, genügend Speicherplatz hat, aber aufgrund eines unzureichenden Speicherplatzes beim Client-Zugriff weiterhin besteht, sind die Staging-Volumes möglicherweise nicht mehr genügend Platz. Der SVM-Administrator muss sich mit Ihnen in Verbindung setzen, um zu ermitteln, ob die Staging-Volumes, die Staging-Dateien für die SVM enthalten, über unzureichenden Speicherplatz verfügen. Das Audit-Subsystem generiert ein EMS-Ereignis, wenn Überwachungsereignisse nicht generiert werden können, weil der Speicherplatz in einem Staging-Volume nicht ausreicht. Die folgende Meldung wird angezeigt: `No space left on device`. Nur Informationen zu Staging Volumes können angezeigt werden. SVM-Administratoren können dies nicht.
+
+Alle Staging-Volume-Namen beginnen mit `MDV_aud_` Anschließend die UUID des Aggregats, das das Staging-Volume enthält. Das folgende Beispiel zeigt vier System-Volumes auf der Administrator-SVM, die automatisch erstellt wurden, wenn eine Fileservices-Auditing-Konfiguration für eine Daten-SVM im Cluster erstellt wurde:
+
+[listing]
+----
+cluster1::> volume show -vserver cluster1
+Vserver   Volume       Aggregate    State      Type       Size  Available Used%
+--------- ------------ ------------ ---------- ---- ---------- ---------- -----
+cluster1  MDV_aud_1d0131843d4811e296fc123478563412
+                       aggr0        online     RW          2GB     1.90GB    5%
+cluster1  MDV_aud_8be27f813d7311e296fc123478563412
+                       root_vs0     online     RW          2GB     1.90GB    5%
+cluster1  MDV_aud_9dc4ad503d7311e296fc123478563412
+                       aggr1        online     RW          2GB     1.90GB    5%
+cluster1  MDV_aud_a4b887ac3d7311e296fc123478563412
+                       aggr2        online     RW          2GB     1.90GB    5%
+4 entries were displayed.
+----
+Wenn der Speicherplatz in den Staging-Volumes nicht ausreicht, können Sie die Platzprobleme beheben, indem Sie die Größe des Volumes erhöhen.
+
+[NOTE]
+====
+Ist das Aggregat, das das Staging-Volume enthält, voll, muss die Größe des Aggregats erhöht werden, bevor Sie die Volume-Größe erhöhen können. Nur Sie können die Größe eines Aggregats erhöhen, was SVM-Administratoren nicht können.
+
+====
+Wenn ein oder mehrere Aggregate einen verfügbaren Speicherplatz von weniger als 2 GB aufweisen, schlägt die SVM-Audit-Erstellung fehl. Wenn die Erstellung der SVM-Audits fehlschlägt, werden die erstellten Staging-Volumes gelöscht.
+
+link:../concepts/index.html["ONTAP-Konzepte"]
+link:../volumes/index.html["Logisches Storage-Management"]
+link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"]

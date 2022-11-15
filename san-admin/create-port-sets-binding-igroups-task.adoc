@@ -1,0 +1,72 @@
+---
+permalink: san-admin/create-port-sets-binding-igroups-task.html 
+sidebar: sidebar 
+keywords: create, port, sets, binding, igroups, portsets,portset 
+summary: 'Zusätzlich zur Verwendung von Selective LUN Map (SLM) können Sie einen Portsatz erstellen und den Portsatz an eine Initiatorgruppe binden, um die Verwendung von LIFs durch einen Initiator für den Zugriff auf eine LUN noch weiter zu beschränken. Wenn Sie einen Portsatz nicht an eine Initiatorgruppe binden, können alle Initiatoren in der Initiatorgruppe auf die zugeordneten LUNs über alle LIFs auf dem Node zugreifen, der die LUN besitzt, und den HA-Partner des entsprechenden Node.' 
+---
+= Erstellen Sie eine Portsätze und binden Sie sie an eine Initiatorgruppe
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Zusätzlich zu verwenden link:selective-lun-map-concept.html["Selektive LUN-Zuordnung (SLM)"], Sie können einen Portsatz erstellen und den Portsatz an eine Initiatorgruppe binden, um einen weiteren Grenzwert für den Zugriff auf eine LUN zu verwenden.
+
+Wenn Sie einen Portsatz nicht an eine Initiatorgruppe binden, können alle Initiatoren in der Initiatorgruppe über alle LIFs auf dem Node, der die LUN besitzt, und über den HA-Partner des entsprechenden Node auf die zugeordneten LUNs zugreifen.
+
+Sie müssen mindestens eine LIF und eine Initiatorgruppe haben.
+
+Wenn Sie keine Schnittstellengruppen verwenden, werden zwei LIFs für Redundanz sowohl für iSCSI als auch für FC empfohlen. Für Schnittstellengruppen wird nur ein LIF empfohlen.
+
+Es ist vorteilhaft, Portsätze mit SLM zu verwenden, wenn mehr als zwei LIFs auf einem Node vorhanden sind und Sie einen bestimmten Initiator auf eine Untermenge von LIFs beschränken möchten. Ohne Port-Sets sind alle Ziele auf dem Node für alle Initiatoren mit Zugriff auf die LUN über den Node verfügbar, der die LUN besitzt, und auf den HA-Partner des entsprechenden Node.
+
+[role="tabbed-block"]
+.Schritte
+====
+.System Manager
+--
+Ab ONTAP 9.10.1 können Sie mit System Manager Portsätze erstellen und an Initiatorgruppen binden.
+
+Wenn Sie einen Portsatz erstellen und an eine Initiatorgruppe in einer ONTAP Version vor 9.10.1 binden müssen, müssen Sie das ONTAP CLI-Verfahren verwenden.
+
+. Klicken Sie in System Manager auf *Netzwerk > Übersicht > Portsätze* und dann auf *Hinzufügen*.
+. Geben Sie die Informationen für den neuen Portsatz ein und klicken Sie auf *Hinzufügen*.
+. Klicken Sie auf *Hosts > SAN-Initiatorgruppen*.
+. Um den Portsatz an eine neue Initiatorgruppe zu binden, klicken Sie auf *Hinzufügen*.
++
+Um den Portsatz an eine vorhandene Initiatorgruppe zu binden, wählen Sie die Initiatorgruppe aus, und klicken Sie auf image:icon_kabob.gif["Kabob-Symbol"], Und klicken Sie dann auf *Initiatorgruppe bearbeiten*.
+
+
+
+link:manage-san-initiators-task.html["Anzeigen und Verwalten von Initiatoren und Initiatorgruppen"]
+
+--
+.CLI
+--
+. Erstellen Sie einen Port-Satz, der die entsprechenden LIFs enthält:
++
+`portset create -vserver _vserver_name_ -portset _portset_name_ -protocol _protocol_ -port-name _port_name_`
+
++
+Wenn Sie FC verwenden, geben Sie das an `protocol` Parameter als `fcp`. Wenn Sie iSCSI verwenden, geben Sie die an `protocol` Parameter als `iscsi`.
+
+. Bindet die Initiatorgruppe an den Portsatz:
++
+`lun igroup bind -vserver _vserver_name_ -igroup _igroup_name_ -portset _portset_name_`
+
+. Vergewissern Sie sich, dass Ihre Port-Sätze und LIFs richtig sind:
++
+`portset show -vserver _vserver_name_`
+
++
+[listing]
+----
+Vserver   Portset   Protocol Port Names    Igroups
+--------- --------- -------- ------------- --------
+vs3       portset0  iscsi    lif0,lif1     igroup1
+----
+
+
+--
+====

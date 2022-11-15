@@ -1,0 +1,114 @@
+---
+permalink: s3-multiprotocol/index.html 
+sidebar: sidebar 
+keywords: multiprotocol, s3, configuration, overview, nfs, smb 
+summary: Ab ONTAP 9.12.1 können Kunden, die das S3-Protokoll ausführen, auf dieselben Daten zugreifen, die Clients zur Verfügung stehen, die die Protokolle NFS und SMB verwenden, ohne dass sie neu formatiert werden müssen. 
+---
+= S3-Multi-Protokoll-Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.12.1 können Kunden, die das S3-Protokoll ausführen, auf dieselben Daten zugreifen, die Clients zur Verfügung stehen, die die Protokolle NFS und SMB verwenden, ohne dass sie neu formatiert werden müssen. Dank dieser Funktion können NAS-Daten weiterhin an NAS-Clients bereitgestellt werden, während S3-Clients, auf denen S3-Applikationen ausgeführt werden (z. B. Data Mining und künstliche Intelligenz), Objektdaten verfügbar sind.
+
+S3-Multiprotokoll-Funktion unterstützt zwei Anwendungsfälle:
+
+. Zugriff auf vorhandene NAS-Daten über S3-Clients
++
+Wenn Ihre vorhandenen Daten mithilfe herkömmlicher NAS-Clients (NFS oder SMB) erstellt wurden und sich in NAS Volumes (FlexVol oder FlexGroup Volumes) befinden, können Sie jetzt Analyse-Tools auf S3-Clients für den Zugriff auf diese Daten verwenden.
+
+. Back-End-Storage für moderne Clients, die I/O mithilfe von NAS- und S3-Protokollen durchführen können
++
+Somit ist es möglich, integrierten Zugriff für Applikationen wie Spark und Kafka zu bieten, in denen dieselben Daten sowohl mit NAS- als auch mit S3-Protokollen gelesen und geschrieben werden können.
+
+
+
+
+
+== Funktionsweise von S3-Protokollen
+
+Mit ONTAP Multi-Protokoll können Sie denselben Datensatz wie eine Dateihierarchie oder Objekte in einem Bucket präsentieren. Dazu erstellt ONTAP „S3-NAS-Buckets“, mit denen S3-Clients Dateien in NAS-Storage mit S3-Objektanforderungen erstellen, lesen, löschen und aufzählen können. Diese Zuordnung entspricht der NAS-Sicherheitskonfiguration, wobei die Zugriffsberechtigungen für Dateien und Verzeichnisse beachtet werden und ggf. in den Sicherheitsprüfungen geschrieben werden.
+
+Diese Zuordnung wird erreicht, indem eine angegebene NAS-Verzeichnishierarchie als S3-Bucket präsentiert wird. Jede Datei in der Verzeichnishierarchie wird als S3-Objekt dargestellt, dessen Name relativ vom zugeordneten Verzeichnis nach unten ist, wobei die Verzeichnisgrenzen durch das Schrägstrich-Zeichen ('/') dargestellt werden.
+
+Normale ONTAP-definierte S3 Benutzer können auf diesen Storage zugreifen, gemäß den für den Bucket definierten Bucket-Richtlinien, die das NAS-Verzeichnis zugeordnet sind. Hierfür müssen zwischen den S3 Benutzern und SMB/NFS Benutzern Zuordnungen definiert werden. Die Anmeldeinformationen der SMB/NFS-Nutzung werden für die Überprüfung der NAS-Berechtigungen verwendet und in alle aus diesen Zugriffen resultierenden Audit-Datensätze aufgenommen.
+
+Durch SMB- oder NFS-Clients wird eine Datei sofort in einem Verzeichnis abgelegt und somit für Clients sichtbar, bevor sie darauf geschrieben wird. S3-Clients erwarten unterschiedliche Semantik, wobei das neue Objekt erst sichtbar ist, wenn alle Daten geschrieben wurden. Durch diese Zuordnung von S3 zu NAS-Storage werden Dateien mithilfe von S3-Semantik erstellt, sodass die Dateien extern unsichtbar bleiben, bis der S3-Erstellungsbefehl abgeschlossen ist.
+
+
+
+== Datensicherung für S3 NAS Buckets
+
+S3 NAS „Buckets“ sind einfach die Zuordnung von NAS-Daten für S3-Clients, sie sind keine S3-Standardcontainer. Daher ist die Sicherung von S3 NAS Buckets durch die NetApp S3 SnapMirror Funktion nicht erforderlich. Stattdessen können Sie Quell-SVMs mit S3-NAS-Buckets replizieren, indem Sie eine standardmäßige SnapMirror Datensicherungsbeziehung mit Ziel-SVMs verwenden.
+
+Erfahren Sie mehr über link:../data-protection/snapmirror-svm-replication-concept.html["SnapMirror SVM-Replizierung"].
+
+
+
+== Prüfung für S3-NAS-Buckets
+
+Da es sich bei S3-NAS-Buckets nicht um herkömmliche S3-Buckets handelt, kann das S3-Audit nicht für deren Zugriff konfiguriert werden. Weitere Informationen zu link:../s3-audit/index.html["S3-Audit"].
+
+Dennoch können die in S3-NAS-Buckets zugeordneten NAS-Dateien und Verzeichnisse mithilfe konventioneller ONTAP-Auditverfahren auf Zugriffsereignisse geprüft werden. S3-Vorgänge können daher NAS-Audit-Ereignisse mit folgenden Ausnahmen auslösen:
+
+* Wenn der S3-Client-Zugriff über die S3-Richtlinienkonfiguration (Gruppen- oder Bucket-Richtlinie) verweigert wird, wird keine NAS-Prüfung für das Ereignis initiiert. Dies liegt daran, dass S3-Berechtigungen geprüft werden, bevor SVM-Audits durchgeführt werden können.
+* Wenn die Zieldatei einer S3-get-Anforderung 0 Größe hat, wird der Inhalt 0 an die get-Anforderung zurückgegeben und der Lesezugriff wird nicht protokolliert.
+* Wenn sich die Zieldatei einer S3-get-Anforderung in einem Ordner befindet, für den der Benutzer keine Traverse-Berechtigung hat, schlägt der Zugriffsversuch fehl und das Ereignis wird nicht protokolliert.
+
+
+Erfahren Sie mehr über link:../nas-audit/auditing-events-concept.html["Prüfung von NAS-Ereignissen auf SVMs"].
+
+
+
+== S3- und NAS-Interoperabilität
+
+ONTAP S3 NAS Buckets unterstützen NAS- und S3-Standardfunktionen, ausgenommen die hier aufgeführt.
+
+
+
+=== Die NAS-Funktionen werden derzeit von S3 NAS Buckets nicht unterstützt
+
+FabricPool Kapazitäts-Tier:: S3-NAS-Buckets können nicht als Kapazitäts-Tier für FabricPool konfiguriert werden.
+
+
+
+
+=== S3-Funktionen werden derzeit nicht von S3-NAS-Buckets unterstützt
+
+AWS Benutzer-Metadaten::
++
+--
+* Als Teil der S3-Benutzer-Metadaten empfangene Key-Values-Paare werden nicht zusammen mit den Objektdaten in der aktuellen Version auf der Festplatte gespeichert.
+* Anforderungsheader mit dem Präfix „x-amz-meta“ werden ignoriert.
+
+
+--
+AWS-Tags::
++
+--
+* Bei PUT-Objekt- und Multipart-Initiierung von Anforderungen werden Kopfzeilen mit dem Präfix „x-amz-Tagging“ ignoriert.
+* Anfragen zur Aktualisierung von Tags auf einer vorhandenen Datei (d.h. Put-, get- und Delete-Anfragen mit der ?Tagging-Abfragezeichenfolge) werden mit einem Fehler zurückgewiesen.
+
+
+--
+Versionierung:: Es ist nicht möglich, die Versionierung in der Bucket-Mapping-Konfiguration anzugeben.
++
+--
+* Anfragen, die nicht-Null-Versionsangaben (die versionId=xyz query-string) enthalten, erhalten Fehlerantworten.
+* Anfragen, die sich auf den Versionierungsstatus eines Buckets auswirken, werden mit Fehlern abgelehnt.
+
+
+--
+Mehrteilige Vorgänge:: Die folgenden Vorgänge werden nicht unterstützt:
++
+--
+* AbortMehrteilaUpload
+* CompleteMultipartUpload
+* CreateMultipartUpload
+* ListenMehrpartUpload
+
+
+--
+

@@ -1,0 +1,179 @@
+---
+permalink: nfs-admin/ontap-name-service-switch-config-concept.html 
+sidebar: sidebar 
+keywords: ontap, name, service, switch, configuration, work 
+summary: ONTAP speichert Informationen zur Namensdienstkonfiguration in einer Tabelle, die dem Äquivalent der Datei /etc/nswitch.conf auf UNIX-Systemen entspricht. Sie müssen die Funktion der Tabelle und deren Verwendung durch ONTAP kennen, damit Sie sie für Ihre Umgebung entsprechend konfigurieren können. 
+---
+= Funktionsweise der Switch-Konfiguration für den ONTAP Name Service
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP speichert Informationen zur Service-Konfiguration in einer Tabelle, die dem Äquivalent von entspricht `/etc/nsswitch.conf` File auf UNIX Systemen. Sie müssen die Funktion der Tabelle und deren Verwendung durch ONTAP kennen, damit Sie sie für Ihre Umgebung entsprechend konfigurieren können.
+
+Die Switch-Tabelle für den ONTAP-Namensdienst legt fest, welche Namensdienstquellen ONTAP konsultiert, um Informationen für bestimmte Arten von Namensdienstinformationen abzurufen. Für jede SVM verwaltet ONTAP eine separate Name-Service-Switch-Tabelle.
+
+
+
+== Datenbanktypen
+
+Die Tabelle enthält eine separate Namensdienstliste für jeden der folgenden Datenbanktypen:
+
+[cols="3*"]
+|===
+| Datenbanktyp | Definiert Namensdienstquellen für... | Gültige Quellen sind... 
+
+
+ a| 
+Hosts
+ a| 
+Hostnamen in IP-Adressen werden konvertiert
+ a| 
+Dateien, dns
+
+
+
+ a| 
+Gruppieren
+ a| 
+Benutzergruppeninformationen werden gesucht
+ a| 
+Dateien, nis, ldap
+
+
+
+ a| 
+Passwd
+ a| 
+Benutzerinformationen werden gesucht
+ a| 
+Dateien, nis, ldap
+
+
+
+ a| 
+Netzgruppe
+ a| 
+Netzgruppeninformationen werden gesucht
+ a| 
+Dateien, nis, ldap
+
+
+
+ a| 
+Namemap
+ a| 
+Zuordnen von Benutzernamen
+ a| 
+Dateien, ldap
+
+|===
+
+
+== Quelltypen
+
+Die Quellen geben an, welche Namensdienstquelle zum Abrufen der entsprechenden Informationen verwendet werden soll.
+
+[cols="3*"]
+|===
+| Typ der Quelle angeben... | Um Informationen zu suchen in... | Verwaltet durch die Befehlsfamilien... 
+
+
+ a| 
+Dateien
+ a| 
+Lokale Quelldateien
+ a| 
+`vserver services name-service unix-user` `vserver services name-service unix-group`
+
+`vserver services name-service netgroup`
+
+`vserver services name-service dns hosts`
+
+
+
+ a| 
+nis
+ a| 
+Externe NIS-Server, wie in der NIS-Domain-Konfiguration der SVM angegeben
+ a| 
+`vserver services name-service nis-domain`
+
+
+
+ a| 
+ldap
+ a| 
+Externe LDAP-Server, wie in der LDAP-Client-Konfiguration der SVM angegeben
+ a| 
+`vserver services name-service ldap`
+
+
+
+ a| 
+dns
+ a| 
+Externe DNS-Server, die in der DNS-Konfiguration der SVM angegeben sind
+ a| 
+`vserver services name-service dns`
+
+|===
+Selbst wenn Sie NIS oder LDAP sowohl für den Datenzugriff als auch zur SVM-Administration-Authentifizierung verwenden möchten, sollten Sie weiterhin einschließen `files` Und konfigurieren Sie lokale Benutzer als Fallback, falls die NIS- oder LDAP-Authentifizierung fehlschlägt.
+
+
+
+== Protokolle für den Zugriff auf externe Quellen
+
+Für den Zugriff auf die Server für externe Quellen verwendet ONTAP die folgenden Protokolle:
+
+[cols="2*"]
+|===
+| Externe Servicequelle | Für den Zugriff verwendetes Protokoll 
+
+
+ a| 
+NIS
+ a| 
+UDP
+
+
+
+ a| 
+DNS
+ a| 
+UDP
+
+
+
+ a| 
+LDAP
+ a| 
+TCP
+
+|===
+Im folgenden Beispiel wird die Switch-Konfiguration für den Namensservice für die SVM svm_1 angezeigt:
+
+[listing]
+----
+cluster1::*> vserver services name-service ns-switch show -vserver svm_1
+                               Source
+Vserver         Database       Order
+--------------- ------------   ---------
+svm_1           hosts          files,
+                               dns
+svm_1           group          files
+svm_1           passwd         files
+svm_1           netgroup       nis,
+                               files
+----
+Um IP-Adressen für Hosts zu suchen, konsultiert ONTAP First lokale Quelldateien. Wenn die Abfrage keine Ergebnisse liefert, werden DNS-Server als nächstes überprüft.
+
+Um Benutzer- oder Gruppeninformationen zu suchen, konsultiert ONTAP nur lokale Quelldateien. Wenn die Abfrage keine Ergebnisse liefert, schlägt die Suche fehl.
+
+Um Informationen zu Netzgruppen zu suchen, konsultiert ONTAP First externe NIS-Server. Wenn die Abfrage keine Ergebnisse liefert, wird die lokale Netzgruppedatei als nächstes geprüft.
+
+In der Tabelle für svm_1 sind keine Namensdiensteinträge für die Namenszuweisung vorhanden. Daher konsultiert ONTAP standardmäßig nur lokale Quelldateien.
+
+https://www.netapp.com/pdf.html?item=/media/16328-tr-4668pdf.pdf["NetApp Technical Report 4668: Name Services Best Practices Guide"^]

@@ -1,0 +1,121 @@
+---
+permalink: san-admin/san-volumes-concept.html 
+sidebar: sidebar 
+keywords: understand, san volumes 
+summary: 'ONTAP bietet drei grundlegende Volume-Bereitstellungsoptionen: Thick Provisioning, Thin Provisioning und semi-Thick Provisioning. Jede Option nutzt unterschiedliche Methoden zum Managen des Volume-Speicherplatzes und des Platzbedarfs für die ONTAP Technologien zur gemeinsamen Nutzung von Blöcken. Wenn Sie verstehen, wie diese Optionen funktionieren, können Sie die beste Option für Ihre Umgebung wählen.' 
+---
+= Über SAN Volumes – Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP bietet drei grundlegende Volume-Bereitstellungsoptionen: Thick Provisioning, Thin Provisioning und semi-Thick Provisioning. Jede Option nutzt unterschiedliche Methoden zum Managen des Volume-Speicherplatzes und des Platzbedarfs für die ONTAP Technologien zur gemeinsamen Nutzung von Blöcken. Wenn Sie verstehen, wie diese Optionen funktionieren, können Sie die beste Option für Ihre Umgebung wählen.
+
+[NOTE]
+====
+Es wird nicht empfohlen, SAN-LUNs und NAS-Freigaben in ein und demselben FlexVol-Volume einzurichten. Sie sollten separate FlexVol Volumes speziell für Ihre SAN LUNs bereitstellen, und Sie sollten separate FlexVol Volumes speziell für Ihre NAS-Freigaben bereitstellen. Dies vereinfacht die Implementierung von Management und Replizierung und Parallelen zur Unterstützung von FlexVol Volumes durch Active IQ Unified Manager (ehemals OnCommand Unified Manager).
+
+====
+
+
+== Thin Provisioning für Volumes
+
+Wenn ein Thin Provisioning Volume erstellt wird, reserviert ONTAP bei der Erstellung des Volume keinen zusätzlichen Speicherplatz. Wenn Daten auf das Volume geschrieben werden, fordert das Volume zur Erfüllung der Schreibvorgänge den erforderlichen Storage vom Aggregat an. Bei der Verwendung von Volumes, die Thin Provisioning einsetzen, können Sie Ihr Aggregat bei einer Überprovisionierung einsetzen. Dadurch wird es möglich, dass das Volume den erforderlichen Speicherplatz nicht sichern kann, wenn dem Aggregat der freie Speicherplatz ausgeht.
+
+Sie erstellen ein FlexVol-Volume mit Thin Provisioning, indem Sie dessen festlegen `-space-guarantee` Option auf `none`.
+
+
+
+== Thick Provisioning für Volumes
+
+Wenn ein Thick Provisioning Volume erstellt wird, legt ONTAP ausreichend Storage vom Aggregat ab, um sicherzustellen, dass jeder Block im Volume jederzeit geschrieben werden kann. Wenn Sie ein Volume für die Nutzung von Thick Provisioning konfigurieren, können Sie jede der ONTAP Storage-Effizienz-Funktionen einsetzen, beispielsweise für Komprimierung und Deduplizierung, um die höheren Storage-Anforderungen im Vorfeld zu erfüllen.
+
+Sie erstellen ein per Thick Provisioning bereitgestelltes FlexVol-Volume durch Festlegen dessen `-space-slo` (Service Level Objective)-Option nach `thick`.
+
+
+
+== Semi-Thick Provisioning für Volumes
+
+Wenn ein Volume mit semi-Thick Provisioning erstellt wird, legt ONTAP Storage vom Aggregat zu, um die Volume-Größe zu berücksichtigen. Wenn dem Volume der freie Speicherplatz zur Verfügung steht, weil Blöcke durch Block-Sharing-Technologien genutzt werden, ist ONTAP bemüht, geschützte Datenobjekte (Snapshot-Kopien, FlexClone Dateien und LUNs) zu löschen, um den Platz freizugeben. Solange ONTAP die geschützten Datenobjekte schnell genug löschen kann, um mit dem für Überschreibungen erforderlichen Speicherplatz Schritt zu halten, sind die Schreibvorgänge weiterhin erfolgreich. Dies wird als „`Best Effort`“-Garantie bezeichnet.
+
+*Hinweis:* die folgende Funktionalität wird auf Volumes, die semi-Thick Provisioning verwenden, nicht unterstützt:
+
+* Storage-Effizienztechnologien wie Deduplizierung, Komprimierung und Data-Compaction
+* Microsoft Offloaded Data Transfer (ODX)
+
+
+Sie erstellen ein FlexVol-Volume mit semi-Thick-Provision-Funktion, indem Sie dessen festlegen `-space-slo` (Service Level Objective)-Option nach `semi-thick`.
+
+
+
+== Nutzung mit platzsparenden Dateien und LUNs
+
+Eine speicherreservierte Datei oder eine LUN ist eine Datei, für die beim Erstellen Speicherplatz zugewiesen wird. Ursprünglich hat NetApp den Begriff „`Thin-Provision-LUN`“ verwendet, um eine LUN zu bedeuten, für die Platzreservierung deaktiviert ist (eine nicht-space-reservierte LUN).
+
+*Hinweis:* nicht-speicherreservierte Dateien werden allgemein nicht als "`Thin Provisioning-Dateien`" bezeichnet.
+
+In der folgenden Tabelle sind die wichtigsten Unterschiede zwischen der Verwendung der drei Optionen zur Volume-Bereitstellung für platzreservierte Dateien und LUNs zusammengefasst:
+
+[cols="5*"]
+|===
+| Volume-Provisionierung | LUN-/Dateispeicherreservierung | Überschreibung | Sicherungsdaten^2^ | Storage-Effizienz^3^ 
+
+
+ a| 
+Dick
+ a| 
+Unterstützt
+ a| 
+Garantiert^1^
+ a| 
+Garantiert
+ a| 
+Unterstützt
+
+
+
+ a| 
+Dünn
+ a| 
+Keine Auswirkung
+ a| 
+Keine
+ a| 
+Garantiert
+ a| 
+Unterstützt
+
+
+
+ a| 
+Semi-dick
+ a| 
+Unterstützt
+ a| 
+Bester Aufwand^1^
+ a| 
+So gut wie möglich
+ a| 
+Nicht unterstützt
+
+|===
+*Hinweise*
+
+. Um Überschreibungen zu garantieren oder ihnen eine optimale Überschreibsicherung zu ermöglichen, ist die Speicherplatzreservierung auf dem LUN oder der Datei aktiviert.
+. Zu den Sicherungsdaten gehören Snapshot-Kopien sowie FlexClone-Dateien und LUNs, die zum automatischen Löschen markiert sind (Backup-Klone).
+. Storage-Effizienz umfasst Deduplizierung, Komprimierung sowie alle FlexClone-Dateien und LUNs, die nicht zum automatischen Löschen markiert sind (aktive Klone) und Unterdateien von FlexClone (für Copy Offload verwendet).
+
+
+
+
+== Unterstützung von SCSI Thin Provisioning LUNs
+
+ONTAP unterstützt T10 SCSI Thin Provisioning LUNs sowie NetApp Thin Provisioning LUNs. Mit T10 SCSI Thin Provisioning können Host-Applikationen SCSI-Funktionen unterstützen, einschließlich LUN-Speicherplatzrückgewinnung und LUN-Speicherplatzüberwachung für Umgebungen mit Blöcken. T10 SCSI Thin Provisioning muss von Ihrer SCSI-Host-Software unterstützt werden.
+
+Sie verwenden die ONTAP `space-allocation` Einstellung zum Aktivieren/Deaktivieren der Unterstützung für das T10 Thin Provisioning auf einer LUN Sie verwenden die ONTAP `space-allocation enable` Einstellung zum Aktivieren von T10 SCSI Thin Provisioning auf einem LUN.
+
+Der `[-space-allocation {enabled|disabled}]` Befehl im ONTAP Command Reference Manual enthält weitere Informationen zum Aktivieren/Deaktivieren der Unterstützung für das T10 Thin Provisioning und zur Aktivierung von T10 SCSI Thin Provisioning auf einer LUN.
+
+http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["ONTAP 9-Befehle"^]

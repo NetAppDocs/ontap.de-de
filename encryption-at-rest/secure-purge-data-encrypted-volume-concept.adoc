@@ -1,0 +1,67 @@
+---
+permalink: encryption-at-rest/secure-purge-data-encrypted-volume-concept.html 
+sidebar: sidebar 
+keywords: secure, purge, scrub, data, encrypted, volume, nve, netapp 
+summary: 'Ab ONTAP 9.4 können Sie Daten auf NVE-fähigen Volumes durch sicheres Löschen unterbrechungsfrei abspeichern. Durch das Scrubbing von Daten auf einem verschlüsselten Volume wird sichergestellt, dass sie nicht von physischen Medien, zum Beispiel in Fällen von, wiederhergestellt werden können `spillage,` Wo Datenspuren möglicherweise zurückgelassen wurden, wenn Blöcke überschrieben wurden, oder zum sicheren Löschen eines freien Mandanten die Daten.' 
+---
+= Löschen Sie Daten sicher auf einer Übersicht über ein verschlüsseltes Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.4 können Sie Daten auf NVE-fähigen Volumes durch sicheres Löschen unterbrechungsfrei abspeichern. Das Scrubbing von Daten auf einem verschlüsselten Volume stellt sicher, dass sie nicht von physischen Medien wiederhergestellt werden können, beispielsweise bei „`s` pillage“, bei denen Spuren von Daten beim Überschreiben von Blöcken hinterlassen wurden oder zum sicheren Löschen der Daten eines Mandanten.
+
+Secure Purge ist nur für zuvor gelöschte Dateien auf Volumes mit NVE geeignet. Sie können ein unverschlüsseltes Volume nicht abreiben. Sie müssen KMIP-Server für die Schlüsselverwendung verwenden, nicht für den integrierten Schlüsselmanager.
+
+
+
+== Überlegungen zur Verwendung einer sicheren Löschung
+
+* Volumes, die in einem Aggregat erstellt wurden, das für NetApp Aggregate Encryption (NAE) aktiviert ist, unterstützen das sichere Löschen nicht.
+* Secure Purge ist nur für zuvor gelöschte Dateien auf Volumes mit NVE geeignet.
+* Sie können ein unverschlüsseltes Volume nicht abreiben.
+* Sie müssen KMIP-Server für die Schlüsselverwendung verwenden, nicht für den integrierten Schlüsselmanager.
+
+
+Sichere Spülfunktionen je nach Version von ONTAP unterschiedlich.
+
+[role="tabbed-block"]
+====
+.ONTAP 9.8 und höher
+--
+* Sicheres Löschen wird von MetroCluster und FlexGroup unterstützt.
+* Wenn das zu löckige Volume die Quelle einer SnapMirror-Beziehung ist, müssen Sie die SnapMirror-Beziehung nicht unterbrechen, um eine sichere Löschung durchzuführen.
+* Die Umverschlüsselungsmethode unterscheidet sich bei Volumes, die SnapMirror Datensicherung verwenden, im Gegensatz zu Volumes, die keine SnapMirror Datensicherung (DP) verwenden, oder solchen, die SnapMirror erweiterte Datensicherung nutzen.
++
+** Standardmäßig werden Daten bei Volumes im SnapMirror Data Protection (DP)-Modus mit der erneuten Verschlüsselungsmethode für Volume Move neu verschlüsselt.
+** Standardmäßig verwenden Volumes, die keine SnapMirror Datensicherung oder Volumes verwenden, die den XDP-Modus (Extended Data Protection) von SnapMirror verwenden, die in-Place-Reverschlüsselungsmethode.
+** Diese Standardeinstellungen können mit dem geändert werden `secure purge re-encryption-method [volume-move|in-place-rekey]` Befehl.
+
+
+* Standardmäßig werden alle Snapshot-Kopien in FlexVol Volumes während des sicheren Löschvorgangs automatisch gelöscht. Standardmäßig werden Snapshots in FlexGroup Volumes und Volumes mit SnapMirror Datensicherung nicht automatisch während des sicheren Löschvorgangs gelöscht. Diese Standardeinstellungen können mit dem geändert werden `secure purge delete-all-snapshots [true|false]` Befehl.
+
+
+--
+.ONTAP 9.7 und früher:
+--
+* Sicheres Löschen unterstützt Folgendes nicht:
++
+** FlexClone
+** SnapVault
+** FabricPool
+
+
+* Wenn das zu löckige Volume die Quelle einer SnapMirror-Beziehung ist, müssen Sie die SnapMirror-Beziehung unterbrechen, bevor Sie das Volume löschen können.
++
+Falls im Volume bereits Snapshot-Kopien vorhanden sind, müssen Sie die Snapshot-Kopien freigeben, bevor Sie das Volume löschen können. Beispielsweise müssen Sie ein FlexClone Volume unter Umständen von seinem übergeordneten Volume trennen.
+
+* Durch das erfolgreiche Aufrufen der Funktion zum sicheren Löschen wird eine Volume-Verschiebung ausgelöst, die die verbleibenden, nicht gelöschten Daten mit einem neuen Schlüssel erneut verschlüsselt.
++
+Das verschobene Volume bleibt im aktuellen Aggregat. Der alte Schlüssel wird automatisch zerstört und stellt sicher, dass die gelöschten Daten nicht von den Speichermedien wiederhergestellt werden können.
+
+
+
+--
+====

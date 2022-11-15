@@ -1,0 +1,200 @@
+---
+permalink: disks-aggregates/sanitize-disk-maintenance-mode-task.html 
+sidebar: sidebar 
+keywords: sanitize, disk, maintenance mode, nodeshell, node shell, sanitization 
+summary: Ab ONTAP 9.6 können Sie die Festplattenbereinigung im Wartungsmodus durchführen. Somit können Daten von einer Festplatte oder einer Reihe von Festplatten auf ausgemusterten oder funktionsfähigen Systemen entfernt werden, sodass sie sich niemals wiederherstellen lassen. 
+---
+= Eine Festplatte bereinigen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Durch die Bereinigung einer Festplatte können Sie Daten von einer Festplatte oder einer Reihe von Festplatten auf ausgemusterten oder funktionsfähigen Systemen entfernen, sodass die Daten nie wiederhergestellt werden können.
+
+Für die Festplattenbereinigung stehen zwei Methoden zur Verfügung:
+
+.Desinfizieren einer Festplatte mit &#8220;Wartungsmodus&#8221; Befehle (ONTAP 9.6 und neuere Versionen)
+====
+Ab ONTAP 9.6 können Sie die Festplattenbereinigung im Wartungsmodus durchführen.
+
+.Bevor Sie beginnen
+* Die Festplatten können keine selbstverschlüsselnden Festplatten (SED) sein.
++
+Sie müssen den verwenden `storage encryption disk sanitize` Befehl zum Sanalisieren einer SED.
+
++
+link:../encryption-at-rest/index.html["Verschlüsselung von Daten im Ruhezustand"]
+
+
+
+.Schritte
+. Booten Sie im Wartungsmodus.
+. Wenn die zu desintierenden Laufwerke partitioniert werden, departitionieren Sie jedes Laufwerk:
++
+
+NOTE: Der Befehl zum Entpartitionieren einer Festplatte ist nur auf der Diagnose-Ebene verfügbar und sollte nur unter NetApp Support Supervision durchgeführt werden. Es wird dringend empfohlen, sich an den NetApp Support zu wenden, bevor Sie fortfahren. Weitere Informationen finden Sie im Knowledge Base-Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Wie man ein Ersatzlaufwerk in ONTAP entpartitionieren"^]
+
++
+`disk unpartition _disk_name_`
+
+. Die angegebenen Laufwerke desinfizieren:
++
+`disk sanitize start [-p _pattern1_|-r [-p _pattern2_|-r [-p _pattern3_|-r]]] [-c _cycle_count_] _disk_list_`
+
++
+
+NOTE: Schalten Sie den Node nicht aus, unterbrechen Sie die Storage-Konnektivität nicht oder entfernen Sie die Zielfestplatten, während Sie die Bereinigung durchführen. Wenn die Datenbereinigung während der Formatierungsphase unterbrochen wird, muss die Formatierungsphase neu gestartet werden und beendet werden, bevor die Festplatten bereinigt werden und wieder in den freien Pool zurückgeführt werden können. Wenn Sie die Bereinigung abbrechen müssen, können Sie dies mit der tun `disk sanitize abort` Befehl. Wenn die angegebenen Festplatten die Formatierungsphase der Bereinigung durchlaufen, erfolgt der Vorgang erst nach Abschluss der Phase.
+
++
+ `-p` `_pattern1_` `-p` `_pattern2_` `-p` `_pattern3_` Gibt einen Zyklus von ein bis drei benutzerdefinierten Hex-Byte-Überschreibungsmustern an, die nacheinander auf die zu desinfizierenden Festplatten angewendet werden können. Das Standardmuster ist drei Durchläufe, wobei 0x55 für den ersten Durchgang, 0xaa für den zweiten Durchgang und 0x3c für den dritten Durchgang verwendet wird.
+
++
+`-r` Ersetzt eine gemusterte Überschreibung durch eine zufällige Überschreibung für einen oder alle Durchläufe.
+
++
+`-c` `_cycle_count_` Gibt an, wie oft die angegebenen Überschreibungsmuster angewendet werden. Der Standardwert ist ein Zyklus. Der Maximalwert beträgt sieben Zyklen.
+
++
+`_disk_list_` Gibt eine platzsparende Liste der IDs der zu desinfizierender Ersatzfestplatten an.
+
+. Überprüfen Sie, falls gewünscht, den Status des Festplattenbereinigung:
++
+`disk sanitize status [_disk_list_]`
+
+. Nach Abschluss des Sanierungsprozesses setzen Sie die Festplatten für jede Festplatte in den Ersatzstatus zurück:
++
+`disk sanitize release _disk_name_`
+
+. Beenden Sie den Wartungsmodus.
+
+
+====
+.Desinfizieren einer Platte mit &#8220;nodeshell&#8221; Befehle (alle ONTAP 9 Versionen)
+====
+Wenn für alle Versionen von ONTAP 9 die Festplattenbereinigung mit nodeshell-Befehlen aktiviert ist, sind einige Low-Level ONTAP-Befehle deaktiviert. Nachdem die Festplattenbereinigung auf einem Node aktiviert ist, kann sie nicht deaktiviert werden.
+
+.Bevor Sie beginnen
+* Die Festplatten müssen freie Festplatten sein, sie müssen einem Knoten gehören, aber nicht in einer lokalen Ebene (Aggregat) verwendet werden.
++
+Wenn die Festplatten partitioniert sind, kann keine Partition in einer lokalen Ebene verwendet werden (Aggregat).
+
+* Die Festplatten können keine selbstverschlüsselnden Festplatten (SED) sein.
++
+Sie müssen den verwenden `storage encryption disk sanitize` Befehl zum Sanalisieren einer SED.
+
++
+link:../encryption-at-rest/index.html["Verschlüsselung von Daten im Ruhezustand"]
+
+* Die Laufwerke können nicht Teil eines Speicherpools sein.
+
+
+.Schritte
+. Wenn die zu desintierenden Laufwerke partitioniert werden, departitionieren Sie jedes Laufwerk:
++
+--
+
+NOTE: Der Befehl zum Entpartitionieren einer Festplatte ist nur auf der Diagnose-Ebene verfügbar und sollte nur unter NetApp Support Supervision durchgeführt werden. **Es wird dringend empfohlen, sich vor dem Fortfahren mit dem NetApp Support zu in Verbindung zu setzen.** Diese kann auch im Knowledge Base Artikel beschrieben werden link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Wie man ein Ersatzlaufwerk in ONTAP entpartitionieren"^].
+
+--
++
+`disk unpartition _disk_name_`
+
+. Geben Sie den Knotenpunkt für den Knoten ein, der die Festplatten besitzt, die Sie desinfizieren möchten:
++
+`system node run -node _node_name_`
+
+. Festplattenbereinigung aktivieren:
++
+`options licensed_feature.disk_sanitization.enable on`
+
++
+Sie werden aufgefordert, den Befehl zu bestätigen, da er unumkehrbar ist.
+
+. Wechseln Sie zur nodeshell erweiterten Berechtigungsebene:
++
+`priv set advanced`
+
+. Die angegebenen Laufwerke desinfizieren:
++
+`disk sanitize start [-p pattern1|-r [-p pattern2|-r [-p pattern3|-r]]] [-c cycle_count] disk_list`
+
++
+
+NOTE: Schalten Sie den Node nicht aus, unterbrechen Sie die Storage-Konnektivität nicht oder entfernen Sie die Zielfestplatten, während Sie die Bereinigung durchführen. Wenn die Datenbereinigung während der Formatierungsphase unterbrochen wird, muss die Formatierungsphase neu gestartet werden und beendet werden, bevor die Festplatten bereinigt werden und wieder in den freien Pool zurückgeführt werden können. Wenn Sie den Vorgang der Bereinigung abbrechen müssen, können Sie dies mit dem Befehl Disk sanitize abbricht ausführen. Wenn die angegebenen Festplatten die Formatierungsphase der Bereinigung durchlaufen, erfolgt der Vorgang erst nach Abschluss der Phase.
+
++
+`-p pattern1 -p pattern2 -p pattern3` Gibt einen Zyklus von ein bis drei benutzerdefinierten Hex-Byte-Überschreibungsmustern an, die nacheinander auf die zu desinfizierenden Festplatten angewendet werden können. Das Standardmuster ist drei Durchläufe, wobei 0x55 für den ersten Durchgang, 0xaa für den zweiten Durchgang und 0x3c für den dritten Durchgang verwendet wird.
+
++
+`-r` Ersetzt eine gemusterte Überschreibung durch eine zufällige Überschreibung für einen oder alle Durchläufe.
+
++
+`-c cycle_count` Gibt an, wie oft die angegebenen Überschreibungsmuster angewendet werden.
+
++
+Der Standardwert ist ein Zyklus. Der Maximalwert beträgt sieben Zyklen.
+
++
+`disk_list` Gibt eine platzsparende Liste der IDs der zu desinfizierender Ersatzfestplatten an.
+
+. Wenn Sie den Status der Festplattenbereinigung überprüfen möchten:
++
+`disk sanitize status [disk_list]`
+
+. Nach Abschluss des Sanierungsprozesses setzen Sie die Festplatten in den Ersatzstatus zurück:
++
+`disk sanitize release _disk_name_`
+
+. Zurück zur nodeshell Admin-Berechtigungsebene:
++
+`priv set admin`
+
+. Zurück zur ONTAP-CLI:
++
+`exit`
+
+. Stellen Sie fest, ob alle Festplatten in den freien Status zurückversetzt wurden:
++
+`storage aggregate show-spare-disks`
+
++
+[cols="1,2"]
+|===
+
+
+| Wenn... | Dann... 
+
+
+| Alle desinfizierten Festplatten werden als Ersatzlaufwerke aufgeführt | Fertig. Die Festplatten sind desinfiziert und verfügen über einen freien Status. 
+
+
+| Einige der desinfizierten Festplatten werden nicht als Ersatzlaufwerke aufgeführt  a| 
+Führen Sie folgende Schritte aus:
+
+.. Wechseln Sie in den erweiterten Berechtigungsmodus:
++
+`set -privilege advanced`
+
+.. Weisen Sie die nicht zugewiesenen desinfizierten Festplatten dem entsprechenden Node für jede Festplatte zu:
++
+`storage disk assign -disk _disk_name_ -owner _node_name_`
+
+.. Geben Sie die Festplatten für jede Festplatte in den Ersatzstatus zurück:
++
+`storage disk unfail -disk _disk_name_ -s -q`
+
+.. Zurück zum Administrationsmodus:
++
+`set -privilege admin`
+
+
+
+|===
+
+
+====
+Die angegebenen Festplatten sind desinfiziert und als Hot Spares festgelegt. Auf die Seriennummern der desinfizierten Festplatten werden geschrieben `/etc/log/sanitized_disks`.
+
+Die angegebenen Festplatten-Sanitierungsprotokolle, die zeigen, was auf jeder Festplatte abgeschlossen wurde, wird auf geschrieben `/mroot/etc/log/sanitization.log`.

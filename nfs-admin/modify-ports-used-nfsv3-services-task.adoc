@@ -1,0 +1,117 @@
+---
+permalink: nfs-admin/modify-ports-used-nfsv3-services-task.html 
+sidebar: sidebar 
+keywords: modify, port, nfsv3, service 
+summary: Der NFS-Server auf dem Speichersystem verwendet Dienste wie den Mount Daemon und Network Lock Manager, um mit NFS-Clients über bestimmte Standard-Netzwerkports zu kommunizieren. In den meisten NFS-Umgebungen funktionieren die Standard-Ports richtig und erfordern keine Änderung. Wenn Sie jedoch unterschiedliche NFS-Netzwerk-Ports in Ihrer NFSv3-Umgebung verwenden möchten, können Sie dies tun. 
+---
+= Bearbeiten von Ports, die für NFSv3-Services verwendet werden
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Der NFS-Server auf dem Speichersystem verwendet Dienste wie den Mount Daemon und Network Lock Manager, um mit NFS-Clients über bestimmte Standard-Netzwerkports zu kommunizieren. In den meisten NFS-Umgebungen funktionieren die Standard-Ports richtig und erfordern keine Änderung. Wenn Sie jedoch unterschiedliche NFS-Netzwerk-Ports in Ihrer NFSv3-Umgebung verwenden möchten, können Sie dies tun.
+
+Wenn Sie NFS-Ports auf dem Storage-System ändern, müssen alle NFS-Clients erneut mit dem System verbunden sein. Daher sollten Sie diese Informationen vor der Änderung an Ihre Benutzer übermitteln.
+
+Sie können die von den Diensten NFS Mount Daemon, Network Lock Manager, Network Status Monitor und NFS Quota Daemon für jede Storage Virtual Machine (SVM) verwendeten Ports festlegen. Die Änderung der Portnummer wirkt sich auf NFS-Clients aus, die über TCP und UDP auf Daten zugreifen.
+
+Die Ports für NFSv4 und NFSv4.1 können nicht geändert werden.
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`set -privilege advanced`
+
+. Zugriff auf NFS deaktivieren:
++
+`vserver nfs modify -vserver vserver_name -access false`
+
+. Legen Sie den NFS-Port für den spezifischen NFS-Service fest:
++
+`vserver nfs modify -vserver vserver_namenfs_port_parameterport_number`
+
++
+[cols="3*"]
+|===
+| NFS-Port-Parameter | Beschreibung | Standardport 
+
+
+ a| 
+`-mountd-port`
+ a| 
+NFS-Mount-Daemon
+ a| 
+635
+
+
+
+ a| 
+`-nlm-port`
+ a| 
+Network Lock Manager
+ a| 
+4045
+
+
+
+ a| 
+`-nsm-port`
+ a| 
+Netzwerkstatusüberwachung
+ a| 
+4046
+
+
+
+ a| 
+`-rquotad-port`
+ a| 
+NFS Kontingent-Daemon
+ a| 
+4049
+
+|===
++
+Neben dem Standardport beträgt der zulässige Bereich der Portnummern 1024 bis 65535. Jeder NFS-Service muss einen eindeutigen Port verwenden.
+
+. Zugriff auf NFS aktivieren:
++
+`vserver nfs modify -vserver vserver_name -access true`
+
+. Verwenden Sie die `network connections listening show` Befehl zum Überprüfen der Portnummer.
+. Zurück zur Administratorberechtigungsebene:
++
+`set -privilege admin`
+
+
+
+Mit den folgenden Befehlen wird der NFS Mount Daemon Port auf 1113 auf der SVM mit dem Namen vs1 gesetzt:
+
+....
+vs1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use
+         them only when directed to do so by NetApp personnel.
+Do you want to continue? {y|n}: y
+
+vs1::*> vserver nfs modify -vserver vs1 -access false
+
+vs1::*> vserver nfs modify -vserver vs1 -mountd-port 1113
+
+vs1::*> vserver nfs modify -vserver vs1 -access true
+
+vs1::*> network connections listening show
+Vserver Name     Interface Name:Local Port        Protocol/Service
+---------------- -------------------------------  ----------------
+Node: cluster1-01
+Cluster          cluster1-01_clus_1:7700          TCP/ctlopcp
+vs1              data1:4046                       TCP/sm
+vs1              data1:4046                       UDP/sm
+vs1              data1:4045                       TCP/nlm-v4
+vs1              data1:4045                       UDP/nlm-v4
+vs1              data1:1113                       TCP/mount
+vs1              data1:1113                       UDP/mount
+...
+vs1::*> set -privilege admin
+....

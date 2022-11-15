@@ -1,0 +1,105 @@
+---
+permalink: concepts/encryption-concept.html 
+sidebar: sidebar 
+keywords: encryption 
+summary: ONTAP bietet sowohl Software- als auch hardwarebasierte Verschlüsselungstechnologien, sodass Daten im Ruhezustand nicht gelesen werden können, wenn das Storage-Medium neu verwendet, zurückgegeben, verloren gegangen oder gestohlen wird. 
+---
+= Verschlüsselung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP bietet sowohl Software- als auch hardwarebasierte Verschlüsselungstechnologien, sodass Daten im Ruhezustand nicht gelesen werden können, wenn das Storage-Medium neu verwendet, zurückgegeben, verloren gegangen oder gestohlen wird.
+
+ONTAP entspricht den Federal Information Processing Standards (FIPS) 140-2 für alle SSL-Verbindungen. Sie können die folgenden Verschlüsselungslösungen verwenden:
+
+* Hardwarelösungen:
++
+** NetApp Storage Encryption (NSE)
++
+NSE ist eine Hardware-Lösung, die Self-Encrypting Drives (SEDs) verwendet.
+
+** NVMe SEDs
++
+ONTAP bietet vollständige Festplattenverschlüsselung für NVMe SEDs, die nicht über eine FIPS-140-2-Zertifizierung verfügen.
+
+
+
+* Softwarelösungen:
++
+** NetApp Aggregatverschlüsselung (NAE)
++
+NAE ist eine Software-Lösung, die die Verschlüsselung beliebiger Daten-Volumes auf jedem beliebigen Laufwerkstyp ermöglicht und bei jedem Aggregat mit eindeutigen Schlüsseln aktiviert wird.
+
+** NetApp Volume Encryption (NVE)
++
+NVE ist eine Softwarelösung, die die Verschlüsselung von beliebigen Daten-Volumes auf jedem Festplattentyp, auf der diese aktiviert ist, mit einem eindeutigen Schlüssel für jedes Volume ermöglicht.
+
+
+
+
+
+Doppelte Verschlüsselung im Ruhezustand: Sowohl Software- (NAE oder NVE) als auch Hardware-Verschlüsselungslösungen (NSE oder NVMe SED) können verwendet werden. Storage-Effizienz wird nicht durch NAE- oder NVE-Verschlüsselung beeinträchtigt.
+
+
+
+== NetApp Storage Encryption
+
+NetApp Storage Encryption (NSE) unterstützt SEDs, die Daten beim Schreiben verschlüsseln. Ohne einen auf der Festplatte gespeicherten Verschlüsselungsschlüssel können die Daten nicht gelesen werden. Der Verschlüsselungsschlüssel wiederum ist nur für einen authentifizierten Knoten zugänglich.
+
+Bei einer I/O-Anforderung authentifiziert sich ein Node mithilfe eines Authentifizierungsschlüssels, der von einem externen Schlüsselverwaltungsserver oder dem Onboard Key Manager abgerufen wird:
+
+* Der externe Verschlüsselungsmanagement-Server ist ein Drittanbietersystem in der Storage-Umgebung, das Authentifizierungsschlüssel für Nodes mithilfe des Key Management Interoperability Protocol (KMIP) bereitstellt.
+* Der integrierte Onboard Key Manager ist ein Tool, das Authentifizierungsschlüssel für Nodes aus demselben Storage-System wie Ihre Daten bereitstellt.
+
+
+NSE unterstützt HDDs und SSDs mit automatischer Verschlüsselung. Mit NetApp Volume Encryption mit NSE lassen sich Daten auf NSE-Laufwerken verdoppeln.
+
+
+
+== NVMe Self-Encrypting Drives
+
+NVMe SEDs haben keine FIPS 140-2-2-Zertifizierung. Diese Festplatten verwenden jedoch eine transparente AES-256-Bit-Festplattenverschlüsselung zum Schutz von Daten im Ruhezustand.
+
+Datenverschlüsselungsvorgänge wie das Generieren eines Authentifizierungsschlüssels werden intern durchgeführt. Der Authentifizierungsschlüssel wird beim ersten Zugriff des Speichersystems auf die Festplatte generiert. Danach sichern die Festplatten die Daten im Ruhezustand, da bei der Anforderung von Datenoperationen eine Storage-Systemauthentifizierung erforderlich ist.
+
+
+
+== NetApp Aggregatverschlüsselung
+
+NetApp Aggregate Encryption (NAE) ist eine softwarebasierte Technologie zur Verschlüsselung aller Daten auf einem Aggregat. Ein Vorteil von NAE besteht darin, dass Volumes in der Deduplizierung auf Aggregatebene enthalten sind, während NVE Volumes ausgeschlossen sind.
+
+Bei aktiviertem NAE können die Volumes im Aggregat mit aggregierten Schlüsseln verschlüsselt werden.
+
+Ab ONTAP 9.7 werden neu erstellte Aggregate und Volumes standardmäßig verschlüsselt, wenn Sie über die NVE-Lizenz und das integrierte oder externe Verschlüsselungsmanagement verfügen.
+
+
+
+== NetApp Volume Encryption
+
+NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie, mit der Daten im Ruhezustand um ein Volume gleichzeitig verschlüsselt werden. Ein Verschlüsselungsschlüssel, auf den nur das Storage-System zugreifen kann, stellt sicher, dass Volume-Daten nicht gelesen werden können, wenn das zugrunde liegende Gerät vom System getrennt ist.
+
+Beide Daten, einschließlich Snapshot Kopien und Metadaten sind verschlüsselt. Der Zugriff auf die Daten erfolgt über einen eindeutigen XTS-AES-256-Schlüssel, einen pro Volume. Ein integrierter Onboard Key Manager sichert die Schlüssel auf demselben System mit Ihren Daten.
+
+NVE kann für jeden Aggregattyp (HDD, SSD, Hybrid, Array LUN), mit jedem RAID-Typ und in jeder unterstützten ONTAP Implementierung, einschließlich ONTAP Select, eingesetzt werden. Darüber hinaus kann NVE mit NetApp Storage Encryption (NSE) eingesetzt werden, um Daten auf NSE-Laufwerken zu verdoppeln.
+
+|===
+
+
+ a| 
+*_When to Use KMIP Servers_* Obwohl es kostengünstiger und in der Regel bequemer ist, den Onboard Key Manager zu verwenden, sollten Sie KMIP Server einrichten, wenn einer der folgenden zutrifft:
+
+* Ihre Lösung für das Verschlüsselungsmanagement muss den Federal Information Processing Standards (FIPS) 140-2 oder DEM OASIS KMIP Standard entsprechen.
+* Sie benötigen eine Multi-Cluster-Lösung. KMIP-Server unterstützen mehrere Cluster mit zentralem Schlüsselmanagement.
++
+KMIP-Server unterstützen mehrere Cluster mit zentralem Schlüsselmanagement.
+
+* Ihr Unternehmen erfordert die zusätzliche Sicherheit beim Speichern von Authentifizierungsschlüsseln auf einem System oder an einem anderen Speicherort als den Daten.
++
+KMIP-Server speichern Authentifizierungsschlüssel getrennt von Ihren Daten.
+
+
+
+|===

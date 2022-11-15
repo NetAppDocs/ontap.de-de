@@ -1,0 +1,70 @@
+---
+sidebar: sidebar 
+permalink: smbc/smbc_admin_converting_existing_relationships_to_smbc.html 
+keywords: SM-BC, SMBC, convert, Synchronous SnapMirror, zero RPO, zero recovery time objective, zero RTO, existing 
+summary: 'Sie können eine bestehende SnapMirror Beziehung mit einem Recovery Point Schutz von null (RPO von null) in eine SM-BC Zero RTO synchrone SnapMirror Consistency Group-Beziehung umwandeln.' 
+---
+= Vorhandene Beziehungen in SM-BC-Beziehungen konvertieren
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können eine bestehende SnapMirror Beziehung mit einem Recovery Point Schutz von null (RPO von null) in eine SM-BC Zero RTO synchrone SnapMirror Consistency Group-Beziehung umwandeln.
+
+.Bevor Sie beginnen
+* Eine synchrone SnapMirror Beziehung mit einem RPO von null besteht zwischen dem primären und dem sekundären Volume.
+* Die Zuordnung aller LUNs auf dem Ziel-Volume wird aufgehoben, bevor die RTO SnapMirror Beziehung Null erstellt wird.
+* SM-BC unterstützt nur SAN-Protokolle (keine NFS/CIFS). Stellen Sie sicher, dass für den NAS-Zugriff keine Komponente der Konsistenzgruppe bereitgestellt ist.
+
+
+.Über diese Aufgabe
+* Sie müssen ein Cluster und SVM-Administrator auf der Quelle und dem Ziel sein.
+* Sie können keine RPO von null auf ein RTO von null konvertieren, indem Sie die SnapMirror Richtlinie ändern.
+* Wenn vorhandene LUNs auf dem sekundären Volume zugeordnet sind, `snapmirror create` Bei der AutomatedFailover-Richtlinie wird ein Fehler ausgelöst. Sie müssen sicherstellen, dass die Zuordnung der LUNs aufgehoben wird, bevor Sie die ausgeben `snapmirror create` Befehl.
+
+
+.Schritte
+. Durchführen eines SnapMirror Update Vorgangs für die vorhandene Beziehung:
++
+`destination::>snapmirror update -destination-path vs1_dst:vol1`
+
+. Überprüfen Sie, ob das SnapMirror Update erfolgreich abgeschlossen wurde:
++
+`destination::>snapmirror show`
+
+. Stilllegung jeder der synchronen Beziehungen ohne RPO:
++
+`destination::>snapmirror quiesce -destination-path vs1_dst:vol1`
+
++
+`destination::>snapmirror quiesce -destination-path vs1_dst:vol2`
+
+. Sie löschen jede der synchronen Beziehungen ohne RPO:
++
+`destination::>snapmirror delete -destination-path vs1_dst:vol1`
+
++
+`destination::>snapmirror delete -destination-path vs1_dst:vol2`
+
+. Geben Sie die SnapMirror Quellbeziehung frei, behalten Sie die gemeinsamen Snapshot Kopien jedoch bei:
++
+`source::>snapmirror release -relationship-info-only true -destination-path vs1_dst:vol1`
+
++
+`source::>snapmirror release -relationship-info-only true -destination-path vs1_dst:vol2`
+
+. Erstellen einer Gruppe null RTO synchrone SnapMirror Beziehung:
++
+`destination::> snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol1:@vol1,vol2:@vol2 -policy AutomatedFailover`
+
+. RTO-Konsistenzgruppe von null neu synchronisieren:
++
+`destination::> snapmirror resync -destination-path vs1_dst:/cg/cg_dst`
+
+. Wiederherstellen aller Pfade zu den LUNs durch erneute Überprüfung der Host-LUN-I/O-Pfade
+

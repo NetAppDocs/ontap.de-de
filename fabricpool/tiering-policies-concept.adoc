@@ -1,0 +1,232 @@
+---
+permalink: fabricpool/tiering-policies-concept.html 
+sidebar: sidebar 
+keywords: understanding, fabricpool, tiering, policies, types, modify, volume, clone, cloud migration 
+summary: Die Tiering-Richtlinien von FabricPool ermöglichen ein effizientes Verschieben von Daten über Tiers hinweg, wenn diese selten oder „kalt“ sind. Wenn Sie die Tiering-Richtlinien kennen, können Sie die passende Richtlinie für Ihre Storage-Management-Anforderungen auswählen. 
+---
+= Allgemeines zu FabricPool Tiering-Richtlinien
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Tiering-Richtlinien von FabricPool ermöglichen ein effizientes Verschieben von Daten über Tiers hinweg, wenn diese selten oder „kalt“ sind. Wenn Sie die Tiering-Richtlinien kennen, können Sie die passende Richtlinie für Ihre Storage-Management-Anforderungen auswählen.
+
+
+
+== Arten von FabricPool Tiering-Richtlinien
+
+FabricPool Tiering-Richtlinien bestimmen, wann oder ob die Benutzerdatenblöcke eines Volumes in FabricPool basierend auf dem Volume „`Temperature`“ (aktiv) oder „kalt“ (inaktiv) in den Cloud-Tier verschoben werden. Das Volumen „`temperature`“ erhöht sich, wenn es häufig aufgerufen wird und sinkt, wenn es nicht. Einige Tiering-Richtlinien weisen einen zugehörigen Mindestkühlzeitraum für das Tiering auf. In diesem Fall wird die Zeit festgelegt, die Benutzerdaten in einem Volume von FabricPool inaktiv bleiben müssen, damit die Daten als „`Cold`“ gelten und in die Cloud-Tier verschoben werden.
+
+Die FabricPool Tiering-Richtlinie wird auf Volume-Ebene festgelegt. Vier Optionen stehen zur Verfügung:
+
+* Der `snapshot-only` die tiering-Richtlinie (Standard) verschiebt Benutzerdatenblöcke des Volume-Snapshot-Kopien, die nicht dem aktiven Dateisystem zugeordnet sind, in die Cloud-Tier.
++
+Der Tiering-Mindestkühlzeitraum beträgt 2 Tage. Sie können die Standardeinstellung für den Tiering-Mindestkühlzeitraum mit dem ändern `-tiering-minimum-cooling-days` Parameter in der erweiterten Berechtigungsebene von `volume create` Und `volume modify` Befehle. Gültige Werte sind 2 bis 183 Tage mit ONTAP 9.8 und höher. Wenn Sie eine ONTAP-Version vor 9.8 verwenden, sind die gültigen Werte 2 bis 63 Tage.
+
+* Der `auto` Die tier-Richtlinie, die nur in ONTAP 9.4 und neueren Versionen unterstützt wird, verschiebt kalte Datenblöcke für Benutzer sowohl in den Snapshot Kopien als auch im aktiven Filesystem auf die Cloud-Tier.
++
+Der standardmäßige Tiering-Mindestkühlzeitraum beträgt 31 Tage und gilt für das gesamte Volume, sowohl für das aktive Dateisystem als auch für Snapshot Kopien.
+
++
+Sie können die Standardeinstellung für den Tiering-Mindestkühlzeitraum mit dem ändern `-tiering-minimum-cooling-days` Parameter in der erweiterten Berechtigungsebene von `volume create` Und `volume modify` Befehle. Gültige Werte sind 2 bis 183 Tage.
+
+* Der `all` Die tier-Richtlinie, die nur auf ONTAP 9.6 und höher unterstützt wird, verschiebt alle Benutzerdatenblöcke sowohl im aktiven Dateisystem als auch bei Snapshot Kopien in die Cloud-Tier. Er ersetzt das `backup` tiering-Richtlinie:
++
+Die minimale Kühldauer für das Tiering gilt nicht, da die Daten die Cloud-Tier verschieben, sobald die Tiering-Scan ausgeführt wird, und Sie können die Einstellung nicht ändern.
+
+* Der `none` Bei der tiering-Richtlinie werden die Daten eines Volumes im Performance-Tier gespeichert und verhindert, dass sie auf Cloud-Tier verschoben werden.
++
+Der minimale Kühlzeitraum für das Tiering entfällt, da die Daten niemals in das Cloud-Tier verschoben werden und Sie die Einstellung nicht ändern können.
+
+
+
+Der `volume show` Mit der Befehlsausgabe wird die Tiering-Richtlinie eines Volumes angezeigt. Ein Volume, das noch nie in FabricPool verwendet wurde, zeigt das `none` tiering-Richtlinie in der Ausgabe.
+
+
+
+== Was passiert, wenn Sie die Tiering-Richtlinie eines Volumes in FabricPool ändern
+
+Sie können die Tiering-Richtlinie eines Volumes ändern, indem Sie eine ausführen `volume modify` Betrieb. Sie müssen wissen, wie sich die Änderung der Tiering-Richtlinie auf den Zeitraum auswirkt, den Daten für „kalte“ Daten und zur Cloud-Tier verschoben werden müssen.
+
+* Ändern der Tiering-Richtlinie aus `snapshot-only` Oder `none` Bis `auto` Bewirkt, dass ONTAP Datenblöcke aus den Benutzerdaten im aktiven Filesystem sendet, die bereits „kalt“ sind, auf die Cloud-Tier, selbst wenn diese Benutzerdatenblöcke noch nicht für die Cloud-Tier geeignet waren.
+* Ändern der Tiering-Richtlinie in `all` Eine andere Richtlinie führt dazu, dass ONTAP alle Benutzerblöcke im aktiven Filesystem und in den Snapshot Kopien bei der nächsten Ausführung des Tiering-Scans auf die Cloud-Tier verschiebt.
++
+Das Verschieben von Blöcken in die Performance-Tier ist nicht zulässig.
+
+* Ändern der Tiering-Richtlinie aus `auto` Bis `snapshot-only` Oder `none` Aktive Filesystem-Blöcke, die bereits in das Cloud-Tier verschoben wurden, werden nicht zur Performance-Tier verschoben.
++
+Volume-Lesezugriffe sind erforderlich, damit die Daten zurück auf die Performance-Tier verschoben werden.
+
+* Jedes Mal, wenn Sie die Tiering-Richtlinie für ein Volume ändern, wird die minimale Kühldauer des Tiers auf den Standardwert für die Richtlinie zurückgesetzt.
+
+
+
+
+== Was passiert mit der Tiering-Richtlinie, wenn Sie ein Volume verschieben
+
+* Sofern Sie keine andere Tiering-Richtlinie explizit angeben, behält ein Volume seine ursprüngliche Tiering-Richtlinie bei, wenn es in ein FabricPool-fähiges Aggregat verschoben oder aus diesem entfernt wird.
++
+Die Tiering-Richtlinie wirkt sich jedoch nur dann aus, wenn das Volume in einem FabricPool-fähigen Aggregat besteht.
+
+* Der bestehende Wert von `-tiering-minimum-cooling-days` Parameter für ein Volume wird mit dem Volume verschoben, es sei denn, Sie geben eine andere Tiering-Richtlinie für das Ziel an.
++
+Wenn Sie eine andere Tiering-Richtlinie angeben, verwendet das Volume den standardmäßigen minimalen Kühlzeitraum für das Tiering für diese Richtlinie. Das ist der Fall, ob das Ziel FabricPool ist oder nicht.
+
+* Sie können ein Volume zwischen Aggregaten verschieben und gleichzeitig die Tiering-Richtlinie ändern.
+* Sie sollten besondere Aufmerksamkeit, wenn ein `volume move` Der Vorgang erfordert das `auto` tiering-Richtlinie:
++
+Wenn sowohl die Quelle als auch das Ziel FabricPool-fähige Aggregate sind, fasst die folgende Tabelle die Ergebnisse von zusammen `volume move` Vorgang mit Richtlinienänderungen in Zusammenhang mit `auto`:
+
++
+|===
+
+
+| Wenn Sie ein Volume mit einer Tiering-Richtlinie von verschieben... | Und Sie ändern die Tiering-Richtlinie mit dem Verschieben auf... | Dann nach der Volume-Verschiebung... 
+
+
+ a| 
+`all`
+ a| 
+`auto`
+ a| 
+Alle Daten werden in die Performance-Tier verschoben.
+
+
+
+ a| 
+`snapshot-only`, `none`, Oder `auto`
+ a| 
+`auto`
+ a| 
+Datenblöcke werden in dieselbe Tier des Ziels verschoben, wie sie sich zuvor an der Quelle befanden.
+
+
+
+ a| 
+`auto` Oder `all`
+ a| 
+`snapshot-only`
+ a| 
+Alle Daten werden in die Performance-Tier verschoben.
+
+
+
+ a| 
+`auto`
+ a| 
+`all`
+ a| 
+Alle Benutzerdaten werden auf das Cloud-Tier verschoben.
+
+
+
+ a| 
+`snapshot-only`,`auto` Oder `all`
+ a| 
+`none`
+ a| 
+Alle Daten werden auf der Performance-Tier aufbewahrt.
+
+|===
+
+
+
+
+== Was geschieht mit der Tiering-Richtlinie beim Klonen eines Volumes
+
+* Ab ONTAP 9.8 übernimmt ein Klon-Volume immer sowohl die Tiering-Richtlinie als auch die Cloud-Abrufrichtlinie des übergeordneten Volume.
++
+In älteren Versionen als ONTAP 9.8 übernimmt ein Klon die Tiering-Richtlinie vom übergeordneten Objekt, außer wenn das übergeordnete Objekt über den verfügt `all` tiering-Richtlinie:
+
+* Wenn das übergeordnete Volume über den verfügt `never` Die Richtlinie für den Cloud-Abruf. Sein Klon-Volume muss entweder über den verfügen `never` Die Cloud-Abrufrichtlinie oder die `all` tiering-Richtlinie und eine entsprechende Cloud-Abrufrichtlinie `default`.
+* Die Richtlinie zum Abrufen des übergeordneten Volume in „Cloud“ kann nicht geändert werden `never` Wenn nicht alle Clone-Volumes über eine Cloud-Abrufrichtlinie verfügen `never`.
+
+
+Beachten Sie beim Klonen von Volumes die folgenden Best Practices:
+
+* Der `-tiering-policy` Option und `tiering-minimum-cooling-days` Die Option des Klons steuert nur das Tiering-Verhalten von Blöcken, die für den Klon eindeutig sind. Daher empfehlen wir die Verwendung von Tiering-Einstellungen bei den übergeordneten FlexVol, bei denen entweder die gleiche Datenmenge verschoben oder weniger Daten verschoben werden als bei den Klonen
+* Die Richtlinie zum Abrufen der Cloud auf der übergeordneten FlexVol sollte entweder die gleiche Datenmenge verschieben oder mehr Daten verschieben als die Abrufrichtlinie eines der Klone
+
+
+
+
+== Funktionsweise von Tiering-Richtlinien bei der Cloud-Migration
+
+Der FabricPool Cloud-Datenabruf wird durch Tiering-Richtlinien gesteuert, die den Datenabruf vom Cloud-Tier zu Performance-Tier basierend auf dem Lesemuster bestimmen. Lesemuster können sequenziell oder zufällig sein.
+
+In der folgenden Tabelle sind die Tiering-Richtlinien und die Regeln für den Abruf von Cloud-Daten für jede Richtlinie aufgeführt.
+
+|===
+
+
+| Tiering-Richtlinie | Verhalten beim Abrufen 
+
+
+ a| 
+Keine
+ a| 
+Sequenzielle und zufällige Lesevorgänge
+
+
+
+ a| 
+Nur snapshot
+ a| 
+Sequenzielle und zufällige Lesevorgänge
+
+
+
+ a| 
+automatisch
+ a| 
+Wahlfreier Lesezugriff
+
+
+
+ a| 
+Alle
+ a| 
+Kein Datenabruf
+
+|===
+Ab ONTAP 9.8 gilt die Kontrolle der Cloud-Migration `cloud-retrieval-policy` Die Option überschreibt das Standard-Verhalten für die Cloud-Migration oder den Abruf, das durch die Tiering-Richtlinie gesteuert wird.
+
+In der folgenden Tabelle sind die unterstützten Richtlinien zum Abrufen in der Cloud und deren Abrufverhalten aufgeführt.
+
+|===
+
+
+| Cloud-Abrufrichtlinie | Verhalten beim Abrufen 
+
+
+ a| 
+Standard
+ a| 
+Die Tiering-Richtlinie entscheidet, welche Daten zurückgeholt werden sollen. Daher bleibt beim Cloud-Datenabruf mit „`default“ keine Änderung bestehen,`" `cloud-retrieval-policy`. Diese Richtlinie ist der Standardwert für alle Volumes, unabhängig vom Typ des gehosteten Aggregats.
+
+
+
+ a| 
+On-Read
+ a| 
+Alle clientfokussierten Daten werden vom Cloud-Tier auf die Performance-Tier übertragen.
+
+
+
+ a| 
+Nie
+ a| 
+Es werden keine Client-getriebenen Daten von der Cloud-Tier zur Performance-Tier übertragen
+
+
+
+ a| 
+Werben
+ a| 
+* Bei der Tiering-Richtlinie „`none,`“ werden alle Cloud-Daten von der Cloud-Tier zur Performance-Tier übertragen
+* Für die Tiering-Richtlinie „nur `s` napshot“ werden AFS-Daten abgezogen.
+
+
+|===

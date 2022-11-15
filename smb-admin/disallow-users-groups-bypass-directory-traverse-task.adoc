@@ -1,0 +1,44 @@
+---
+permalink: smb-admin/disallow-users-groups-bypass-directory-traverse-task.html 
+sidebar: sidebar 
+keywords: user, traverse, directories, directory, path, file, permission, sechangenotifyprivilege, privilege, local, smb, group, storage, virtual, machine, svm, disallow users or groups from bypassing directory traverse checking 
+summary: 'Wenn ein Benutzer nicht alle Verzeichnisse im Pfad zu einer Datei durchlaufen soll, weil der Benutzer im durchlaufenen Verzeichnis keine Berechtigungen hat, können Sie die SeChangeNotifyPrivilege-Berechtigung von lokalen SMB-Benutzern oder Gruppen auf Storage Virtual Machines (SVMs) entfernen.' 
+---
+= Benutzer oder Gruppen davon ablassen, die Überprüfung der Verzeichnisdurchgang zu umgehen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn ein Benutzer nicht alle Verzeichnisse im Pfad zu einer Datei durchlaufen soll, weil der Benutzer keine Berechtigungen im durchlaufenen Verzeichnis hat, können Sie das entfernen `SeChangeNotifyPrivilege` Berechtigungen von lokalen SMB-Benutzern oder Gruppen auf Storage Virtual Machines (SVMs).
+
+Der lokale Benutzer oder die Domänengruppe, aus der Berechtigungen entfernt werden sollen, muss bereits vorhanden sein.
+
+Wenn Sie Berechtigungen von einem Domänenbenutzer oder einer Gruppe entfernen, kann ONTAP den Domänenbenutzer oder die Gruppe validieren, indem Sie sich an den Domänencontroller wenden. Der Befehl schlägt möglicherweise fehl, wenn ONTAP den Domain-Controller nicht kontaktieren kann.
+
+.Schritte
+. Bypass-Traversen-Überprüfung nicht zulassen: `vserver cifs users-and-groups privilege remove-privilege -vserver _vserver_name_ -user-or-group-name _name_ -privileges SeChangeNotifyPrivilege`
++
+Mit dem Befehl wird das entfernt `SeChangeNotifyPrivilege` Berechtigung vom lokalen Benutzer oder der Domänengruppe, die Sie mit dem Wert für das angeben `-user-or-group-name _name_` Parameter.
+
+. Vergewissern Sie sich, dass für den angegebenen Benutzer oder die angegebene Gruppe die Umgehungsüberprüfung deaktiviert ist: `vserver cifs users-and-groups privilege show -vserver _vserver_name_ ‑user-or-group-name _name_`
+
+
+Mit dem folgenden Befehl werden Benutzer, die zur Gruppe „`EXAMPLE\eng`“ gehören, nicht mehr bei der Überprüfung der Verzeichnisübergang unterstützt:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- -----------------------
+vs1       EXAMPLE\eng           SeChangeNotifyPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege remove-privilege -vserver vs1 -user-or-group-name EXAMPLE\eng -privileges SeChangeNotifyPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- -----------------------
+vs1       EXAMPLE\eng           -
+----
+xref:allow-users-groups-bypass-directory-traverse-task.adoc[Benutzern oder Gruppen erlauben, die Überprüfung der Verzeichnisdurchgang zu umgehen]

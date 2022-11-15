@@ -1,0 +1,230 @@
+---
+sidebar: sidebar 
+permalink: networking/configure_snmpv3_users_in_a_cluster.html 
+keywords: configure, configuration, configuring, setup, setting, set, up, snmp, snmpv3, users, user, cluster, security, secure, configure an snmpv3 user to run the snmp utilities from the snmp manager, security login create command, configure snmpv3 users in a cluster, snmpv3 security parameters, examples for different security levels, security level authpriv, fips mode, snmpwalk test, security level authnopriv 
+summary: Konfigurieren Sie einen SNMPv3-Benutzer, um die SNMP-Dienstprogramme vom SNMP-Manager aus auszuführen 
+---
+= Konfigurieren Sie SNMPv3-Benutzer in einem Cluster
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+SNMPv3 ist ein sicheres Protokoll im Vergleich zu SNMPv1 und SNMPv2c. Um SNMPv3 zu verwenden, müssen Sie einen SNMPv3-Benutzer konfigurieren, um die SNMP-Dienstprogramme vom SNMP-Manager aus auszuführen.
+
+Verwenden Sie den Befehl „Security Login create“, um einen SNMPv3-Benutzer zu erstellen.
+
+Sie werden aufgefordert, folgende Informationen einzugeben:
+
+* Engine ID: Standard und Empfohlener Wert ist lokale Engine ID
+* Authentifizierungsprotokoll
+* Authentifizierungspasswort
+* Datenschutzprotokoll
+* Passwort für das Datenschutzprotokoll
+
+
+Der SNMPv3-Benutzer kann sich über den SNMP-Manager über den Benutzernamen und das Kennwort anmelden und die Befehle des SNMP-Dienstprogramms ausführen.
+
+
+
+== SNMPv3-Sicherheitsparameter
+
+SNMPv3 umfasst eine Authentifizierungsfunktion, die bei Auswahl von Benutzern erfordert, dass sie beim Aufrufen eines Befehls ihren Namen, ein Authentifizierungsprotokoll, einen Authentifizierungsschlüssel und den gewünschten Sicherheitsgrad eingeben.
+
+In der folgenden Tabelle sind die SNMPv3-Sicherheitsparameter aufgelistet:
+
+[cols="25,25,50"]
+|===
+
+
+| Parameter | Befehlszeilenoption | Beschreibung 
+
+
+ a| 
+EngineID
+ a| 
+-E EngineID
+ a| 
+Engine-ID des SNMP-Agenten. Der Standardwert ist Local EngineID (empfohlen).
+
+
+
+ a| 
+Sicherheitsname
+ a| 
+-U Name
+ a| 
+Der Benutzername darf maximal 32 Zeichen enthalten.
+
+
+
+ a| 
+AuthProtocol
+ a| 
+-A {None} SHA-256
+ a| 
+Authentifizierungstyp kann keine, MD5, SHA oder SHA-256 sein.
+
+
+
+ a| 
+AuthKey
+ a| 
+-EINE PASSPHRASE
+ a| 
+Passphrase mit mindestens acht Zeichen.
+
+
+
+ a| 
+Sicherheitsstufe
+ a| 
+- L {authNoPriv}
+ a| 
+Sicherheitsstufe kann Authentifizierung, Datenschutz, Authentifizierung, Datenschutz oder keine Authentifizierung sein. Kein Datenschutz.
+
+
+
+ a| 
+PrivProtocol
+ a| 
+-X { none} aes128
+ a| 
+Das Datenschutzprotokoll kann keine, des oder aes128 sein
+
+
+
+ a| 
+Privatpasswort
+ a| 
+-X-Passwort
+ a| 
+Passwort mit mindestens acht Zeichen.
+
+|===
+
+
+== Beispiele für unterschiedliche Sicherheitsstufen
+
+Dieses Beispiel zeigt, wie ein SNMPv3-Benutzer, der mit unterschiedlichen Sicherheitsstufen erstellt wurde, die SNMP-Clientbefehle verwenden kann, wie z. B. `snmpwalk`, Um die Clusterobjekte abzufragen.
+
+Für eine bessere Performance sollten Sie alle Objekte in einer Tabelle anstatt in einem einzelnen Objekt oder einigen Objekten aus der Tabelle abrufen.
+
+
+NOTE: Sie müssen verwenden `snmpwalk` 5.3.1 oder höher, wenn das Authentifizierungsprotokoll SHA ist.
+
+
+
+=== Sicherheitsstufe: AuthPriv
+
+Die folgende Ausgabe zeigt die Erstellung eines SNMPv3-Benutzers mit der authPriv-Sicherheitsstufe.
+
+....
+security login create -username snmpv3user -application snmp -authmethod usm
+Enter the authoritative entity's EngineID [local EngineID]:
+Which authentication protocol do you want to choose  (none, md5, sha) [none]:sha
+....
+
+
+==== FIPS-Modus
+
+....
+Which authentication protocol do you want to choose (sha, sha2-256) [sha]
+
+Enter authentication protocol password (minimum 8 characters long):
+Enter authentication protocol password again:
+Which privacy protocol do you want to choose  (none, des) [none]: des
+Enter privacy protocol password (minimum 8 characters long):
+Enter privacy protocol password again:
+....
+
+
+==== Snmpwalk-Test
+
+Die folgende Ausgabe zeigt den SNMPv3-Benutzer, der den snmpwalk-Befehl ausführt:
+
+Für eine bessere Performance sollten Sie alle Objekte in einer Tabelle anstatt in einem einzelnen Objekt oder einigen Objekten aus der Tabelle abrufen.
+
+....
+$ snmpwalk -v 3 -u snmpv3user -a SHA -A password1! -x DES -X password1! -l authPriv 192.0.2.62 .1.3.6.1.4.1.789.1.5.8.1.2
+Enterprises.789.1.5.8.1.2.1028 = "vol0"
+Enterprises.789.1.5.8.1.2.1032 = "vol0"
+Enterprises.789.1.5.8.1.2.1038 = "root_vs0"
+Enterprises.789.1.5.8.1.2.1042 = "root_vstrap"
+Enterprises.789.1.5.8.1.2.1064 = "vol1"
+....
+
+
+=== Sicherheitsstufe: AuthNoPriv
+
+Die folgende Ausgabe zeigt die Erstellung eines SNMPv3-Benutzers mit der autauthNoPriv-Sicherheitsstufe.
+
+....
+security login create -username snmpv3user1 -application snmp -authmethod usm -role admin
+Enter the authoritative entity's EngineID [local EngineID]:
+Which authentication protocol do you want to choose (none, md5, sha) [none]: md5
+....
+
+
+==== FIPS-Modus
+
+....
+Which privacy protocol do you want to choose (aes128) [aes128]
+
+Enter authentication protocol password (minimum 8 characters long):
+Enter authentication protocol password again:
+Which privacy protocol do you want to choose (none, des) [none]: none
+....
+
+
+==== Snmpwalk-Test
+
+Die folgende Ausgabe zeigt den SNMPv3-Benutzer, der den snmpwalk-Befehl ausführt:
+
+Für eine bessere Performance sollten Sie alle Objekte in einer Tabelle anstatt in einem einzelnen Objekt oder einigen Objekten aus der Tabelle abrufen.
+
+....
+$ snmpwalk -v 3 -u snmpv3user1 -a MD5 -A password1!  -l authNoPriv 192.0.2.62 .1.3.6.1.4.1.789.1.5.8.1.2
+Enterprises.789.1.5.8.1.2.1028 = "vol0"
+Enterprises.789.1.5.8.1.2.1032 = "vol0"
+Enterprises.789.1.5.8.1.2.1038 = "root_vs0"
+Enterprises.789.1.5.8.1.2.1042 = "root_vstrap"
+Enterprises.789.1.5.8.1.2.1064 = "vol1"
+....
+
+
+=== Sicherheitsstufe: NoAuthNoPriv
+
+Die folgende Ausgabe zeigt die Erstellung eines SNMPv3-Benutzers mit der Sicherheitsstufe noAuthNoPriv.
+
+....
+security login create -username snmpv3user2 -application snmp -authmethod usm -role admin
+Enter the authoritative entity's EngineID [local EngineID]:
+Which authentication protocol do you want to choose (none, md5, sha) [none]: none
+....
+
+
+==== FIPS-Modus
+
+FIPS ermöglicht keine Auswahl
+
+
+
+==== Snmpwalk-Test
+
+Die folgende Ausgabe zeigt den SNMPv3-Benutzer, der den snmpwalk-Befehl ausführt:
+
+Für eine bessere Performance sollten Sie alle Objekte in einer Tabelle anstatt in einem einzelnen Objekt oder einigen Objekten aus der Tabelle abrufen.
+
+....
+$ snmpwalk -v 3 -u snmpv3user2 -l noAuthNoPriv 192.0.2.62 .1.3.6.1.4.1.789.1.5.8.1.2
+Enterprises.789.1.5.8.1.2.1028 = "vol0"
+Enterprises.789.1.5.8.1.2.1032 = "vol0"
+Enterprises.789.1.5.8.1.2.1038 = "root_vs0"
+Enterprises.789.1.5.8.1.2.1042 = "root_vstrap"
+Enterprises.789.1.5.8.1.2.1064 = "vol1"
+....

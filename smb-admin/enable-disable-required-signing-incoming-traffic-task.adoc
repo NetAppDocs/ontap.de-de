@@ -1,0 +1,69 @@
+---
+permalink: smb-admin/enable-disable-required-signing-incoming-traffic-task.html 
+sidebar: sidebar 
+keywords: enforce, requirement, client, smb, message, enabling, enable, require, sign, disable, enable or disable require smb signing for incoming smb traffic 
+summary: Sie können die Anforderung für Clients durchsetzen, SMB-Nachrichten zu signieren, indem Sie das erforderliche SMB-Signieren aktivieren. Wenn aktiviert, akzeptiert ONTAP nur SMB-Nachrichten, wenn sie über gültige Signaturen verfügen. Wenn Sie SMB-Signaturen zulassen möchten, aber nicht benötigen, können Sie das erforderliche SMB-Signieren deaktivieren. 
+---
+= Aktivieren oder Deaktivieren der erforderlichen SMB-Signatur für eingehenden SMB-Datenverkehr
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die Anforderung für Clients durchsetzen, SMB-Nachrichten zu signieren, indem Sie das erforderliche SMB-Signieren aktivieren. Wenn aktiviert, akzeptiert ONTAP nur SMB-Nachrichten, wenn sie über gültige Signaturen verfügen. Wenn Sie SMB-Signaturen zulassen möchten, aber nicht benötigen, können Sie das erforderliche SMB-Signieren deaktivieren.
+
+Standardmäßig ist das erforderliche SMB-Signing deaktiviert. Sie können erforderliche SMB-Signaturen jederzeit aktivieren oder deaktivieren.
+
+[NOTE]
+====
+SMB-Signaturen sind unter den folgenden Umständen standardmäßig nicht deaktiviert:
+
+. Das erforderliche SMB-Signing ist aktiviert und das Cluster wird auf eine Version von ONTAP zurückgesetzt, die keine SMB-Signatur unterstützt.
+. Anschließend wird das Cluster auf eine Version von ONTAP aktualisiert, die SMB-Signaturen unterstützt.
++
+Unter diesen Bedingungen wird die Konfiguration der SMB-Signaturen, die ursprünglich auf einer unterstützten Version von ONTAP konfiguriert wurde, durch Reversion und anschließendes Upgrade beibehalten.
+
+
+
+====
+Wenn Sie eine Disaster-Recovery-Beziehung (SVM) für Storage Virtual Machine (SVM) einrichten, wählen Sie den entsprechenden Wert für die `-identity-preserve` Option des `snapmirror create` Der Befehl bestimmt die Konfigurationsdetails, die in der Ziel-SVM repliziert werden.
+
+Wenn Sie die einstellen `-identity-preserve` Option auf `true` (ID-Preserve) wird die Sicherheitseinstellung für SMB-Signaturen zum Ziel repliziert.
+
+Wenn Sie die einstellen `-identity-preserve` Option auf `false` (Nicht-ID-Preserve) wird die SMB-Sicherheitseinstellung für das Signieren nicht auf das Ziel repliziert. In diesem Fall sind die Sicherheitseinstellungen des CIFS-Servers auf dem Ziel auf die Standardwerte festgelegt. Wenn Sie die erforderliche SMB-Signatur auf der Quell-SVM aktiviert haben, müssen Sie die erforderliche SMB-Signatur manuell auf der Ziel-SVM aktivieren.
+
+.Schritte
+. Führen Sie eine der folgenden Aktionen aus:
++
+|===
+| Wenn SMB-Signatur erforderlich sein soll... | Geben Sie den Befehl ein... 
+
+
+ a| 
+Aktiviert
+ a| 
+`vserver cifs security modify -vserver _vserver_name_ -is-signing-required true`
+
+
+
+ a| 
+Deaktiviert
+ a| 
+`vserver cifs security modify -vserver _vserver_name_ -is-signing-required false`
+
+|===
+. Vergewissern Sie sich, dass die erforderliche SMB-Signatur aktiviert oder deaktiviert ist, indem Sie bestimmen, ob der Wert im verwendet wird `Is Signing Required` Feld in der Ausgabe des folgenden Befehls wird auf den gewünschten Wert gesetzt: `vserver cifs security show -vserver _vserver_name_ -fields is-signing-required`
+
+
+Im folgenden Beispiel werden die erforderlichen SMB-Signaturen für SVM vs1 ermöglicht:
+
+[listing]
+----
+cluster1::> vserver cifs security modify -vserver vs1 -is-signing-required true
+
+cluster1::> vserver cifs security show -vserver vs1 -fields is-signing-required
+vserver  is-signing-required
+-------- -------------------
+vs1      true
+----

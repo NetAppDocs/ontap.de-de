@@ -1,0 +1,57 @@
+---
+permalink: smb-admin/join-svm-active-directory-domain-task.html 
+sidebar: sidebar 
+keywords: join, storage, virtual, machine, svm, active, directory, domain, delete, deleting, exist, smb, cifs, server, modify, domain, vserver, cifs, rejoin, join a svm to an active directory domain 
+summary: 'Sie können eine Storage Virtual Machine (SVM) einer Active Directory-Domäne beitreten, ohne den vorhandenen SMB-Server zu löschen, indem Sie die Domäne mithilfe des vserver cifs modify-Befehls ändern. Sie können der aktuellen Domain erneut beitreten oder einer neuen beitreten.' 
+---
+= Einer SVM einer Active Directory-Domäne beitreten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können eine Storage Virtual Machine (SVM) einer Active Directory-Domäne beitreten, ohne den vorhandenen SMB-Server zu löschen, indem Sie die Domäne mithilfe der ändern `vserver cifs modify` Befehl. Sie können der aktuellen Domain erneut beitreten oder einer neuen beitreten.
+
+.Bevor Sie beginnen
+* Die SVM muss bereits über eine DNS-Konfiguration verfügen.
+* Die DNS-Konfiguration für die SVM muss die Ziel-Domäne unterstützen können.
++
+Die DNS-Server müssen die Service-Speicherortdatensätze (SRV) für die Domain-LDAP- und Domain-Controller-Server enthalten.
+
+
+
+.Über diese Aufgabe
+* Der Administrationsstatus des CIFS-Servers muss auf „`down`“ gesetzt werden, um mit der Änderung der Active Directory-Domäne fortzufahren.
+* Wenn der Befehl erfolgreich abgeschlossen wurde, wird der Administrationsstatus automatisch auf „`up`“ gesetzt.
+* Beim Beitritt zu einer Domäne kann dieser Befehl einige Minuten dauern.
+
+
+.Schritte
+. Verbinden Sie die SVM mit der CIFS-Server-Domäne: `vserver cifs modify -vserver _vserver_name_ -domain _domain_name_ -status-admin down`
++
+Weitere Informationen finden Sie auf der man-Page für das `vserver cifs modify` Befehl. Wenn Sie DNS für die neue Domäne neu konfigurieren müssen, finden Sie auf der man-Seite für die `vserver dns modify` Befehl.
+
++
+Um ein Active Directory-Computerkonto für den SMB-Server zu erstellen, müssen Sie den Namen und das Kennwort eines Windows-Kontos mit ausreichenden Berechtigungen angeben, um dem Computer hinzuzufügen `ou= _example_ ou` Innerhalb des Containers `_example_`.Com-Domain.
+
++
+Ab ONTAP 9.7 kann Ihr AD-Administrator Ihnen einen URI zu einer Keytab-Datei als Alternative zur Bereitstellung eines Namens und Kennworts für ein privilegiertes Windows-Konto zur Verfügung stellen. Wenn Sie den URI erhalten, geben Sie ihn in das ein `-keytab-uri` Parameter mit `vserver cifs` Befehle.
+
+. Vergewissern Sie sich, dass sich der CIFS-Server in der gewünschten Active Directory-Domäne befindet: `vserver cifs show`
+
+
+Im folgenden Beispiel tritt der SMB-Server „`CIFSSERVER1`“ auf SVM vs1 mit der Keytab-Authentifizierung in die Domäne example.com ein:
+
+[listing]
+----
+
+cluster1::> vserver cifs modify -vserver vs1 -domain example.com -status-admin down -keytab-uri http://admin.example.com/ontap1.keytab
+
+cluster1::> vserver cifs show
+
+          Server       Status       Domain/Workgroup  Authentication
+Vserver   Name         Admin        Name              Style
+--------- -----------  ---------    ----------------  --------------
+vs1       CIFSSERVER1  up           EXAMPLE          domain
+----

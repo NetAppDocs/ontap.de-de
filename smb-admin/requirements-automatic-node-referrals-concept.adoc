@@ -1,0 +1,98 @@
+---
+permalink: smb-admin/requirements-automatic-node-referrals-concept.html 
+sidebar: sidebar 
+keywords: smb, automatic, node, referral, autolocation, aware, requirement, version, ontap, feature, support, guideline, requirement, requirements and guidelines for using automatic node referrals 
+summary: Bevor Sie automatische SMB-Node-Empfehlungen – auch als Autolocation bekannt – verwenden können, müssen Sie sich bestimmter Anforderungen bewusst sein, einschließlich welcher Versionen von ONTAP die Funktion unterstützen. Auch über unterstützte SMB-Protokollversionen und bestimmte weitere spezielle Richtlinien sollten Sie sich informieren. 
+---
+= Anforderungen und Richtlinien für die Nutzung automatischer Node-Empfehlungen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie die automatischen SMB-Node-Empfehlungen, auch bekannt als _autolocation_, verwenden können, müssen Sie sich mit bestimmten Anforderungen bewusst sein, einschließlich welcher Versionen von ONTAP die Funktion unterstützen. Auch über unterstützte SMB-Protokollversionen und bestimmte weitere spezielle Richtlinien sollten Sie sich informieren.
+
+
+
+== ONTAP-Version- und Lizenzanforderungen
+
+* Auf allen Nodes im Cluster muss eine Version von ONTAP ausgeführt werden, die automatische Node-Empfehlungen unterstützt.
+* Widelinks müssen auf einer SMB-Freigabe aktiviert sein, um die automatische Verlagerung zu verwenden.
+* CIFS muss lizenziert sein, und auf den SVMs muss ein SMB-Server vorhanden sein.
+
+
+
+
+== Versionsanforderungen für SMB-Protokolle
+
+* Für SVMs unterstützt ONTAP unter allen SMB-Versionen automatische Node-Empfehlungen.
+
+
+
+
+== Anforderungen von SMB-Clients
+
+Alle von ONTAP unterstützten Microsoft Clients unterstützen automatische Node-Empfehlungen für SMB.
+
+Die Interoperabilitäts-Matrix enthält die neuesten Informationen, die Windows Clients ONTAP unterstützen.
+
+link:http://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^]
+
+
+
+== Anforderungen an Daten-LIF
+
+Wenn Sie eine Daten-LIF als potenzielle Empfehlung für SMB-Clients verwenden möchten, müssen Sie Daten-LIFs erstellen, bei denen NFS und CIFS aktiviert sind.
+
+Automatische Node-Empfehlungen können nicht funktionieren, wenn der Ziel-Node Daten-LIFs enthält, die nur für das NFS-Protokoll aktiviert oder nur für das SMB-Protokoll aktiviert sind.
+
+Wird diese Anforderung nicht erfüllt, ist der Datenzugriff nicht beeinträchtigt. Der SMB-Client ordnet die Freigabe mithilfe des ursprünglichen LIF zu, das der Client zur Verbindung mit der SVM verwendet hat.
+
+
+
+== NTLM-Authentifizierungsanforderungen, wenn eine weiterbezeichnete SMB-Verbindung hergestellt wird
+
+Die NTLM-Authentifizierung muss in der Domäne erlaubt sein, die den CIFS-Server enthält, und in den Domänen mit Clients, die automatische Node-Empfehlungen verwenden möchten.
+
+Bei einer Empfehlung bezieht der SMB-Server eine IP-Adresse auf den Windows-Client. Da die NTLM-Authentifizierung beim Verbindungsaufbau mit einer IP-Adresse verwendet wird, wird die Kerberos-Authentifizierung nicht für die genannten Verbindungen durchgeführt.
+
+Dies geschieht, weil der Windows-Client den von Kerberos verwendeten Service-Principal-Namen (der des Formulars ist) nicht erstellen kann `service/NetBIOS name` Und `service/FQDN`), was bedeutet, dass der Client kein Kerberos-Ticket für den Service anfordern kann.
+
+
+
+== Richtlinien für die Verwendung automatischer Node-Empfehlungen mit der Home Directory-Funktion
+
+Wenn Freigaben mit der Eigenschaft Home Directory Share konfiguriert sind, kann es einen oder mehrere Suchpfade für Home Directory geben, die für eine Home Directory-Konfiguration konfiguriert sind. Die Suchpfade können auf Volumes verweisen, die auf jedem Node enthalten sind, der SVM Volumes enthält. Clients erhalten eine Empfehlung und stellen bei Verfügbarkeit einer aktiven logischen Datenschnittstelle eine Verbindung über eine empfohlene logische Schnittstelle her, die sich lokal mit dem Home-Verzeichnis des Home-Benutzers befindet.
+
+Es gibt Richtlinien, wenn SMB 1.0-Clients mit aktivierten automatischen Node-Empfehlungen auf dynamische Home Directorys zugreifen. Der Grund dafür ist, dass SMB 1.0-Clients die automatische Knotenverweisung benötigen, bevor sie authentifiziert wurden. Dies liegt vor dem Namen des SMB-Servers. Der Zugriff auf das SMB Home-Verzeichnis funktioniert jedoch für SMB 1.0-Clients ordnungsgemäß, wenn die folgenden Aussagen richtig sind:
+
+* SMB-Home-Verzeichnisse werden für die Verwendung einfacher Namen konfiguriert, z. B. „`%w`“ (Windows Benutzername) oder „`%u`“ (zugeordneter UNIX-Benutzername) und keine Domain-Name-Stilnamen wie „`%d\%w `“ (Domain-Name\Benutzername).
+* Beim Erstellen von Home-Directory-Freigaben werden die Namen von CIFS-Home-Verzeichnissen mit Variablen („`%w`" oder "`%u`") konfiguriert und nicht mit statischen Namen, wie z. B. „`HOME`“.
+
+
+Für SMB 2.x und SMB 3.0 Clients gibt es keine besonderen Richtlinien für den Zugriff auf Home Directorys unter Verwendung automatischer Node-Empfehlungen.
+
+
+
+== Richtlinien zum Deaktivieren der automatischen Node-Empfehlungen auf CIFS-Servern mit vorhandenen versprochenen Verbindungen
+
+Wenn Sie die automatischen Knotenempfehlungen deaktivieren, nachdem die Option aktiviert wurde, behalten Clients, die derzeit mit einem genannten LIF verbunden sind, die erwähnte Verbindung. Da ONTAP DFS-Empfehlungen als Mechanismus für automatische SMB-Knotenempfehlungen verwendet, können Clients sogar eine erneute Verbindung zu der genannten LIF herstellen, nachdem Sie die Option deaktiviert haben, bis die DFS-Empfehlung im Cache des Clients für die genannten Verbindungszeiten deaktiviert ist. Dies gilt auch bei der Wiederherstellung auf eine Version von ONTAP, die keine automatischen Node-Empfehlungen unterstützt. Clients verwenden weiterhin Empfehlungen, bis sich die DFS-Verweisungszeiten aus dem Cache des Clients ergeben.
+
+Autoolocation verwendet automatische SMB-Node-Empfehlungen, um die SMB-Client-Performance zu steigern, indem Clients auf die LIF auf dem Node verwiesen werden, der das Daten-Volume einer SVM besitzt. Wenn ein SMB-Client eine Verbindung zu einer auf einer SVM gehosteten SMB-Freigabe herstellt, kann er eine Verbindung über eine LIF auf einem Node herstellen, der nicht den angeforderten Daten besitzt, und über das Cluster-Interconnect-Netzwerk Daten abrufen. Der Client kann schnellere Antwortzeiten erleben, wenn die SMB-Verbindung eine LIF auf dem Node verwendet, der die angeforderten Daten enthält.
+
+ONTAP bietet diese Funktion mithilfe von DFS-Empfehlungen (Microsoft Distributed File System), um SMB-Clients darüber zu informieren, dass eine angeforderte Datei oder ein angefragter Ordner im Namespace irgendwo anders gehostet wird. Ein Node empfiehlt, wenn er feststellt, dass eine LIF der SVM auf dem Node mit den Daten vorhanden ist. Empfehlungen werden basierend auf dem Speicherort des Stammes der Freigabe gemacht, über die der Client verbunden ist.
+
+Die Empfehlung erfolgt während der SMB-Verhandlung. Die Empfehlung erfolgt, bevor die Verbindung hergestellt wird. Nachdem ONTAP den SMB-Client auf den Ziel-Node bezieht, wird die Verbindung hergestellt und der Client greift über den genannten LIF-Pfad von diesem Punkt an auf Daten zu. Dies ermöglicht einen schnelleren Zugriff auf die Daten und vermeidet eine zusätzliche Cluster-Kommunikation.
+
+
+
+== Richtlinien für die Verwendung automatischer Knotenempfehlungen mit Mac OS Clients
+
+Mac OS X-Clients unterstützen keine automatischen SMB-Node-Empfehlungen, obwohl das Mac OS das verteilte Dateisystem (DFS) von Microsoft unterstützt. Windows-Clients stellen eine DFS-Verweisanfrage vor, bevor sie eine Verbindung zu einer SMB-Freigabe herstellen. ONTAP enthält eine Empfehlung zu einer Daten-LIF auf demselben Node, der die angeforderten Daten hostet. Dadurch werden die Client-Reaktionszeiten verkürzt. Obwohl das Mac OS DFS unterstützt, verhalten sich Mac OS Clients nicht genau wie Windows Clients in diesem Bereich.
+
+xref:dynamic-home-directories-concept.html[So ermöglicht ONTAP dynamische Home Directories]
+
+link:../networking/index.html["Netzwerkmanagement"]
+
+https://mysupport.netapp.com/NOW/products/interoperability["NetApp Interoperabilitäts-Matrix-Tool"^]

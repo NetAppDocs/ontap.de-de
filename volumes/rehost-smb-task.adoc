@@ -1,0 +1,83 @@
+---
+permalink: volumes/rehost-smb-task.html 
+sidebar: sidebar 
+keywords: rehost, cifs volumes 
+summary: Sie können Volumes, die Daten über das SMB-Protokoll bereitstellen, neu hosten. Nachdem Sie das CIFS Volume neu gehostet haben, müssen Sie Richtlinien und die zugehörigen Regeln manuell konfigurieren, um weiterhin über das SMB-Protokoll auf Daten zugreifen zu können. 
+---
+= CIFS Volumes neu hosten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Volumes, die Daten über das SMB-Protokoll bereitstellen, neu hosten. Nachdem Sie das CIFS Volume neu gehostet haben, müssen Sie Richtlinien und die zugehörigen Regeln manuell konfigurieren, um weiterhin über das SMB-Protokoll auf Daten zugreifen zu können.
+
+.Was Sie und#8217;ll benötigen
+* Das Volume muss online sein.
+* Volume-Managementvorgänge wie Volume-Verschiebung oder LUN-Verschiebung dürfen nicht ausgeführt werden.
+* Der Datenzugriff auf das neu gehostete Volume muss gestoppt werden.
+* Die ns-Switch- und Name-Services-Konfiguration der Ziel-SVM muss konfiguriert werden, um den Datenzugriff des Rehosting Volume zu unterstützen.
+* Die Quell-SVM und die Ziel-SVM müssen dieselbe Active Directory und RealmDNS-Domäne aufweisen.
+* Die Benutzer-ID und Gruppen-ID des Volumes muss in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
++
+[NOTE]
+====
+Wenn lokale Benutzer und Gruppen konfiguriert sind und sich Dateien und Verzeichnisse auf diesem Volume befinden, deren Berechtigungen für diese Benutzer oder Gruppen festgelegt sind, sind diese Berechtigungen nicht mehr wirksam.
+
+====
+
+
+.Über diese Aufgabe
+* Das Rehosting ist ein störender Betrieb.
+* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
+* Wenn sich die Quell-SVM und die Ziel-SVM Active Directory-Domänen unterscheiden, können Sie unter Umständen auf die Objekte auf dem Volume zugreifen.
+* Wenn die Quell-SVM lokale Benutzer und Gruppen hat, sind die festgelegten Berechtigungen für die Dateien und Verzeichnisse (ACLs) nicht mehr effektiv nach dem Rehosting des Volumes.
++
+Das gleiche gilt für Audit ACLs (SACLs)
+
+* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
++
+** Exportrichtlinien für Volumes und qtree
+** Virenschutz-Richtlinien
+** Volume-Effizienzrichtlinie
+** Quality of Service-Richtlinien (QoS
+** Snapshot-Richtlinien
+** Kontingentregeln
+** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
+** Benutzer- und Gruppen-IDs
+
+
+
+
+.Schritte
+. Notieren Sie Informationen über die CIFS-Freigaben, um zu vermeiden, dass Informationen auf CIFS-Freigaben verloren gehen, falls der Rehosting des Volumes fehlschlägt.
+. Heben Sie die Bereitstellung des Volumes vom übergeordneten Volume ab:
++
+`volume unmount`
+
+. Wechseln zur erweiterten Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Erneutes Hosten des Volumes auf der Ziel-SVM:
++
+`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+
+. Mounten Sie das Volume unter dem entsprechenden Verbindungspfad in der Ziel-SVM:
++
+`volume mount`
+
+. Erstellen von CIFS-Freigaben für das neu gehostete Volume:
++
+`vserver cifs share create`
+
+. Wenn sich die DNS-Domänen zwischen der Quell-SVM und der Ziel-SVM unterscheiden, erstellen Sie neue Benutzer und Gruppen.
+. Aktualisieren Sie den CIFS-Client mit den neuen Ziel-SVM LIFs und dem Verbindungspfad zum neu gehosteten Volume.
+
+
+Sie müssen die Richtlinien und die zugehörigen Regeln für das neu gehostete Volume manuell neu konfigurieren.
+
+https://docs.netapp.com/us-en/ontap-sm-classic/smb-config/index.html["SMB-Konfiguration"]
+
+https://docs.netapp.com/us-en/ontap-sm-classic/nas-multiprotocol-config/index.html["Multiprotokoll-Konfiguration von SMB und NFS"]

@@ -1,0 +1,82 @@
+---
+permalink: revert/task_preparing_snapshot_copies_before_reverting.html 
+sidebar: sidebar 
+keywords: ontap, revert, reverting, reversion, snapshot, copies, prepare, preparing, disable, delete 
+summary: Vor dem Zurücksetzen auf eine frühere Version von ONTAP müssen Sie alle Richtlinien für Snapshot Kopien deaktivieren und alle Snapshot Kopien löschen, die nach dem Upgrade auf die aktuelle Version erstellt wurden. 
+---
+= Bereiten Sie Snapshot Kopien vor dem Zurücksetzen vor
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Vor dem Zurücksetzen auf eine frühere Version von ONTAP müssen Sie alle Richtlinien für Snapshot Kopien deaktivieren und alle Snapshot Kopien löschen, die nach dem Upgrade auf die aktuelle Version erstellt wurden.
+
+Beim Zurücksetzen in einer SnapMirror Umgebung müssen Sie zuerst die folgenden Spiegelbeziehungen gelöscht haben:
+
+* Alle Mirror-Beziehungen zur Lastverteilung
+* Alle Datensicherungsspiegelbeziehungen, die in ONTAP 8.3.x erstellt wurden
+* Alle Datensicherungsspiegelbeziehungen, wenn das Cluster in ONTAP 8.3.x neu erstellt wurde
++
+.. Deaktivieren Sie die Richtlinien von Snapshot Kopien für alle Daten-SVMs: `volume snapshot policy modify -vserver * -enabled false`
+.. Deaktivieren Sie die Snapshot-Kopie-Richtlinien für die Aggregate jedes Nodes:
++
+... Identifizieren Sie die Aggregate des Knotens mithilfe des run-nodenameaggr Status-Befehls.
+... Deaktivieren Sie die Snapshot Kopie-Richtlinie für jedes Aggregat: `run -node nodename aggr options aggr_name nosnap on`
+... Wiederholen Sie diesen Schritt für jeden verbleibenden Knoten.
+
+
+.. Deaktivieren Sie die Snapshot-Kopie-Richtlinien für das Root-Volume jedes Nodes:
++
+... Ermitteln Sie das Root-Volume des Nodes mithilfe des Status-Befehls run-nodenodenamevol.
++
+Sie identifizieren das Root-Volume anhand des Wortes „root“ in der Spalte „Optionen“ der Befehlsausgabe des Befehls „vol Status“.
+
++
+[listing]
+----
+vs1::> run -node node1 vol status
+
+         Volume State           Status            Options
+           vol0 online          raid_dp, flex     root, nvfail=on
+                                64-bit
+----
+... Deaktivieren Sie die Richtlinie für Snapshot Kopien auf dem Root-Volume: `run -node nodename vol options root_volume_name nosnap on`
+... Wiederholen Sie diesen Schritt für jeden verbleibenden Knoten.
+
+
+.. Löschen Sie alle Snapshot Kopien, die nach dem Upgrade auf die aktuelle Version erstellt wurden:
++
+... Legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`
+... Deaktivieren Sie die Snapshots:``snapshot policy modify -vserver * -enabled false``
+... Löschen Sie die Snapshot Kopien einer neueren Version des Node: `volume snapshot prepare-for-revert -node nodename`
++
+Dieser Befehl löscht die Snapshot Kopien der neueren Version auf jedem Daten-Volume, Root-Aggregat und Root-Volume.
+
++
+Wenn Snapshots nicht gelöscht werden können, schlägt der Befehl fehl und benachrichtigt Sie über erforderliche Aktionen, bevor die Snapshot Kopien gelöscht werden können. Sie müssen die erforderlichen Aktionen ausführen und dann den Befehl Prepare-for-revert Volume Snapshot erneut ausführen, bevor Sie mit dem nächsten Schritt fortfahren.
+
++
+[listing]
+----
+cluster1::*> volume snapshot prepare-for-revert -node node1
+
+Warning: This command will delete all Snapshot copies that have the format used by the current version of ONTAP. It will fail if any Snapshot copy polices are enabled, or
+         if any Snapshot copies have an owner. Continue? {y|n}: y
+----
+... Vergewissern Sie sich, dass die Snapshot Kopien gelöscht wurden: `volume snapshot show -node nodename`
++
+Falls Snapshots neuerer Versionen verbleiben, erzwingen Sie das Löschen: `volume snapshot delete {-fs-version 9.0 -node nodename -is-constituent true} -ignore-owners -force`
+
+... Wiederholen Sie diesen Schritt c für jeden verbleibenden Knoten.
+... Zurück zur Administratorberechtigungsebene: `set -privilege admin`
+
+
+
+
++
+
+NOTE: Sie müssen diese Schritte in der MetroCluster-Konfiguration auf den Clustern durchführen.
+
+

@@ -1,0 +1,62 @@
+---
+permalink: s3-audit/create-enable-config-task.html 
+sidebar: sidebar 
+keywords: consistency groups, consistency group, application protection, parent, child, configure 
+summary: Für die Implementierung der S3-Prüfung wird zuerst eine persistente Objektspeicherauditierung auf einer S3-fähigen SVM erstellt, dann die Konfiguration aktiviert. 
+---
+= Erstellung und Aktivierung einer S3-Audit-Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Für die Implementierung der S3-Prüfung wird zuerst eine persistente Objektspeicherauditierung auf einer S3-fähigen SVM erstellt, dann die Konfiguration aktiviert.
+
+.Was Sie und#8217;ll benötigen
+* Eine S3-fähige SVM
+* Ausreichend Platz für das Staging von Volumes im Aggregat.
+
+
+Für jede SVM, die S3-Buckets enthält, die Sie prüfen möchten, ist eine Audit-Konfiguration erforderlich. Sie können S3-Prüfungen auf neuen oder vorhandenen S3-Servern aktivieren. Das Auditing von Konfigurationen bleibt in einer S3-Umgebung erhalten, bis sie mit dem Befehl *vserver Object-Store-Server Audit delete* entfernt werden.
+
+Die S3-Audit-Konfiguration gilt für alle Buckets der SVM, die Sie für das Auditing auswählen. Eine SVM, die für Audits aktiviert ist, kann geprüfte und nicht geprüfte Buckets enthalten.
+
+Es wird empfohlen, die S3-Prüfung für automatische Protokollrotation anhand von Protokollgröße oder Zeitplan zu konfigurieren. Wenn Sie keine automatische Protokollrotation konfigurieren, werden alle Protokolldateien standardmäßig beibehalten. Sie können S3-Protokolldateien auch manuell mit dem Befehl *vserver object-Store-Server Audit rotieren-log* drehen.
+
+Wenn die SVM eine SVM Disaster-Recovery-Quelle ist, kann sich der Zielpfad nicht auf dem Root-Volume befinden.
+
+.Verfahren
+. Erstellen Sie die Überwachungskonfiguration, um Prüfprotokolle basierend auf Protokollgröße oder einem Zeitplan zu drehen.
++
+[cols="2,4"]
+|===
+| Wenn Sie die Prüfprotokolle drehen möchten, um... | Eingeben... 
+
+
+| Protokollgröße | `vserver object-store-server audit create -vserver _svm_name_ -destination _path_ [[-events] {data{vbar}management}, ...] {[-rotate-limit _integer_] {vbar} [-retention-duration [_integer_d] [_integer_h][_integer_m][_integers_]]} [-rotate-size {_integer_[KB{vbar}MB{vbar}GB{vbar}TB{vbar}PB]}]` 
+
+
+| Einen Zeitplan  a| 
+`vserver object-store-server audit create -vserver _svm_name_ -destination path [[-events] {data{vbar}management}, ...] {[-rotate-limit _integer_] {vbar} [-retention-duration [_integerd_][_integerh_] [_integerm_][_integers_]] } [-rotate-schedule-month _chron_month_] [-rotate-schedule-dayofweek _chron_dayofweek_] [-rotate-schedule-day _chron_dayofmonth_] [-rotate-schedule-hour _chron_hour_] -rotate-schedule-minute _chron_minute_`
+
+Der `-rotate-schedule-minute` Der Parameter ist erforderlich, wenn Sie die zeitbasierte Rotation des Prüfprotokolls konfigurieren.
+
+|===
+. S3-Auditing aktivieren:
++
+`vserver object-store-server audit enable -vserver _svm_name_`
+
+
+
+Im folgenden Beispiel wird eine Audit-Konfiguration erstellt, die alle S3-Ereignisse (die Standardeinstellung) anhand von größenbasierter Rotation prüft. Die Protokolle werden im Verzeichnis /Audit_log gespeichert. Die maximale Größe der Protokolldatei beträgt 200 MB. Die Protokolle werden gedreht, wenn sie 200 MB groß.
+
+`cluster1::> vserver audit create -vserver vs1 -destination /audit_log -rotate-size 200MB`
+
+Im folgenden Beispiel wird eine Audit-Konfiguration erstellt, die alle S3-Ereignisse (die Standardeinstellung) anhand von größenbasierter Rotation prüft. Die maximale Protokolldateigröße beträgt 100 MB (Standard) und die Protokolle werden 5 Tage lang aufbewahrt, bevor sie gelöscht werden.
+
+`cluster1::> vserver audit create -vserver vs1 -destination /audit_log -retention-duration 5d0h0m`
+
+Im folgenden Beispiel wird eine Audit-Konfiguration erstellt, die S3-Managementereignisse und zentrale Zugriffs- und Staging-Ereignisse mithilfe zeitbasierter Rotation prüft. Die Prüfprotokolle werden monatlich um 12:30 Uhr gedreht An allen Wochentagen. Die Protokollrotationsgrenze ist 5.
+
+`cluster1::> vserver audit create -vserver vs1 -destination /audit_log -events management -rotate-schedule-month all -rotate-schedule-dayofweek all -rotate-schedule-hour 12 -rotate-schedule-minute 30 -rotate-limit 5`

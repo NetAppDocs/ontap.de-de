@@ -1,0 +1,116 @@
+---
+sidebar: sidebar 
+permalink: networking/create_an_snmp_community_and_assigning_it_to_a_lif.html 
+keywords: create, creation, creating, add, adding, snmp, community, assign, assigning, lif, logical, interface, create an snmp community and assigning it to a lif, snmpwalk, snmpget, snmp community add 
+summary: Erstellen Sie eine SNMP-Community, die als Authentifizierungsmechanismus zwischen Management Station und SVM fungiert 
+---
+= Erstellen Sie eine SNMP Community und Zuweisen zu einem LIF
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Sie können bei der Verwendung von SNMPv1 und SNMPv2c eine SNMP-Community erstellen, die als Authentifizierungsmechanismus zwischen der Management Station und der Storage Virtual Machine (SVM) fungiert.
+
+Durch das Erstellen von SNMP Communities in einer Daten-SVM können Sie Befehle wie ausführen `snmpwalk` Und `snmpget` Auf den Daten-LIFs.
+
+.Über diese Aufgabe
+* Bei Neuinstallationen von ONTAP sind SNMPv1 und SNMPv2c standardmäßig deaktiviert.
++
+SNMPv1 und SNMPv2c sind aktiviert, nachdem Sie eine SNMP-Community erstellt haben.
+
+* ONTAP unterstützt schreibgeschützte Communitys.
+* Standardmäßig ist für die „Daten“ Firewall-Richtlinie, die Daten-LIFs zugewiesen ist, der SNMP-Service festgelegt `deny`.
++
+Sie müssen eine neue Firewallrichtlinie erstellen, bei der der SNMP-Dienst auf festgelegt ist `allow` Beim Erstellen eines SNMP-Benutzers für eine Daten-SVM
+
+* Sie können SNMP Communities für SNMPv1- und SNMPv2c-Benutzer sowohl für die Admin-SVM als auch für die Daten-SVM erstellen.
+* Da eine SVM nicht Teil des SNMP-Standards ist, müssen bei Anfragen zu Daten-LIFs die NetApp Root OID (1.3.6.1.4.1.789) enthalten – beispielsweise `snmpwalk -v 2c -c snmpNFS 10.238.19.14 1.3.6.1.4.1.789`.
+
+
+.Schritte
+. Erstellen Sie eine SNMP Community mit dem `system snmp community add` Befehl. Mit dem folgenden Befehl wird gezeigt, wie eine SNMP-Community in dem Admin-SVM-Cluster-1 erstellt wird:
++
+....
+system snmp community add -type ro -community-name comty1 -vserver cluster-1
+....
++
+Mit dem folgenden Befehl wird gezeigt, wie eine SNMP-Community in der Data SVM vs1 erstellt wird:
+
++
+....
+system snmp community add -type ro -community-name comty2 -vserver vs1
+....
+. Überprüfen Sie, dass die Communities erstellt wurden, indem Sie den System snmp Community show Befehl verwenden.
++
+Der folgende Befehl zeigt die beiden Gemeinschaften, die für SNMPv1 und SNMPv2c erstellt wurden:
+
++
+....
+system snmp community show
+cluster-1
+rocomty1
+vs1
+rocomty2
+....
+. Überprüfen Sie, ob SNMP als Dienst in der „Daten“ Firewall-Richtlinie über die zulässig ist `system services firewall policy` `show` Befehl.
++
+Der folgende Befehl zeigt an, dass der snmp-Dienst in der Standard-Firewall-Richtlinie „Daten“ nicht erlaubt ist (der snmp-Dienst ist nur in der „Management“ Firewall-Richtlinie zulässig):
+
++
+....
+system services firewall policy show
+Vserver Policy       Service    Allowed
+------- ------------ ---------- -------------------
+cluster-1
+        data
+                     dns        0.0.0.0/0
+                     ndmp       0.0.0.0/0
+                     ndmps      0.0.0.0/0
+cluster-1
+        intercluster
+                     https      0.0.0.0/0
+                     ndmp       0.0.0.0/0
+                     ndmps      0.0.0.0/0
+cluster-1
+        mgmt
+                     dns        0.0.0.0/0
+                     http       0.0.0.0/0
+                     https      0.0.0.0/0
+                     ndmp       0.0.0.0/0
+                     ndmps      0.0.0.0/0
+                     ntp        0.0.0.0/0
+                     snmp       0.0.0.0/0
+                     ssh        0.0.0.0/0
+....
+. Erstellen Sie eine neue Firewallrichtlinie, die den Zugriff über ermöglicht `snmp` Dienst durch Verwendung des `system services firewall policy create` Befehl.
++
+Die folgenden Befehle erstellen eine neue Daten-Firewall-Richtlinie namens "data1", die das ermöglicht `snmp`
+
++
+....
+system services firewall policy create -policy data1 -service snmp -vserver  vs1 -allow-list 0.0.0.0/0
+
+cluster-1::> system services firewall policy show -service snmp
+Vserver  Policy       Service    Allowed
+-------  ------------ ---------- -------------------
+cluster-1
+         mgmt
+                      snmp       0.0.0.0/0
+vs1
+         data1
+                      snmp       0.0.0.0/0
+....
+. Wenden Sie die Firewallrichtlinie auf eine Daten-LIF an, indem Sie den Befehl `Network Interface modify `mit dem Parameter -Firewall-Policy verwenden.
++
+Mit dem folgenden Befehl wird die neue „data1“ Firewallrichtlinie zu LIF „Daten1“ zugewiesen:
+
++
+....
+network interface modify -vserver vs1 -lif datalif1 -firewall-policy data1
+....
+

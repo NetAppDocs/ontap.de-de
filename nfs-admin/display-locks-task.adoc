@@ -1,0 +1,103 @@
+---
+permalink: nfs-admin/display-locks-task.html 
+sidebar: sidebar 
+keywords: display, information, lock 
+summary: Sie können Informationen über die aktuellen Dateisperren anzeigen, einschließlich der Arten von Sperren und des Sperrstatus, Informationen über Byte-Range-Sperren, Sharlock-Modi, Delegiertersicherungen und opportunistische Sperren sowie darüber, ob Sperren mit langlebigen oder dauerhaften Griffen geöffnet werden. 
+---
+= Informationen zu Sperren anzeigen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Informationen über die aktuellen Dateisperren anzeigen, einschließlich der Arten von Sperren und des Sperrstatus, Informationen über Byte-Range-Sperren, Sharlock-Modi, Delegiertersicherungen und opportunistische Sperren sowie darüber, ob Sperren mit langlebigen oder dauerhaften Griffen geöffnet werden.
+
+Die Client-IP-Adresse kann nicht für Sperren angezeigt werden, die über NFSv4 oder NFSv4.1 eingerichtet wurden.
+
+Standardmäßig werden mit dem Befehl Informationen zu allen Sperren angezeigt. Mit den Befehlsparametern können Informationen über Sperren für eine bestimmte Storage Virtual Machine (SVM) angezeigt oder die Ausgabe des Befehls nach anderen Kriterien gefiltert werden.
+
+Der `vserver locks show` Befehl zeigt Informationen zu vier Arten von Sperren an:
+
+* Byte-Bereich-Locks, die nur einen Teil einer Datei sperren.
+* Sperren freigeben, die geöffnete Dateien sperren
+* Opportunistische Sperren, die das Client-seitige Caching über SMB steuern.
+* Delegationen, die das Caching des Clients über NFSv4.x steuern
+
+
+Durch die Angabe optionaler Parameter können Sie wichtige Informationen zu jedem Sperrtyp ermitteln. Weitere Informationen finden Sie auf der man-Page des Befehls.
+
+.Schritt
+. Zeigen Sie Informationen über Sperren mithilfe des an `vserver locks show` Befehl.
+
+
+Im folgenden Beispiel werden zusammenfassende Informationen für eine NFSv4-Sperre auf einer Datei mit dem Pfad angezeigt `/vol1/file1`. Der Zugriffsmodus für sharlock ist write-Deny_none, und die Sperre wurde mit der Schreibdelegation gewährt:
+
+[listing]
+----
+cluster1::> vserver locks show
+
+Vserver: vs0
+Volume  Object Path               LIF         Protocol  Lock Type   Client
+------- ------------------------- ----------- --------- ----------- -------
+vol1    /vol1/file1               lif1        nfsv4     share-level -
+               Sharelock Mode: write-deny_none
+                                                        delegation  -
+               Delegation Type: write
+----
+Das folgende Beispiel zeigt detaillierte oplock- und Share-Informationen über die SMB-Sperre auf einer Datei mit dem Pfad `/data2/data2_2/intro.pptx`. Ein dauerhafter Handle wird auf der Datei mit einem Zugriffsmodus für die Freigabesperre von write-Deny_none einem Client mit einer IP-Adresse von 10.3.1.3 gewährt. Ein Lease Oplock wird mit einem Batch-Oplock-Niveau gewährt:
+
+[listing]
+----
+cluster1::> vserver locks show -instance -path /data2/data2_2/intro.pptx
+
+                   Vserver: vs1
+                    Volume: data2_2
+         Logical Interface: lif2
+               Object Path: /data2/data2_2/intro.pptx
+                 Lock UUID: 553cf484-7030-4998-88d3-1125adbba0b7
+             Lock Protocol: cifs
+                 Lock Type: share-level
+   Node Holding Lock State: node3
+                Lock State: granted
+  Bytelock Starting Offset: -
+    Number of Bytes Locked: -
+     Bytelock is Mandatory: -
+     Bytelock is Exclusive: -
+     Bytelock is Superlock: -
+          Bytelock is Soft: -
+              Oplock Level: -
+   Shared Lock Access Mode: write-deny_none
+       Shared Lock is Soft: false
+           Delegation Type: -
+            Client Address: 10.3.1.3
+             SMB Open Type: durable
+         SMB Connect State: connected
+SMB Expiration Time (Secs): -
+         SMB Open Group ID: 78a90c59d45ae211998100059a3c7a00a007f70da0f8ffffcd445b0300000000
+
+                   Vserver: vs1
+                    Volume: data2_2
+         Logical Interface: lif2
+               Object Path: /data2/data2_2/test.pptx
+                 Lock UUID: 302fd7b1-f7bf-47ae-9981-f0dcb6a224f9
+             Lock Protocol: cifs
+                 Lock Type: op-lock
+   Node Holding Lock State: node3
+                Lock State: granted
+  Bytelock Starting Offset: -
+    Number of Bytes Locked: -
+     Bytelock is Mandatory: -
+     Bytelock is Exclusive: -
+     Bytelock is Superlock: -
+          Bytelock is Soft: -
+              Oplock Level: batch
+   Shared Lock Access Mode: -
+       Shared Lock is Soft: -
+           Delegation Type: -
+            Client Address: 10.3.1.3
+             SMB Open Type: -
+         SMB Connect State: connected
+SMB Expiration Time (Secs): -
+         SMB Open Group ID: 78a90c59d45ae211998100059a3c7a00a007f70da0f8ffffcd445b0300000000
+----

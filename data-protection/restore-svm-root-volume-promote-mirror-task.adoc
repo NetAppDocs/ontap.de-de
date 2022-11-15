@@ -1,0 +1,71 @@
+---
+permalink: data-protection/restore-svm-root-volume-promote-mirror-task.html 
+sidebar: sidebar 
+keywords: promote, load-sharing, mirror 
+summary: 'Wenn ein Root-Volume dauerhaft nicht verfügbar ist, können Sie das LSM-Volumen (Load Sharing Mirror) heraufstufen, um Schreibzugriff auf das Root-Volume-Daten zu ermöglichen.' 
+---
+= Hochstufen eines Spiegels zur Lastverteilung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn ein Root-Volume dauerhaft nicht verfügbar ist, können Sie das LSM-Volumen (Load Sharing Mirror) heraufstufen, um Schreibzugriff auf das Root-Volume-Daten zu ermöglichen.
+
+Sie müssen Befehle der erweiterten Berechtigungsebene für diese Aufgabe verwenden.
+
+.Schritte
+. Ändern Sie die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Hochstufen eines LSM-Volumes:
++
+`snapmirror promote -destination-path _SVM:volume_|_cluster://SVM/volume_`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Das folgende Beispiel gibt das Volumen an `svm1_m2` Als das neue SVM Root Volume:
+
++
+[listing]
+----
+cluster_src::*> snapmirror promote -destination-path svm1:svm1_m2
+
+Warning: Promote will delete the offline read-write volume
+         cluster_src://svm1/svm1_root and replace it with
+         cluster_src://svm1/svm1_m2. Because the volume is offline,
+         it is not possible to determine whether this promote will
+         affect other relationships associated with this source.
+Do you want to continue? {y|n}: y
+----
++
+Eingabe `y`. ONTAP macht das LSM Volumen zu einem Lese-/Schreib-Volumen und löscht das ursprüngliche Root-Volumen, wenn er zugänglich ist.
+
++
+[NOTE]
+====
+Das hochgestuften Root-Volume verfügt möglicherweise nicht über alle Daten, die sich im ursprünglichen Root-Volume befand, wenn die letzte Aktualisierung in letzter Zeit nicht erfolgt war.
+
+====
+. Zurück zur Administrator-Berechtigungsebene:
++
+`set -privilege admin`
+
+. Benennen Sie das beworbene Volume nach der Namenskonvention um, die Sie für das Root-Volume verwendet haben:
++
+`volume rename -vserver _SVM_ -volume _volume_ -newname _new_name_`
+
++
+Im folgenden Beispiel wird das hochgestuften Volume umbenannt `svm1_m2` Mit dem Namen `svm1_root`:
+
++
+[listing]
+----
+cluster_src::> volume rename -vserver svm11 -volume svm1_m2 -newname svm1_root
+----
+. Schützen Sie das umbenannte Root-Volume, wie in Schritt beschrieben link:create-load-sharing-mirror-task.html#steps["3"] Durch den Schritt link:create-load-sharing-mirror-task.html#steps["4"] In link:create-load-sharing-mirror-task.html["Erstellen und Initialisieren von Mirror-Beziehungen zur Lastverteilung"].
+

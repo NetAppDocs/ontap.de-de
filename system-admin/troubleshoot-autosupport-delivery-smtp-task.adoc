@@ -1,0 +1,150 @@
+---
+permalink: system-admin/troubleshoot-autosupport-delivery-smtp-task.html 
+sidebar: sidebar 
+keywords: troubleshoot, autosupport, deliver, system, smtp, settings, resolve, problem 
+summary: Wenn das System keine AutoSupport Meldungen über SMTP liefern kann, können Sie eine Reihe von Einstellungen überprüfen, um das Problem zu lösen. 
+---
+= Fehlerbehebung bei der AutoSupport Nachrichtenübermittlung über SMTP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn das System keine AutoSupport Meldungen über SMTP liefern kann, können Sie eine Reihe von Einstellungen überprüfen, um das Problem zu lösen.
+
+Sie sollten die grundlegende Netzwerkverbindung und das DNS-Lookup bestätigt haben:
+
+* Die Node-Management-LIF muss den Status „Betriebs“ und „Administration“ aufweisen.
+* Sie müssen in der Lage sein, einen funktionierenden Host in demselben Subnetz von der Cluster-Management-LIF zu pingen (keine LIF auf keinem der Nodes).
+* Sie müssen in der Lage sein, einen funktionierenden Host außerhalb des Subnetzes von der Cluster-Management-LIF zu pingen.
+* Sie müssen in der Lage sein, einen funktionierenden Host außerhalb des Subnetzes von der Cluster-Management-LIF mit dem Namen des Hosts (nicht die IP-Adresse) anzupingen.
+
+
+Diese Schritte sind für Fälle, in denen Sie festgestellt haben, dass AutoSupport die Meldung generieren kann, die Meldung jedoch nicht über SMTP liefern kann.
+
+Wenn bei diesem Vorgang Fehler auftreten oder ein Schritt nicht ausgeführt werden kann, ermitteln und beheben Sie das Problem, bevor Sie mit dem nächsten Schritt fortfahren.
+
+Sofern nicht anders angegeben, werden alle Befehle über die ONTAP-Befehlszeilenschnittstelle eingegeben.
+
+.Schritte
+. Überprüfen Sie den Status der Node-Management-LIF:
++
+`*network interface show -home-node local -role node-mgmt -fields vserver,lif,status-oper,status-admin,address,role*`
+
++
+Der `status-oper` Und `status-admin` Die Felder sollten zurückgegeben werden `up`.
+
+. Notieren Sie den SVM-Namen, den LIF-Namen und die LIF-IP-Adresse für die spätere Verwendung.
+. Stellen Sie sicher, dass DNS richtig aktiviert und konfiguriert ist:
++
+`*vserver services name-service dns show*`
+
+. Alle Server anzeigen, die für die Verwendung durch AutoSupport konfiguriert sind:
++
+`*system node autosupport show -fields mail-hosts*`
+
++
+Notieren Sie alle angezeigten Servernamen.
+
+. Für jeden Server, der im vorherigen Schritt angezeigt wird, und `support.netapp.com`, Stellen Sie sicher, dass der Server oder die URL durch den Knoten erreicht werden kann:
++
+`*network traceroute -node local -destination _server_name_*`
+
++
+Wenn eine dieser Routen nicht funktioniert, versuchen Sie die gleiche Route von einem funktionierenden Host im selben Subnetz wie das Cluster, indem Sie das Dienstprogramm „`traceroute`“ oder „`tracert`“ verwenden, das auf den meisten Netzwerk-Clients von Drittanbietern gefunden wurde. Dadurch können Sie herausfinden, ob das Problem in Ihrer Netzwerkkonfiguration oder der Cluster-Konfiguration vorliegt.
+
+. Melden Sie sich beim Host an, der als E-Mail-Host bezeichnet wird, und stellen Sie sicher, dass er SMTP-Anforderungen bereitstellen kann:
++
+`*netstat -aAn|grep 25*`
+
++
+`25` Ist die SMTP-Port-Nummer des Listeners.
+
++
+Es wird eine Meldung wie der folgende Text angezeigt:
+
++
+[listing]
+----
+ff64878c tcp        0      0  *.25    *.*    LISTEN.
+----
+. Öffnen Sie von einem anderen Host eine Telnet-Sitzung mit dem SMTP-Port des Mail-Hosts:
++
+`*telnet _mailhost_ 25*`
+
++
+Es wird eine Meldung wie der folgende Text angezeigt:
+
++
+[listing]
+----
+
+220 filer.yourco.com Sendmail 4.1/SMI-4.1 ready at Thu, 30 Nov 2014 10:49:04 PST
+----
+. Stellen Sie an der Eingabeaufforderung Telnet sicher, dass eine Nachricht von Ihrem Mail-Host weitergeleitet werden kann:
++
+`*HELO _domain_name_*`
+
++
+`*MAIL FROM: _your_email_address_*`
+
++
+`*RCPT TO: \autosupport@netapp.com*`
+
++
+`domain_name` Ist der Domain-Name Ihres Netzwerks.
+
++
+Wenn ein Fehler zurückgegeben wird, der besagt, dass das Relying verweigert wird, ist das Relying auf dem Mail-Host nicht aktiviert. Wenden Sie sich an Ihren Systemadministrator.
+
+. Senden Sie an der Eingabeaufforderung Telnet eine Testmeldung:
++
+`*DATA*`
+
++
+`*SUBJECT: TESTING*`
+`*THIS IS A TEST*`
+
++
+`*.*`
+
++
+[NOTE]
+====
+Stellen Sie sicher, dass Sie den letzten Zeitraum (.) in einer Zeile selbst eingeben. Der Zeitraum gibt dem Mail-Host an, dass die Nachricht abgeschlossen ist.
+
+====
++
+Wenn ein Fehler zurückgegeben wird, ist Ihr Mail-Host nicht richtig konfiguriert. Wenden Sie sich an Ihren Systemadministrator.
+
+. Senden Sie über die ONTAP Befehlszeilenschnittstelle eine AutoSupport-Testmeldung an eine vertrauenswürdige E-Mail-Adresse, auf die Sie Zugriff haben:
++
+`*system node autosupport invoke -node local -type test*`
+
+. Suchen Sie die Sequenznummer des Versuchs:
++
+`*system node autosupport history show -node local -destination smtp*`
+
++
+Suchen Sie die Sequenznummer Ihres Versuchs basierend auf dem Zeitstempel. Es ist wahrscheinlich der jüngste Versuch.
+
+. Zeigen Sie den Fehler für den Versuch der Testmeldung an:
++
+`*system node autosupport history show -node local -seq-num seq_num -fields error*`
+
++
+Wenn der Fehler angezeigt wird `Login denied`, Ihr SMTP-Server akzeptiert keine Anfragen von der Cluster-Management-LIF. Wenn Sie als Transportprotokoll nicht zu HTTPS wechseln möchten, wenden Sie sich an den Standortnetzwerkadministrator, um die SMTP-Gateways zu konfigurieren, um dieses Problem zu beheben.
+
++
+Wenn dieser Test erfolgreich ist, aber dieselbe Nachricht an mailto:autosupport@netapp.com nicht gesendet wird, stellen Sie sicher, dass SMTP-Relais auf allen Ihren SMTP-Mail-Hosts aktiviert ist, oder verwenden Sie HTTPS als Transportprotokoll.
+
++
+Wenn auch die Meldung an das lokal verwaltete E-Mail-Konto nicht erfolgreich ist, bestätigen Sie, dass Ihre SMTP-Server so konfiguriert sind, dass Anlagen mit beiden folgenden Eigenschaften weitergeleitet werden:
+
++
+** Das Suffix „`7z`“
+** Der Typ „`Application/x-7x-compressed`“ MIME.
+
+
+

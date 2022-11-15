@@ -1,0 +1,173 @@
+---
+sidebar: sidebar 
+permalink: networking/repair_port_reachability.html 
+keywords: port, reachability, repair, fix, error, switch, configuration, cable, cabling, wiring, wire, wired, re-cabled, layer 2, repair port reachability, network port reachability show -detail -node -port, repair reachability decision tree, unexpected ports, unreachable ports, lifs and repaired ports, vlans and repaired ports, interface groups and repaired ports 
+summary: Wenn ein Port neu verkabelt ist oder sich die Switch-Konfiguration ändert, muss ein Port möglicherweise in eine andere, neue oder vorhandene Broadcast-Domäne repariert werden 
+---
+= Port-Erreichbarkeit reparieren
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Broadcast-Domänen werden automatisch erstellt. Wenn jedoch ein Port neu konfiguriert oder die Switch-Konfiguration geändert wird, muss möglicherweise ein Port in eine andere Broadcast-Domäne repariert werden (neu oder vorhanden).
+
+Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+
+Ein Befehl steht zur Verfügung, um die Broadcast-Domänenkonfiguration für einen Port automatisch zu reparieren, der auf der von ONTAP erkannten Layer 2-Erreichbarkeit basiert.
+
+.Schritte
+. Überprüfen Sie die Switch-Konfiguration und -Verkabelung.
+. Überprüfen Sie die Erreichbarkeit des Ports:
++
+`network port reachability show -detail -node -port`
+
++
+Die Befehlsausgabe enthält Ergebnisse zur Wiederherstellung.
+
+. Verwenden Sie den folgenden Entscheidungsbaum und die folgende Tabelle, um die Ergebnisse der Nachachbarkeit zu verstehen und zu bestimmen, welche, wenn überhaupt, als Nächstes zu tun.
++
+image:ontap_nm_image1.png["Entscheidungsbaum für Reparaturfähigkeit"]
+
+
+
+[cols="20,80"]
+|===
+
+
+| Erreichbarkeit-Status | Beschreibung 
+
+
+ a| 
+ok
+ a| 
+Der Port verfügt über eine Layer 2-Erreichbarkeit für seine zugewiesene Broadcast-Domäne. Wenn der Status der Erreichbarkeit „ok“ ist, aber es „unerwartete Ports“ gibt, sollten Sie eine oder mehrere Broadcast-Domänen zusammenführen. Weitere Informationen finden Sie in der folgenden Zeile „_Unexpected Ports_“.
+
+Wenn der Status „Erreichbarkeit“ „ok“ lautet, aber „nicht erreichbare Ports“ vorhanden sind, sollten Sie eine oder mehrere Broadcast-Domänen aufteilen. Weitere Informationen finden Sie in der folgenden Zeile _Unerreichbare Ports_.
+
+Wenn der Status „Erreichbarkeit“ „ok“ lautet und keine unerwarteten oder nicht erreichbaren Ports vorhanden sind, ist die Konfiguration korrekt.
+
+
+
+ a| 
+Unerwartete Ports
+ a| 
+Der Port verfügt über eine Layer-2-Erreichbarkeit für seine zugewiesene Broadcast-Domäne; er verfügt jedoch auch über eine Layer-2-Erreichbarkeit von mindestens einer anderen Broadcast-Domäne.
+
+Überprüfen Sie die physische Konnektivität und die Switch-Konfiguration, um festzustellen, ob sie falsch ist oder ob die zugewiesene Broadcast-Domain des Ports mit einer oder mehreren Broadcast-Domänen zusammengeführt werden muss.
+
+Weitere Informationen finden Sie unter link:merge_broadcast_domains.html["Broadcast-Domänen zusammenführen"].
+
+
+
+ a| 
+Nicht erreichbare Ports
+ a| 
+Wenn eine einzelne Broadcast-Domäne in zwei unterschiedliche Wiederachabilität-Sets partitioniert wurde, können Sie eine Broadcast-Domäne teilen, um die ONTAP-Konfiguration mit der physischen Netzwerktopologie zu synchronisieren.
+
+In der Regel definiert die Liste der nicht erreichbaren Ports den Satz von Ports, die in eine andere Broadcast-Domäne aufgeteilt werden sollten, nachdem Sie überprüft haben, dass die physische und die Switch-Konfiguration korrekt ist.
+
+Weitere Informationen finden Sie unter link:split_broadcast_domains.html["Teilen von Broadcast-Domänen auf"].
+
+
+
+ a| 
+Falsch konfigurierte Erreichbarkeit
+ a| 
+Der Port verfügt nicht über eine Ebene 2-Erreichbarkeit seiner zugewiesenen Broadcast-Domäne; der Port besitzt jedoch Layer 2-Erreichbarkeit zu einer anderen Broadcast-Domäne.
+
+Sie können die Anschlussfähigkeit reparieren. Wenn Sie den folgenden Befehl ausführen, weist das System den Port der Broadcast-Domäne zu, der sie nachzuweisen kann:
+
+`network port reachability repair -node -port`
+
+
+
+ a| 
+Keine Erreichbarkeit
+ a| 
+Der Port verfügt nicht über eine Ebene 2-Erreichbarkeit für eine vorhandene Broadcast-Domäne.
+
+Sie können die Anschlussfähigkeit reparieren. Wenn Sie den folgenden Befehl ausführen, weist das System den Port einer neuen automatisch erstellten Broadcast-Domäne im Standard-IPspace zu:
+
+`network port reachability repair -node -port`
+
+
+
+ a| 
+Multi-Domain-Erreichbarkeit
+ a| 
+Der Port verfügt über eine Layer-2-Erreichbarkeit für seine zugewiesene Broadcast-Domäne; er verfügt jedoch auch über eine Layer-2-Erreichbarkeit von mindestens einer anderen Broadcast-Domäne.
+
+Überprüfen Sie die physische Konnektivität und die Switch-Konfiguration, um festzustellen, ob sie falsch ist oder ob die zugewiesene Broadcast-Domain des Ports mit einer oder mehreren Broadcast-Domänen zusammengeführt werden muss.
+
+Weitere Informationen finden Sie unter link:merge_broadcast_domains.html["Broadcast-Domänen zusammenführen"].
+
+
+
+ a| 
+Unbekannt
+ a| 
+Wenn der Status „unbekannt“ lautet, warten Sie einige Minuten, und versuchen Sie den Befehl erneut.
+
+|===
+Nachdem Sie einen Port repariert haben, überprüfen Sie, ob LIFs und VLANs verschoben wurden. Wenn der Port Teil einer Schnittstellengruppe war, müssen Sie auch verstehen, was mit dieser Schnittstellengruppe passiert ist.
+
+
+
+== LIFs
+
+Wenn ein Port repariert und in eine andere Broadcast-Domäne verschoben wird, werden alle LIFs, die auf dem reparierten Port konfiguriert wurden, automatisch einem neuen Home Port zugewiesen. Dieser Startport wird, falls möglich, aus derselben Broadcast-Domäne auf demselben Node ausgewählt. Alternativ wird ein Home-Port von einem anderen Node ausgewählt, oder wenn keine geeigneten Home-Ports vorhanden sind, wird der Home-Port gelöscht.
+
+Wenn der Home Port einer LIF auf einen anderen Knoten verschoben wird oder gelöscht wird, gilt die LIF als „vertrieben“. Sie können diese vertriebenen LIFs mit dem folgenden Befehl anzeigen:
+
+`displaced-interface show`
+
+Wenn vertriebene LIFs vorhanden sind, müssen Sie Folgendes tun:
+
+* Stellen Sie die Homepage der vertriebenen LIF wieder her:
++
+`displaced-interface restore`
+
+* Legen Sie die Startseite der LIF manuell fest:
++
+`network interface modify -home-port -home-node`
+
+* Entfernen Sie den Eintrag aus der Tabelle "Vertriebene-Schnittstelle", wenn Sie mit dem LIF aktuell konfiguriert Home zufrieden sind:
++
+`displaced-interface delete`
+
+
+
+
+
+== VLANs
+
+Wenn der reparierte Port VLANs hatte, werden diese VLANs automatisch gelöscht, aber auch als „verdrängt“ aufgezeichnet. Sie können diese verschobenen VLANs anzeigen:
+
+`displaced-vlans show`
+
+Wenn vertriebene VLANs vorhanden sind, müssen Sie Folgendes tun:
+
+* Stellen Sie die VLANs an einem anderen Port wieder her:
++
+`displaced-vlans restore`
+
+* Entfernen Sie den Eintrag aus der Tabelle „Vertriebene-vlans“:
++
+`displaced-vlans delete`
+
+
+
+
+
+== Interface Groups
+
+Wenn der reparierte Port Teil einer Schnittstellengruppe war, wird er von dieser Schnittstellengruppe entfernt. Wenn es der einzige Mitgliedsport war, der der Schnittstellengruppe zugewiesen wurde, wird die Schnittstellengruppe selbst entfernt.
+
+link:https://docs.netapp.com/us-en/ontap/networking/verify_your_network_configuration.html["Überprüfen Sie die Netzwerkkonfiguration nach dem Upgrade"]
+
+link:monitor_the_reachability_of_network_ports.html["Überwachen Sie die Erreichbarkeit von Netzwerkports"]

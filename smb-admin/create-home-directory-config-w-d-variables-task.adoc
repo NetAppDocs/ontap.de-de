@@ -1,0 +1,100 @@
+---
+permalink: smb-admin/create-home-directory-config-w-d-variables-task.html 
+sidebar: sidebar 
+keywords: 'create, home, directory, configuration, variable, user, connect, share, dynamic, create, share, %w, %d, create a home directory configuration using the %w and %d variables' 
+summary: 'Sie können eine Home-Verzeichnis-Konfiguration mit den Variablen %w und %d erstellen. Die Benutzer können sich dann mithilfe von dynamisch erstellten Shares mit ihren Home Shares verbinden.' 
+---
+= Erstellen Sie eine Home-Verzeichnis-Konfiguration mit den Variablen %w und %d
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können eine Home-Verzeichnis-Konfiguration mit dem erstellen `%w` Und `%d` Variablen. Die Benutzer können sich dann mithilfe von dynamisch erstellten Shares mit ihren Home Shares verbinden.
+
+.Schritte
+. Erstellen Sie einen qtree, um die Home Directorys des Benutzers zu enthalten: `volume qtree create -vserver vserver_name -qtree-path qtree_path`
+. Vergewissern Sie sich, dass der qtree den richtigen Sicherheitsstil verwendet: `volume qtree show`
+. Wenn der qtree nicht den gewünschten Sicherheitsstil nutzt, ändern Sie den Sicherheitsstil mithilfe von `volume qtree security` Befehl.
+. Home Directory-Freigabe hinzufügen: `+vserver cifs share create -vserver vserver -share-name %w -path %d/%w -share-properties homedirectory\[,...\]+`
++
+`-vserver` `vserver` Gibt die CIFS-fähige Storage Virtual Machine (SVM) an, auf der der Suchpfad hinzugefügt werden soll.
+
++
+`-share-name` `%w` Gibt den Freigabenamen des Home-Verzeichnisses an. ONTAP erstellt den Freigabennamen dynamisch, wenn jeder Benutzer eine Verbindung zu seinem Home-Verzeichnis herstellt. Der Freigabename wird vom Formular _Windows_user_Name_ sein.
+
++
+`-path` `%d/%w` Gibt den relativen Pfad zum Home-Verzeichnis an. Der relative Pfad wird dynamisch erstellt, wenn jeder Benutzer sich mit seinem Home-Verzeichnis verbindet und aus der Form _Domain/Windows_user_Name_ besteht.
+
++
+`-share-properties homedirectory[,...]+` Gibt die Freigabeigenschaften für diese Freigabe an. Sie müssen das angeben `homedirectory` Wert: Sie können zusätzliche Freigabegenschaften mithilfe einer kommagetrennten Liste angeben.
+
+. Stellen Sie sicher, dass die Freigabe über die gewünschte Konfiguration verfügt `vserver cifs share show` Befehl.
+. Hinzufügen eines Suchpfads für das Home-Verzeichnis: `vserver cifs home-directory search-path add -vserver vserver -path path`
++
+`-vserver _vserver-name_` Gibt die SVM mit CIFS-Aktivierung an, auf der der Suchpfad hinzugefügt werden soll.
+
++
+`-path _path_` Gibt den absoluten Verzeichnispfad zum Suchpfad an.
+
+. Überprüfen Sie, ob Sie den Suchpfad mithilfe des erfolgreich hinzugefügt haben `vserver cifs home-directory search-path show` Befehl.
+. Erstellen Sie bei Benutzern mit einem Home Directory ein entsprechendes Verzeichnis im qtree oder Volume, damit sie Home Directorys enthalten sollen.
++
+Wenn Sie beispielsweise einen qtree mit dem Pfad von erstellt haben `/vol/vol1/users` Und der Benutzername, dessen Verzeichnis Sie erstellen möchten, lautet mydomain\user1, Sie würden ein Verzeichnis mit dem folgenden Pfad erstellen: `/vol/vol1/users/mydomain/user1`.
+
++
+Wenn Sie ein Volume mit dem Namen „`home1`“ erstellt haben, montiert bei `/home1`, Sie würden ein Verzeichnis mit dem folgenden Pfad erstellen: `/home1/mydomain/user1`.
+
+. Überprüfen Sie, ob ein Benutzer eine Verbindung zur Home-Share erfolgreich herstellen kann, indem Sie ein Laufwerk zuweisen oder eine Verbindung über den UNC-Pfad herstellen.
++
+Wenn Benutzer mydomain\user1 beispielsweise eine Verbindung zu dem in Schritt 8 erstellten Verzeichnis herstellen möchte, das sich auf SVM vs1 befindet, würde user1 über den UNC-Pfad verbinden `\\vs1\user1`.
+
+
+
+Mit den Befehlen im folgenden Beispiel wird eine Home Directory-Konfiguration mit den folgenden Einstellungen erstellt:
+
+* Der Freigabenname ist %w.
+* Der relative Home-Verzeichnis-Pfad lautet %d/%w.
+* Der Suchpfad, der verwendet wird, um die Home-Verzeichnisse zu enthalten, `/home1`, Ist ein Volumen, das mit NTFS-Sicherheitsstil konfiguriert ist.
+* Die Konfiguration wird auf SVM vs1 erstellt.
+
+
+Sie können diese Art von Home Directory-Konfiguration verwenden, wenn Benutzer von Windows-Hosts auf ihre Home-Verzeichnisse zugreifen. Sie können diese Art der Konfiguration auch verwenden, wenn Benutzer über Windows- und UNIX-Hosts auf ihre Home Directories zugreifen, und der Dateisystemadministrator verwendet Windows-basierte Benutzer und Gruppen, um den Zugriff auf das Dateisystem zu steuern.
+
+[listing]
+----
+cluster::> vserver cifs share create -vserver vs1 -share-name %w -path %d/%w -share-properties oplocks,browsable,changenotify,homedirectory
+
+cluster::> vserver cifs share show -vserver vs1 -share-name %w
+
+                      Vserver: vs1
+                        Share: %w
+     CIFS Server NetBIOS Name: VS1
+                         Path: %d/%w
+             Share Properties: oplocks
+                               browsable
+                               changenotify
+                               homedirectory
+           Symlink Properties: enable
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+
+cluster::> vserver cifs home-directory search-path add -vserver vs1 ‑path /home1
+
+cluster::> vserver cifs home-directory search-path show
+Vserver     Position Path
+----------- -------- -----------------
+vs1         1        /home1
+----
+xref:configure-home-directories-u-variable-task.adoc[Konfigurieren von Home-Verzeichnissen mit der %U-Variable]
+
+xref:home-directory-config-concept.adoc[Zusätzliche Home Directory-Konfigurationen]
+
+xref:display-user-home-directory-path-task.adoc[Anzeigen von Informationen über den Home-Directory-Pfad eines SMB-Benutzers]

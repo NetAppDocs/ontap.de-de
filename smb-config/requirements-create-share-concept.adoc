@@ -1,0 +1,57 @@
+---
+permalink: smb-config/requirements-create-share-concept.html 
+sidebar: sidebar 
+keywords: creating, create, smb, share, requirement, path, properties, property, home, directories, directory, requirements and considerations for creating an smb share 
+summary: Vor dem Erstellen einer SMB-Freigabe müssen Sie die Anforderungen an Freigabungspfade und Share-Eigenschaften kennen, insbesondere für Home Directorys. 
+---
+= Anforderungen und Überlegungen für die Erstellung einer SMB-Freigabe
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Vor dem Erstellen einer SMB-Freigabe müssen Sie die Anforderungen an Freigabungspfade und Share-Eigenschaften kennen, insbesondere für Home Directorys.
+
+Beim Erstellen einer SMB-Freigabe wird eine Verzeichnispfadstruktur angegeben (mithilfe der `-path` Wählen Sie im `vserver cifs share create` Befehl) auf die Clients zugreifen können. Der Verzeichnispfad entspricht dem Verbindungspfad für ein Volume oder qtree, den Sie im SVM Namespace erstellt haben. Der Verzeichnispfad und der entsprechende Verbindungspfad müssen vorhanden sein, bevor Sie Ihre Freigabe erstellen.
+
+Freigabpfade haben die folgenden Anforderungen:
+
+* Der Name eines Verzeichnispfads kann bis zu 255 Zeichen lang sein.
+* Wenn im Pfadnamen ein Leerzeichen vorhanden ist, muss der gesamte String in Anführungszeichen gesetzt werden (z. B. `"/new volume/mount here"`).
+* Wenn der UNC-Pfad verwendet wird (`\\servername\sharename\filepath`) Der Freigabe enthält mehr als 256 Zeichen (ausgenommen das erste "`\\`" im UNC-Pfad), dann ist die Registerkarte *Sicherheit* im Feld Windows-Eigenschaften nicht verfügbar.
++
+Dies ist ein Problem mit dem Windows-Client und kein ONTAP-Problem. Um dieses Problem zu vermeiden, erstellen Sie keine Freigaben mit UNC-Pfaden mit mehr als 256 Zeichen.
+
+
+
+Die Standardeinstellungen für die Freigabeeigenschaft können geändert werden:
+
+* Die Standard-Anfangseigenschaften für alle Freigaben sind `oplocks`, `browsable`, `changenotify`, und `show-previous-versions`.
+* Beim Erstellen einer Freigabe können Sie die Freigabegenschaften festlegen.
++
+Wenn Sie beim Erstellen der Freigabe jedoch Freigabeeigenschaften angeben, werden die Standardeinstellungen nicht verwendet. Wenn Sie den verwenden `-share-properties` Parameter Wenn Sie eine Freigabe erstellen, müssen Sie alle Share-Eigenschaften angeben, die Sie mit einer durch Komma getrennten Liste auf die Freigabe anwenden möchten.
+
+* Verwenden Sie zum Zuweisen einer Home Directory-Freigabe das `homedirectory` Eigenschaft.
++
+Mit dieser Funktion können Sie eine Freigabe konfigurieren, die verschiedenen Verzeichnissen zugeordnet wird, basierend auf dem Benutzer, der eine Verbindung zu ihr herstellt, und einem Satz von Variablen. Anstatt separate Shares für jeden Benutzer zu erstellen, können Sie eine einzelne Freigabe mit einigen Home-Directory-Parametern konfigurieren, um die Beziehung eines Benutzers zwischen einem Einstiegspunkt (Share) und seinem Home-Verzeichnis (einem Verzeichnis auf der SVM) zu definieren.
+
++
+[NOTE]
+====
+Sie können diese Eigenschaft nach dem Erstellen der Freigabe nicht hinzufügen oder entfernen.
+
+====
+
+
+Home Directory-Shares haben die folgenden Anforderungen:
+
+* Bevor Sie SMB-Home-Verzeichnisse erstellen, müssen Sie mindestens einen Pfad für die Home-Verzeichnis-Suche mit dem hinzufügen `vserver cifs home-directory search-path add` Befehl.
+* Die durch den Wert von angegebenen Home Directory Shares `homedirectory` Auf dem `-share-properties` Der Parameter muss den enthalten `%w` (Windows-Benutzername) dynamische Variable im Freigabenamen.
++
+Der Freigeben-Name kann zusätzlich das enthalten `%d` Dynamische Variable (Domain Name) (z. B. `%d/%w`) Oder einen statischen Teil im Freigabennamen (z. B. `home1_%w`).
+
+* Wenn die Freigabe von Administratoren oder Benutzern verwendet wird, um eine Verbindung mit den Home-Verzeichnissen anderer Benutzer herzustellen (mit den Optionen auf das `vserver cifs home-directory modify` Befehl), dem dynamischen Namensmuster für die Freigabe muss ein Tilde vorangestellt werden (`~`).
+
+
+link:../smb-admin/index.html["SMB-Management"] Und `vserver cifs share` Man-Pages haben zusätzliche Informationen.

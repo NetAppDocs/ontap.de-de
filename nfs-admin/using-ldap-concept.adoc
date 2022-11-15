@@ -1,0 +1,86 @@
+---
+permalink: nfs-admin/using-ldap-concept.html 
+sidebar: sidebar 
+keywords: use, ldap 
+summary: 'Ein LDAP-Server (Lightweight Directory Access Protocol) ermöglicht die zentrale Verwaltung von Benutzerinformationen. Wenn Sie Ihre Benutzerdatenbank auf einem LDAP-Server in Ihrer Umgebung speichern, können Sie Ihr Speichersystem so konfigurieren, dass Benutzerinformationen in Ihrer bestehenden LDAP-Datenbank angezeigt werden.' 
+---
+= LDAP – Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein LDAP-Server (Lightweight Directory Access Protocol) ermöglicht die zentrale Verwaltung von Benutzerinformationen. Wenn Sie Ihre Benutzerdatenbank auf einem LDAP-Server in Ihrer Umgebung speichern, können Sie Ihr Speichersystem so konfigurieren, dass Benutzerinformationen in Ihrer bestehenden LDAP-Datenbank angezeigt werden.
+
+* Bevor Sie LDAP für ONTAP konfigurieren, sollten Sie überprüfen, ob die Standortbereitstellung die Best Practices für die LDAP-Server- und Client-Konfiguration erfüllt. Insbesondere sind folgende Voraussetzungen zu erfüllen:
++
+** Der Domänenname des LDAP-Servers muss mit dem Eintrag auf dem LDAP-Client übereinstimmen.
+** Die vom LDAP-Server unterstützten LDAP-Benutzerpasswort-Hash-Typen müssen die von ONTAP unterstützten LDAP-Benutzerpasswort-Typen enthalten:
++
+*** CRYPT (alle Typen) und SHA-1 (SHA, SSHA).
+*** Beginnend mit ONTAP 9.8, SHA-2-Hashes (SHA-256, SSH-384, SHA-512, SSHA-256, SSHA-384 und SSHA-512) werden ebenfalls unterstützt.
+
+
+** Wenn für den LDAP-Server Sitzungssicherheitsmaßnahmen erforderlich sind, müssen Sie diese im LDAP-Client konfigurieren.
++
+Folgende Sicherheitsoptionen sind verfügbar:
+
++
+*** LDAP-Signatur (bietet Datenintegritätsprüfung) und LDAP-Signing and Sealing (bietet Datenintegritätsprüfung und -Verschlüsselung)
+*** STARTEN SIE TLS
+*** LDAPS (LDAP über TLS oder SSL)
+
+
+** Um signierte und versiegelte LDAP-Abfragen zu aktivieren, müssen die folgenden Dienste konfiguriert sein:
++
+*** LDAP-Server müssen den GSSAPI (Kerberos) SASL-Mechanismus unterstützen.
+*** LDAP-Server müssen DNS-A/AAAA-Datensätze sowie PTR-Datensätze auf dem DNS-Server eingerichtet haben.
+*** Kerberos-Server müssen über SRV-Datensätze auf dem DNS-Server verfügen.
+
+
+** Um TLS ODER LDAPS ZU STARTEN, sollten die folgenden Punkte berücksichtigt werden.
++
+*** Es handelt sich hierbei um eine NetApp Best Practice, Start TLS statt LDAPS zu verwenden.
+*** Bei Verwendung von LDAPS muss der LDAP-Server für TLS oder für SSL in ONTAP 9.5 und höher aktiviert sein. SSL wird in ONTAP 9.0-9.4 nicht unterstützt.
+*** Ein Zertifikatsserver muss bereits in der Domäne konfiguriert sein.
+
+
+** Um LDAP-Verweisungsjagd zu ermöglichen (in ONTAP 9.5 und höher), müssen die folgenden Bedingungen erfüllt sein:
++
+*** Beide Domänen sollten mit einer der folgenden Vertrauensbeziehungen konfiguriert werden:
++
+**** Zwei-Wege
+**** Eine Möglichkeit, bei der der primäre vertraut auf die Empfehlungsdomäne
+**** Elternteil-Kind
+
+
+*** DNS muss so konfiguriert sein, dass alle genannten Servernamen aufgelöst werden.
+*** Domänenpasswörter sollten für die Authentifizierung identisch sein, wenn `--bind-as-cifs-server` Auf „true“ setzen.
+
+
+
+
++
+[NOTE]
+====
+Die folgenden Konfigurationen werden mit LDAP-Referenznachverfolgungsjagd nicht unterstützt.
+
+** Für alle ONTAP-Versionen:
+** LDAP-Clients auf einer Administrator-SVM
+** Für ONTAP 9.8 und frühere Versionen (unterstützt ab 9.9.1):
+** LDAP-Signing and Sealing (das `-session-security` Option)
+** Verschlüsselte TLS-Verbindungen (das `-use-start-tls` Option)
+** Kommunikation über LDAPS-Port 636 (der `-use-ldaps-for-ad-ldap` Option)
+
+
+====
+* Ab ONTAP 9.11.1 können Sie dies nutzen link:ldap-fast-bind-nsswitch-authentication-task.html["LDAP fast bind für nsswitch-Authentifizierung."]
+* Sie müssen beim Konfigurieren des LDAP-Clients auf der SVM ein LDAP-Schema eingeben.
++
+In den meisten Fällen ist eines der Standard-ONTAP-Schemas angemessen. Wenn sich das LDAP-Schema in Ihrer Umgebung jedoch von diesen unterscheidet, müssen Sie ein neues LDAP-Client-Schema für ONTAP erstellen, bevor Sie den LDAP-Client erstellen. Wenden Sie sich an Ihren LDAP-Administrator, um die Anforderungen Ihrer Umgebung zu besprechen.
+
+* Die Verwendung von LDAP für die Auflösung des Hostnamens wird nicht unterstützt.
+
+
+Weitere Informationen finden Sie unter https://www.netapp.com/pdf.html?item=/media/19423-tr-4835.pdf["Technischer Bericht von NetApp 4835: Konfigurieren von LDAP in ONTAP"].

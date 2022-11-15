@@ -1,0 +1,128 @@
+---
+permalink: data-protection/replicate-entire-svm-config-task.html 
+sidebar: sidebar 
+keywords: replicate, entire, svm, configuration, snapmirror, snap mirror, replication, mirror vault policy, snapshot 
+summary: Sie können die Option -identitätsbebeibehalten true im snapmirror create-Befehl verwenden, um eine gesamte SVM-Konfiguration zu replizieren. 
+---
+= Replizierung einer gesamten SVM-Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `-identity-preserve true` Option des `snapmirror create` Befehl zum Replizieren einer gesamten SVM-Konfiguration
+
+Quell- und Ziel-Cluster sowie SVMs müssen Peering durchgeführt werden. Weitere Informationen finden Sie unter link:../peering/create-cluster-relationship-93-later-task.html["Erstellen einer Cluster-Peer-Beziehung"] Und link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM-Peer-Beziehung"].
+
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
+Bei diesem Workflow wird vorausgesetzt, dass Sie bereits eine Standardrichtlinie oder eine benutzerdefinierte Replizierungsrichtlinie verwenden.
+
+Ab ONTAP 9.9 können Sie bei Verwendung der Mirror-Vault-Richtlinie unterschiedliche Snapshot-Richtlinien auf der Quell- und Ziel-SVM erstellen. Die Snapshot Kopien auf dem Ziel werden nicht durch Snapshot Kopien auf dem Quellsystem überschrieben. Weitere Informationen finden Sie unter link:snapmirror-svm-replication-concept.html["Allgemeines zur Replizierung von SnapMirror SVMs"].
+
+.Schritte
+. Ziel-SVM erstellen:
++
+`vserver create -vserver _SVM_name_ -subtype dp-destination`
+
++
+Der SVM-Name muss über die Quell- und Ziel-Cluster hinweg eindeutig sein.
+
++
+Im folgenden Beispiel wird eine Ziel-SVM mit dem Namen erstellt `svm_backup`:
+
++
+[listing]
+----
+cluster_dst:> vserver create -vserver svm_backup -subtype dp-destination
+----
+. Erstellen Sie aus dem Ziel-Cluster eine SVM-Peer-Beziehung mit dem `vserver peer create` Befehl.
++
+Weitere Informationen finden Sie unter link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM-Peer-Beziehung"].
+
+. Erstellen eines Replikationsauftragplans:
++
+`job schedule cron create -name _job_name_ -month _month_ -dayofweek _day_of_week_ -day _day_of_month_ -hour _hour_ -minute _minute_`
+
++
+Für `-month`, `-dayofweek`, und `-hour`, Sie können angeben `all` Zum Ausführen des Jobs jeden Monat, Wochentag und Stunde.
+
++
+Im folgenden Beispiel wird ein Job-Zeitplan mit dem Namen erstellt `my_weekly` Das läuft samstags um 3:00 Uhr:
+
++
+[listing]
+----
+cluster_dst::> job schedule cron create -name my_weekly -dayofweek saturday -hour 3 -minute 0
+----
+. Erstellen Sie auf der Ziel-SVM oder dem Ziel-Cluster eine Replizierungsbeziehung:
++
+`snapmirror create -source-path _SVM_name_: -destination-path _SVM_name_: -type DP|XDP -schedule _schedule_ -policy _policy_ -identity-preserve true`
+
++
+[NOTE]
+====
+Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen:
+
+====
++
+Im folgenden Beispiel wird eine SnapMirror DR-Beziehung mit dem Standard erstellt `MirrorAllSnapshots` Richtlinie:
+
++
+[listing]
+----
+cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy MirrorAllSnapshots -identity-preserve true
+----
++
+Im folgenden Beispiel wird eine einheitliche Replizierungsbeziehung mit dem Standard erstellt `MirrorAndVault` Richtlinie:
+
++
+[listing]
+----
+cluster_dst:> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy MirrorAndVault -identity-preserve true
+----
++
+Angenommen, Sie haben eine benutzerdefinierte Richtlinie mit dem Richtlinientyp erstellt `async-mirror`, Das folgende Beispiel erstellt eine SnapMirror DR-Beziehung:
+
++
+[listing]
+----
+cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy my_mirrored -identity-preserve true
+----
++
+Angenommen, Sie haben eine benutzerdefinierte Richtlinie mit dem Richtlinientyp erstellt `mirror-vault`, Das folgende Beispiel erstellt eine einheitliche Replikationsbeziehung:
+
++
+[listing]
+----
+cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy my_unified -identity-preserve true
+----
+. Ziel-SVM stoppen:
++
+`vserver stop`
+
++
+`_SVM name_`
+
++
+Im folgenden Beispiel wird eine Ziel-SVM namens dvs1 angehalten:
+
++
+[listing]
+----
+cluster_dst::> vserver stop -vserver dvs1
+----
+. Initialisieren Sie die SVM-Replizierungsbeziehung von der Ziel-SVM oder dem Ziel-Cluster: +
++
+`snapmirror initialize -source-path _SVM_name_: -destination-path _SVM_name_:`
+
++
+Das folgende Beispiel initialisiert die Beziehung zwischen der Quell-SVM, `svm1`Und dem Ziel-SVM, `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror initialize -source-path svm1: -destination-path svm_backup:
+----
+

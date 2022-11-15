@@ -1,0 +1,82 @@
+---
+sidebar: sidebar 
+permalink: smbc/smbc_admin_add_and_remove_volumes_in_consistency_groups.html 
+keywords: SM-BC, SMBC, volume, consistency group, remove volume, add volume 
+summary: Wenn Sie die Zusammensetzung der Consistency Group durch Hinzufügen oder Entfernen eines Volumes ändern möchten, müssen Sie zuerst die ursprüngliche Beziehung löschen und dann die Consistency Group erneut mit der neuen Zusammensetzung erstellen. 
+---
+= Fügen Sie Volumes zu einer Konsistenzgruppe hinzu und entfernen Sie sie
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie die Zusammensetzung der Consistency Group durch Hinzufügen oder Entfernen eines Volumes ändern möchten, müssen Sie zuerst die ursprüngliche Beziehung löschen und dann die Consistency Group erneut mit der neuen Zusammensetzung erstellen.
+
+
+NOTE: Dieser Workflow gilt für ONTAP 9.8 und 9.9.1. Ab ONTAP 9.10.1 empfehlen wir Ihnen, das Management link:../consistency-groups/index.html["Konsistenzgruppen"] Über System Manager oder mit der ONTAP REST API. Ab ONTAP 9.12.1 können Sie Volumes einer Konsistenzgruppe mit System Manager oder der ONTAP REST API hinzufügen oder entfernen. Sie müssen die SM-BC Beziehung unterbrechen, bevor Sie die Konsistenzgruppe ändern und dann SM-BC-Schutz wiederherstellen können. Weitere Informationen zu diesem Prozess finden Sie unter xref:../consistency-groups/modify-task.html[Ändern einer Konsistenzgruppe].
+
+.Über diese Aufgabe
+* Die Kompositionsänderung ist nicht zulässig, wenn sich die Consistency Group im Status „InSync“ befindet.
+* Das Ziel-Volume sollte vom Typ DP sein.
+
+
+
+NOTE: Das neue Volumen, das Sie zur Erweiterung der Konsistenzgruppe hinzufügen, muss über zwei allgemeine Snapshot Kopien zwischen den Quell- und Ziel-Volumes verfügen.
+
+Bei diesem Verfahren wird vorausgesetzt, dass es zwei Volume-Zuordnungen gibt: vol_src1 <---> vol_dst1 und vol_src2 <--> vol_dst2, in einer Konsistenzgruppenbeziehung zwischen den Endpunkten vs1_src:/cg/cg_src und vs1_dst:/cg/cg_dst.
+
+. Vergewissern Sie sich, dass eine gemeinsame Snapshot Kopie zwischen den Quell- und Ziel-Volumes sowohl auf dem Quell- als auch dem Ziel-Cluster vorhanden ist:
++
+`source::>snapshot show -vserver vs1_src -volume vol_src3 -snapshot snapmirror*`
+
++
+`destination::>snapshot show -vserver vs1_dst -volume vol_dst3 -snapshot snapmirror*`
+
+. Falls keine gemeinsame Snapshot Kopie vorhanden ist, erstellen und initialisieren Sie eine FlexVol SnapMirror-Beziehung:
++
+`destination::>snapmirror initialize -source-path vs1_src:vol_src3 -destination-path vs1_dst:vol_dst3`
+
+. Löschen Sie die RTO-Verbindung von Null für Konsistenzgruppen:
++
+`destination::>snapmirror delete -destination-path vs1_dst:vol_dst3`
+
+. Geben Sie die SnapMirror Quellbeziehung wieder und behalten Sie die allgemeinen Snapshot Kopien bei:
++
+`source::>snapmirror release -relationship-info-only true -destination-path vs1_dst:vol_dst3`
+
+. LUN-Zuordnung aufheben und die vorhandene Konsistenzgruppe löschen:
++
+`destination::>lun mapping delete -vserver vs1_dst -path <lun_path> -igroup <igroup_name>`
+
++
+
+NOTE: Die Zuordnung der Ziel-LUNs wird aufgehoben, während die LUNs auf der primären Kopie weiterhin für den Host-I/O bereit sind
+
++
+`destination::>snapmirror delete -destination-path vs1_dst:/cg/cg_dst`
+
++
+`source::>snapmirror release -destination-path vs1_dst:/cg/cg_dst -relationship-info-only true`
+
+. **Wenn Sie ONTAP 9.10.1 oder höher verwenden,** löschen und neu erstellen und die Consistency Group auf der Quelle mit der richtigen Zusammensetzung. Befolgen Sie die Schritte unter xref:../consistency-groups/delete-task.html[Löschen einer Konsistenzgruppe] Und dann xref:../consistency-groups/configure-task.html[Konfigurieren einer einzelnen Konsistenzgruppe]. In ONTAP 9.10.1 und höher müssen Sie die Löschvorgänge in System Manager oder mit der ONTAP REST API ausführen. Es gibt kein CLI-Verfahren.
++
+**Wenn Sie ONTAP 9.8, 9.0 oder 9.9 verwenden, gehen sie zum nächsten Schritt.**
+
+. Erstellen Sie die neue Consistency Group auf dem Ziel mit der neuen Zusammensetzung:
++
+`destination::>snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol_src1:@vol_dst1, vol_src2:@vol_dst2, vol_src3:@vol_dst3`
+
+. Synchronisieren Sie die RTO-Konsistenzgruppenbeziehung mit Null, um sicherzustellen, dass sie synchronisiert ist:
++
+`destination::>snapmirror resync -destination-path vs1_dst:/cg/cg_dst`
+
+. Ordnen Sie die LUNs, die Sie in Schritt 5 nicht zugeordnet haben, erneut zu:
++
+`destination::> lun map -vserver vs1_dst -path <lun_path> -igroup <igroup_name>`
+
+. Wiederherstellen aller Pfade zu den LUNs durch erneute Überprüfung der Host-LUN-I/O-Pfade
+

@@ -1,0 +1,40 @@
+---
+permalink: smb-admin/improve-client-response-node-referrals-concept.html 
+sidebar: sidebar 
+keywords: auto, location, smb, automatic, node, referral, increase, client, performance, storage, virtual, machine, svm, request, host, response, improve, improve client response time by providing smb automatic node referrals with auto location 
+summary: 'Auto Location verwendet automatische SMB-Node-Empfehlungen, um die SMB-Client-Performance auf Storage Virtual Machines (SVMs) zu steigern. Automatische Node-Empfehlungen leiten den anfordernden Client automatisch zu einer logischen Schnittstelle auf der Node-SVM um, die das Volume hostet, in dem sich die Daten befinden. Dadurch werden die Client-Reaktionszeiten verbessert.' 
+---
+= Durch die Bereitstellung automatischer SMB-Node-Empfehlungen mit Auto Location-Übersicht lassen sich die Antwortzeiten von Clients verkürzen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Auto Location verwendet automatische SMB-Node-Empfehlungen, um die SMB-Client-Performance auf Storage Virtual Machines (SVMs) zu steigern. Automatische Node-Empfehlungen leiten den anfordernden Client automatisch zu einer logischen Schnittstelle auf der Node-SVM um, die das Volume hostet, in dem sich die Daten befinden. Dadurch werden die Client-Reaktionszeiten verbessert.
+
+Wenn ein SMB-Client eine Verbindung zu einer auf der SVM gehosteten SMB-Freigabe herstellt, wird möglicherweise eine Verbindung über ein LIF hergestellt, das sich auf einem Node befindet, dem die angeforderten Daten nicht gehören. Der Node, mit dem der Client verbunden ist, greift über das Cluster-Netzwerk auf Daten eines anderen Node zu, die Eigentum sind. Der Client kann kürzere Reaktionszeiten erleben, wenn die SMB-Verbindung eine LIF auf dem Node verwendet, die die angeforderten Daten enthält:
+
+* ONTAP bietet diese Funktion mithilfe von Microsoft DFS-Empfehlungen, um SMB-Clients darüber zu informieren, dass eine angeforderte Datei oder ein angefragter Ordner im Namespace irgendwo anders gehostet wird.
++
+Ein Node empfiehlt, wenn er feststellt, dass eine anSVM LIF auf dem Node vorhanden ist, der die Daten enthält.
+
+* Automatische Node-Empfehlungen werden für IPv4- und IPv6-LIF-IP-Adressen unterstützt.
+* Empfehlungen werden basierend auf dem Speicherort des Stammes der Freigabe gemacht, über die der Client verbunden ist.
+* Die Empfehlung erfolgt während der SMB-Verhandlung.
++
+Die Empfehlung erfolgt, bevor die Verbindung hergestellt wird. Nachdem ONTAP den SMB-Client auf den Ziel-Node bezieht, wird die Verbindung hergestellt und der Client greift über den genannten LIF-Pfad von diesem Punkt an auf Daten zu. Dies ermöglicht einen schnelleren Zugriff auf die Daten und vermeidet eine zusätzliche Cluster-Kommunikation.
+
++
+[NOTE]
+====
+Wenn ein Share mehrere Verbindungspunkte umfasst und einige Verbindungen zu Volumes auf anderen Nodes bestehen, werden die Daten innerhalb der Freigabe über mehrere Nodes verteilt. Da ONTAP Empfehlungen bereitstellt, die lokal im Stammverzeichnis der Freigabe sind, muss ONTAP das Clusternetzwerk verwenden, um die Daten aus diesen nicht lokalen Volumes abzurufen. In dieser Art der Namespace-Architektur bieten automatische Node-Empfehlungen möglicherweise keine wesentlichen Performance-Vorteile.
+
+====
+
+
+Wenn der Node, der die Daten hostet, über kein verfügbares LIF verfügt, stellt ONTAP die Verbindung mithilfe der vom Client ausgewählten LIF her. Nachdem eine Datei von einem SMB-Client geöffnet wurde, wird der Zugriff auf die Datei über dieselbe empfohlene Verbindung fortgesetzt.
+
+Wenn der CIFS-Server aus irgendeinem Grund keine Empfehlung vornehmen kann, wird der SMB-Service nicht unterbrochen. Die SMB-Verbindung wird so aufgebaut, als ob die automatischen Node-Empfehlungen nicht aktiviert wären.
+
+xref:improve-microsoft-remote-copy-performance-concept.adoc[Verbesserung der Performance von Microsoft Remote Kopien]

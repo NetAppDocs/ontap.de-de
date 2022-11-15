@@ -1,0 +1,73 @@
+---
+permalink: nfs-config/create-kerberos-config-task.html 
+sidebar: sidebar 
+keywords: enable, kerberos, data, lif 
+summary: Sie können den vServer nfs kerberos Schnittstelle aktivieren Befehl verwenden, um Kerberos auf einer Daten-LIF zu aktivieren. Dies ermöglicht der SVM, Kerberos-Sicherheitsdienste für NFS zu nutzen. 
+---
+= Aktivieren Sie Kerberos auf einer Daten-LIF
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `vserver nfs kerberos interface enable` Befehl zum Aktivieren von Kerberos auf einer Daten-LIF. Dies ermöglicht der SVM, Kerberos-Sicherheitsdienste für NFS zu nutzen.
+
+Wenn Sie ein Active Directory KDC verwenden, müssen die ersten 15 Zeichen einer verwendeten SPNs über SVMs innerhalb eines Bereichs oder einer Domäne eindeutig sein.
+
+.Schritte
+. Erstellen Sie die NFS-Kerberos-Konfiguration:
++
+`vserver nfs kerberos interface enable -vserver _vserver_name_ -lif _logical_interface_ -spn _service_principal_name_`
+
++
+ONTAP erfordert den geheimen Schlüssel für das SPN vom KDC, um die Kerberos-Schnittstelle zu aktivieren.
+
++
+Für Microsoft KDCs wird das KDC kontaktiert und ein Benutzername und eine Passwort-Eingabeaufforderung werden an der CLI ausgegeben, um den geheimen Schlüssel zu erhalten. Wenn Sie das SPN in einer anderen OU des Kerberos-Bereichs erstellen müssen, können Sie die Option angeben `-ou` Parameter.
+
++
+Für nicht-Microsoft-KDCs kann der geheime Schlüssel mit einer von zwei Methoden abgerufen werden:
+
++
+|===
+| Sie suchen... | Sie müssen auch den folgenden Parameter mit dem Befehl angeben... 
+
+
+ a| 
+Die KDC-Administratoranmeldeinformationen haben, um den Schlüssel direkt aus dem KDC abzurufen
+ a| 
+`-admin-username` `_kdc_admin_username_`
+
+
+
+ a| 
+Sie haben keine KDC-Administratoranmeldedaten, haben aber eine Keytab-Datei aus dem KDC, die den Schlüssel enthält
+ a| 
+`-keytab-uri` {ftp http}://`_uri_`
+
+|===
+. Vergewissern Sie sich, dass Kerberos auf der LIF aktiviert war:
++
+`vserver nfs kerberos-config show`
+
+. Wiederholen Sie die Schritte 1 und 2, um Kerberos auf mehreren LIFs zu aktivieren.
+
+
+Mit dem folgenden Befehl wird eine NFS Kerberos-Konfiguration für die SVM mit dem Namen vs1 auf der logischen Schnittstelle ves03-d1 erstellt und überprüft, wobei der SPN nfs/ves03-d1.lab.example.com@TEST.LAB.EXAMPLE.COM in der OU lab2ou liegt:
+
+[listing]
+----
+vs1::> vserver nfs kerberos interface enable -lif ves03-d1 -vserver vs2
+-spn nfs/ves03-d1.lab.example.com@TEST.LAB.EXAMPLE.COM -ou "ou=lab2ou"
+
+vs1::>vserver nfs kerberos-config show
+        Logical
+Vserver Interface Address       Kerberos  SPN
+------- --------- -------       --------- -------------------------------
+vs0     ves01-a1
+                  10.10.10.30   disabled  -
+vs2     ves01-d1
+                  10.10.10.40   enabled   nfs/ves03-d1.lab.example.com@TEST.LAB.EXAMPLE.COM
+2 entries were displayed.
+----

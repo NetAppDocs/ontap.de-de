@@ -1,0 +1,141 @@
+---
+permalink: system-admin/restore-cluster-config-from-existing-task.html 
+sidebar: sidebar 
+keywords: restore, cluster, configuration, existing, configuration, failure, recovering, node, rejoin, cluster 
+summary: Zum Wiederherstellen einer Cluster-Konfiguration aus einer vorhandenen Konfiguration nach einem Cluster-Ausfall erstellen Sie das Cluster erneut mit der von Ihnen gewählten Cluster-Konfiguration, die dem Wiederherstellungsknoten zur Verfügung gestellt wurde, und fügen Sie dann jeden zusätzlichen Node wieder zum neuen Cluster hinzu. 
+---
+= Wiederherstellen einer Cluster-Konfiguration aus einer vorhandenen Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Zum Wiederherstellen einer Cluster-Konfiguration aus einer vorhandenen Konfiguration nach einem Cluster-Ausfall erstellen Sie das Cluster erneut mit der von Ihnen gewählten Cluster-Konfiguration, die dem Wiederherstellungsknoten zur Verfügung gestellt wurde, und fügen Sie dann jeden zusätzlichen Node wieder zum neuen Cluster hinzu.
+
+Sie sollten diese Aufgabe nur ausführen, um nach einem Ausfall die Konfiguration des Clusters zu verlieren.
+
+[NOTE]
+====
+Wenn Sie das Cluster erneut aus einer Sicherungsdatei der Konfiguration erstellen, müssen Sie sich an den technischen Support wenden, um alle Abweichungen zwischen der Backup-Datei der Konfiguration und der im Cluster vorhandenen Konfiguration zu beheben.
+
+Wenn Sie das Cluster von einer Backup-Datei der Konfiguration wiederherstellen, gehen alle seit dem Backup vorgenommenen Konfigurationsänderungen verloren. Nach der Wiederherstellung müssen alle Abweichungen zwischen der Backup-Datei der Konfiguration und der vorhandenen Konfiguration behoben werden. Weitere Informationen finden Sie im Knowledge Base-Artikel https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/ONTAP_Configuration_Backup_Resolution_Guide["ONTAP Leitfaden zur Lösung der Konfigurationssicherung enthält Hinweise zur Fehlerbehebung"].
+
+====
+.Schritte
+. Deaktivieren Sie Storage-Failover für jedes HA-Paar:
++
+`*storage failover modify -node _node_name_ -enabled false*`
+
++
+Sie müssen den Storage-Failover nur einmal für jedes HA-Paar deaktivieren. Wenn Sie den Storage-Failover für einen Node deaktivieren, ist auch das Storage-Failover beim Partner des Nodes deaktiviert.
+
+. Anhalten jedes Knotens mit Ausnahme des wiederherenden Knotens:
++
+`*system node halt -node _node_name_ -reason "text"*`
+
++
+[listing]
+----
+cluster1::*> system node halt -node node0 -reason "recovering cluster"
+
+Warning: Are you sure you want to halt the node? {y|n}: y
+----
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`*set -privilege advanced*`
+
+. Verwenden Sie auf dem Recovery-Node den `*system configuration recovery cluster recreate*` Befehl zum erneuten Erstellen des Clusters.
++
+In diesem Beispiel wird das Cluster mithilfe der Konfigurationsinformationen, die auf dem wiederherzuenden Node gespeichert sind, neu erstellt:
+
++
+[listing]
+----
+cluster1::*> configuration recovery cluster recreate -from node
+
+Warning: This command will destroy your existing cluster. It will
+         rebuild a new single-node cluster consisting of this node
+         and its current configuration. This feature should only be
+         used to recover from a disaster. Do not perform any other
+         recovery operations while this operation is in progress.
+Do you want to continue? {y|n}: y
+----
++
+Auf dem wiederherstellenden Node wird ein neues Cluster erstellt.
+
+. Wenn Sie das Cluster aus einer Sicherungsdatei der Konfiguration neu erstellen, überprüfen Sie, ob die Cluster-Recovery noch läuft:
++
+`*system configuration recovery cluster show*`
+
++
+Sie müssen den Cluster-Recovery-Status nicht überprüfen, wenn Sie das Cluster von einem ordnungsgemäßen Node neu erstellen.
+
++
+[listing]
+----
+cluster1::*> system configuration recovery cluster show
+ Recovery Status: in-progress
+ Is Recovery Status Persisted: false
+----
+. Booten aller Nodes, die neu mit dem neu erstellten Cluster verbunden werden müssen
++
+Sie müssen die Nodes nacheinander neu booten.
+
+. Gehen Sie für jeden Node, der mit dem neu erstellten Cluster verbunden werden muss, wie folgt vor:
++
+.. Fügen Sie auf dem neu erstellten Cluster von einem gesunden Node erneut dem Ziel-Node bei:
++
+`*system configuration recovery cluster rejoin -node _node_name_*`
+
++
+In diesem Beispiel wird der Zielknoten „`node2`“ wieder dem neu erstellten Cluster hinzugefügt:
+
++
+[listing]
+----
+cluster1::*> system configuration recovery cluster rejoin -node node2
+
+Warning: This command will rejoin node "node2" into the local
+         cluster, potentially overwriting critical cluster
+         configuration files. This command should only be used
+         to recover from a disaster. Do not perform any other
+         recovery operations while this operation is in progress.
+         This command will cause node "node2" to reboot.
+Do you want to continue? {y|n}: y
+----
++
+Der Ziel-Node wird neu gebootet und Beitritt zum Cluster.
+
+.. Vergewissern Sie sich, dass der Ziel-Node ordnungsgemäß ist und das Quorum mit den übrigen Nodes im Cluster gebildet wurde:
++
+`*cluster show -eligibility true*`
+
++
+Der Ziel-Node muss dem neu erstellten Cluster erneut beitreten, bevor Sie einem anderen Node erneut beitreten können.
+
++
+[listing]
+----
+cluster1::*> cluster show -eligibility true
+Node                 Health  Eligibility   Epsilon
+-------------------- ------- ------------  ------------
+node0                true    true          false
+node1                true    true          false
+2 entries were displayed.
+----
+
+
+. Wenn Sie das Cluster aus einer Backup-Konfigurationsdatei neu erstellen, setzen Sie den Recovery-Status auf abgeschlossen:
++
+`*system configuration recovery cluster modify -recovery-status complete*`
+
+. Zurück zur Administratorberechtigungsebene:
++
+`*set -privilege admin*`
+
+. Wenn der Cluster nur aus zwei Nodes besteht, verwenden Sie den `*cluster ha modify*` Befehl zum Reaktivieren der Cluster HA
+. Verwenden Sie die `*storage failover modify*` Befehl zum Reaktivieren von Storage Failover für jedes HA-Paar.
+
+
+Wenn der Cluster über SnapMirror Peer-Beziehungen verfügt, müssen Sie diese Beziehungen auch neu erstellen. Weitere Informationen finden Sie unter link:../data-protection/index.html["Datensicherung"].

@@ -1,0 +1,38 @@
+---
+permalink: nas-audit/audit-symlinks-hard-links-concept.html 
+sidebar: sidebar 
+keywords: considerations, audit, symlinks, hard links 
+summary: Es gibt bestimmte Überlegungen, die Sie bei der Prüfung von Symlinks und harten Links beachten müssen. 
+---
+= Überlegungen beim Auditing von Symlinks und Hard Links
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Es gibt bestimmte Überlegungen, die Sie bei der Prüfung von Symlinks und harten Links beachten müssen.
+
+Ein Audit-Datensatz enthält Informationen über das zu prüfenden Objekt einschließlich des Pfads zum geprüften Objekt, das im identifiziert wird `ObjectName` Tag: Sie sollten sich bewusst sein, wie Pfade für Symlinks und harte Links in aufgezeichnet werden `ObjectName` Tag:
+
+
+
+== Symlinks
+
+Ein Symlink ist eine Datei mit einer separaten Inode, die einen Zeiger auf den Speicherort eines Zielobjekts enthält, das als Ziel bezeichnet wird. Beim Zugriff auf ein Objekt über einen Symlink interpretiert ONTAP automatisch den Symlink und folgt dem tatsächlichen kanonischen protokollunabhängigen Pfad zum Zielobjekt im Volume.
+
+In der folgenden Beispielausgabe gibt es zwei Symlinks, die beide auf eine Datei mit dem Namen verweisen `target.txt`. Einer der Symlinks ist ein relativer Symlink und einer ist ein absolutes Symlink. Wenn eines der Symlinks geprüft wird, wird das angezeigt `ObjectName` Das Tag im Überwachungsereignis enthält den Pfad zur Datei `target.txt`:
+
+[listing]
+----
+[root@host1 audit]# ls -l
+total 0
+lrwxrwxrwx 1 user1 group1 37 Apr  2 10:09 softlink_fullpath.txt -> /data/audit/target.txt
+lrwxrwxrwx 1 user1 group1 10 Apr  2 09:54 softlink.txt -> target.txt
+-rwxrwxrwx 1 user1 group1 16 Apr  2 10:05 target.txt
+----
+
+
+== Feste Verbindungen
+
+Eine harte Verbindung ist ein Verzeichniseintrag, der einen Namen mit einer vorhandenen Datei auf einem Dateisystem verknüpft. Die harte Verbindung verweist auf den Inode-Speicherort der Originaldatei. Ähnlich wie ONTAP Symlinks interpretiert, interpretiert ONTAP die harte Verbindung und folgt dem eigentlichen kanonischen Pfad zum Zielobjekt im Volume. Wenn der Zugriff auf ein Objekt mit harter Verbindung geprüft wird, zeichnet das Ereignis Audit diesen absoluten kanonischen Pfad im auf `ObjectName` Markieren Sie anstelle des Pfads der harten Verbindung.

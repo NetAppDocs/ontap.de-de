@@ -1,0 +1,51 @@
+---
+permalink: error-messages/configure-ems-events-notifications-syslog-task.html 
+sidebar: sidebar 
+keywords: configuring, important, ems, events, forward, notifications, syslog, server 
+summary: Um Benachrichtigungen über die schwersten Ereignisse auf einem Syslog-Server zu protokollieren, müssen Sie das EMS so konfigurieren, dass Benachrichtigungen für Ereignisse, die wichtige Aktivitäten signalisieren, weitergesendet werden. 
+---
+= Konfigurieren wichtiger EMS-Ereignisse zur Weiterleitung von Benachrichtigungen an einen Syslog-Server
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Um Benachrichtigungen über die schwersten Ereignisse auf einem Syslog-Server zu protokollieren, müssen Sie das EMS so konfigurieren, dass Benachrichtigungen für Ereignisse, die wichtige Aktivitäten signalisieren, weitergesendet werden.
+
+DNS muss auf dem Cluster konfiguriert werden, um den syslog-Servernamen aufzulösen.
+
+Wenn in Ihrer Umgebung kein Syslog-Server für Ereignisbenachrichtigungen vorhanden ist, müssen Sie zuerst einen erstellen. Falls Ihre Umgebung bereits einen Syslog-Server zum Protokollieren von Ereignissen aus anderen Systemen enthält, sollten Sie diesen Server möglicherweise für wichtige Ereignisbenachrichtigungen verwenden.
+
+Sie können diese Aufgabe jederzeit ausführen, wenn das Cluster ausgeführt wird, indem Sie die Befehle in der ONTAP-CLI eingeben.
+
+Ab ONTAP 9.12.1 können EMS-Ereignisse über das TLS-Protokoll (Transport Layer Security) an einen bestimmten Port auf einem Remote-Syslog-Server gesendet werden. Es sind zwei neue Parameter verfügbar:
+
+`tcp-encrypted`:: Wenn `tcp-encrypted` Wird für das angegeben `syslog-transport`, ONTAP überprüft die Identität des Ziel-Host durch die Validierung seines Zertifikats. Der Standardwert ist `udp-unencrypted`.
+`syslog-port`:: Der Standardwert `syslog-port` Parameter hängt von der Einstellung für das ab `syslog-transport` Parameter. Wenn `syslog-transport` Ist auf festgelegt `tcp-encrypted`, `syslog-port` Hat den Standardwert 6514.
+
+
+Weitere Informationen finden Sie im `event notification destination create` Man-Page.
+
+.Schritte
+. Erstellen eines Syslog-Serverziels für wichtige Ereignisse:
++
+`event notification destination create -name _syslog-ems_ -syslog _syslog-server-address_ -syslog-transport {udp-unencrypted|tcp-unencrypted|tcp-encrypted}`
+
++
+Ab ONTAP 9.12.1 können für folgende Werte angegeben werden `syslog-transport`:
+
++
+** `udp-unencrypted` - User Datagram Protocol ohne Sicherheit
+** `tcp-unencrypted` - Transmission Control Protocol ohne Sicherheit
+** `tcp-encrypted` - Transmission Control Protocol mit Transport Layer Security (TLS)
+
+
++
+Das Standardprotokoll ist `udp-unencrypted``.
+
+. Konfigurieren Sie die wichtigen Ereignisse, um Benachrichtigungen an den Syslog-Server weiterzuleiten:
++
+`event notification create -filter-name _important-events_ -destinations _syslog-ems_`
+
+

@@ -1,0 +1,90 @@
+---
+permalink: nas-audit/audit-alternate-ntfs-data-streams-concept.html 
+sidebar: sidebar 
+keywords: considerations, audit, alternate, ntfs data streams 
+summary: Beim Auditing von Dateien mit alternativen NTFS-Datenströmen müssen Sie bestimmte Überlegungen beachten. 
+---
+= Überlegungen beim Prüfen alternativer NTFS-Datenströme
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Beim Auditing von Dateien mit alternativen NTFS-Datenströmen müssen Sie bestimmte Überlegungen beachten.
+
+Der Speicherort eines zu auditiditierenden Objekts wird in einem Ereignisdatensatz mit zwei Tags, dem, aufgezeichnet `ObjectName` Tag (der Pfad) und der `HandleID` Kennzeichnen (Griff). Um die zu protokollierenden Stream-Anforderungen richtig zu ermitteln, müssen Sie sich bewusst sein, welche ONTAP-Datensätze in diesen Feldern für NTFS-alternative Datenströme enthalten sind:
+
+* EVTX-ID: 4656 Ereignisse (Öffnen und Erstellen von Audit-Ereignissen)
++
+** Der Pfad des alternativen Datenstroms wird im aufgezeichnet `ObjectName` Tag:
+** Das Handle des alternativen Datenstroms wird im aufgezeichnet `HandleID` Tag:
+
+
+* EVTX-ID: 4663 Ereignisse (alle anderen Audit-Ereignisse, wie Lesen, Schreiben, getattr usw.)
++
+** Der Pfad der Basisdatei, nicht der alternative Datenstrom, wird im aufgezeichnet `ObjectName` Tag:
+** Das Handle des alternativen Datenstroms wird im aufgezeichnet `HandleID` Tag:
+
+
+
+
+Das folgende Beispiel zeigt, wie die EVTX-ID identifiziert werden kann: 4663 Ereignisse für alternative Datenströme mit dem `HandleID` Tag: Obwohl das `ObjectName` Das Tag (Pfad), das im Ereignis „Audit lesen“ aufgezeichnet wurde, befindet sich in dem Pfad der Basisdatei, dem `HandleID` Mit dem Tag kann das Ereignis als Prüfdatensatz für den alternativen Datenstrom identifiziert werden.
+
+Stream-Dateinamen nehmen das Formular ein `base_file_name:stream_name`. In diesem Beispiel ist der `dir1` Das Verzeichnis enthält eine Basisdatei mit einem alternativen Datenstrom mit folgenden Pfaden:
+
+[listing]
+----
+
+/dir1/file1.txt
+/dir1/file1.txt:stream1
+----
+[NOTE]
+====
+Die Ausgabe im folgenden Ereignisbeispiel wird wie angegeben abgeschnitten; in der Ausgabe werden nicht alle verfügbaren Ausgabetags für die Ereignisse angezeigt.
+
+====
+Bei einer EVTX-ID 4656 (Open Audit Event) zeichnet der Audit-Datensatz-Ausgang für den alternativen Datenstrom den alternativen Namen des Datenstroms in auf `ObjectName` Tag:
+
+[listing]
+----
+
+- <Event>
+- <System>
+  <Provider Name="Netapp-Security-Auditing" />
+  <EventID>4656</EventID>
+  <EventName>Open Object</EventName>
+  [...]
+  </System>
+- <EventData>
+  [...]
+  **<Data Name="ObjectType"\>Stream</Data\>
+  <Data Name="HandleID"\>00000000000401;00;000001e4;00176767</Data\>
+  <Data Name="ObjectName"\>\(data1\);/dir1/file1.txt:stream1</Data\>          **
+  [...]
+  </EventData>
+  </Event>
+- <Event>
+----
+Bei einer EVTX-ID 4663 (Ereignis „Audit lesen“) zeichnet die Ausgabe des Prüfdatensätzen für denselben alternativen Datenstrom den Namen der Basisdatei in der auf `ObjectName` Markieren Sie jedoch den Griff im `HandleID` Das Tag ist der Griff des alternativen Datenstroms und kann verwendet werden, um dieses Ereignis mit dem alternativen Datenstrom zu korrelieren:
+
+[listing]
+----
+
+- <Event>
+- <System>
+  <Provider Name="Netapp-Security-Auditing" />
+  <EventID>4663</EventID>
+  <EventName>Read Object</EventName>
+  [...]
+  </System>
+- <EventData>
+  [...]
+  **<Data Name="ObjectType"\>Stream</Data\>
+  <Data Name="HandleID"\>00000000000401;00;000001e4;00176767</Data\>
+  <Data Name="ObjectName"\>\(data1\);/dir1/file1.txt</Data\> **
+  [...]
+  </EventData>
+  </Event>
+- <Event>
+----

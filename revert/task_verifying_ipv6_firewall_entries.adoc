@@ -1,0 +1,61 @@
+---
+permalink: revert/task_verifying_ipv6_firewall_entries.html 
+sidebar: sidebar 
+keywords: revert, reverting, reversion, ipv6, firewall, entries, verify 
+summary: Eine Umversion von einer beliebigen Version von ONTAP 9 kann dazu führen, dass bei einigen Diensten in Firewallrichtlinien standardmäßige IPv6-Firewalleinträge fehlen. Sie müssen überprüfen, ob die erforderlichen Firewall-Einträge auf Ihrem System wiederhergestellt wurden. 
+---
+= Überprüfen Sie die IPv6-Firewall-Einträge
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Eine Umversion von einer beliebigen Version von ONTAP 9 kann dazu führen, dass bei einigen Diensten in Firewallrichtlinien standardmäßige IPv6-Firewalleinträge fehlen. Sie müssen überprüfen, ob die erforderlichen Firewall-Einträge auf Ihrem System wiederhergestellt wurden.
+
+. Überprüfen Sie, ob alle Firewallrichtlinien korrekt sind, indem Sie sie mit den Standardrichtlinien vergleichen: `system services firewall policy show`
++
+Im folgenden Beispiel werden die Standardrichtlinien angezeigt:
+
++
+[listing]
+----
+cluster1::*> system services firewall policy show
+Policy           Service    Action IP-List
+---------------- ---------- ------ --------------------
+cluster
+                 dns        allow  0.0.0.0/0
+                 http       allow  0.0.0.0/0
+                 https      allow  0.0.0.0/0
+                 ndmp       allow  0.0.0.0/0
+                 ntp        allow  0.0.0.0/0
+                 rsh        allow  0.0.0.0/0
+                 snmp       allow  0.0.0.0/0
+                 ssh        allow  0.0.0.0/0
+                 telnet     allow  0.0.0.0/0
+data
+                 dns        allow  0.0.0.0/0, ::/0
+                 http       deny   0.0.0.0/0, ::/0
+                 https      deny   0.0.0.0/0, ::/0
+                 ndmp       allow  0.0.0.0/0, ::/0
+                 ntp        deny   0.0.0.0/0, ::/0
+                 rsh        deny   0.0.0.0/0, ::/0
+.
+.
+.
+----
+. Fügen Sie manuell alle fehlenden Standard-IPv6-Firewall-Einträge hinzu, indem Sie eine neue Firewall-Richtlinie erstellen: `system services firewall policy create`
++
+[listing]
+----
+cluster1::*> system services firewall policy create -policy newIPv6
+-service ssh -action allow -ip-list ::/0
+----
+. Wenden Sie die neue Richtlinie auf die LIF an, um den Zugriff auf einen Netzwerkdienst zu ermöglichen: `network interface modify`
++
+[listing]
+----
+cluster1::*> network interface modify -vserver VS1 -lif LIF1
+-firewall-policy newIPv6
+----
+

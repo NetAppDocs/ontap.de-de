@@ -1,0 +1,49 @@
+---
+permalink: smb-admin/enable-client-access-unix-symbolic-links-concept.html 
+sidebar: sidebar 
+keywords: smybol, link, file, create, unix, environment, reference, directory, client, access, redirect, target, absolute, widelinks, local, file, system, how ontap enables you to provide smb client access to unix symbolic links 
+summary: 'Ein symbolischer Link ist eine Datei, die in einer UNIX-Umgebung erstellt wird, die einen Verweis auf eine andere Datei oder ein anderes Verzeichnis enthält. Wenn ein Client auf eine symbolische Verbindung zugreift, wird der Client an die Zieldatei oder das Verzeichnis weitergeleitet, auf die sich der symbolische Link bezieht. ONTAP unterstützt relative und absolute symbolische Links, einschließlich widelinks (absolute Links mit Zielen außerhalb des lokalen Filesystems).' 
+---
+= Wie ONTAP Ihnen ermöglicht, symbolischen UNIX-Links SMB-Client-Zugriff bereitzustellen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein symbolischer Link ist eine Datei, die in einer UNIX-Umgebung erstellt wird, die einen Verweis auf eine andere Datei oder ein anderes Verzeichnis enthält. Wenn ein Client auf eine symbolische Verbindung zugreift, wird der Client an die Zieldatei oder das Verzeichnis weitergeleitet, auf die sich der symbolische Link bezieht. ONTAP unterstützt relative und absolute symbolische Links, einschließlich widelinks (absolute Links mit Zielen außerhalb des lokalen Filesystems).
+
+Mit ONTAP können SMB-Clients symbolische UNIX-Links verfolgen, die auf der SVM konfiguriert sind. Diese Funktion ist optional, und Sie können sie über das pro-Share konfigurieren `-symlink-properties` Option des `vserver cifs share create` Befehl, mit einer der folgenden Einstellungen:
+
+* Aktiviert mit Lese-/Schreibzugriff
+* Mit schreibgeschütztem Zugriff aktiviert
+* Deaktiviert, indem symbolische Links von SMB-Clients ausgeblendet werden
+* Deaktiviert ohne Zugriff auf symbolische Links von SMB-Clients
+
+
+Wenn Sie symbolische Links auf einer Freigabe aktivieren, funktionieren relative symbolische Links ohne weitere Konfiguration.
+
+Wenn Sie symbolische Links auf einer Share aktivieren, funktionieren absolute symbolische Links nicht sofort. Sie müssen zuerst eine Zuordnung zwischen dem UNIX-Pfad der symbolischen Verbindung zum Ziel-SMB-Pfad erstellen. Beim Erstellen der absoluten symbolischen Link-Zuordnungen können Sie angeben, ob es ein lokaler Link oder ein _widelinks_ ist; widelinks kann zu Dateisystemen auf anderen Speichergeräten oder Links zu Dateisystemen sein, die in separaten SVMs auf demselben ONTAP-System gehostet werden. Wenn Sie eine widelink erstellen, muss sie die Informationen enthalten, denen der Client folgen kann; das heißt, Sie erstellen einen Analysepunkt für den Client, um den Verzeichnispunktpunkt zu ermitteln. Wenn Sie einen absoluten symbolischen Link zu einer Datei oder einem Verzeichnis außerhalb der lokalen Freigabe erstellen, aber die Lokalität auf lokal setzen, lässt ONTAP den Zugriff auf das Ziel nicht zu.
+
+[NOTE]
+====
+Wenn ein Client versucht, einen lokalen symbolischen Link zu löschen (absolut oder relativ), wird nur der symbolische Link gelöscht, nicht die Zieldatei oder das Zielverzeichnis. Wenn ein Kunde jedoch versucht, eine widelink zu löschen, kann die tatsächliche Zieldatei oder das Verzeichnis, auf das sich der widelink bezieht, gelöscht werden. ONTAP hat keine Kontrolle darüber, da der Client die Zieldatei oder das Zielverzeichnis außerhalb der SVM explizit öffnen und löschen kann.
+
+====
+* *Reparse-Punkte und ONTAP-Dateisystemdienste*
++
+Ein _Analysepunkt_ ist ein NTFS-Dateisystem-Objekt, das optional zusammen mit einer Datei auf Volumes gespeichert werden kann. Durch die Analysepunkte können SMB-Clients bei der Arbeit mit NTFS-Style-Volumes erweiterte oder erweiterte Dateisystemservices erhalten. Die Analysepunkte bestehen aus Standard-Tags, die den Typ des Analysepunkts identifizieren und den Inhalt des Remarse-Punkts, der von SMB-Clients zur weiteren Verarbeitung durch den Client abgerufen werden kann. Von den Objekttypen, die für erweiterte Dateisystemfunktionen verfügbar sind, implementiert ONTAP die Unterstützung für NTFS-symbolische Links und Verzeichnispunktpunkte mithilfe von Remarse Point-Tags. SMB-Clients, die den Inhalt eines Analysepunkts nicht verstehen können, ignorieren ihn einfach und geben den erweiterten Dateisystem-Service nicht an, den der Analysepunkt möglicherweise aktiviert.
+
+* *Directory-Verbindungspunkte und ONTAP-Unterstützung für symbolische Links*
++
+Verzeichnis-Verbindungspunkte sind Standorte innerhalb einer Dateisystemverzeichnisstruktur, die sich auf alternative Speicherorte beziehen kann, entweder auf einem anderen Pfad (symbolische Links) oder auf ein separates Speichergerät (widelinks). ONTAP SMB Server stellen für Windows-Clients Verbindungspunkte als Analysepunkte bereit, sodass Clients bei einem Umfahren eines Verzeichnispunktpunkts Inhalte von ONTAP neu analysieren können. Sie können dadurch navigieren und eine Verbindung zu verschiedenen Pfaden oder Speichergeräten herstellen, als wären sie Teil des gleichen Dateisystems.
+
+* *Aktivierung der widelink-Unterstützung mit den Optionen für das Analysieren von Punkten*
++
+Der `-is-use-junctions-as-reparse-points-enabled` Die Option ist standardmäßig in ONTAP 9 aktiviert. Nicht alle SMB-Clients unterstützen widelinks, sodass die Informationen per Protokoll-Version konfigurierbar sind, so dass Administratoren sowohl unterstützte als auch nicht unterstützte SMB-Clients nutzen können. In ONTAP 9.2 und neueren Versionen müssen Sie die Option aktivieren `-widelink-as-reparse-point-versions` Für jedes Client-Protokoll, das mit widelinks auf die Freigabe zugreift; der Standard ist SMB1. In früheren Versionen wurden nur widelinks berichtet, auf die mit dem Standard SMB1 zugegriffen wurde, und Systeme mit SMB2 oder SMB3 konnten nicht auf die widelinks zugreifen.
+
+
+
+Weitere Informationen finden Sie in der Microsoft NTFS-Dokumentation.
+
+https://docs.microsoft.com/en-us/windows/win32/fileio/reparse-points["Microsoft Dokumentation: Parsen Von Punkten"]

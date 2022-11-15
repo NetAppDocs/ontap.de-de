@@ -1,0 +1,268 @@
+---
+permalink: system-admin/sp-sensor-status-values-command-output-concept.html 
+sidebar: sidebar 
+keywords: understand, discrete, sp, sensor, status, values, command, output, cli, hexedecimal, format 
+summary: Diskrete Sensoren verfügen über keine Schwellenwerte. Ihre Messwerte, die unter der Spalte „Current“ der Befehlsausgabe des Befehls „SP CLI System Sensors“ angezeigt werden, tragen keine tatsächlichen Bedeutungen und werden daher vom SP ignoriert. In der Spalte „Status“ der Befehlsausgabe des Befehls „System Sensors“ werden die Statuswerte diskreter Sensoren im hexadezimalen Format angezeigt. 
+---
+= Allgemeines zu den diskreten SP-Sensor-Statuswerten der Befehlsausgabe des Befehls „System Sensors“
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Diskrete Sensoren verfügen über keine Schwellenwerte. Die Messwerte werden unter angezeigt `Current` (Spalte in der SP-CLI) `system sensors` Befehlsausgabe ausführen, keine tatsächlichen Bedeutungen haben und werden daher vom SP ignoriert. Der `Status` (Spalte im) `system sensors` Mit der Befehlsausgabe werden die Statuswerte diskreter Sensoren im hexadezimalen Format angezeigt.
+
+Beispiele diskreter Sensoren sind Sensoren für den Lüfter sowie für Netzteil- und Systemfehler. Die spezifische Liste der diskreten Sensoren hängt von der Plattform ab.
+
+Sie können die SP-CLI verwenden `system sensors get` `sensor_name` Befehl für die Interpretation der Statuswerte für die meisten diskreten Sensoren. Die folgenden Beispiele zeigen die Ergebnisse der Eingabe `system sensors get` `sensor_name` Für die diskreten Sensoren CPU0_Error und IO_Slot1_Present:
+
+[listing]
+----
+SP node1> system sensors get CPU0_Error
+Locating sensor record...
+Sensor ID              : CPU0_Error (0x67)
+ Entity ID             : 7.97
+ Sensor Type (Discrete): Temperature
+ States Asserted       : Digital State
+                         [State Deasserted]
+----
+[listing]
+----
+SP node1> system sensors get IO_Slot1_Present
+Locating sensor record...
+Sensor ID              : IO_Slot1_Present (0x74)
+ Entity ID             : 11.97
+ Sensor Type (Discrete): Add-in Card
+ States Asserted       : Availability State
+                        [Device Present]
+----
+Obwohl der `system sensors get` `sensor_name` Der Befehl zeigt die Statusinformationen für die meisten diskreten Sensoren an. Er bietet keine Statusinformationen für die diskreten Sensoren „System_FW_Status“, „System_Watchdog“, „PSU1_Input_Type“ und „PSU2_Input_Type“. Sie können die folgenden Informationen nutzen, um die Statuswerte dieser Sensoren zu interpretieren.
+
+
+
+== „System_FW_Status“
+
+Der Zustand des Sensors „System_FW_Status“ wird in Form von angezeigt `0xAABB`. Sie können die Informationen von kombinieren `AA` Und `BB` Um den Zustand des Sensors zu ermitteln.
+
+`AA` Kann einen der folgenden Werte aufweisen:
+
+|===
+| Werte | Zustand des Sensors 
+
+
+ a| 
+01
+ a| 
+Fehler der System-Firmware
+
+
+
+ a| 
+02
+ a| 
+Die System-Firmware hängt
+
+
+
+ a| 
+04
+ a| 
+Fortschritt der System-Firmware
+
+|===
+`BB` Kann einen der folgenden Werte aufweisen:
+
+|===
+| Werte | Zustand des Sensors 
+
+
+ a| 
+00
+ a| 
+Die System-Software wurde ordnungsgemäß heruntergefahren
+
+
+
+ a| 
+01
+ a| 
+Arbeitsspeicher wird initialisiert
+
+
+
+ a| 
+02
+ a| 
+NVMEM-Initialisierungsvorgang läuft (wenn NVMEM vorhanden ist)
+
+
+
+ a| 
+04
+ a| 
+Wiederherstellen der Werte des Arbeitsspeicher-Controller-Hubs (MCH) (sofern NVMEM vorhanden ist)
+
+
+
+ a| 
+05
+ a| 
+Der Benutzer hat Setup aufgerufen
+
+
+
+ a| 
+13
+ a| 
+Booten des Betriebssystems oder LOADER
+
+
+
+ a| 
+1F
+ a| 
+BIOS wird gestartet
+
+
+
+ a| 
+20
+ a| 
+LOADER wird ausgeführt
+
+
+
+ a| 
+21
+ a| 
+LOADER programmiert die primäre BIOS-Firmware. Sie dürfen das System nicht herunterfahren.
+
+
+
+ a| 
+22
+ a| 
+LOADER programmiert die alternative BIOS-Firmware. Sie dürfen das System nicht herunterfahren.
+
+
+
+ a| 
+2F
+ a| 
+ONTAP wird ausgeführt
+
+
+
+ a| 
+60
+ a| 
+SP hat das System heruntergefahren
+
+
+
+ a| 
+61
+ a| 
+SP hat das System hochgefahren
+
+
+
+ a| 
+62
+ a| 
+SP hat das System zurückgesetzt
+
+
+
+ a| 
+63
+ a| 
+SP Watchdog aus- und wieder einschalten
+
+
+
+ a| 
+64
+ a| 
+SP Watchdog-Kaltstart
+
+|===
+Beispiel: Der Status „0x042F“ des Sensors „System_FW_Status“ bedeutet „Fortschritt der System-Firmware (04), ONTAP läuft (2F)“.
+
+
+
+== „System_Watchdog“
+
+Der Sensor „System_Watchdog“ kann einen der folgenden Zustände aufweisen:
+
+* *0x0080*
++
+Der Zustand dieses Sensors hat sich nicht geändert
+
+
+
+|===
+| Werte | Zustand des Sensors 
+
+
+ a| 
+0x0081
+ a| 
+Timer-Interrupt
+
+
+
+ a| 
+0x0180
+ a| 
+Timer abgelaufen
+
+
+
+ a| 
+0x0280
+ a| 
+Hard Reset
+
+
+
+ a| 
+0x0480
+ a| 
+Schalten Sie aus
+
+
+
+ a| 
+0x0880
+ a| 
+Aus- und wieder einschalten
+
+|===
+Beispiel: Der Status „0x0880“ des Sensors „System_Watchdog“ bedeutet, dass eine Watchdog-Zeitüberschreitung eingetreten ist, die ein aus- und Wiedereinschalten des Systems verursacht.
+
+
+
+== PSU1_Input_Type und PSU2_Input_Type
+
+Die Sensoren „PSU1_Input_Type“ und „PSU2_Input_Type“ gelten nicht für Gleichstrom-Netzteile (DC). Bei Wechselstromnetzteilen (AC) kann der Status der Sensoren einen der folgenden Werte aufweisen:
+
+|===
+| Werte | Zustand des Sensors 
+
+
+ a| 
+0x01 xx
+ a| 
+220V-Netzteil
+
+
+
+ a| 
+0x02 xx
+ a| 
+110-V-Netzteil
+
+|===
+Beispiel: Der Status „0x0280“ des Sensors „PSU1_Input_Type“ gibt an, dass es sich bei dem Netzteil um ein 110V-Netzteil handelt.

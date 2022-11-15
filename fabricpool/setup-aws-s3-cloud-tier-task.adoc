@@ -1,0 +1,80 @@
+---
+permalink: fabricpool/setup-aws-s3-cloud-tier-task.html 
+sidebar: sidebar 
+keywords: setting up, aws, s3, cloud tier 
+summary: 'Wenn Sie ONTAP 9.2 oder höher verwenden, können Sie AWS S3 als Cloud-Tier für FabricPool einrichten. Wenn Sie ONTAP 9.5 oder höher verwenden, können Sie AWS Commercial Cloud Services (C2S) für FabricPool einrichten.' 
+---
+= AWS S3 als Cloud-Tier einrichten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie ONTAP 9.2 oder höher verwenden, können Sie AWS S3 als Cloud-Tier für FabricPool einrichten. Wenn Sie ONTAP 9.5 oder höher verwenden, können Sie AWS Commercial Cloud Services (C2S) für FabricPool einrichten.
+
+.Überlegungen zur Verwendung von AWS S3 mit FabricPool
+* Möglicherweise brauchen Sie eine FabricPool-Lizenz.
++
+** Die neu bestellten AFF Systeme verfügen über 10 TB freie Kapazität für den Einsatz von FabricPool.
++
+Wenn Sie zusätzliche Kapazität auf einem AFF System benötigen, wenn Sie AWS S3 auf einem System anderer Anbieter verwenden oder ein Upgrade von einem vorhandenen Cluster durchführen, benötigen Sie eine FabricPool-Lizenz.
+
++
+Wenn Sie FabricPool zum ersten Mal für ein vorhandenes Cluster bestellen, steht eine FabricPool-Lizenz mit 10 TB freier Kapazität zur Verfügung.
+
+
+
+* Die logische Schnittstelle, die ONTAP für die Verbindung mit dem AWS S3-Objektserver verwendet, muss sich auf einem 10-Gbit/s-Port befinden.
+* Auf AFF- und FAS-Systemen und ONTAP Select unterstützt FabricPool die folgenden Amazon S3-Storage-Klassen:
++
+** Amazon S3 Standard
+** Amazon S3 Standard – infrequent Access (Standard – IA)
+** Amazon S3 One Zone – infrequent Access (One Zone – IA)
+** Amazon S3 Intelligent-Tiering
+** Amazon Commercial Cloud Services
++
+https://aws.amazon.com/s3/storage-classes/["Amazon Web Services (AWS) Dokumentation: Amazon S3 Storage Classes"]
+
+
+
++
+Wenden Sie sich an Ihren Vertriebsmitarbeiter, um Informationen zu Storage-Klassen zu erhalten, die nicht aufgeführt sind.
+
+* Auf Cloud Volumes ONTAP unterstützt FabricPool Tiering von gp2 (General Purpose SSD) und durchsatzoptimierten HDD (st1) Volumes von Amazon Elastic Block Store (EBS).
+
+
+.Schritte
+. Geben Sie die AWS S3-Konfigurationsinformationen mithilfe des an `storage aggregate object-store config create` Befehl mit dem `-provider-type` `AWS_S3` Parameter.
++
+** Sie verwenden das `-auth-type` `CAP` Parameter zum Abrufen von Anmeldeinformationen für den C2S-Zugriff.
++
+Wenn Sie das verwenden `-auth-type` `CAP` Parameter, müssen Sie den verwenden `-cap-url` Parameter, mit dem die vollständige URL angegeben wird, um temporäre Anmeldedaten für den C2S-Zugriff anzufordern.
+
+** Der `storage aggregate object-store config create` Der Befehl schlägt fehl, wenn ONTAP mit den angegebenen Informationen nicht auf AWS S3 zugreifen kann.
+** Sie verwenden das `-access-key` Parameter, um den Zugriffsschlüssel für die Autorisierung von Anfragen an den AWS S3-Objektspeicher anzugeben.
+** Sie verwenden das `-secret-password` Parameter zur Angabe des Passworts (Secret Access Key) für die Authentifizierung von Anforderungen an den AWS S3-Objektspeicher.
+** Wenn das AWS S3-Passwort geändert wird, müssen Sie das entsprechende Passwort, das in ONTAP gespeichert ist, sofort aktualisieren.
++
+So kann ONTAP unterbrechungsfrei auf die Daten in AWS S3 zugreifen.
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store config create
+-object-store-name my_aws_store -provider-type AWS_S3
+-server s3.amazonaws.com -container-name my-aws-bucket
+-access-key DXJRXHPXHYXA9X31X3JX
+----
++
+[listing]
+----
+cluster1::> storage aggregate object-store config create -object-store-name my_c2s_store -provider-type AWS_S3 -auth-type CAP -cap-url https://123.45.67.89/api/v1/credentials?agency=XYZ&mission=TESTACCT&role=S3FULLACCESS -server my-c2s-s3server-fqdn -container my-c2s-s3-bucket
+----
+
+
+. Die AWS S3-Konfigurationsinformationen mit dem anzeigen und überprüfen `storage aggregate object-store config show` Befehl.
++
+Der `storage aggregate object-store config modify` Mit dem Befehl können Sie die AWS S3-Konfigurationsinformationen für FabricPool ändern.
+
+

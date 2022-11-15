@@ -1,0 +1,100 @@
+---
+permalink: nfs-admin/flush-export-policy-caches-task.html 
+sidebar: sidebar 
+keywords: flush, export, policy, cache 
+summary: 'Durch manuelles Spülen der Exportrichtlinien-Caches (vserver Export-Policy Cache flush) werden potenziell veraltete Informationen entfernt und ONTAP erzwingt, aktuelle Informationen aus den entsprechenden externen Ressourcen abzurufen. Dies kann dabei helfen, eine Vielzahl von Problemen im Zusammenhang mit dem Client-Zugriff auf NFS-Exporte zu lösen.' 
+---
+= Exportrichtlinien-Caches leeren
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP nutzt mehrere Exportrichtlinien-Caches, um Informationen im Zusammenhang mit Exportrichtlinien zu speichern, um schnelleren Zugriff zu ermöglichen. Exportrichtlinien werden manuell bereinigt (`vserver export-policy cache flush`) Entfernt potenziell veraltete Informationen und zwingt ONTAP, aktuelle Informationen aus den entsprechenden externen Ressourcen abzurufen. Dies kann dabei helfen, eine Vielzahl von Problemen im Zusammenhang mit dem Client-Zugriff auf NFS-Exporte zu lösen.
+
+Informationen zum Export-Policy-Cache können aus folgenden Gründen veraltet sein:
+
+* Eine kürzliche Änderung der Exportrichtlinien
+* Eine kürzliche Änderung an Hostnamendatensätzen in Namensservern
+* Eine kürzliche Änderung zu netgroup-Einträgen in Name-Servern
+* Wiederherstellung nach einem Netzwerkausfall, der verhindert hat, dass Netzgruppen voll geladen werden
+
+
+.Schritte
+. Wenn Sie keinen Cache für den Namensservice aktiviert haben, führen Sie eine der folgenden Aktionen im Modus „Erweiterte Berechtigungen“ aus:
++
+[cols="2*"]
+|===
+| Wenn Sie spülen möchten... | Geben Sie den Befehl ein... 
+
+
+ a| 
+Alle Cache-Speicher für Exportrichtlinien (außer Showmount)
+ a| 
+`vserver export-policy cache flush -vserver vserver_name`
+
+
+
+ a| 
+Die Exportrichtlinie regeln den Zugriff auf den Cache
+ a| 
+`vserver export-policy cache flush -vserver vserver_name -cache access` Sie können das optional angeben `-node` Parameter zum Angeben des Node, auf dem Sie den Zugriffs-Cache bereinigen möchten.
+
+
+
+ a| 
+Der Host-Name-Cache
+ a| 
+`vserver export-policy cache flush -vserver vserver_name -cache host`
+
+
+
+ a| 
+Der Netzwerk-Cache
+ a| 
+`vserver export-policy cache flush -vserver vserver_name -cache netgroup` Die Verarbeitung von Netzgruppen ist ressourcenintensiv. Sie sollten den Netgroup-Cache nur dann leeren, wenn Sie versuchen, ein Problem mit dem Clientzugriff zu lösen, das durch eine veraltete Netzwerkgruppe verursacht wird.
+
+
+
+ a| 
+Der showmount-Cache
+ a| 
+`vserver export-policy cache flush -vserver vserver_name -cache showmount`
+
+|===
+. Wenn der Name Service-Cache aktiviert ist, führen Sie eine der folgenden Aktionen durch:
++
+[cols="2*"]
+|===
+| Wenn Sie spülen möchten... | Geben Sie den Befehl ein... 
+
+
+ a| 
+Die Exportrichtlinie regeln den Zugriff auf den Cache
+ a| 
+`vserver export-policy cache flush -vserver vserver_name -cache access` Sie können das optional angeben `-node` Parameter zum Angeben des Node, auf dem Sie den Zugriffs-Cache bereinigen möchten.
+
+
+
+ a| 
+Der Host-Name-Cache
+ a| 
+`vserver services name-service cache hosts forward-lookup delete-all`
+
+
+
+ a| 
+Der Netzwerk-Cache
+ a| 
+`vserver services name-service cache netgroups ip-to-netgroup delete-all` `vserver services name-service cache netgroups members delete-all` Die Verarbeitung von Netzgruppen ist ressourcenintensiv. Sie sollten den Netgroup-Cache nur dann leeren, wenn Sie versuchen, ein Problem mit dem Clientzugriff zu lösen, das durch eine veraltete Netzwerkgruppe verursacht wird.
+
+
+
+ a| 
+Der showmount-Cache
+ a| 
+`vserver export-policy cache flush -vserver vserver_name -cache showmount`
+
+|===
+

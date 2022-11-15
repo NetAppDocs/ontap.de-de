@@ -1,0 +1,110 @@
+---
+permalink: fabricpool/determine-data-inactive-reporting-task.html 
+sidebar: sidebar 
+keywords: determining, how, much, data, volume, inactive, using, data reporting, fabricpool 
+summary: Da Sie feststellen, wie viele Daten in einem Volume inaktiv sind, können Sie die Storage-Tiers nutzen. Anhand von Informationen in Berichten für inaktive Daten können Sie entscheiden, welches Aggregat für FabricPool verwendet werden soll, ob ein Volume in die FabricPool verschoben werden soll oder ob die Tiering-Richtlinie eines Volumes geändert werden soll. 
+---
+= Legen Sie fest, wie viele Daten in einem Volume inaktiv sind, indem Sie die inaktive Datenberichterstellung verwenden
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Da Sie feststellen, wie viele Daten in einem Volume inaktiv sind, können Sie die Storage-Tiers nutzen. Anhand von Informationen in Berichten für inaktive Daten können Sie entscheiden, welches Aggregat für FabricPool verwendet werden soll, ob ein Volume in die FabricPool verschoben werden soll oder ob die Tiering-Richtlinie eines Volumes geändert werden soll.
+
+Sie müssen ONTAP 9.4 oder höher ausführen, um die Funktion zur Berichterstellung inaktiver Daten verwenden zu können.
+
+.Über diese Aufgabe
+* Berichte über inaktive Daten werden auf einigen Aggregaten nicht unterstützt.
++
+Inaktive Datenberichte können nicht aktiviert werden, wenn FabricPool nicht aktiviert werden kann, einschließlich der folgenden Instanzen:
+
++
+** Root-Aggregate
+** MetroCluster Aggregate mit ONTAP Versionen vor 9.7
+** Flash Pool (hybride Aggregate oder SnapLock Aggregate)
+
+
+* Berichte für inaktive Daten sind standardmäßig auf Aggregaten aktiviert, bei denen die anpassungsfähige Komprimierung für alle Volumes aktiviert ist.
+* Die Berichterstellung für inaktive Daten ist auf allen SSD-Aggregaten in ONTAP 9.6 standardmäßig aktiviert.
+* Berichte für inaktive Daten sind standardmäßig auf FabricPool Aggregaten in ONTAP 9.4 und ONTAP 9.5 aktiviert.
+* Sie können inaktive Datenberichte auf nicht-FabricPool-Aggregaten über die ONTAP-CLI einschließlich HDD-Aggregaten aktivieren. Dies beginnt mit ONTAP 9.6.
+
+
+
+
+== Verfahren
+
+Sie können ermitteln, wie viele Daten mit ONTAP System Manager oder der ONTAP CLI inaktiv sind.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wählen Sie eine der folgenden Optionen:
++
+** Wenn Sie vorhandene HDD-Aggregate haben, navigieren Sie zu *Storage > Tiers* und klicken Sie auf image:icon_kabob.gif["alt=Menüoptionen"] Für das Aggregat, auf dem Sie inaktive Datenberichte aktivieren möchten.
+** Wenn keine Cloud-Tiers konfiguriert sind, navigieren Sie zu *Dashboard* und klicken Sie unter *Kapazität* auf den Link *inaktive Datenberichterstattung aktivieren*.
+
+
+
+
+--
+.CLI
+--
+.So aktivieren Sie die Berichterstellung für inaktive Daten mithilfe der CLI:
+. Wenn das Aggregat, für das inaktive Datenberichte angezeigt werden sollen, nicht in FabricPool verwendet wird, aktivieren Sie die inaktive Datenberichterstattung für das Aggregat mithilfe der `storage aggregate modify` Befehl mit dem `-is-inactive-data-reporting-enabled` `true` Parameter.
++
+[listing]
+----
+cluster1::> storage aggregate modify -aggregate aggr1 -is-inactive-data-reporting-enabled true
+----
++
+Sie müssen die Berichterstellungsfunktion für inaktive Daten auf einem Aggregat, das nicht für FabricPool verwendet wird, explizit aktivieren.
+
++
+Sie können und müssen auch die inaktive Datenberichterstellung auf einem FabricPool-fähigen Aggregat nicht aktivieren, da das Aggregat bereits inaktive Datenberichte enthält. Der `-is-inactive-data-reporting-enabled` Der Parameter funktioniert nicht mit FabricPool-fähigen Aggregaten.
+
++
+Der `-fields is-inactive-data-reporting-enabled` Parameter von `storage aggregate show` Mit diesem Befehl wird angezeigt, ob die Berichterstellung für inaktive Daten auf einem Aggregat aktiviert ist.
+
+. Um anzuzeigen, wie viele Daten auf einem Volume inaktiv sind, verwenden Sie den `volume show` Befehl mit dem `-fields performance-tier-inactive-user-data,performance-tier-inactive-user-data-percent` Parameter.
++
+[listing]
+----
+cluster1::> volume show -fields performance-tier-inactive-user-data,performance-tier-inactive-user-data-percent
+
+vserver volume performance-tier-inactive-user-data performance-tier-inactive-user-data-percent
+------- ------ ----------------------------------- -------------------------------------------
+vsim1   vol0   0B                                  0%
+vs1     vs1rv1 0B                                  0%
+vs1     vv1    10.34MB                             0%
+vs1     vv2    10.38MB                             0%
+4 entries were displayed.
+----
++
+** Der `performance-tier-inactive-user-data` Das Feld zeigt an, wie viele Benutzerdaten im Aggregat inaktiv sind.
+** Der `performance-tier-inactive-user-data-percent` Das Feld zeigt an, in welchem Prozent der Daten im aktiven Dateisystem und in Snapshot Kopien inaktiv sind.
+** Bei einem Aggregat, das nicht für FabricPool verwendet wird, wird für die Berichterstellung inaktiver Daten die Tiering-Richtlinie verwendet, um festzulegen, wie viele Daten als „kalt“ gemeldet werden sollen.
++
+*** Für das `none` tiering Policy, 31 Tage gebraucht.
+*** Für das `snapshot-only` Und `auto`, Berichte über inaktive Daten verwenden `tiering-minimum-cooling-days`.
+*** Für das `ALL` Bei der Berichterstellung für inaktive Daten wird davon ausgegangen, dass die Daten innerhalb eines Tages auf das Tier verlagert werden.
++
+Bis der Zeitraum erreicht ist, zeigt die Ausgabe „`-`“ für die Menge der inaktiven Daten anstelle eines Wertes an.
+
+
+
+** Wenn ein Volume Teil von FabricPool ist, hängt der, was ONTAP als inaktiv meldet, von der Tiering-Richtlinie ab, die auf einem Volume festgelegt ist.
++
+*** Für das `none` ONTAP meldet die Menge des gesamten Volumes, das mindestens 31 Tage lang inaktiv ist. Sie können das nicht verwenden `-tiering-minimum-cooling-days` Parameter mit `none` tiering-Richtlinie:
+*** Für das `ALL`, `snapshot-only`, und `auto` tiering-Richtlinien, inaktive Datenberichte werden nicht unterstützt.
+
+
+
+
+
+
+--
+====

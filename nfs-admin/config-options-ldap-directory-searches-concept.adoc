@@ -1,0 +1,108 @@
+---
+permalink: nfs-admin/config-options-ldap-directory-searches-concept.html 
+sidebar: sidebar 
+keywords: LDAP referral chasing 
+summary: Sie können LDAP-Verzeichnissuches, einschließlich Benutzer-, Gruppen- und Netzwerkgruppeninformationen, optimieren, indem Sie den ONTAP LDAP-Client so konfigurieren, dass eine Verbindung zu LDAP-Servern auf die für Ihre Umgebung am besten geeignete Weise hergestellt wird. Sie müssen wissen, wann die Standard-LDAP-Basis- und Bereichssuche ausreichen und welche Parameter angegeben werden sollen, wenn benutzerdefinierte Werte besser geeignet sind. 
+---
+= Konfigurationsoptionen für LDAP-Verzeichnissuches
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können LDAP-Verzeichnissuches, einschließlich Benutzer-, Gruppen- und Netzwerkgruppeninformationen, optimieren, indem Sie den ONTAP LDAP-Client so konfigurieren, dass eine Verbindung zu LDAP-Servern auf die für Ihre Umgebung am besten geeignete Weise hergestellt wird. Sie müssen wissen, wann die Standard-LDAP-Basis- und Bereichssuche ausreichen und welche Parameter angegeben werden sollen, wenn benutzerdefinierte Werte besser geeignet sind.
+
+LDAP-Client-Suchoptionen für Benutzer-, Gruppen- und Netzwerkgruppeninformationen können dazu beitragen, fehlerhafte LDAP-Abfragen zu vermeiden, und damit einen fehlgeschlagenen Client-Zugriff auf Speichersysteme. Sie tragen außerdem dazu bei, dass die Suchvorgänge so effizient wie möglich sind, um Probleme mit der Client-Performance zu vermeiden.
+
+
+
+== Standardwerte für die Basis- und Bereichssuche
+
+Die LDAP-Basis ist der Standard-Basis-DN, den der LDAP-Client zur Durchführung von LDAP-Abfragen verwendet. Alle Suchvorgänge, einschließlich Benutzer-, Gruppen- und Netgroup-Suchen, werden mit dem Basis-DN durchgeführt. Diese Option ist geeignet, wenn Ihr LDAP-Verzeichnis relativ klein ist und alle relevanten Einträge im selben DN liegen.
+
+Wenn Sie keinen benutzerdefinierten Basis-DN angeben, ist die Standardeinstellung `root`. Das bedeutet, dass jede Abfrage das gesamte Verzeichnis durchsucht. Dies maximiert zwar die Erfolgsaussichten der LDAP-Abfrage, kann aber ineffizient sein und bei großen LDAP-Verzeichnissen zu einer deutlich geringeren Leistung führen.
+
+Der Umfang der LDAP-Basis ist der Standard-Suchumfang, den der LDAP-Client zur Durchführung von LDAP-Abfragen verwendet. Alle Suchvorgänge, einschließlich Benutzer-, Gruppen- und Netgroup-Suchen, werden mit dem Basisumfang durchgeführt. Es legt fest, ob die LDAP-Abfrage nur den benannten Eintrag durchsucht, eine Ebene unterhalb des DN eingibt oder die gesamte Unterstruktur unter dem DN.
+
+Wenn Sie keinen benutzerdefinierten Basisbereich angeben, wird der Standardwert verwendet `subtree`. Das bedeutet, dass jede Abfrage die gesamte Unterstruktur unter dem DN durchsucht. Dies maximiert zwar die Erfolgsaussichten der LDAP-Abfrage, kann aber ineffizient sein und bei großen LDAP-Verzeichnissen zu einer deutlich geringeren Leistung führen.
+
+
+
+== Benutzerdefinierte Basis- und Bereichssuche
+
+Optional können Sie separate Basis- und Bereichwerte für Benutzer-, Gruppen- und Netzgruppensuchen festlegen. Eine Begrenzung der Such-Basis und des Umfangs von Abfragen auf diese Weise kann die Leistung erheblich verbessern, da die Suche auf einen kleineren Unterabschnitt des LDAP-Verzeichnisses beschränkt wird.
+
+Wenn Sie benutzerdefinierte Basis- und Bereichwerte angeben, überschreiben sie die allgemeine Standardsuchbasis und den Umfang für Benutzer-, Gruppen- und Netzgruppensuchen. Die Parameter zum Festlegen benutzerdefinierter Basis- und Bereichwerte sind auf der erweiterten Berechtigungsebene verfügbar.
+
+[cols="35,65"]
+|===
+
+
+| LDAP-Client-Parameter... | Gibt Benutzerdefiniert an... 
+
+
+ a| 
+`-base-dn`
+ a| 
+Basis-DN für alle LDAP-Suchebei Bedarf können mehrere Werte eingegeben werden (z. B. wenn LDAP-Weiterleitung in ONTAP 9.5 und späteren Versionen aktiviert ist).
+
+
+
+ a| 
+`-base-scope`
+ a| 
+Basisumfang für alle LDAP-Suchvorgänge
+
+
+
+ a| 
+`-user-dn`
+ a| 
+Basis-DNS für alle LDAP-BenutzersucheDieser Parameter gilt auch für die Suche nach Benutzernamen.
+
+
+
+ a| 
+`-user-scope`
+ a| 
+Basisumfang für alle LDAP-Benutzersuchen dieser Parameter gilt auch für die Suche nach dem User Name-Mapping.
+
+
+
+ a| 
+`-group-dn`
+ a| 
+Basis-DNS für alle LDAP-Gruppensuchen
+
+
+
+ a| 
+`-group-scope`
+ a| 
+Basisumfang für alle LDAP-Gruppensuchen
+
+
+
+ a| 
+`-netgroup-dn`
+ a| 
+Basis-DNS für alle LDAP-Netzgruppentsuche
+
+
+
+ a| 
+`-netgroup-scope`
+ a| 
+Basisumfang für alle LDAP-Netzgruppentsuche
+
+|===
+
+
+== Mehrere benutzerdefinierte Basis-DN-Werte
+
+Wenn Ihre LDAP-Verzeichnisstruktur komplexer ist, ist es möglicherweise erforderlich, dass Sie mehrere Basis-DNS angeben, um mehrere Teile Ihres LDAP-Verzeichnisses nach bestimmten Informationen zu durchsuchen. Sie können mehrere DNS für die DN-Parameter Benutzer, Gruppen und Netzwerkgruppen festlegen, indem Sie diese mit einem Semikolon (;) trennen und die gesamte DN-Suchliste mit doppelten Anführungszeichen (") schließen. Wenn ein DN ein Semikolon enthält, müssen Sie unmittelbar vor dem Semikolon im DN ein Escape-Zeichen (\) hinzufügen.
+
+Der Umfang gilt für die gesamte für den entsprechenden Parameter angegebene DNS-Liste. Wenn Sie beispielsweise eine Liste mit drei verschiedenen Benutzer-DNS und Unterstrukturen für den Benutzerbereich angeben, sucht der LDAP-Benutzer die gesamte Unterstruktur für jedes der drei angegebenen DNS.
+
+Ab ONTAP 9.5 können Sie auch LDAP _Referral Chasing_ angeben, wodurch der ONTAP LDAP-Client Look-up-Anfragen an andere LDAP-Server weiterleiten kann, wenn keine LDAP-Referral-Antwort vom primären LDAP-Server zurückgegeben wird. Der Client verwendet diese Verweisdaten, um das Zielobjekt vom in den Empfehlungsdaten beschriebenen Server abzurufen. Um nach Objekten zu suchen, die in den genannten LDAP-Servern vorhanden sind, kann der Basis-dn der genannten Objekte im Rahmen der LDAP-Client-Konfiguration dem Basis-dn hinzugefügt werden. Referenzobjekte werden jedoch nur dann gesucht, wenn die Verweisungsjagd aktiviert ist (mit dem `-referral-enabled true` Option) während der Erstellung oder Änderung von LDAP-Clients.

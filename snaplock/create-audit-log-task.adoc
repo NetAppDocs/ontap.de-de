@@ -1,0 +1,69 @@
+---
+permalink: snaplock/create-audit-log-task.html 
+sidebar: sidebar 
+keywords: create, audit, log, snaplock, protected, administrator, accounts 
+summary: Sie müssen ein SnapLock-geschütztes Prüfprotokoll erstellen, bevor Sie ein privilegiertes Löschen oder SnapLock Volume-Verschiebung durchführen. Das Revisionsprotokoll erfasst die Erstellung und Löschung von SnapLock-Administratorkonten, Änderungen an dem Protokoll-Volume, die Aktivierung und das Löschen privilegierter Vorgänge sowie die Verschiebung von SnapLock Volumes. 
+---
+= Erstellen eines Prüfprotokolls
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie müssen ein SnapLock-geschütztes Prüfprotokoll erstellen, bevor Sie ein privilegiertes Löschen oder SnapLock Volume-Verschiebung durchführen. Das Revisionsprotokoll erfasst die Erstellung und Löschung von SnapLock-Administratorkonten, Änderungen an dem Protokoll-Volume, die Aktivierung und das Löschen privilegierter Vorgänge sowie die Verschiebung von SnapLock Volumes.
+
+Zum Erstellen eines SnapLock Aggregats müssen Sie ein Cluster-Administrator sein.
+
+Sie können ein Überwachungsprotokoll erst löschen, wenn der Aufbewahrungszeitraum für die Protokolldatei abgelaufen ist. Sie können ein Überwachungsprotokoll auch nach Ablauf des Aufbewahrungszeitraums nicht ändern. Dies gilt sowohl für SnapLock Compliance als auch für den Enterprise-Modus.
+
+[NOTE]
+====
+In ONTAP 9.4 und früher können Sie ein SnapLock Enterprise Volume nicht zur Audit-Protokollierung verwenden. Sie müssen ein SnapLock-Compliance-Volume verwenden. In ONTAP 9.5 und höher können Sie entweder ein SnapLock Enterprise Volume oder ein SnapLock Compliance Volume zur Audit-Protokollierung verwenden. In allen Fällen muss das Protokoll-Volume am Verbindungspfad angehängt werden `/snaplock_audit_log`. Kein anderes Volume kann diesen Verbindungspfad verwenden.
+
+====
+Die SnapLock-Prüfprotokolle finden Sie im `/snaplock_log` Verzeichnis unter dem Stammverzeichnis des Audit-Log-Volumes, in Unterverzeichnissen mit Namen `privdel_log` (Privilegierte Löschvorgänge) und `system_log` (Alles andere). Die Namen von Audit-Log-Dateien enthalten den Zeitstempel der ersten protokollierten Operation und erleichtern so die Suche nach Datensätzen bis zu dem Zeitpunkt, zu dem die Vorgänge durchgeführt wurden.
+
+* Sie können das verwenden `snaplock log file show` Befehl zum Anzeigen der Protokolldateien auf dem Audit-Protokoll-Volume.
+* Sie können das verwenden `snaplock log file archive` Befehl, um die aktuelle Protokolldatei zu archivieren und eine neue zu erstellen, was in Fällen nützlich ist, in denen Audit-Log-Informationen in einer separaten Datei aufgezeichnet werden müssen.
+
+
+Weitere Informationen finden Sie auf den man-Pages für die Befehle.
+
+[NOTE]
+====
+Ein Datensicherungs-Volume kann nicht als SnapLock-Audit-Protokoll-Volume verwendet werden.
+
+====
+.Schritte
+. Erstellen Sie ein SnapLock Aggregat.
++
+xref:create-snaplock-aggregate-task.adoc[Erstellen Sie ein SnapLock Aggregat]
+
+. Erstellen Sie für die SVM, die Sie für die Audit-Protokollierung konfigurieren möchten, ein SnapLock Volume.
++
+xref:create-snaplock-volume-task.adoc[SnapLock Volume erstellen]
+
+. SVM für Audit-Protokollierung konfigurieren:
++
+`*snaplock log create -vserver _SVM_name_ -volume _snaplock_volume_name_ -max-file-size _size_ -retention-period _default_retention_period_*`
+
++
+[NOTE]
+====
+Die Mindestaufbewahrungsdauer für Audit-Log-Dateien beträgt sechs Monate. Wenn die Aufbewahrungsfrist einer betroffenen Datei länger als die Aufbewahrungsfrist des Prüfprotokolls ist, erbt die Aufbewahrungsfrist des Protokolls die Aufbewahrungsfrist der Datei. Wenn also die Aufbewahrungsfrist für eine mit privilegierter Löschung gelöschte Datei 10 Monate beträgt und die Aufbewahrungsdauer des Prüfprotokolls 8 Monate beträgt, verlängert sich die Aufbewahrungsfrist des Protokolls auf 10 Monate.
+
+====
++
+Die Konfiguration mit dem folgenden Befehl wird konfiguriert `SVM1` Für die Audit-Protokollierung mit dem SnapLock Volume `logVol`. Das Prüfprotokoll hat eine maximale Größe von 20 GB und wird acht Monate lang aufbewahrt.
+
++
+[listing]
+----
+SVM1::> snaplock log create -vserver SVM1 -volume logVol -max-file-size 20GB -retention-period 8months
+----
+. Mounten Sie auf der für die Audit-Protokollierung konfigurierten SVM das SnapLock Volume am Verbindungspfad `/snaplock_audit_log`.
++
+xref:mount-snaplock-volume-task.adoc[Mounten Sie ein SnapLock Volume]
+
+

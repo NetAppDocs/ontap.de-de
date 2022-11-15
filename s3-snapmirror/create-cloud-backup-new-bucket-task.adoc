@@ -1,0 +1,151 @@
+---
+sidebar: sidebar 
+permalink: s3-snapmirror/create-cloud-backup-new-bucket-task.html 
+keywords: create, backup, relationship, new, bucket 
+summary: Wenn Sie neue S3-Buckets erstellen, können sie sofort in einem S3 SnapMirror Ziel-Bucket auf einem Objektspeicher-Provider sichern. Dabei kann es sich um ein StorageGRID System oder eine AWS S3-Implementierung handelt. 
+---
+= Backup-Beziehung für einen neuen Bucket erstellen (Cloud-Ziel)
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+Wenn Sie neue S3-Buckets erstellen, können sie sofort in einem S3 SnapMirror Ziel-Bucket auf einem Objektspeicher-Provider sichern. Dabei kann es sich um ein StorageGRID System oder eine AWS S3-Implementierung handelt.
+
+.Was Sie benötigen
+* Sie haben gültige Anmeldeinformationen und Konfigurationsinformationen für den Objektspeicher-Provider.
+* Intercluster-Netzwerkschnittstellen und ein IPspace wurden auf dem Quellsystem konfiguriert.
+* • Die DNS-Konfiguration für die Quell-Speicher-VM muss in der Lage sein, den FQDN des Ziels aufzulösen.
+
+
+
+
+== System Manager Verfahren
+
+. Bearbeiten Sie die Storage-VM, um Benutzer hinzuzufügen und Gruppen Benutzer hinzuzufügen:
++
+.. Klicken Sie auf *Storage > Storage VMs*, klicken Sie auf die Speicher-VM, klicken Sie auf *Einstellungen* und dann auf image:icon_pencil.gif["Symbol bearbeiten"] Unter *S3*.
++
+Siehe link:../task_object_provision_add_s3_users_groups.html["Fügen Sie S3-Benutzer und -Gruppen hinzu"] Finden Sie weitere Informationen.
+
+
+
+. Cloud Object Store auf dem Quellsystem hinzufügen:
++
+.. Klicken Sie auf *Schutz > Übersicht* und wählen Sie dann *Cloud Object Stores*.
+.. Klicken Sie auf *Hinzufügen* und wählen Sie dann *Amazon S3* oder *StorageGRID* aus.
+.. Geben Sie die folgenden Werte ein:
++
+*** Name des Cloud-Objektspeichers
+*** URL-Stil (Pfad oder virtuell gehostet)
+*** Storage-VM (aktiviert für S3)
+*** Objektspeicherservername (FQDN)
+*** Objektspeicherzertifikat
+*** Zugriffsschlüssel
+*** Geheimer Schlüssel
+*** Container-Name (Bucket
+
+
+
+
+. Erstellen Sie eine S3 SnapMirror Politik wenn Sie keine bestehende haben und Sie die Standardrichtlinie nicht verwenden möchten:
++
+.. Klicken Sie auf *Schutz > Übersicht* und dann auf *Lokale Richtlinieneinstellungen*.
+.. Klicken Sie Auf image:../media/icon_arrow.gif["Nach-rechts-Taste"] Klicken Sie neben *Schutzrichtlinien* auf *Hinzufügen*.
++
+*** Geben Sie den Namen und die Beschreibung der Richtlinie ein.
+*** Wählen Sie den Richtlinienumfang, das Cluster oder die SVM aus
+*** Wählen Sie * Continuous* für S3 SnapMirror Beziehungen.
+*** Geben Sie Ihre *Throttle*- und *Recovery Point Objective*-Werte ein.
+
+
+
+
+. Erstellung eines Buckets mit SnapMirror Sicherung:
++
+.. Klicken Sie auf *Storage > Buckets* und dann auf *Hinzufügen*.
+.. Geben Sie einen Namen ein, wählen Sie die Speicher-VM aus, geben Sie eine Größe ein und klicken Sie dann auf *Weitere Optionen*.
+.. Klicken Sie unter *Berechtigungen* auf *Hinzufügen*. Die Überprüfung der Berechtigungen ist optional, wird aber empfohlen.
++
+*** *Principal* und *Effect* - Wählen Sie Werte aus, die Ihren Benutzergruppeneinstellungen entsprechen, oder übernehmen Sie die Standardeinstellungen.
+*** *Aktionen* - stellen Sie sicher, dass die folgenden Werte angezeigt werden: `GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts`
+*** *Ressourcen* - Verwenden Sie die Standardeinstellungen `_(bucketname, bucketname/*)` Oder andere Werte, die Sie benötigen.
++
+Siehe link:../task_object_provision_manage_bucket_access.html["Management des Benutzerzugriffs auf Buckets"] Weitere Informationen zu diesen Feldern.
+
+
+
+.. Aktivieren Sie unter *Schutz* *SnapMirror aktivieren (ONTAP oder Cloud)* die Option *Cloud-Speicher* und wählen Sie dann den *Cloud-Objektspeicher* aus.
+
+
+
+
+Wenn Sie auf *Speichern* klicken, wird in der Quell-Storage-VM ein neuer Bucket erstellt und im Cloud-Objektspeicher gesichert.
+
+
+
+== CLI-Verfahren
+
+. Wenn dies die erste S3 SnapMirror Beziehung für diese SVM ist, überprüfen Sie, ob die Root-Benutzerschlüssel für Quell- und Ziel-SVMs vorhanden sind, und generieren Sie sie erneut, wenn sie dies nicht tun:
+`vserver object-store-server user show`+ Bestätigen Sie, dass für den Root-Benutzer ein Zugriffsschlüssel vorhanden ist. Falls nicht, geben Sie Folgendes ein:
+`vserver object-store-server user regenerate-keys -vserver svm_name -user _root_`+ Generieren Sie den Schlüssel nicht neu, wenn er bereits vorhanden ist.
+. Erstellung eines Buckets in der Quell-SVM:
+`vserver object-store-server bucket create -vserver _svm_name_ -bucket _bucket_name_ [-size _integer_[KB|MB|GB|TB|PB]] [-comment _text_] [_additional_options_]`
+. Fügen Sie Zugriffsregeln zur Standard-Bucket-Richtlinie hinzu:
+`vserver object-store-server bucket policy add-statement -vserver _svm_name_ -bucket _bucket_name_ -effect {allow|deny} -action _object_store_actions_ -principal _user_and_group_names_ -resource _object_store_resources_ [-sid _text_] [-index _integer_]`
++
+.Beispiel
+[listing]
+----
+clusterA::> vserver object-store-server bucket policy add-statement -bucket test-bucket -effect allow -action GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts -principal - -resource test-bucket, test-bucket /*
+----
+. Erstellen Sie eine S3 SnapMirror Politik wenn Sie keine bestehende haben und Sie die Standardrichtlinie nicht verwenden möchten:
+`snapmirror policy create -vserver svm_name -policy policy_name -type continuous [-rpo _integer_] [-throttle _throttle_type_] [-comment _text_] [_additional_options_]`
++
+Parameter: * `type continuous` – Der einzige Richtlinientyp für S3 SnapMirror Beziehungen (erforderlich). * `-rpo` – Gibt die Zeit für den Wiederherstellungspunkt in Sekunden an (optional). * `-throttle` – Gibt die obere Grenze für Durchsatz/Bandbreite in Kilobyte/Sekunden an (optional).
+
++
+.Beispiel
+[listing]
+----
+clusterA::> snapmirror policy create -vserver vs0 -type continuous -rpo 0 -policy test-policy
+----
+. Wenn es sich bei dem Ziel um ein StorageGRID System handelt, installieren Sie das Zertifikat für den StorageGRID CA-Server auf der Admin-SVM des Quell-Clusters:
+`security certificate install -type server-ca -vserver _src_admin_svm_ -cert-name _storage_grid_server_certificate_`
++
+Siehe `security certificate install` Man-Page für Details.
+
+. S3 SnapMirror Ziel-Objektspeicher definieren:
+`snapmirror object-store config create -vserver _svm_name_ -object-store-name _target_store_name_ -usage data -provider-type {AWS_S3|SGWS} -server _target_FQDN_ -container-name _remote_bucket_name_ -is-ssl-enabled true -port _port_number_ -access-key target_access_key -secret-password _target_secret_key_`
++
+Parameter: * `-object-store-name` – Der Name des Objektspeicherziels auf dem lokalen ONTAP-System. * `-usage` – Gebrauch `data` Für diesen Workflow. * `-provider-type` – `AWS_S3` Und `SGWS` (StorageGRID) Ziele werden unterstützt. * `-server` – Der FQDN des Zielservers oder die IP-Adresse. * `-is-ssl-enabled` –Die Aktivierung von SSL ist optional, wird jedoch empfohlen. + Siehe `snapmirror object-store config create` Man-Page für Details.
+
++
+.Beispiel
+[listing]
+----
+src_cluster::> snapmirror object-store config create -vserver vs0 -object-store-name sgws-store -usage data -provider-type SGWS -server sgws.example.com -container-name target-test-bucket -is-ssl-enabled true -port 443 -access-key abc123 -secret-password xyz890
+----
+. Erstellung einer S3 SnapMirror Beziehung:
+`snapmirror create -source-path _svm_name_:/bucket/_bucket_name_ -destination-path _object_store_name_:/objstore -policy _policy_name_`
++
+Parameter: * `-destination-path` – Der Objektspeichername, den Sie im vorherigen Schritt erstellt haben, und der Fixwert `objstore`. + Sie können eine Richtlinie verwenden, die Sie erstellt haben, oder die Standardvorgabe akzeptieren.
+
++
+.Beispiel
+[listing]
+----
+src_cluster::> snapmirror create -source-path vs0:/bucket/test-bucket -destination-path sgws-store:/objstore -policy test-policy
+----
+. Überprüfen Sie, ob die Spiegelung aktiv ist:
+`snapmirror show -policy-type continuous -fields status`
+

@@ -1,0 +1,74 @@
+---
+permalink: smb-admin/secure-file-access-storage-level-access-guard-concept.html 
+sidebar: sidebar 
+keywords: addition, securing, secure, access, native, file-level, export, share, security, storage-level, guard, apply, applied, secure file access by using storage-level access guard 
+summary: Zusätzlich zur Sicherung des Zugriffs durch native File-Level und die Sicherheit für Export und Freigabe können Sie den Storage-Level Access Guard konfigurieren, eine dritte Sicherheitsschicht, die von ONTAP auf Volume-Ebene angewendet wird. Storage-Level Access Guard gilt für den Zugriff von allen NAS-Protokollen auf das Storage-Objekt, auf das es angewendet wird. 
+---
+= Sicherer Dateizugriff über Storage-Level Access Guard
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Zusätzlich zur Sicherung des Zugriffs durch native File-Level und die Sicherheit für Export und Freigabe können Sie den Storage-Level Access Guard konfigurieren, eine dritte Sicherheitsschicht, die von ONTAP auf Volume-Ebene angewendet wird. Storage-Level Access Guard gilt für den Zugriff von allen NAS-Protokollen auf das Storage-Objekt, auf das es angewendet wird.
+
+Es werden nur NTFS-Zugriffsberechtigungen unterstützt. Damit ONTAP auf UNIX-Benutzern Sicherheitsüberprüfungen für den Zugriff auf Daten auf Volumes durchführen kann, für die der Storage-Level Access Guard angewendet wurde, muss der UNIX-Benutzer einem Windows-Benutzer auf der SVM, der auch Eigentümer des Volumes ist, zuordnen.
+
+
+
+== Verhalten des Access Guard auf Storage-Ebene
+
+* Storage-Level Access Guard gilt für alle Dateien oder alle Verzeichnisse in einem Storage-Objekt.
++
+Da alle Dateien oder Verzeichnisse in einem Volume den Einstellungen für den Speicherlevel Access Guard unterliegen, ist keine Vererbung durch die Ausbreitung erforderlich.
+
+* Sie können den Storage-Level Access Guard so konfigurieren, dass er nur auf Dateien, nur Verzeichnisse oder auf Dateien und Verzeichnisse innerhalb eines Volumes angewendet wird.
++
+** Datei- und Verzeichnissicherheit
++
+Gilt für jedes Verzeichnis und jede Datei im Storage-Objekt. Dies ist die Standardeinstellung.
+
+** Dateisicherheit
++
+Gilt für jede Datei im Storage-Objekt. Die Anwendung dieser Sicherheit hat keinen Einfluss auf den Zugriff oder die Prüfung von Verzeichnissen.
+
+** Verzeichnissicherheit
++
+Gilt für jedes Verzeichnis im Storage-Objekt. Die Anwendung dieser Sicherheit hat keinen Einfluss auf den Zugriff oder die Prüfung von Dateien.
+
+
+
+* Storage-Level Access Guard dient zur Einschränkung von Berechtigungen.
++
+Es wird niemals zusätzliche Zugriffsrechte geben.
+
+* Wenn Sie die Sicherheitseinstellungen einer Datei oder eines Verzeichnisses von einem NFS- oder SMB-Client aus anzeigen, wird die Sicherheit des Storage-Level Access Guard nicht angezeigt.
++
+Sie wird auf Storage-Objektebene angewendet und in den Metadaten gespeichert, die zur Bestimmung der effektiven Berechtigungen verwendet werden.
+
+* Sicherheit auf Storage-Ebene kann nicht durch einen Client entzogen werden, selbst wenn ein System-Administrator (Windows oder UNIX) dies durchführt.
++
+Dieses Design lässt sich nur von Storage-Administratoren ändern.
+
+* Sie können Storage-Level Access Guard auf Volumes mit NTFS oder einem gemischten Sicherheitsstil anwenden.
+* Sie können Access Guard auf Storage-Ebene auf Volumes mit UNIX-Sicherheitsstil anwenden, solange für die SVM, die das Volume enthält, ein CIFS-Server konfiguriert ist.
+* Wenn Volumes unter einem Volume-Verbindungspfad gemountet werden und wenn Access Guard auf Storage-Ebene auf diesem Pfad vorhanden ist, wird sie nicht auf Volumes übertragen, die darunter angehängt sind.
+* Der Sicherheitsdeskriptor für den Storage-Level Access Guard wird mit SnapMirror Datenreplizierung und SVM-Replizierung repliziert.
+* Es gibt spezielle Dispensierung für Virenscanner.
++
+Der Zugriff auf diese Server ist auf die Anzeige von Dateien und Verzeichnissen gestattet, selbst wenn der Access Guard auf Storage-Ebene den Zugriff auf das Objekt verweigert.
+
+* FPolicy-Benachrichtigungen werden nicht gesendet, wenn der Zugriff aufgrund des Storage-Level Access Guard verweigert wird.
+
+
+
+
+== Reihenfolge der Zugriffskontrollen
+
+Der Zugriff auf eine Datei oder ein Verzeichnis wird durch den kombinierten Effekt der Export- oder Freigabeberechtigungen, der auf Volumes festgelegten Zugriffsschutz auf Storage-Ebene und der nativen Dateiberechtigungen auf Dateien und/oder Verzeichnisse bestimmt. Alle Sicherheitsstufen werden ausgewertet, um festzustellen, welche effektiven Berechtigungen eine Datei oder ein Verzeichnis besitzt. Die Sicherheitszugriffskontrollen werden in folgender Reihenfolge durchgeführt:
+
+. SMB-Freigabe- oder NFS-Berechtigungen für den Export
+. Storage-Level Access Guard
+. NTFS-Datei-/Ordnerzugangskontrolllisten (ACLs), NFSv4-ACLs oder UNIX-Modus-Bits
+

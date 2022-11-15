@@ -1,0 +1,169 @@
+---
+sidebar: sidebar 
+permalink: multi-admin-verify/manage-requests-task.html 
+keywords: ontap, mav, multi, admin, verification, administrator, protected, operation, rules, request, cluster, approve, rbac, manage, cli, system, manager 
+summary: 'Wenn Administratoren einer MAV-Genehmigungsgruppe (MAV-Administratoren) über eine Anfrage zur Ausführung eines ausstehenden Vorgangs benachrichtigt werden, müssen sie innerhalb eines festgelegten Zeitraums mit einer Genehmigungs- oder Veto-Nachricht (Ablauf der Genehmigung) antworten.' 
+---
+= Managen Sie Anforderungen für geschützte Vorgänge
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Administratoren einer MAV-Genehmigungsgruppe (MAV-Administratoren) über eine Anfrage zur Ausführung eines ausstehenden Vorgangs benachrichtigt werden, müssen sie innerhalb eines festgelegten Zeitraums mit einer Genehmigungs- oder Veto-Nachricht (Ablauf der Genehmigung) antworten. Wenn keine ausreichende Anzahl von Genehmigungen eingegangen ist, muss der Anfordernde die Anfrage löschen und eine andere erstellen.
+
+Genehmigungsanforderungen werden mit Indexnummern identifiziert, die in E-Mail-Nachrichten und Anzeigen der Anforderungswarteschlange enthalten sind.
+
+Die folgenden Informationen aus der Anforderungswarteschlange können angezeigt werden:
+
+Betrieb:: Der geschützte Vorgang, für den die Anforderung erstellt wird.
+Abfrage:: Das Objekt (oder die Objekte), auf das der Benutzer die Operation anwenden möchte.
+Bundesland:: Der aktuelle Status der Anfrage; ausstehend, genehmigt, abgelehnt, abgelaufen, Ausgeführt. Wird eine Anfrage von einem Genehmiger abgelehnt, sind keine weiteren Maßnahmen möglich.
+Erforderliche Genehmiger:: Die Anzahl der MAV-Administratoren, die zur Genehmigung der Anfrage erforderlich sind. Ein Benutzer kann den Parameter erforderliche Genehmiger für die Operationssegel festlegen. Wenn ein Benutzer die erforderlichen Genehmiger nicht auf die Regel setzt, werden die erforderlichen Genehmiger aus der globalen Einstellung angewendet.
+Ausstehende Genehmiger:: Die Anzahl der MAV-Administratoren, die noch erforderlich sind, um die Anfrage zu genehmigen, die als genehmigt gekennzeichnet werden soll.
+Ablauf der Genehmigung:: Der Zeitraum, innerhalb dessen ein MAV-Administrator auf eine Genehmigungsanforderung reagieren muss. Jeder autorisierte Benutzer kann den Genehmigungssatz für eine Betriebsregel festlegen. Wenn für die Regel kein Genehmigungssatz festgelegt ist, wird der Genehmigungssatz aus der globalen Einstellung angewendet.
+Ablauf der Ausführung:: Der Zeitraum, in dem der anfordernde Administrator den Vorgang abschließen muss. Jeder autorisierte Benutzer kann das Ablaufdatum für eine Betriebsregel festlegen. Wenn für die Regel kein Ausführungs-Expiry festgelegt ist, wird das Ausführen-Expiry aus der globalen Einstellung angewendet.
+Anwender genehmigt:: Die MAV-Administratoren, die den Antrag genehmigt haben.
+Vetoed durch den Benutzer:: Die MAV-Administratoren, die den Antrag gegen das Vetos gestellt haben.
+Storage-VM (vServer):: Der SVM, der die Anforderung zugeordnet ist. In dieser Version wird nur die Admin-SVM unterstützt.
+Der Benutzer wurde angefordert:: Der Benutzername des Benutzers, der die Anforderung erstellt hat.
+Uhrzeit erstellt:: Die Uhrzeit, zu der die Anfrage erstellt wurde.
+Nach Genehmigung der Zeit:: Die Zeit, zu der der Antragsstatus in „genehmigt“ geändert wurde.
+Kommentar:: Kommentare, die mit der Anfrage verknüpft sind.
+Benutzer erlaubt:: Die Liste der Benutzer, für die der geschützte Vorgang ausgeführt werden kann, für den die Anforderung genehmigt wird. Wenn `users-permitted` Ist leer, dann kann jeder Benutzer mit entsprechenden Berechtigungen den Vorgang durchführen.
+
+
+Alle abgelaufenen oder ausgeführten Anfragen werden gelöscht, wenn ein Limit von 1000 Anfragen erreicht wird oder wenn die abgelaufene Zeit länger als 8 Stunden für abgelaufene Anfragen ist. Vetos-Anträge werden gelöscht, sobald sie als abgelaufen markiert sind.
+
+
+
+== System Manager Verfahren
+
+MAV-Administratoren erhalten E-Mail-Nachrichten mit Details der Genehmigungsanforderung, Ablauffrist anfordern und einen Link zum Genehmigen oder Ablehnen der Anfrage. Sie können über den Link in der E-Mail auf ein Genehmigungsdialogfeld zugreifen oder im System Manager zu *Events & Jobs>Requests* navigieren.
+
+Das Fenster *Requests* steht zur Verfügung, wenn die Multi-Admin-Überprüfung aktiviert ist und ausstehende Anfragen basierend auf der Anmelde-ID und der MAV-Rolle des Benutzers (Genehmiger oder nicht) angezeigt werden.
+
+* Betrieb
+* Index (Zahl)
+* Status (ausstehend, genehmigt, abgelehnt, ausgeführt oder abgelaufen)
++
+Wird eine Anfrage von einem Genehmiger abgelehnt, sind keine weiteren Maßnahmen möglich.
+
+* Abfrage (alle Parameter oder Werte für die angeforderte Operation)
+* Benutzer Wird Angefordert
+* Die Anfrage Läuft Ab Am
+* (Anzahl der ausstehenden Genehmiger
+* (Anzahl der möglichen Genehmiger
+
+
+MAV-Administratoren verfügen in diesem Fenster über zusätzliche Steuerelemente. Sie können einzelne Vorgänge oder ausgewählte Gruppen von Operationen genehmigen, ablehnen oder löschen. Wenn der MAV-Administrator jedoch der anfragende Benutzer ist, kann er seine eigenen Anforderungen nicht genehmigen, ablehnen oder löschen.
+
+
+
+== CLI-Verfahren
+
+. Wenn Sie über ausstehende Anfragen per E-Mail benachrichtigt werden, notieren Sie die Indexnummer der Anfrage und den Ablauf der Genehmigung. Die Indexnummer kann auch mit den unten genannten Optionen *show* oder *show-exwaring* angezeigt werden.
+. Genehmigen oder Vereinen der Anfrage.
++
+[cols="50,50"]
+|===
+| Wenn Sie… wollen | Geben Sie diesen Befehl ein 
+
+
+ a| 
+Genehmigen einer Anfrage
+ a| 
+`security multi-admin-verify request approve _nn_`
+
+
+
+ a| 
+Veto auf eine Anfrage
+ a| 
+`security multi-admin-verify request veto _nn_`
+
+
+
+ a| 
+Zeigt alle Anfragen, ausstehende Anfragen oder eine einzelne Anforderung an
+ a| 
+`security multi-admin-verify request { show | show-pending } [_nn_]
+{ -fields _field1_[,_field2_...] |  [-instance ]  }`
+
+Sie können alle Anfragen in der Warteschlange oder nur ausstehende Anforderungen anzeigen. Wenn Sie die Indexnummer eingeben, werden nur die entsprechenden Informationen angezeigt. Sie können Informationen zu bestimmten Feldern anzeigen (mithilfe von `-fields` Parameter) oder über alle Felder (mit dem `-instance` Parameter).
+
+
+
+ a| 
+Löschen Sie eine Anfrage
+ a| 
+`security multi-admin-verify request delete _nn_`
+
+|===
+
+
+Die folgende Sequenz genehmigt einen Antrag, nachdem der MAV-Administrator die Anfrage-E-Mail mit der Indexnummer 3 erhalten hat, die bereits eine Genehmigung hat.
+
+[listing]
+----
+          cluster1::> security multi-admin-verify request show-pending
+                                   Pending
+Index Operation      Query State   Approvers Requestor
+----- -------------- ----- ------- --------- ---------
+    3 volume delete  -     pending 1         julia
+
+
+cluster-1::> security multi-admin-verify request approve 3
+
+cluster-1::> security multi-admin-verify request show 3
+
+     Request Index: 3
+         Operation: volume delete
+             Query: -
+             State: approved
+Required Approvers: 2
+ Pending Approvers: 0
+   Approval Expiry: 2/25/2022 14:32:03
+  Execution Expiry: 2/25/2022 14:35:36
+         Approvals: mav-admin2
+       User Vetoed: -
+           Vserver: cluster-1
+    User Requested: julia
+      Time Created: 2/25/2022 13:32:03
+     Time Approved: 2/25/2022 13:35:36
+           Comment: -
+   Users Permitted: -
+----
+Die folgende Sequenz vetoes einen Antrag, nachdem der MAV-Administrator die Anfrage-E-Mail mit der Nummer 3 erhalten hat, die bereits eine Genehmigung hat.
+
+[listing]
+----
+      cluster1::> security multi-admin-verify request show-pending
+                                   Pending
+Index Operation      Query State   Approvers Requestor
+----- -------------- ----- ------- --------- ---------
+    3 volume delete  -     pending 1         pavan
+
+
+cluster-1::> security multi-admin-verify request veto 3
+
+cluster-1::> security multi-admin-verify request show 3
+
+     Request Index: 3
+         Operation: volume delete
+             Query: -
+             State: vetoed
+Required Approvers: 2
+ Pending Approvers: 0
+   Approval Expiry: 2/25/2022 14:32:03
+  Execution Expiry: 2/25/2022 14:35:36
+         Approvals: mav-admin1
+       User Vetoed: mav-admin2
+           Vserver: cluster-1
+    User Requested: pavan
+      Time Created: 2/25/2022 13:32:03
+     Time Approved: 2/25/2022 13:35:36
+           Comment: -
+   Users Permitted: -
+----

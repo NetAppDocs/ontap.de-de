@@ -1,0 +1,121 @@
+---
+permalink: volumes/quota-report-quotas-effect-concept.html 
+sidebar: sidebar 
+keywords: how you can, use, quota report, see, quotas in effect 
+summary: Aufgrund der verschiedenen Arten, wie Quoten interagieren, sind mehr Quoten wirksam als nur die, die Sie explizit erstellt haben. Um zu sehen, welche Kontingente gelten, können Sie den Quotenbericht anzeigen. 
+---
+= Wie Sie den Quotenbericht verwenden können, um festzustellen, welche Quoten wirksam sind
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Aufgrund der verschiedenen Arten, wie Quoten interagieren, sind mehr Quoten wirksam als nur die, die Sie explizit erstellt haben. Um zu sehen, welche Kontingente gelten, können Sie den Quotenbericht anzeigen.
+
+Die folgenden Beispiele zeigen Quotenberichte für verschiedene Arten von Kontingenten, die auf einem FlexVol Volume vol1 angewendet wurden, und ein qtree q1 im entsprechenden Volume enthalten:
+
+In diesem Beispiel gibt es einen qtree, q1, der durch das Volume vol1 enthält. Der Administrator hat drei Quoten erstellt:
+
+* Ein Standard-Baumkontingenlimit auf vol1 von 400 MB
+* Ein Standard-Benutzer-Quota-Limit bei vol1 von 100 MB
+* Eine explizite User Quota Limit auf vol1 von 200 MB für den Benutzer jsmith
+
+
+Die Quotendatei sieht für diese Kontingente wie im folgenden Auszug aus:
+
+[listing]
+----
+
+#Quota target type            disk files  thold sdisk  sfile
+#-----------  ----            ---  -----  ----  -----  -----
+*             tree@/vol/vol1  400M
+*             user@/vol/vol1  100M
+jsmith        user@/vol/vol1  200M
+----
+Der Quotenbericht für diese Quoten ähnelt dem folgenden Auszug:
+
+[listing]
+----
+
+cluster1::> volume quota report
+Vserver: vs1
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1     -          tree   *           0B  400MB       0       -   *
+vol1     -          user   *           0B  100MB       0       -   *
+vol1     -          user   corp/jsmith
+                                     150B  200MB       7       -   corp/jsmith
+vol1     q1         tree   1           0B  400MB       6       -   q1
+vol1     q1         user   *           0B  100MB       0       -
+vol1     q1         user   corp/jsmith 0B  100MB       5       -
+vol1     -          user   root        0B   0MB        1       -
+vol1     q1         user   root        0B   0MB        8       -
+----
+Die ersten drei Zeilen des Quotenberichts zeigen die drei vom Administrator festgelegten Quoten an. Da es sich bei zwei dieser Kontingente um Standardkontingente handelt, erstellt ONTAP automatisch abgeleitete Kontingente.
+
+Die vierte Zeile zeigt das Baumkontingent an, das sich aus dem Standard-Tree-Kontingent für jeden qtree in vol1 ergibt (in diesem Beispiel nur q1).
+
+Die fünfte Zeile zeigt das Standard-Benutzerkontingent an, das für den qtree erstellt wird, aufgrund des Vorliegens des Benutzerkontingens auf dem Volume und der qtree-Quote.
+
+Die sechste Zeile zeigt das abgeleitete Benutzerkontingent an, das für jsmith auf dem qtree erstellt wird, weil es ein Standard-Benutzerkontingent für den qtree (Zeile 5) gibt und der Benutzer jsmith die Dateien auf diesem qtree besitzt. Beachten Sie, dass das Limit, das auf den User jsmith im qtree q1 angewendet wird, nicht durch das explizite User Quota Limit (200 MB) bestimmt wird. Das liegt daran, dass sich das explizite Kontingent für Benutzer auf dem Volume befindet, sodass keine Auswirkungen auf die Grenzen für den qtree hat. Stattdessen wird die abgeleitete Benutzerkontingente für den qtree durch das Standard-Benutzerkontingent für den qtree festgelegt (100 MB).
+
+In den letzten beiden Zeilen werden mehr Benutzerquoten angezeigt, die aus den Standardbenutzerquoten auf dem Volume und dem qtree abgeleitet werden. Ein abgeleitetes Benutzerkontingent wurde für den Root-Benutzer sowohl auf dem Volume als auch auf dem qtree erstellt, da der Root-Benutzer Dateien sowohl auf dem Volume als auch auf dem qtree besitzt. Da der Root-Benutzer eine spezielle Behandlung in Bezug auf Kontingente erhält, werden in seinen abgeleiteten Quoten nur Quoten verfolgt.
+
+Dieses Beispiel ähnelt dem vorherigen, außer dass der Administrator zwei Quoten auf dem qtree hinzugefügt hat.
+
+Es gibt immer noch ein Volume, vol1 und einen qtree, q1. Der Administrator hat die folgenden Quoten erstellt:
+
+* Ein Standard-Baumkontingenlimit auf vol1 von 400 MB
+* Ein Standard-Benutzer-Quota-Limit bei vol1 von 100 MB
+* Eine explizite User Quota Limit auf vol1 für den Benutzer jsmith von 200 MB
+* Ein Standard-Benutzerkontingente auf qtree q1 von 50 MB
+* Eine explizite User Quota Limit auf qtree q1 für den Benutzer jsmith von 75 MB
+
+
+Die Quotendatei für diese Kontingente sieht wie folgt aus:
+
+[listing]
+----
+
+#Quota target type             disk files  thold sdisk  sfile
+#-----------  ----             ---  -----  ----  -----  -----
+*             tree@/vol/vol1   400M
+*             user@/vol/vol1   100M
+jsmith        user@/vol/vol1   200M
+*             user@/vol/vol1/q1 50M
+jsmith        user@/vol/vol1/q1 75M
+----
+Der Quotenbericht für diese Quoten sieht wie folgt aus:
+
+[listing]
+----
+
+cluster1::> volume quota report
+Vserver: vs1
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1     -          tree   *           0B  400MB       0       -   *
+vol1     -          user   *           0B  100MB       0       -   *
+vol1     -          user   corp/jsmith
+                                    2000B  200MB       7       -   corp/jsmith
+vol1     q1         user   *           0B   50MB       0       -   *
+vol1     q1         user   corp/jsmith 0B  75MB        5       -   corp/jsmith
+vol1     q1         tree   1           0B 400MB        6       -   q1
+vol1     -          user   root        0B   0MB        2       -
+vol1     q1         user   root        0B   0MB        1       -
+----
+Die ersten fünf Zeilen des Quotenberichts zeigen die fünf vom Administrator erstellten Quoten an. Da es sich bei einigen dieser Kontingente um Standardkontingente handelt, erstellt ONTAP automatisch abgeleitete Kontingente.
+
+Die sechste Zeile zeigt das Baumkontingent an, das aus dem Standard-Tree-Kontingent für jeden qtree in vol1 abgeleitet wird (in diesem Beispiel nur q1).
+
+In den letzten beiden Zeilen werden die Benutzerkontingente angezeigt, die sich aus den Standard-Benutzerkontingenten auf dem Volume und auf dem qtree ergeben. Ein abgeleitetes Benutzerkontingent wurde für den Root-Benutzer sowohl auf dem Volume als auch auf dem qtree erstellt, da der Root-Benutzer Dateien sowohl auf dem Volume als auch auf dem qtree besitzt. Da der Root-Benutzer eine spezielle Behandlung in Bezug auf Kontingente erhält, werden in seinen abgeleiteten Quoten nur Quoten verfolgt.
+
+Aus den folgenden Gründen wurden keine anderen Standardkontingente oder abgeleitete Quoten erstellt:
+
+* Ein abgeleitetes Benutzerkontingent wurde für den jsmith Benutzer nicht erstellt, obwohl der Benutzer Dateien sowohl auf dem Volume als auch auf dem qtree besitzt, da der Benutzer bereits explizite Quoten auf beiden Ebenen hat.
+* Für andere Benutzer wurden keine abgeleiteten Benutzerquoten erstellt, da keine anderen Benutzer eigene Dateien entweder auf dem Volume oder dem qtree besitzen.
+* Das Standard-Benutzerkontingent auf dem Volume hat nicht ein Standard-Benutzerkontingent auf dem qtree erstellt, da der qtree bereits ein Standardbenutzerkontingent hatte.
+

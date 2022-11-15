@@ -1,0 +1,279 @@
+---
+permalink: nas-audit/plan-auditing-config-concept.html 
+sidebar: sidebar 
+keywords: plan, audit, configuration, svm, rotate, logs, size, schedule, rotation, dr, disaster recovery 
+summary: 'Bevor Sie das Auditing auf Storage Virtual Machines (SVMs) konfigurieren, müssen Sie wissen, welche Konfigurationsoptionen verfügbar sind, und die Werte planen, die Sie für die einzelnen Optionen festlegen möchten. Diese Informationen können Ihnen dabei helfen, die Prüfungskonfiguration zu konfigurieren, die Ihren geschäftlichen Anforderungen entspricht.' 
+---
+= Planen der Überwachungskonfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie das Auditing auf Storage Virtual Machines (SVMs) konfigurieren, müssen Sie wissen, welche Konfigurationsoptionen verfügbar sind, und die Werte planen, die Sie für die einzelnen Optionen festlegen möchten. Diese Informationen können Ihnen dabei helfen, die Prüfungskonfiguration zu konfigurieren, die Ihren geschäftlichen Anforderungen entspricht.
+
+Es gibt bestimmte Konfigurationsparameter, die allen Überwachungskonfigurationen gemeinsam sind.
+
+Darüber hinaus gibt es bestimmte Parameter, mit denen Sie angeben können, welche Methoden beim Drehen der konsolidierten und konvertierten Prüfprotokolle verwendet werden. Sie können eine der drei folgenden Methoden angeben, wenn Sie die Prüfung konfigurieren:
+
+* Drehen Sie Protokolle basierend auf der Protokollgröße
++
+Dies ist die Standardmethode, mit der Protokolle gedreht werden.
+
+* Protokolle nach einem Zeitplan drehen
+* Protokolle nach Protokollgröße und Zeitplan rotieren (je nachdem, welches Ereignis zuerst eintritt)
+
+
+[NOTE]
+====
+Mindestens eine der Methoden für die Protokollrotation sollte immer eingestellt werden.
+
+====
+
+
+== Gemeinsame Parameter für alle Überwachungskonfigurationen
+
+Es gibt zwei erforderliche Parameter, die Sie beim Erstellen der Überwachungskonfiguration angeben müssen. Sie können außerdem drei optionale Parameter angeben:
+
+[cols="40,30,10,10,10"]
+|===
+
+
+| Informationstyp | Option | Erforderlich | Einschließlich | Ihre Werte 
+
+
+ a| 
+_SVM Name_
+
+Name der SVM, auf der die Audit-Konfiguration erstellt werden soll. Die SVM muss bereits vorhanden sein.
+ a| 
+`-vserver` `vserver_name`
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+
+
+
+ a| 
+_Zielpfad protokollieren_
+
+Gibt das Verzeichnis an, in dem umgerechnete Audit-Protokolle gespeichert werden, in der Regel ein dediziertes Volume oder qtree. Der Pfad muss im SVM-Namespace bereits vorhanden sein.
+
+Der Pfad kann bis zu 864 Zeichen lang sein und muss über Lese-/Schreibberechtigungen verfügen.
+
+Wenn der Pfad nicht gültig ist, schlägt der Befehl für die Prüfungskonfiguration fehl.
+
+Wenn die SVM eine Disaster-Recovery-Quelle für SVM ist, kann sich der Protokollzielpfad nicht auf dem Root-Volume befinden. Das liegt daran, dass der Root-Volume-Inhalt nicht zum Disaster-Recovery-Ziel repliziert wird.
+
+Sie können ein FlexCache-Volume nicht als Protokollziel verwenden (ONTAP 9.7 und höher).
+ a| 
+`-destination` `text`
+ a| 
+Ja.
+ a| 
+Ja.
+ a| 
+
+
+
+ a| 
+_Kategorien von Ereignissen zur Prüfung_
+
+Gibt die Kategorien von zu prüfenden Ereignissen an. Folgende Ereigniskategorien können geprüft werden:
+
+* Dateizugriff (SMB und NFSv4)
+* SMB-Anmeldung und -Abmeldung
+* Staging von zentralen Zugriffsrichtlinien
++
+Zentrale Zugriffsrichtlinien-Staging-Ereignisse sind ein neues erweitertes Audit-Ereignis, das ab Windows 2012 Active Directory-Domänen verfügbar ist. Zentrale Zugriffsrichtlinie Staging von Ereignissen Protokollinformationen über Änderungen an zentralen Zugriffsrichtlinien, die in Active Directory konfiguriert sind.
+
+* Ereignisse in der Kategorie Dateifreigabe
+* Änderungsereignisse für die Überwachungsrichtlinien
+* Lokale Benutzerkontenverwaltungsereignisse
+* Ereignisse für das Management von Sicherheitsgruppen
+* Änderungsereignisse für die Autorisierungsrichtlinie
+
+
+Der Standardwert ist der Dateizugriff sowie das SMB-Anmelde- und -Abmeldungs-Ereignis.
+
+*Hinweis:* bevor Sie angeben können `cap-staging` Als Ereigniskategorie muss auf der SVM ein SMB-Server vorhanden sein. Obwohl Sie die zentrale Zugriffsrichtlinien-Staging in der Überwachungskonfiguration aktivieren können, ohne die dynamische Zugriffskontrolle auf dem SMB-Server zu aktivieren, werden zentrale Zugriffsrichtlinien-Staging-Ereignisse nur erzeugt, wenn Dynamic Access Control aktiviert ist. Die dynamische Zugriffskontrolle wird über eine SMB-Serveroption aktiviert. Sie ist standardmäßig nicht aktiviert.
+ a| 
+`-events` {`file-ops`|`cifs-logon-logoff`|`cap-staging`|`file-share`|`audit-policy-change`|`user-account`|`security-group`|`authorization-policy-change`}
+ a| 
+Nein
+ a| 
+ a| 
+
+
+
+ a| 
+Ausgabeformat _Log-Datei_
+
+Legt das Ausgabeformat der Prüfprotokolle fest. Das Ausgabeformat kann entweder ONTAP-spezifisch sein `XML` Oder Microsoft Windows `EVTX` Protokollformat: Standardmäßig lautet das Ausgabeformat `EVTX`.
+ a| 
+`-format` {`xml`|`evtx`}
+ a| 
+Nein
+ a| 
+ a| 
+
+
+
+ a| 
+_Log-Dateien Rotationsgrenze_
+
+Legt fest, wie viele Audit-Log-Dateien gespeichert werden sollen, bevor die älteste Protokolldatei ausgedreht wird. Wenn Sie beispielsweise einen Wert von eingeben `5`, Die letzten fünf Log-Dateien werden beibehalten.
+
+Der Wert von `0` Zeigt an, dass alle Protokolldateien aufbewahrt werden. Der Standardwert ist 0.
+ a| 
+`-rotate-limit` `integer`
+ a| 
+Nein
+ a| 
+ a| 
+
+|===
+
+
+== Parameter, die zur Bestimmung des Drehungswhres von Audit-Ereignisprotokollen verwendet werden
+
+*Protokolle auf Basis der Protokollgröße drehen*
+
+Standardmäßig werden Auditprotokolle auf der Grundlage der Größe gedreht.
+
+* Die Standard-Protokollgröße beträgt 100 MB
+* Wenn Sie die Standard-Protokollrotation-Methode und die Standard-Protokollgröße verwenden möchten, müssen Sie keine spezifischen Parameter für die Protokollrotation konfigurieren.
+* Wenn Sie die Prüfprotokolle allein auf Grundlage einer Protokollgröße drehen möchten, können Sie mit dem folgenden Befehl die Einstellung aufheben `-rotate-schedule-minute` Parameter: `vserver audit modify -vserver vs0 -destination / -rotate-schedule-minute -`
+
+
+Wenn Sie die Standardprotokollgröße nicht verwenden möchten, können Sie das konfigurieren `-rotate-size` Parameter zur Angabe einer benutzerdefinierten Protokollgröße:
+
+[cols="40,30,10,10,10"]
+|===
+
+
+| Informationstyp | Option | Erforderlich | Einschließlich | Ihre Werte 
+
+
+ a| 
+_Größe der Protokolldatei_
+
+Bestimmt die Größenbeschränkung der Prüfprotokoll-Datei.
+ a| 
+`-rotate-size` {`integer`[KB MB/GB/TB/PB]}
+ a| 
+Nein
+ a| 
+ a| 
+
+|===
+*Protokolle nach Zeitplan drehen*
+
+Wenn Sie die Prüfprotokolle nach einem Zeitplan drehen möchten, können Sie die Protokollrotation mithilfe der zeitbasierten Rotationsparameter in beliebiger Kombination planen.
+
+* Wenn Sie zeitbasierte Rotation verwenden, wird das angezeigt `-rotate-schedule-minute` Parameter muss angegeben werden.
+* Alle anderen zeitbasierten Rotationsparameter sind optional.
+* Der Rotationsplan wird unter Verwendung aller zeitbezogenen Werte berechnet.
++
+Wenn Sie beispielsweise nur die angeben `-rotate-schedule-minute` Parameter, die Audit-Log-Dateien werden auf der Grundlage der Minuten gedreht, die an allen Wochentagen, während aller Stunden an allen Monaten des Jahres angegeben sind.
+
+* Wenn Sie nur einen oder zwei zeitbasierte Rotationsparameter angeben (z. B. `-rotate-schedule-month` Und `-rotate-schedule-minutes`), die Log-Dateien werden basierend auf den Minutenwerten, die Sie an allen Wochentagen, während aller Stunden, aber nur während der angegebenen Monate angegeben.
++
+Sie können z. B. angeben, dass das Audit-Protokoll in den Monaten Januar, März und August alle Montag, Mittwoch und Samstag um 10:30 Uhr gedreht werden soll
+
+* Wenn Sie Werte für beide angeben `-rotate-schedule-dayofweek` Und `-rotate-schedule-day`, Sie werden unabhängig betrachtet.
++
+Beispiel: Wenn Sie angeben `-rotate-schedule-dayofweek` Als Freitag und `-rotate-schedule-day` Als 13, dann werden die Audit-Protokolle an jedem Freitag und am 13. Tag des angegebenen Monats gedreht werden, nicht nur an jedem Freitag der 13...
+
+* Wenn Sie die Prüfprotokolle nur nach einem Zeitplan drehen möchten, können Sie mit dem folgenden Befehl die Einstellung aufheben `-rotate-size` Parameter: `vserver audit modify -vserver vs0 -destination / -rotate-size -`
+
+
+Anhand der folgenden Liste verfügbarer Überwachungsparameter können Sie bestimmen, welche Werte für die Konfiguration eines Zeitplans für die Rotation des Ereignisprotokolls verwendet werden sollen:
+
+[cols="40,30,10,10,10"]
+|===
+
+
+| Informationstyp | Option | Erforderlich | Einschließlich | Ihre Werte 
+
+
+ a| 
+_Drehplan Log: Monat_
+
+Legt den monatlichen Zeitplan für rotierende Prüfprotokolle fest.
+
+Gültige Werte sind `January` Bis `December`, und `all`. Sie können z. B. angeben, dass das Prüfprotokoll in den Monaten Januar, März und August gedreht werden soll.
+ a| 
+`-rotate-schedule-month` `chron_month`
+ a| 
+Nein
+ a| 
+ a| 
+
+
+
+ a| 
+_Drehplan Log: Wochentag_
+
+Legt den täglichen Zeitplan (Wochentag) für rotierende Prüfprotokolle fest.
+
+Gültige Werte sind `Sunday` Bis `Saturday`, und `all`. Sie können z. B. angeben, dass das Audit-Protokoll dienstags und freitags oder an allen Wochentagen gedreht werden soll.
+ a| 
+`-rotate-schedule-dayofweek` `chron_dayofweek`
+ a| 
+Nein
+ a| 
+ a| 
+
+
+
+ a| 
+_Drehplan Log: Tag_
+
+Bestimmt den Tag des Monatsplans für das Drehen des Prüfprotokolls.
+
+Gültige Werte reichen von `1` Bis `31`. Sie können z. B. angeben, dass das Audit-Protokoll an den 10. Und 20. Tagen eines Monats oder an allen Tagen eines Monats gedreht werden soll.
+ a| 
+`-rotate-schedule-day` `chron_dayofmonth`
+ a| 
+Nein
+ a| 
+ a| 
+
+
+
+ a| 
+_Drehplan Log: Stunde_
+
+Legt den Stundenplan für das Drehen des Prüfprotokolls fest.
+
+Gültige Werte reichen von `0` (Mitternacht) bis `23` (11:00 Uhr). Angeben `all` Dreht die Prüfprotokolle jede Stunde. Sie können beispielsweise angeben, dass das Prüfprotokoll um 6 (6 Uhr) und 18 (6 Uhr) gedreht werden soll.
+ a| 
+`-rotate-schedule-hour` `chron_hour`
+ a| 
+Nein
+ a| 
+ a| 
+
+
+
+ a| 
+_Drehplan Log: Minute_
+
+Legt den Minutenplan für das Drehen des Prüfprotokolls fest.
+
+Gültige Werte reichen von `0` Bis `59`. Sie können z. B. angeben, dass das Prüfprotokoll in der 30. Minute gedreht werden soll.
+ a| 
+`-rotate-schedule-minute` `chron_minute`
+ a| 
+Ja, wenn Sie eine planbasierte Protokollrotation konfigurieren, andernfalls Nein
+ a| 
+ a| 
+
+|===
+*Rundprotokolle basierend auf Loggröße und Zeitplan* drehen
+
+Sie können wählen, ob Sie die Protokolldateien basierend auf der Protokollgröße und einem Zeitplan drehen möchten, indem Sie die beiden festlegen `-rotate-size` Parameter und die zeitbasierten Rotationsparameter in beliebiger Kombination. Beispiel: Wenn `-rotate-size` Ist auf 10 MB und eingestellt `-rotate-schedule-minute` Ist auf 15 gesetzt, drehen sich die Protokolldateien, wenn die Protokolldateigröße 10 MB oder in der 15. Minute jeder Stunde (je nachdem, welches Ereignis zuerst eintritt) erreicht.

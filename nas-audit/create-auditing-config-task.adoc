@@ -1,0 +1,82 @@
+---
+permalink: nas-audit/create-auditing-config-task.html 
+sidebar: sidebar 
+keywords: create, audit, configuration 
+summary: 'Bevor Sie mit dem Auditing von Datei- und Verzeichnisereignissen beginnen können, müssen Sie eine Auditing-Konfiguration auf der Storage Virtual Machine (SVM) erstellen.' 
+---
+= Erstellen Sie die Überwachungskonfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Das Erstellen einer Datei- und Verzeichnisüberwachung auf Ihrer Storage Virtual Machine (SVM) umfasst die Analyse der verfügbaren Konfigurationsoptionen, die Planung der Konfiguration und die Konfiguration sowie die Aktivierung der Konfiguration. Sie können dann Informationen zur Überwachungskonfiguration anzeigen, um zu bestätigen, dass die resultierende Konfiguration die gewünschte Konfiguration ist.
+
+Bevor Sie mit dem Auditing von Datei- und Verzeichnisereignissen beginnen können, müssen Sie eine Auditing-Konfiguration auf der Storage Virtual Machine (SVM) erstellen.
+
+Wenn Sie eine Auditing-Konfiguration für zentrale Zugriffsrichtlinien-Staging erstellen möchten, muss auf der SVM ein SMB-Server vorhanden sein.
+
+[NOTE]
+====
+* Obwohl Sie die zentrale Zugriffsrichtlinien-Staging in der Überwachungskonfiguration aktivieren können, ohne die dynamische Zugriffskontrolle auf dem SMB-Server zu aktivieren, werden zentrale Zugriffsrichtlinien-Staging-Ereignisse nur erzeugt, wenn Dynamic Access Control aktiviert ist.
++
+Die dynamische Zugriffskontrolle wird über eine SMB-Serveroption aktiviert. Sie ist standardmäßig nicht aktiviert.
+
+* Wenn die Argumente eines Feldes in einem Befehl ungültig sind, z. B. ungültige Einträge für Felder, doppelte Einträge und nicht vorhandene Einträge, dann schlägt der Befehl vor der Audit-Phase fehl.
++
+Solche Fehler erzeugen keinen Audit-Datensatz.
+
+
+
+====
+Wenn die SVM eine SVM Disaster-Recovery-Quelle ist, kann sich der Zielpfad nicht auf dem Root-Volume befinden.
+
+.Schritt
+. Erstellen Sie mithilfe der Informationen im Planungsarbeitsblatt die Überwachungskonfiguration, um Prüfprotokolle auf der Grundlage der Protokollgröße oder eines Zeitplans zu drehen:
++
+[cols="30,70"]
+|===
+
+
+| Wenn Sie die Prüfprotokolle drehen möchten, um... | Eingeben... 
+
+
+ a| 
+Protokollgröße
+ a| 
+`vserver audit create -vserver vserver_name -destination path -events [{file-ops|cifs-logon-logoff|cap-staging|file-share|audit-policy-change|user-account|security-group|authorization-policy-change}] [-format {xml|evtx}] [-rotate-limit integer] [-rotate-size {integer[KB|MB|GB|TB|PB]}]`
+
+
+
+ a| 
+Einen Zeitplan
+ a| 
+`vserver audit create -vserver vserver_name -destination path -events [{file-ops|cifs-logon-logoff|cap-staging}] [-format {xml|evtx}] [-rotate-limit integer] [-rotate-schedule-month chron_month] [-rotate-schedule-dayofweek chron_dayofweek] [-rotate-schedule-day chron_dayofmonth] [-rotate-schedule-hour chron_hour] -rotate-schedule-minute chron_minute`
+
+[NOTE]
+====
+Der `-rotate-schedule-minute` Der Parameter ist erforderlich, wenn Sie die zeitbasierte Rotation des Prüfprotokolls konfigurieren.
+
+====
+|===
+
+
+Im folgenden Beispiel wird eine Überwachungskonfiguration erstellt, die Dateivorgänge und SMB-Anmelde- und -Abmeldungsereignisse (Standard) anhand der größenbasierten Rotation prüft. Das Protokollformat lautet `EVTX` (Standardeinstellung). Die Protokolle werden im gespeichert `/audit_log` Verzeichnis. Die maximale Größe der Protokolldatei ist `200 MB`. Die Protokolle werden gedreht, wenn sie eine Größe von 200 MB erreichen:
+
+[listing]
+----
+cluster1::> vserver audit create -vserver vs1 -destination /audit_log -rotate-size 200MB
+----
+Im folgenden Beispiel wird eine Überwachungskonfiguration erstellt, die Dateivorgänge und SMB-Anmelde- und -Abmeldungsereignisse (Standard) anhand der größenbasierten Rotation prüft. Das Protokollformat lautet `EVTX` (Standardeinstellung). Die maximale Größe der Protokolldatei ist `100 MB` (Die Standardeinstellung), und die Protokollrotationsgrenze ist `5`:
+
+[listing]
+----
+cluster1::> vserver audit create -vserver vs1 -destination /audit_log -rotate-limit 5
+----
+Im folgenden Beispiel wird eine Audit-Konfiguration erstellt, die Dateivorgänge, CIFS-Anmelde- und -Abmeldungsereignisse und zentrale Zugriffs- und Staging-Ereignisse anhand zeitbasierter Rotation prüft. Das Protokollformat lautet `EVTX` (Standardeinstellung). Die Prüfprotokolle werden monatlich um 12:30 Uhr gedreht An allen Wochentagen. Die Protokollrotationsgrenze ist `5`:
+
+[listing]
+----
+cluster1::> vserver audit create -vserver vs1 -destination /audit_log -events file-ops,cifs-logon-logoff,file-share,audit-policy-change,user-account,security-group,authorization-policy-change,cap-staging -rotate-schedule-month all -rotate-schedule-dayofweek all -rotate-schedule-hour 12 -rotate-schedule-minute 30 -rotate-limit 5
+----

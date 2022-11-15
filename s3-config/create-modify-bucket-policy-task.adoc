@@ -1,0 +1,114 @@
+---
+permalink: s3-config/create-modify-bucket-policy-task.html 
+sidebar: sidebar 
+keywords: modify, bucket, policy 
+summary: Zugriffsregeln können zur Standard-Bucket-Richtlinie hinzugefügt werden. Der Umfang seiner Zugriffssteuerung umfasst den Bucket, der im EinzelBucket enthalten ist, daher ist er am besten geeignet. 
+---
+= Ändern einer Bucket-Richtlinie
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Zugriffsregeln können zur Standard-Bucket-Richtlinie hinzugefügt werden. Der Umfang seiner Zugriffssteuerung umfasst den Bucket, der im EinzelBucket enthalten ist, daher ist er am besten geeignet.
+
+Eine S3-fähige SVM mit einem S3-Server und einem Bucket muss bereits vorhanden sein.
+
+Sie müssen bereits Benutzer oder Gruppen erstellt haben, bevor Sie Berechtigungen erteilen.
+
+Sie können neue Anweisungen für neue Benutzer und Gruppen hinzufügen oder die Attribute vorhandener Anweisungen ändern. Weitere Optionen finden Sie im `vserver object-store-server bucket policy` Man-Pages.
+
+Benutzer- und Gruppenberechtigungen können bei Erstellung des Buckets oder nach Bedarf später zugewiesen werden. Sie können auch die Bucket-Kapazität und die QoS-Richtliniengruppenzuweisung ändern.
+
+Wenn Sie ab ONTAP 9.9.1 und neueren Versionen die Funktionalität des AWS Client-Objekt-Tagging mit dem ONTAP S3 Server unterstützen möchten, führt Aktionen durch `GetObjectTagging`, `PutObjectTagging`, und `DeleteObjectTagging` Es müssen die Bucket- oder Gruppenrichtlinien verwendet werden.
+
+Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Schritte
+. Bearbeiten Sie den Bucket: Klicken Sie auf *Storage > Buckets*, klicken Sie auf den gewünschten Bucket und klicken Sie dann auf *Bearbeiten*. Beim Hinzufügen oder Ändern von Berechtigungen können Sie die folgenden Parameter angeben:
++
+** *Auftraggeber*: Der Benutzer oder die Gruppe, auf die der Zugriff gewährt wird.
+** *Effekt*: Erlaubt oder verweigert den Zugriff auf einen Benutzer oder eine Gruppe.
+** *Aktionen*: Zulässige Aktionen im Bucket für einen bestimmten Benutzer oder eine bestimmte Gruppe.
+** *Ressourcen*: Pfade und Namen von Objekten innerhalb des Buckets, für die der Zugriff gewährt oder verweigert wird.
++
+Die Standardeinstellungen *_bucketname_* und *_bucketname/*_* gewähren Zugriff auf alle Objekte im Bucket. Sie können auch Zugriff auf einzelne Objekte gewähren, z. B. *_buchketname/_*_readme.txt*.
+
+** *Bedingungen* (optional): Ausdrücke, die beim Versuch des Zugriffs ausgewertet werden. Sie können beispielsweise eine Liste mit IP-Adressen angeben, für die der Zugriff zulässig oder verweigert wird.
+
+
+
+
+--
+.CLI
+--
+.Schritte
+. Hinzufügen einer Anweisung zu einer Bucket-Richtlinie:
++
+`vserver object-store-server bucket policy add-statement -vserver _svm_name_ -bucket _bucket_name_ -effect {allow|deny} -action _object_store_actions_ -principal _user_and_group_names_ -resource _object_store_resources_ [-sid text] [-index integer]`
+
++
+Die folgenden Parameter definieren Zugriffsberechtigungen:
+
++
+[cols="1,3"]
+|===
+
+
+ a| 
+`-effect`
+ a| 
+Die Anweisung kann den Zugriff erlauben oder verweigern
+
+
+
+ a| 
+`-action`
+ a| 
+Sie können angeben `*` Um alle Aktionen oder eine Liste mit einer oder mehreren der folgenden Aktionen zu bedeuten: `GetObject, PutObject, DeleteObject, ListBucket, GetBucketAcl,GetObjectAcl, ListBucketMultipartUploads,` Und `ListMultipartUploadParts`.
+
+
+
+ a| 
+`-principal`
+ a| 
+Eine Liste mit einem oder mehreren S3-Benutzern oder -Gruppen.
+
+** Es können maximal 10 Benutzer oder Gruppen angegeben werden.
+** Wenn eine S3-Gruppe angegeben wird, muss sie sich im Formular befinden `group/group_name.`
+** `*` Kann als öffentlicher Zugriff angegeben werden, d. h. ohne Zugriffsschlüssel und Geheimschlüssel.
+** Wird kein Principal angegeben, erhalten alle S3-Benutzer in der SVM Zugriff.
+
+
+
+
+ a| 
+`-resource`
+ a| 
+Den Bucket und jedes darin enthaltene Objekt. Die Platzhalterzeichen `*` Und `?` Kann verwendet werden, um einen regulären Ausdruck zum Angeben einer Ressource zu bilden.
+
+|===
++
+Sie können optional einen Textstring als Kommentar mit dem angeben `-sid` Option.
+
+
+
+Im folgenden Beispiel wird eine Objektspeicherserver-Bucket-Policy-Anweisung für die SVM svm1.example.com und bucket1 erstellt, die den Zugriff auf einen Readme-Ordner für Objektspeicher-Server-Benutzer Benutzer1 festlegt.
+
+[listing]
+----
+cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal user1 -resource bucket1/readme/* -sid "fullAccessToReadmeForUser1"
+----
+Im folgenden Beispiel wird eine Objektspeicherserver-Bucket-Policy für die SVM svm1.example.com und bucket1 erstellt, die den Zugriff auf alle Objekte für Objektspeicher-Servergruppen group1 festlegt.
+
+[listing]
+----
+cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
+----
+--
+====

@@ -1,0 +1,69 @@
+---
+sidebar: sidebar 
+permalink: networking/change_subnet_properties.html 
+keywords: change, changing, modify, modifying, gateway, ip, address, internet, protocol, mask, value, subnet, address, range, property, properties, change subnet properties, network subnet modify, subnet-name, -ipspace, -subnet, -gateway, -ip-ranges, -force-update-lif-associations 
+summary: Ändern Sie die Subnetz-Adresse, den Maskenwert, die Gateway-Adresse oder den Bereich der IP-Adressen 
+---
+= Ändern der Subnetzeigenschaften
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Sie können die Subnetzadresse und den Maskenwert, die Gateway-Adresse oder den IP-Adressbereich in einem vorhandenen Subnetz ändern.
+
+.Über diese Aufgabe
+* Beim Ändern von IP-Adressen müssen Sie sicherstellen, dass sich keine überlappenden IP-Adressen im Netzwerk befinden, damit unterschiedliche Subnetze oder Hosts nicht versuchen, dieselbe IP-Adresse zu verwenden.
+* Wenn Sie die Gateway-IP-Adresse hinzufügen oder ändern, wird das geänderte Gateway auf neue SVMs angewendet, wenn in ihnen ein LIF mit dem Subnetz erstellt wird. Es wird eine Standardroute zum Gateway für die SVM erstellt, wenn die Route nicht bereits vorhanden ist. Möglicherweise müssen Sie beim Ändern der Gateway-IP-Adresse eine neue Route zur SVM manuell hinzufügen.
+
+
+Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Ab ONTAP 9.12.0 können Sie mit System Manager Subnetzeigenschaften* ändern
+
+.Schritte
+. Wählen Sie *Netzwerk > Übersicht > Subnetze*.
+. Wählen Sie image:icon_kabob.gif["Kabob-Symbol"]*> Bearbeiten* neben dem Subnetz, das Sie ändern möchten.
+. Nehmen Sie Änderungen vor.
+. Speichern Sie die Änderungen.
++
+.. Wenn die eingegebene IP-Adresse oder der eingegebene Bereich bereits von einer Schnittstelle verwendet wird, wird die folgende Meldung angezeigt:
+`An IP address in this range is already in use by a LIF. Associate the LIF with this subnet?`
+.. Wenn Sie auf *OK* klicken, wird das vorhandene LIF dem Subnetz zugeordnet.
+
+
+
+
+--
+.CLI
+--
+*Verwenden Sie die CLI, um die Subnetzeigenschaften zu ändern*
+
+Ändern der Subnetzeigenschaften:
+
+....
+network subnet modify -subnet-name <subnet_name> [-ipspace <ipspace_name>] [-subnet <subnet_address>] [-gateway <gateway_address>] [-ip-ranges <ip_address_list>] [-force-update-lif-associations <true>]
+....
+* `subnet_name` Ist der Name des Subnetzes, das Sie ändern möchten.
+* `ipspace` Ist der Name des IPspaces, in dem sich das Subnetz befindet.
+* `subnet` Ist ggf. die neue Adresse und Maske des Subnetzes, z. B. 192.0.2.0/24.
+* `gateway` Ist das neue Gateway des Subnetzes, sofern zutreffend, z. B. 192.0.2.1. Durch Eingabe von *"* wird der Gateway-Eintrag entfernt.
+* `ip_ranges` Ist die neue Liste oder der neue Bereich der IP-Adressen, die dem Subnetz zugewiesen werden, falls zutreffend. Die IP-Adressen können einzelne Adressen, einen Bereich oder IP-Adressen oder eine Kombination aus einer kommagetrennten Liste sein. Der hier angegebene Bereich ersetzt die vorhandenen IP-Adressen.
+* `force-update-lif-associations` Ist erforderlich, wenn Sie den IP-Adressbereich ändern. Sie können den Wert für diese Option auf *true* setzen, wenn Sie den Bereich der IP-Adressen ändern. Dieser Befehl schlägt fehl, wenn Service-Prozessor oder Netzwerkschnittstellen die IP-Adressen im angegebenen Bereich verwenden. Wenn Sie diesen Wert auf *true* setzen, werden alle manuell adressierten Schnittstellen mit dem aktuellen Subnetz verknüpft und der Befehl kann erfolgreich ausgeführt werden.
+
+
+Mit dem folgenden Befehl wird die Gateway-IP-Adresse des Subnetzes sub3 geändert:
+
+....
+network subnet modify -subnet-name <sub3> -gateway <192.0.3.1>
+....
+--
+====

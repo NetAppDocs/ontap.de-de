@@ -1,0 +1,53 @@
+---
+permalink: volumes/default-user-group-quotas-derived-concept.html 
+sidebar: sidebar 
+keywords: how, default, user, group quotas, create, derived, quotas 
+summary: Wenn Sie Standardkontingente für Benutzer oder Gruppen erstellen, werden automatisch entsprechende abgeleitete Benutzer- oder Gruppenkontingente für jeden Benutzer oder jede Gruppe erstellt, der Dateien auf derselben Ebene besitzt. 
+---
+= Wie standardmäßige Benutzer- und Gruppenkontingente abgeleitete Kontingente erstellen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie Standardkontingente für Benutzer oder Gruppen erstellen, werden automatisch entsprechende abgeleitete Benutzer- oder Gruppenkontingente für jeden Benutzer oder jede Gruppe erstellt, der Dateien auf derselben Ebene besitzt.
+
+Abgeleitete Benutzer- und Gruppenkontingente werden auf folgende Weise erstellt:
+
+* Ein Standard-Benutzerkontingent auf ein FlexVol Volume erstellt abgeleitete Benutzerkontingente für jeden Benutzer, der eine Datei irgendwo auf dem Volume besitzt.
+* Ein Standardbenutzerkontingent auf einem qtree erstellt für jeden Benutzer, der eine Datei im qtree besitzt, abgeleitete Benutzerquoten.
+* Ein Standardgruppenkontingent auf einem FlexVol-Volume erstellt abgeleitete Gruppen-Quoten für jede Gruppe, die eine Datei irgendwo auf dem Volume besitzt.
+* Ein Standardgruppen-Kontingent auf einem qtree erstellt für jede Gruppe, die eine Datei im qtree besitzt, abgeleitete Gruppen-Quoten.
+
+
+Wenn ein Benutzer oder eine Gruppe keine Dateien auf der Ebene eines Standardbenutzers oder eines Gruppenkontingents besitzt, werden abgeleitete Quoten nicht für den Benutzer oder die Gruppe erstellt. Wenn zum Beispiel ein Standard-Benutzerkontingent für qtree proj1 erstellt wird und der Benutzer jsmith Dateien auf einem anderen qtree besitzt, wird kein abgeleitetes Benutzerkontingent für jsmith erstellt.
+
+Die abgeleiteten Quoten verfügen über die gleichen Einstellungen wie die Standardkontingente, einschließlich Limits und Benutzerzuordnungen. Beispiel: Wenn ein Standard-Benutzerkontingent ein Datenträgerlimit von 50 MB hat und User Mapping aktiviert ist, haben alle daraus resultierenden Kontingente auch ein 50 MB Datenträgerlimit und User Mapping eingeschaltet.
+
+In abgeleiteten Quoten für drei spezielle Benutzer und Gruppen gibt es jedoch keine Grenzen. Wenn die folgenden Benutzer und Gruppen eigene Dateien auf der Ebene eines Standardbenutzerkontinents oder einer Gruppenkontingente besitzen, wird ein abgeleitetes Kontingent mit der gleichen Benutzerzuordnungseinstellung erstellt wie das Standardbenutzerkontingent oder Gruppenkontingent, aber es ist nur ein Tracking-Quota (ohne Grenzen):
+
+* UNIX-Root-Benutzer (UID 0)
+* UNIX-Root-Gruppe (GID 0)
+* Windows BUILTIN\Administratorengruppe
++
+Da Quoten für Windows-Gruppen als Benutzerkontingente verfolgt werden, ist ein abgeleitetes Kontingent für diese Gruppe ein Benutzerkontingent, das von einem Standardbenutzerkontingent abgeleitet wird, nicht ein Standardgruppenkontingent.
+
+
+
+Wenn Sie ein Volumen haben, in dem drei Benutzer - Root-, jsmith- und bob--eigene Dateien - und Sie erstellen ein Standard-Benutzerkontingent auf dem Volumen, erstellt ONTAP automatisch drei abgeleitete Benutzer Quoten. Daher erscheinen nach der Neuinitialisierung von Quoten auf dem Volumen vier neue Quoten im Kontingentbericht:
+
+[listing]
+----
+cluster1::> volume quota report
+  Vserver: vs1
+                                     ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1               user    *           0B   50MB       0       -   *
+vol1               user    root        5B      -       1       -
+vol1               user    jsmith     30B   50MB      10       -   *
+vol1               user    bob        40B   50MB      15       -   *
+4 entries were displayed.
+----
+Die erste neue Zeile ist das von Ihnen erstellte Standardbenutzerkontingent, das durch das Sternchen (*) als ID identifiziert werden kann. Die anderen neuen Zeilen sind die abgeleiteten Benutzerquoten. Die abgeleiteten Quoten für jsmith und bob haben das gleiche 50-MB-Datenträgerlimit wie die Standardquote. Die abgeleitete Quote für den Root-Benutzer ist eine Tracking-Quote ohne Grenzen.

@@ -1,0 +1,96 @@
+---
+permalink: performance-admin/identify-remaining-performance-capacity-task.html 
+sidebar: sidebar 
+keywords: identify, remaining, performance, capacity 
+summary: Die Performance-Kapazität oder Reserve misst die Arbeitsleistung, die Sie auf einem Node oder Aggregat platzieren können, bevor die Performance der Workloads der Ressource durch die Latenz beeinträchtigt wird. Wenn Sie die verfügbare Performance-Kapazität auf dem Cluster kennen, können Sie Workloads bereitstellen und ausgleichen. 
+---
+= Ermittlung der verbleibenden Performance-Kapazität
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Performance-Kapazität (oder _Reserve_) gibt an, wie viel Arbeit auf einem Node oder Aggregat anfallen kann, bevor die Performance der Workloads der Ressource durch die Latenz beeinträchtigt wird. Wenn Sie die verfügbare Performance-Kapazität auf dem Cluster kennen, können Sie Workloads bereitstellen und ausgleichen.
+
+Für diese Aufgabe sind erweiterte Befehle auf Berechtigungsebene erforderlich.
+
+Sie können für das die folgenden Werte verwenden `-object` Option zum Erfassen und Anzeigen von Reservestatistiken:
+
+* Für CPUs, `resource_headroom_cpu`.
+* Für Aggregate `resource_headroom_aggr`.
+
+
+Sie können diese Aufgabe auch mit System Manager und Active IQ Unified Manager ausführen.
+
+.Schritte
+. Ändern Sie die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Starten Sie die Echtzeitstatistik:
++
+`statistics start –object resource_headroom_cpu|aggr`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
+. Anzeigen von Informationen zu Reservestatistiken in Echtzeit:
++
+`statistics show -object resource_headroom_cpu|aggr`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
+. Zurück zur Administratorberechtigung:
++
+`set -privilege admin`
+
+
+
+Im folgenden Beispiel werden die Statistiken der durchschnittlichen stündlichen Reserve für Cluster-Nodes angezeigt.
+
+Sie können die verfügbare Performance-Kapazität eines Knotens berechnen, indem Sie die subtrahieren `current_utilization` Zähler vom `optimal_point_utilization` Zähler. In diesem Beispiel wird die Auslastungskapazität für `CPU_sti2520-213` Liegt -14% (72%-86%), was darauf hindeutet, dass die CPU im Durchschnitt für die letzte Stunde überausgelastet wurde.
+
+Sie könnten angegeben haben `ewma_daily`, `ewma_weekly`, Oder `ewma_monthly` Um dieselben Informationen über längere Zeiträume gemittelt zu erhalten.
+
+[listing]
+----
+sti2520-2131454963690::*> statistics show -object resource_headroom_cpu -raw -counter ewma_hourly
+  (statistics show)
+
+Object: resource_headroom_cpu
+Instance: CPU_sti2520-213
+Start-time: 2/9/2016 16:06:27
+End-time: 2/9/2016 16:06:27
+Scope: sti2520-213
+
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    ewma_hourly                                                     -
+                         current_ops                             4376
+                     current_latency                            37719
+                 current_utilization                               86
+                   optimal_point_ops                             2573
+               optimal_point_latency                             3589
+           optimal_point_utilization                               72
+     optimal_point_confidence_factor                                1
+
+Object: resource_headroom_cpu
+Instance: CPU_sti2520-214
+Start-time: 2/9/2016 16:06:27
+End-time: 2/9/2016 16:06:27
+Scope: sti2520-214
+
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    ewma_hourly                                                     -
+                         current_ops                                0
+                     current_latency                                0
+                 current_utilization                                0
+                   optimal_point_ops                                0
+               optimal_point_latency                                0
+           optimal_point_utilization                               71
+     optimal_point_confidence_factor                                1
+2 entries were displayed.
+----

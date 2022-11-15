@@ -1,0 +1,101 @@
+---
+permalink: volumes/aggregate-fullness-overallocation-alerts-concept.html 
+sidebar: sidebar 
+keywords: how to, address, aggregate, fullness, overallocation, alerts 
+summary: ONTAP gibt EMS-Nachrichten aus wenn Aggregate nicht mehr genügend Platz haben, sodass Sie Korrekturmaßnahmen ergreifen können, indem Sie mehr Platz für das komplette Aggregat zur Verfügung stellen. Wenn Sie die Art der Warnungen kennen und wissen, wie Sie diese ansprechen können, können Sie die Verfügbarkeit Ihrer Daten sicherstellen. 
+---
+= Adresse: Aggregatfülle und Überzuordnungswarnungen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP gibt EMS-Nachrichten aus wenn Aggregate nicht mehr genügend Platz haben, sodass Sie Korrekturmaßnahmen ergreifen können, indem Sie mehr Platz für das komplette Aggregat zur Verfügung stellen. Wenn Sie die Art der Warnungen kennen und wissen, wie Sie diese ansprechen können, können Sie die Verfügbarkeit Ihrer Daten sicherstellen.
+
+Wenn ein Aggregat als _full_ beschrieben wird, bedeutet dies, dass der Prozentsatz des Speicherplatzes im für die Volumes verfügbaren Aggregat unter einen vordefinierten Schwellenwert gefallen ist. Wenn ein Aggregat _überlastet_, wurde der Speicherplatz, den ONTAP für Metadaten verwendet und der grundlegende Datenzugriff ermöglicht. Manchmal können Speicherplatz, der normalerweise für andere Zwecke reserviert ist, verwendet werden, um das Aggregat funktionsfähig zu halten, aber die Volume-Garantien für Volumes, die mit dem Aggregat oder die Datenverfügbarkeit verbunden sind, können gefährdet sein.
+
+Überzuweisung kann entweder logisch oder physisch sein. _Logische Überzuweisung_ bedeutet, dass für einen anderen Zweck der Raum, der zur Einhaltung zukünftiger Speicherplatzzusagen wie Volume-Garantien reserviert wurde, genutzt wurde. _Physische Überprovisionierung_ bedeutet, dass das Aggregat aus physischen Blöcken geht, die es zu nutzen gilt. Aggregate in diesem Zustand sind gefährdet, Schreibvorgänge abzulehnen, offline zu gehen oder möglicherweise eine Controller-Unterbrechung zu verursachen.
+
+In der folgenden Tabelle werden die Warnmeldungen zu Fülle und Überprovisionierung, die Maßnahmen für das Problem und die Risiken beschrieben, die mit Nichtmaßnahmen verbunden sind.
+
+[cols="5%,5%,5%,35%,25%,25%"]
+|===
+| Alarmtyp | EMS-Stufe | Konfigurierbar? | Definition | Ansprache | Risiko, wenn keine Maßnahmen ergriffen werden 
+
+
+ a| 
+Fast voll
+ a| 
+Debuggen
+ a| 
+N
+ a| 
+Die für Volumes zugewiesene Menge an Speicherplatz, einschließlich deren Garantien, hat den für diese Warnmeldung festgelegten Schwellenwert (95 %) überschritten. Der Prozentsatz ist der `Used` Gesamtgröße abzüglich der Snapshot-Reserve.
+ a| 
+* Hinzufügen von Storage zum Aggregat
+* Verkleinern oder Löschen von Volumes
+* Verschieben von Volumes zu einem anderen Aggregat mit mehr Speicherplatz
+* Entfernen von Volumengarantien (Einstellen auf `none`)
+
+ a| 
+Kein Risiko für Schreibvorgänge oder Datenverfügbarkeit.
+
+
+
+ a| 
+Voll
+ a| 
+Debuggen
+ a| 
+N
+ a| 
+Das Dateisystem hat den Schwellenwert für diese Meldung überschritten (98 %). Der Prozentsatz ist der `Used` Gesamtgröße abzüglich der Snapshot-Reserve.
+ a| 
+* Hinzufügen von Storage zum Aggregat
+* Verkleinern oder Löschen von Volumes
+* Verschieben von Volumes zu einem anderen Aggregat mit mehr Speicherplatz
+* Entfernen von Volumengarantien (Einstellen auf `none`)
+
+ a| 
+Die Volume-Garantien für Volumes im Aggregat könnten gefährdet sein, sowie Schreibvorgänge auf diese Volumes.
+
+
+
+ a| 
+Logisch überzugewiesen
+ a| 
+SVC-Fehler
+ a| 
+N
+ a| 
+Neben dem reservierten Speicherplatz für Volumes ist der Speicherplatz im Aggregat für Metadaten erschöpft.
+ a| 
+* Hinzufügen von Storage zum Aggregat
+* Verkleinern oder Löschen von Volumes
+* Verschieben von Volumes zu einem anderen Aggregat mit mehr Speicherplatz
+* Entfernen von Volumengarantien (Einstellen auf `none`)
+
+ a| 
+Die Volume-Garantien für Volumes im Aggregat sind gefährdet, und Schreibvorgänge sind auf diese Volumes verteilt.
+
+
+
+ a| 
+Physisch überzugewiesen
+ a| 
+Node-Fehler
+ a| 
+N
+ a| 
+Das Aggregat besteht aus physikalischen Blöcken, auf die es schreiben kann.
+ a| 
+* Hinzufügen von Storage zum Aggregat
+* Verkleinern oder Löschen von Volumes
+* Verschieben von Volumes zu einem anderen Aggregat mit mehr Speicherplatz
+
+ a| 
+Schreibvorgänge auf Volumes im Aggregat sind gefährdet, ebenso wie die Datenverfügbarkeit; das Aggregat kann offline geschaltet werden. In extremen Fällen kann es auf dem Node zu einer Unterbrechung kommen.
+
+|===
+Jedes Mal, wenn ein Schwellenwert für ein Aggregat überschritten wird, unabhängig davon, ob der Prozentsatz der Fülle steigt oder fällt, wird eine EMS-Nachricht generiert. Wenn die Auslastungsebene des Aggregats unter einen Schwellenwert fällt, und `aggregate ok` EMS-Nachricht wird generiert.

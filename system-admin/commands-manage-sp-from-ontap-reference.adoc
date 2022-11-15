@@ -1,0 +1,240 @@
+---
+permalink: system-admin/commands-manage-sp-from-ontap-reference.html 
+sidebar: sidebar 
+keywords: command, manage, sp, ontap, network, configuration, firmware, image, ssh 
+summary: ONTAP bietet Befehle zum Verwalten des SP, einschließlich der SP-Netzwerkkonfiguration, SP-Firmware-Image, SSH-Zugriff auf den SP und allgemeine SP-Administration. 
+---
+= Befehle zum Verwalten des SP über ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP bietet Befehle zum Verwalten des SP, einschließlich der SP-Netzwerkkonfiguration, SP-Firmware-Image, SSH-Zugriff auf den SP und allgemeine SP-Administration.
+
+
+
+== Befehle zum Verwalten der SP-Netzwerkkonfiguration
+
+|===
+| Ihr Ziel ist | Führen Sie diesen ONTAP Befehl aus... 
+
+
+ a| 
+Aktivieren Sie die automatische SP-Netzwerkkonfiguration für den SP, um die IPv4- oder IPv6-Adressfamilie des angegebenen Subnetzes zu verwenden
+ a| 
+`system service-processor network auto-configuration enable`
+
+
+
+ a| 
+Deaktivieren Sie die automatische SP-Netzwerkkonfiguration für die IPv4- oder IPv6-Adressfamilie des für den SP angegebenen Subnetzes
+ a| 
+`system service-processor network auto-configuration disable`
+
+
+
+ a| 
+Zeigt die automatische SP-Netzwerkkonfiguration an
+ a| 
+`system service-processor network auto-configuration show`
+
+
+
+ a| 
+Konfigurieren Sie das SP-Netzwerk für einen Node manuell, einschließlich folgender:
+
+* Die IP-Adressfamilie (IPv4 oder IPv6)
+* Gibt an, ob die Netzwerkschnittstelle der angegebenen IP-Adressenfamilie aktiviert werden soll
+* Wenn Sie IPv4 verwenden, geben Sie an, ob Sie die Netzwerkkonfiguration vom DHCP-Server oder von der angegebenen Netzwerkadresse verwenden möchten
+* Die öffentliche IP-Adresse für den SP
+* Die Netmask für den SP (bei Verwendung von IPv4)
+* Die Netzwerk-Präfixlänge der Subnetzmaske für den SP (bei Verwendung von IPv6)
+* Die Gateway-IP-Adresse für den SP
+
+ a| 
+`system service-processor network modify`
+
+
+
+ a| 
+Zeigen Sie die SP-Netzwerkkonfiguration an, einschließlich der folgenden:
+
+* Die konfigurierte Adressfamilie (IPv4 oder IPv6) und ob sie aktiviert ist
+* Der Typ des Remote-Management-Geräts
+* Der aktuelle SP-Status und der Link-Status
+* Netzwerkkonfiguration, wie IP-Adresse, MAC-Adresse, Netmask, Subnetz-Präfixlänge, Router-zugewiesene IP-Adresse, Link lokale IP-Adresse und Gateway-IP-Adresse
+* Die Zeit, zu der der SP zuletzt aktualisiert wurde
+* Der Name des Subnetzes, das für die automatische SP-Konfiguration verwendet wird
+* Gibt an, ob die vom IPv6-Router zugewiesene IP-Adresse aktiviert ist
+* Status der SP-Netzwerk-Einrichtung
+* Grund für den Fehler bei der Einrichtung des SP-Netzwerks
+
+ a| 
+`system service-processor network show`
+
+Zum Anzeigen vollständiger SP-Netzwerkdetails ist der erforderlich `-instance` Parameter.
+
+
+
+ a| 
+Ändern Sie die SP-API-Service-Konfiguration, einschließlich folgender Komponenten:
+
+* Ändern des Ports, der vom SP-API-Service verwendet wird
+* Aktivieren oder Deaktivieren des SP-API-Service
+
+ a| 
+`system service-processor api-service modify`
+
+(Erweiterte Berechtigungsebene)
+
+
+
+ a| 
+Zeigt die SP-API-Servicekonfiguration an
+ a| 
+`system service-processor api-service show`
+
+(Erweiterte Berechtigungsebene)
+
+
+
+ a| 
+Erneuern der vom SP-API-Service verwendeten SSL- und SSH-Zertifikate für die interne Kommunikation
+ a| 
+* Für ONTAP 9.5 oder höher: `system service-processor api-service renew-internal-certificates`
+* Für ONTAP 9.4 oder früher: `system service-processor api-service renew-certificates`
++
+(Erweiterte Berechtigungsebene)
+
+
+
+|===
+
+
+== Befehle zum Verwalten des SP-Firmware-Images
+
+|===
+| Ihr Ziel ist | Führen Sie diesen ONTAP Befehl aus... 
+
+
+ a| 
+Zeigen Sie Details zum derzeit installierten SP-Firmware-Image an, einschließlich:
+
+* Der Typ des Remote-Management-Geräts
+* Das Image (primär oder Backup), aus dem der SP gebootet wird, seinen Status und die Firmware-Version
+* Gibt an, ob das automatische Update der Firmware aktiviert ist und ob der letzte Aktualisierungsstatus angezeigt wird
+
+ a| 
+`system service-processor image show`
+
+Der `-is-current` Der Parameter gibt das Image (primär oder Backup) an, von dem der SP derzeit gebootet wird, nicht wenn die installierte Firmware-Version auf dem aktuellen Stand ist.
+
+
+
+ a| 
+Aktiviert bzw. deaktiviert das automatische Firmware-Update des SP
+ a| 
+`system service-processor image modify`
+
+Standardmäßig wird die SP-Firmware automatisch mit dem Update der ONTAP aktualisiert oder wenn eine neue Version der SP-Firmware manuell heruntergeladen wird. Es wird nicht empfohlen, das automatische Update zu deaktivieren, da dies zu suboptimalen oder nicht qualifizierten Kombinationen zwischen dem ONTAP Image und dem SP-Firmware-Image führen kann.
+
+
+
+ a| 
+Laden Sie manuell ein SP-Firmware-Image auf einem Node herunter
+ a| 
+`system node image get`
+
+[NOTE]
+====
+Bevor Sie den ausführen `system node image` Befehle. Sie müssen die Berechtigungsebene auf „erweitert“ setzen (`set -privilege advanced`Geben Sie *y* ein, wenn Sie dazu aufgefordert werden, fortzufahren.
+
+====
+Das SP-Firmware-Image ist mit ONTAP verpackt. Sie müssen die SP-Firmware nur manuell herunterladen, es sei denn, Sie möchten eine SP-Firmware-Version verwenden, die sich von der des ONTAP-Paketen unterscheidet.
+
+
+
+ a| 
+Zeigt den Status für das aktuelle, von ONTAP ausgelöste Firmware-Update an, einschließlich der folgenden Informationen:
+
+* Die Start- und Endzeit für das aktuelle SP-Firmware-Update
+* Ob ein Update ausgeführt wird und der Prozentsatz, der abgeschlossen ist
+
+ a| 
+`system service-processor image update-progress show`
+
+|===
+
+
+== Befehle zum Verwalten von SSH-Zugriff auf den SP
+
+|===
+| Ihr Ziel ist | Führen Sie diesen ONTAP Befehl aus... 
+
+
+ a| 
+Gewähren Sie nur SP-Zugriff auf die angegebenen IP-Adressen
+ a| 
+`system service-processor ssh add-allowed-addresses`
+
+
+
+ a| 
+Blockieren Sie die angegebenen IP-Adressen vom Zugriff auf den SP
+ a| 
+`system service-processor ssh remove-allowed-addresses`
+
+
+
+ a| 
+Zeigt die IP-Adressen an, die auf den SP zugreifen können
+ a| 
+`system service-processor ssh show`
+
+|===
+
+
+== Befehle für die allgemeine SP-Administration
+
+|===
+| Ihr Ziel ist | Führen Sie diesen ONTAP Befehl aus... 
+
+
+ a| 
+Zeigt allgemeine SP-Informationen an, einschließlich folgender:
+
+* Der Typ des Remote-Management-Geräts
+* Der aktuelle SP-Status
+* Gibt an, ob das SP-Netzwerk konfiguriert ist
+* Netzwerkinformationen, z. B. die öffentliche IP-Adresse und die MAC-Adresse
+* Die Version der SP-Firmware und die Version der Intelligent Platform Management Interface (IPMI)
+* Gibt an, ob das automatische Update der SP-Firmware aktiviert ist
+
+ a| 
+`system service-processor show` Zum Anzeigen vollständiger SP-Informationen muss das angezeigt werden `-instance` Parameter.
+
+
+
+ a| 
+Bootet den SP auf einem Node neu
+ a| 
+`system service-processor reboot-sp`
+
+
+
+ a| 
+Generieren und senden Sie eine AutoSupport Meldung, die die SP-Protokolldateien, die von einem angegebenen Node erfasst wurden, enthält
+ a| 
+`system node autosupport invoke-splog`
+
+
+
+ a| 
+Zeigt die Zuordnungszuordnung der gesammelten SP-Protokolldateien im Cluster an, einschließlich der Sequenznummern für die SP-Protokolldateien, die sich in jedem Sammlungs-Node befinden
+ a| 
+`system service-processor log show-allocations`
+
+|===
+http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["ONTAP 9-Befehle"^]

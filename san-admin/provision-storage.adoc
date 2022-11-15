@@ -1,0 +1,213 @@
+---
+sidebar: sidebar 
+permalink: san-admin/provision-storage.html 
+keywords: netapp, ontap, san, provisioning, linux, servers, provision, storage, create lun, fc, iscsi, zone switches, scsi disk, iscsi 
+summary: Erstellen Sie LUNs, um Ihren Host über das FC- oder iSCSI-SAN-Protokoll Storage zur Verfügung zu stellen. LUNs werden Ihrem Host als Festplatten angezeigt. 
+---
+= Provisionierung von SAN-Storage
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Wenn ein Verfahren für Ihren spezifischen Host nicht verfügbar ist, können Sie mit diesen Schritten Speicher für jeden unterstützten SAN-Host bereitstellen.
+
+Durch dieses Verfahren werden neue LUNs auf einer vorhandenen Storage-VM erstellt, die bereits das FC- oder iSCSI-Protokoll konfiguriert ist.
+
+Informationen zum Erstellen einer neuen Storage-VM und zum Konfigurieren des FC- oder iSCSI-Protokolls finden Sie unter link:configure-svm-fc-task.html["Konfigurieren Sie eine SVM für FC"] Oder link:configure-svm-iscsi-task.html["Konfigurieren Sie eine SVM für iSCSI"].
+
+Wenn die FC-Lizenz nicht aktiviert ist, werden die LIFs und SVMs online angezeigt, der Betriebsstatus ist jedoch nicht aktiv.
+
+LUNs werden Ihrem Host als Festplattengeräte angezeigt.
+
+
+NOTE: Während der LUN-Erstellung ist der asymmetrische Zugriff auf logische Einheiten (ALUA) immer aktiviert. Sie können die ALUA-Einstellung nicht ändern.
+
+Zum Hosten der Initiatoren müssen Sie das einzelne Initiator-Zoning für alle FC-LIFs in der SVM verwenden.
+
+Ab ONTAP 9.8 ist bei der Bereitstellung von Storage QoS standardmäßig aktiviert. Sie können die QoS deaktivieren oder während des Bereitstellungsprozesses oder zu einem späteren Zeitpunkt eine individuelle QoS-Richtlinie auswählen.
+
+[role="tabbed-block"]
+.Schritte
+====
+.System Manager
+--
+Erstellung von LUNs zur Bereitstellung von Storage für einen SAN-Host mithilfe des FC- oder iSCSI-Protokolls mit ONTAP System Manager (9.7 und höher)
+
+Informationen zum Abschließen dieser Aufgabe mit System Manager Classic (verfügbar mit 9.7 und älter) finden Sie unter https://docs.netapp.com/us-en/ontap-sm-classic/iscsi-config-rhel/index.html["ISCSI-Konfiguration für Red hat Enterprise Linux"^]
+
+.Schritte
+. Installieren Sie das entsprechende link:https://docs.netapp.com/us-en/ontap-sanhost/["SAN Host Utilities"] Auf Ihrem Host.
+. Klicken Sie im System Manager auf *Storage > LUNs* und dann auf *Hinzufügen*.
+. Geben Sie die zum Erstellen der LUN erforderlichen Informationen ein.
+. Je nach Ihrer Version von ONTAP können Sie auf *Weitere Optionen* klicken, um eine der folgenden Optionen zu tun.
++
+[cols="80,20"]
+|===
+
+
+| Option | Verfügbar ab 
+
+
+ a| 
+** Weisen Sie LUNs anstelle des übergeordneten Volume eine QoS-Richtlinie zu
++
+*** *Mehr Optionen > Speicherung und Optimierung*
+*** Wählen Sie *Performance Service Level*.
+*** Um die QoS-Richtlinie auf einzelne LUNs anstelle des gesamten Volumes anzuwenden, wählen Sie *Diese Performance-Limits für jede LUN* anwenden.
++
+Standardmäßig werden Performance-Limits auf Volume-Ebene angewendet.
+
+
+
+
+| ONTAP 9.10.1 
+
+
+ a| 
+** Erstellen Sie eine neue Initiatorgruppe unter Verwendung vorhandener Initiatorgruppen
++
+*** *Mehr Optionen > HOST-INFORMATIONEN*
+*** Wählen Sie *Neue Initiatorgruppe unter Verwendung vorhandener Initiatorgruppen* aus.
++
+*HINWEIS*: Der OS-Typ für eine Initiatorgruppe, die andere Initiatorgruppen enthält, kann nach dem Erstellen nicht mehr geändert werden.
+
+
+
+
+| ONTAP 9.9.1 
+
+
+ a| 
+** Fügen Sie einer Initiatorgruppe oder Host-Initiator eine Beschreibung hinzu
++
+Die Beschreibung dient als Alias für die Initiatorgruppe oder den Host-Initiator.
+
++
+*** *Mehr Optionen > HOST-INFORMATIONEN*
+
+
+
+| ONTAP 9.9.1 
+
+
+ a| 
+** Erstellen Sie Ihre LUN auf einem vorhandenen Volume
++
+Standardmäßig wird eine neue LUN in einem neuen Volume erstellt.
+
++
+*** *Mehr Optionen > LUNs hinzufügen*
+*** Wählen Sie *Gruppen bezogene LUNs* aus.
+
+
+
+| ONTAP 9.9.1 
+
+
+ a| 
+** Deaktivieren Sie QoS oder wählen Sie eine individuelle QoS-Richtlinie aus
++
+*** *Mehr Optionen > Speicherung und Optimierung*
+*** Wählen Sie *Performance Service Level*.
++
+*HINWEIS*: Wenn Sie in ONTAP 9.9.1 und höher eine benutzerdefinierte QoS-Richtlinie auswählen, können Sie auch die manuelle Platzierung auf einer bestimmten lokalen Ebene auswählen.
+
+
+
+
+| ONTAP 9.8 
+|===
+
+
+. Zone der FC-Switches im Hinblick auf FC um WWPN. Verwenden Sie eine Zone pro Initiator und schließen Sie alle Ziel-Ports in jeder Zone an.
+. Erkennen Sie LUNs auf Ihrem Host.
+. Vergewissern Sie sich, dass der Host Daten auf der LUN schreiben und lesen kann.
+
+
+--
+.CLI
+--
+Erstellen Sie LUNs, um Storage für einen SAN-Host mithilfe des FC- oder iSCSI-Protokolls mit der ONTAP-CLI bereitzustellen.
+
+. Verwenden Sie die `system license show` Befehl zum Überprüfen, ob Sie eine Lizenz für FC oder iSCSI haben.
++
+`system license show`
+
++
+[listing]
+----
+
+Package           Type    Description           Expiration
+ ----------------- ------- --------------------- --------------------
+ Base              site    Cluster Base License  -
+ NFS               site    NFS License           -
+ CIFS              site    CIFS License          -
+ iSCSI             site    iSCSI License         -
+ FCP               site    FCP License           -
+----
+. Wenn Sie keine Lizenz für FC oder iSCSI haben, verwenden Sie den `license add` Befehl.
++
+`license add -license-code _your_license_code_`
+
+. Aktivieren Sie Ihren Protokollservice auf der SVM:
++
+*Für iSCSI:* `vserver iscsi create -vserver _vserver_name_ -target-alias _vserver_name_`
+
++
+* Für FC:* `vserver fcp create -vserver _vserver_name_ -status-admin up`
+
+. Erstellen Sie zwei LIFs für die SVMs an jedem Node:
++
+`network interface create -vserver _vserver_name_ -lif _lif_name_ -role data -data-protocol iscsi|fc -home-node _node_name_ -home-port _port_name_ -address _ip_address_ -netmask netmask`
+
++
+NetApp unterstützt für jede SVM, die Daten bereitstellt, mindestens eine iSCSI- oder FC-LIF pro Node. Jedoch sind für Redundanz zwei LIFS pro Node erforderlich.
+
+. Vergewissern Sie sich, dass Ihre LIFs erstellt wurden und dass ihr Betriebsstatus lautet `online`:
++
+`network interface show -vserver _vserver_name_ _lif_name_`
+
+. Erstellen Sie Ihre LUNs:
++
+`lun create -vserver vserver_name -volume _volume_name_ -lun _lun_name_ -size _lun_size_ -ostype linux -space-reserve enabled|disabled`
+
++
+Der LUN-Name darf nicht mehr als 255 Zeichen enthalten und darf keine Leerzeichen enthalten.
+
++
+
+NOTE: Die NVFAIL-Option ist automatisch aktiviert, wenn eine LUN in einem Volume erstellt wird.
+
+. Erstellen Sie Ihre Initiatorgruppen:
++
+`igroup create -vserver _vserver_name_ -igroup _igroup_name_ -protocol fcp|iscsi|mixed -ostype linux -initiator _initiator_name_`
+
+. Ordnen Sie Ihre LUNs Initiatorgruppen zu:
++
+`lun mapping create -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -igroup _igroup_name_`
+
+. Vergewissern Sie sich, dass Ihre LUNs ordnungsgemäß konfiguriert sind:
++
+`lun show -vserver _vserver_name_`
+
+. link:create-port-sets-binding-igroups-task.html["Erstellen Sie einen Portsatz und binden Sie es an eine Initiatorgruppe"] (Optional).
+. Befolgen Sie die Schritte in der Host-Dokumentation, um den Blockzugriff auf Ihren spezifischen Hosts zu ermöglichen.
+. Schließen Sie die FC- oder iSCSI-Zuordnung mithilfe der Host Utilities ab und ermitteln Sie die LUNs auf dem Host.
+
+
+--
+====
+link:index.html["SAN-Administration – Übersicht"]
+https://docs.netapp.com/us-en/ontap-sanhost/index.html["ONTAP SAN-Host-Konfiguration"]
+https://docs.netapp.com/us-en/ontap/san-admin/manage-san-initiators-task.html["Zeigen Sie SAN-Initiatorgruppen in System Manager an und verwalten Sie sie"]
+http://www.netapp.com/us/media/tr-4017.pdf["Technischer Bericht 4017 zu Fibre Channel SAN Best Practices"]

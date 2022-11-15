@@ -1,0 +1,76 @@
+---
+permalink: encryption-at-rest/rekey-encrypted-volume-task.html 
+sidebar: sidebar 
+keywords: changing, encryption key, volume encryption rekey start, command 
+summary: Es handelt sich hierbei um eine Best Practice für Sicherheit, den Verschlüsselungsschlüssel für ein Volume regelmäßig zu ändern. Ab ONTAP 9.3 können Sie den Befehl „rekeykey Start“ für die Volume-Verschlüsselung verwenden, um den Verschlüsselungsschlüssel zu ändern. 
+---
+= Ändern Sie den Verschlüsselungsschlüssel für ein Volume mit dem Befehl „Start der Volume-Verschlüsselung“
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Es handelt sich hierbei um eine Best Practice für Sicherheit, den Verschlüsselungsschlüssel für ein Volume regelmäßig zu ändern. Ab ONTAP 9.3 können Sie den verwenden `volume encryption rekey start` Befehl zum Ändern des Verschlüsselungsschlüssels.
+
+Sobald Sie einen Rekeyvorgang starten, muss er abgeschlossen sein. Es gibt keine Rückkehr zum alten Schlüssel. Wenn während des Vorgangs ein Leistungsproblem auftritt, können Sie das ausführen `volume encryption rekey pause` Befehl zum Anhalten des Vorgangs, und `volume encryption rekey resume` Befehl zum Fortsetzen des Vorgangs.
+
+Bis der Vorgang des Neuschlüssels abgeschlossen ist, verfügt das Volume über zwei Tasten. Neue Schreibzugriffe und die entsprechenden Lesezugriffe nutzen den neuen Schlüssel. Andernfalls wird der alte Schlüssel bei den Lesevorgängen verwendet.
+
+[NOTE]
+====
+Verwenden Sie ihn nicht `volume encryption rekey start` Um ein SnapLock Volume erneut zu keyNeuschlüssel.
+
+====
+.Schritte
+. Ändern eines Verschlüsselungsschlüssels:
++
+`volume encryption rekey start -vserver SVM_name -volume volume_name`
+
++
+Der Verschlüsselungsschlüssel für wird mit dem folgenden Befehl geändert `vol1` Auf SVM``vs1``:
+
++
+[listing]
+----
+cluster1::> volume encryption rekey start -vserver vs1 -volume vol1
+----
+. Überprüfen Sie den Status der Rekeybedienung:
++
+`volume encryption rekey show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl wird der Status der Rekeyoperation angezeigt:
+
++
+[listing]
+----
+cluster1::> volume encryption rekey show
+
+Vserver   Volume   Start Time           Status
+-------   ------   ------------------   ---------------------------
+vs1       vol1     9/18/2017 17:51:41   Phase 2 of 2 is in progress.
+----
+. Vergewissern Sie sich nach Abschluss des Rekeyvorgangs, dass das Volume für die Verschlüsselung aktiviert ist:
++
+`volume show -is-encrypted true`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl werden die verschlüsselten Volumes auf angezeigt `cluster1`:
+
++
+[listing]
+----
+cluster1::> volume show -is-encrypted true
+
+Vserver  Volume  Aggregate  State  Type  Size  Available  Used
+-------  ------  ---------  -----  ----  -----  --------- ----
+vs1      vol1    aggr2     online    RW  200GB    160.0GB  20%
+----
+

@@ -1,0 +1,118 @@
+---
+permalink: smb-admin/security-styles-their-effects-concept.html 
+sidebar: sidebar 
+keywords: unix, ntfs, mixed, unified, security, style, effect, permission, handle, data, what the security styles and their effects are 
+summary: 'Es gibt vier verschiedene Sicherheitsarten: UNIX, NTFS, gemischt und vereinheitlicht. Jeder Sicherheitsstil hat unterschiedliche Auswirkungen auf den Umgang mit Berechtigungen für Daten. Sie müssen die verschiedenen Effekte verstehen, um sicherzustellen, dass Sie den entsprechenden Sicherheitsstil für Ihre Zwecke auswählen.' 
+---
+= Was die Sicherheitsstile und ihre Auswirkungen sind
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Es gibt vier verschiedene Sicherheitsarten: UNIX, NTFS, gemischt und vereinheitlicht. Jeder Sicherheitsstil hat unterschiedliche Auswirkungen auf den Umgang mit Berechtigungen für Daten. Sie müssen die verschiedenen Effekte verstehen, um sicherzustellen, dass Sie den entsprechenden Sicherheitsstil für Ihre Zwecke auswählen.
+
+Es ist wichtig zu verstehen, dass Sicherheitsstile nicht bestimmen, welche Client-Typen auf Daten zugreifen können oder nicht. Sicherheitsstile bestimmen nur die Art der Berechtigungen, die ONTAP zur Kontrolle des Datenzugriffs verwendet, und welche Clienttypen diese Berechtigungen ändern können.
+
+Wenn ein Volume beispielsweise UNIX-Sicherheitsstil verwendet, können SMB-Clients aufgrund der Multiprotokollart von ONTAP weiterhin auf Daten zugreifen (sofern sie sich ordnungsgemäß authentifizieren und autorisieren). ONTAP verwendet jedoch UNIX-Berechtigungen, die nur UNIX-Clients mit nativen Tools ändern können.
+
+|===
+| Sicherheitsstil | Clients, die Berechtigungen ändern können | Berechtigungen, die Clients verwenden können | Dadurch effektiver Sicherheitsstil | Clients, die auf Dateien zugreifen können 
+
+
+ a| 
+UNIX
+ a| 
+NFS
+ a| 
+Bits im NFSv3 Modus
+ a| 
+UNIX
+ a| 
+NFS und SMB
+
+
+
+ a| 
+NFSv4.x ACLs
+ a| 
+UNIX
+
+
+
+ a| 
+NTFS
+ a| 
+SMB
+ a| 
+NTFS-ACLs
+ a| 
+NTFS
+
+
+
+ a| 
+Gemischt
+ a| 
+NFS oder SMB
+ a| 
+Bits im NFSv3 Modus
+ a| 
+UNIX
+
+
+
+ a| 
+NFSv4.x ACLs
+ a| 
+UNIX
+
+
+
+ a| 
+NTFS-ACLs
+ a| 
+NTFS
+ a| 
+Virtualisierung
+ a| 
+NFS oder SMB
+
+
+
+ a| 
+Bits im NFSv3 Modus
+ a| 
+UNIX
+
+
+
+ a| 
+NFSv4.1 ACLs
+ a| 
+UNIX
+ a| 
+NTFS-ACLs
+ a| 
+NTFS
+
+
+
+.3+| Unified (nur für Infinite Volumes, in ONTAP 9.4 und älteren Versionen.) .3+| NFS oder SMB | Bits im NFSv3 Modus .2+| Unix 
+
+
+| NFSv4.1 ACLs | NTFS-ACLs 
+|===
+FlexVol Volumes unterstützen UNIX, NTFS und verschiedene Sicherheitsstile. Wenn der Sicherheitsstil gemischt oder vereinheitlicht ist, hängen die effektiven Berechtigungen vom Clienttyp ab, der die Berechtigungen zuletzt geändert hat, da Benutzer den Sicherheitsstil auf individueller Basis festlegen. Wenn der letzte Client, der die Berechtigungen geändert hat, ein NFSv3-Client war, sind die Berechtigungen UNIX NFSv3-Modus-Bits. Wenn der letzte Client ein NFSv4-Client war, sind die Berechtigungen NFSv4 ACLs. Wenn der letzte Client ein SMB-Client war, sind die Berechtigungen Windows NTFS ACLs.
+
+Der Unified Security-Stil ist nur mit Infinite Volumes verfügbar, die in ONTAP 9.5 und neueren Versionen nicht mehr unterstützt werden. Weitere Informationen finden Sie unter link:..flexgroup/index.html["Das Management von FlexGroup Volumes – Überblick"].
+
+Ab ONTAP 9.2 beginnt der `show-effective-permissions` Parameter für das `vserver security file-directory` Mit Befehl können Sie effektive Berechtigungen anzeigen, die einem Windows- oder UNIX-Benutzer im angegebenen Datei- oder Ordnerpfad gewährt werden. Darüber hinaus der optionale Parameter `-share-name` Ermöglicht Ihnen die Anzeige der effektiven Freigabeberechtigung.
+
+[NOTE]
+====
+ONTAP legt zunächst einige Standarddateiberechtigungen fest. Standardmäßig ist der effektive Sicherheitsstil auf allen Daten in UNIX-, gemischten und Unified Security-Volumes UNIX und der effektive Berechtigungstyp UNIX Mode Bits (0755, sofern nicht anders angegeben), bis er von einem Client gemäß dem Standardsicherheitsstil konfiguriert wird. Standardmäßig ist der effektive Sicherheitsstil auf allen Daten in NTFS-Sicherheitsstil-Volumes NTFS und hat eine ACL, die allen die vollständige Kontrolle erlaubt.
+
+====
+2021-12-09, BURT 1443623

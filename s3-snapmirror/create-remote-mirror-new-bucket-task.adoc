@@ -1,0 +1,183 @@
+---
+sidebar: sidebar 
+permalink: s3-snapmirror/create-remote-mirror-new-bucket-task.html 
+keywords: 'create a mirror relationship for a new bucket (remote cluster), protect new s3 buckets, remote cluster, mirror relationship, new buckets, new bucket requirements, mirror data to a remote cluster, snapmirror buckets, snapmirror relationship storage vm, new buckets in storage vm, destination clusters, source cluster, mirror data, peering, storage vm add users, snapmirror protection bucket, create snapmirror policy' 
+summary: Wenn Sie neue S3-Buckets erstellen, können Sie sie unmittelbar in einem S3-SnapMirror-Ziel in einem Remote-Cluster sichern. 
+---
+= Erstellen einer Spiegelbeziehung für einen neuen Bucket (Remote-Cluster)
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+Wenn Sie neue S3-Buckets erstellen, können Sie sie unmittelbar in einem S3-SnapMirror-Ziel in einem Remote-Cluster sichern.
+
+.Was Sie benötigen
+* Die Anforderungen für ONTAP-Versionen, Lizenzierung und S3-Serverkonfiguration wurden erfüllt.
+* Zwischen Quell- und Ziel-Clustern ist eine Peering-Beziehung vorhanden, während zwischen Quell- und Ziel-Storage VMs eine Peering-Beziehung besteht.
+* FÜR die Quell- und Ziel-VMs SIND CA-Zertifikate erforderlich. Sie können selbstsignierte CA-Zertifikate oder -Zertifikate verwenden, die von einem externen CA-Anbieter signiert wurden.
+
+
+Sie müssen Aufgaben sowohl auf Quell- als auch auf Zielsystemen ausführen.
+
+
+
+== System Manager Verfahren
+
+. Wenn dies die erste S3 SnapMirror Beziehung für diese Storage-VM ist, überprüfen Sie, ob die Root-Benutzerschlüssel für Quell- und Ziel-Storage VMs vorhanden sind, und generieren Sie sie erneut, wenn sie nicht:
++
+.. Klicken Sie auf *Storage > Storage VMs* und wählen Sie dann die Speicher-VM aus.
+.. Klicken Sie auf der Registerkarte *Einstellungen* auf image:icon_pencil.gif["Symbol bearbeiten"] In der Kachel *S3*.
+.. Überprüfen Sie auf der Registerkarte *Benutzer*, ob für den Root-Benutzer ein Zugriffsschlüssel vorhanden ist.
+.. Falls nicht, klicken Sie auf image:icon_kabob.gif["Weitere Symbole"] Klicken Sie neben *root* auf *Schlüssel neu generieren*. Generieren Sie den Schlüssel nicht neu, wenn er bereits vorhanden ist.
+
+
+. Bearbeiten Sie die Storage VM, um Benutzer hinzuzufügen und Benutzern zu Gruppen hinzuzufügen, sowohl im Quell- als auch im Ziel-Storage der VMs:
++
+Klicken Sie auf *Storage > Storage VMs*, klicken Sie auf die Speicher-VM, klicken Sie auf *Einstellungen* und dann auf image:icon_pencil.gif["Symbol bearbeiten"] Unter S3.
+
++
+Siehe link:../task_object_provision_add_s3_users_groups.html["Fügen Sie S3-Benutzer und -Gruppen hinzu"] Finden Sie weitere Informationen.
+
+. Auf dem Quell-Cluster, erstellen Sie eine S3 SnapMirror Politik wenn Sie nicht haben eine bestehende und Sie wollen nicht die Standard-Policy verwenden:
++
+.. Klicken Sie auf *Schutz > Übersicht* und dann auf *Lokale Richtlinieneinstellungen*.
+.. Klicken Sie Auf image:../media/icon_arrow.gif["Nach-rechts-Taste"] Klicken Sie neben *Schutzrichtlinien* auf *Hinzufügen*.
++
+*** Geben Sie den Namen und die Beschreibung der Richtlinie ein.
+*** Wählen Sie den Richtlinienumfang, das Cluster oder die SVM aus
+*** Wählen Sie * Continuous* für S3 SnapMirror Beziehungen.
+*** Geben Sie Ihre *Throttle*- und *Recovery Point Objective*-Werte ein.
+
+
+
+
+. Erstellung eines Buckets mit SnapMirror Sicherung:
++
+.. Klicken Sie auf *Storage > Buckets* und dann auf *Hinzufügen*. Die Überprüfung der Berechtigungen ist optional, wird aber empfohlen.
+.. Geben Sie einen Namen ein, wählen Sie die Speicher-VM aus, geben Sie eine Größe ein und klicken Sie dann auf *Weitere Optionen*.
+.. Klicken Sie unter *Berechtigungen* auf *Hinzufügen*.
++
+*** *Principal* und *Effect* - Wählen Sie Werte aus, die Ihren Benutzergruppeneinstellungen entsprechen, oder übernehmen Sie die Standardeinstellungen.
+*** *Aktionen*- stellen Sie sicher, dass die folgenden Werte angezeigt werden:
+`GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts`
+*** *Ressourcen* - Verwenden Sie die Standardeinstellungen `(_bucketname, bucketname_/*)` Oder andere Werte, die Sie benötigen.
++
+Siehe link:../task_object_provision_manage_bucket_access.html["Management des Benutzerzugriffs auf Buckets"] Weitere Informationen zu diesen Feldern.
+
+
+
+.. Aktivieren Sie unter *Schutz* *Enable SnapMirror (ONTAP oder Cloud)*. Geben Sie anschließend die folgenden Werte ein:
++
+*** Ziel
++
+**** *ZIEL: ONTAP-System*
+**** *CLUSTER*: Wählen Sie den Remote-Cluster aus.
+**** *STORAGE VM*: Wählen Sie eine Speicher-VM auf dem Remote-Cluster aus.
+**** *S3-SERVER-CA-ZERTIFIKAT*: Kopieren Sie den Inhalt des _source_-Zertifikats.
+
+
+*** Quelle
++
+**** *S3-SERVER-CA-ZERTIFIKAT:* Kopieren und Einfügen des Inhalts des _Destination_-Zertifikats.
+
+
+
+
+
+
+
+
+Überprüfen Sie *Verwenden Sie dasselbe Zertifikat auf dem Ziel*, wenn Sie ein Zertifikat verwenden, das von einem externen CA-Anbieter signiert wurde.
+
+Wenn Sie auf *Zieleinstellungen* klicken, können Sie Ihre eigenen Werte anstelle der Standardeinstellungen für Bucket-Name, -Kapazität und -Service-Level eingeben.
+
+Wenn Sie auf *Speichern* klicken, wird in der Quell-Storage-VM ein neuer Bucket erstellt und in einem neuen Bucket gespiegelt, der die Ziel-Storage-VM erstellt.
+
+
+
+== CLI-Verfahren
+
+. Wenn dies die erste S3 SnapMirror Beziehung für diese SVM ist, überprüfen Sie, ob die Root-Benutzerschlüssel für Quell- und Ziel-SVMs vorhanden sind, und generieren Sie sie erneut, wenn sie dies nicht tun:
++
+`vserver object-store-server user show`
+
++
+Vergewissern Sie sich, dass für den Root-Benutzer ein Zugriffsschlüssel vorhanden ist. Falls nicht, geben Sie Folgendes ein:
+
++
+`vserver object-store-server user regenerate-keys -vserver svm_name -user _root_`
+
++
+Generieren Sie den Schlüssel nicht neu, wenn er bereits vorhanden ist.
+
+. Buckets für die Quell- und Ziel-SVMs erstellen:
++
+`vserver object-store-server bucket create -vserver svm_name -bucket bucket_name [-size _integer_[KB|MB|GB|TB|PB]] [-comment _text_] [_additional_options_]`
+
+. Fügen Sie Zugriffsregeln den Standard-Bucket-Richtlinien sowohl in den Quell- als auch in Ziel-SVMs hinzu:
++
+`vserver object-store-server bucket policy add-statement -vserver _svm_name_ -bucket _bucket_name_ -effect {allow|deny} -action _object_store_actions_ -principal _user_and_group_names_ -resource _object_store_resources_ [-sid _text_] [-index _integer_]`
+
++
+.Beispiel
+[listing]
+----
+src_cluster::> vserver object-store-server bucket policy add-statement -bucket test-bucket -effect allow -action GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts -principal - -resource test-bucket, test-bucket /*
+----
+. Auf der Quell-SVM, erstellen Sie eine S3 SnapMirror- Politik wenn Sie keine bestehende haben und Sie nicht die Default-Richtlinie verwenden möchten:
+`snapmirror policy create -vserver _svm_name_ -policy policy_name -type continuous [-rpo _integer_] [-throttle _throttle_type_] [-comment _text_] [_additional_options_]`
++
+Parameter:
+
++
+** Typ `continuous` – Der einzige Richtlinientyp für S3 SnapMirror Beziehungen (erforderlich).
+** `-rpo` – Gibt die Zeit für den Wiederherstellungspunkt in Sekunden an (optional).
+** `-throttle` – Gibt die obere Grenze für Durchsatz/Bandbreite in Kilobyte/Sekunden an (optional).
++
+.Beispiel
+[listing]
+----
+src_cluster::> snapmirror policy create -vserver vs0 -type continuous -rpo 0 -policy test-policy
+----
+
+
+. Installieren von CA-Server-Zertifikaten auf den Administrator-SVMs der Quell- und Ziel-Cluster:
++
+.. Installieren Sie auf dem Quellcluster das CA-Zertifikat, das das _Destination_ S3-Serverzertifikat unterzeichnet hat:
+`security certificate install -type server-ca -vserver _src_admin_svm_ -cert-name _dest_server_certificate_`
+.. Installieren Sie auf dem Ziel-Cluster das CA-Zertifikat, das das _Source_ S3-Serverzertifikat signiert hat:
+`security certificate install -type server-ca -vserver _dest_admin_svm_ -cert-name _src_server_certificate_`
++
+Wenn Sie ein von einem externen CA-Anbieter signiertes Zertifikat verwenden, installieren Sie dasselbe Zertifikat auf der Quell- und Ziel-Administrator-SVM.
+
++
+Siehe `security certificate install` Man-Page für Details.
+
+
+
+. Erstellen Sie auf der Quell-SVM eine S3-SnapMirror Beziehung:
++
+`snapmirror create -source-path _src_svm_name_:/bucket/_bucket_name_ -destination-path _dest_peer_svm_name_:/bucket/_bucket_name_, ...} [-policy policy_name]`
+
++
+Sie können eine von Ihnen erstellte Richtlinie verwenden oder die Standardeinstellung übernehmen.
+
++
+.Beispiel
+[listing]
+----
+src_cluster::> snapmirror create -source-path vs0-src:/bucket/test-bucket -destination-path vs1-dest:bucket/test-bucket-mirror -policy test-policy
+----
+. Überprüfen Sie, ob die Spiegelung aktiv ist:
+`snapmirror show -policy-type continuous -fields status`
+

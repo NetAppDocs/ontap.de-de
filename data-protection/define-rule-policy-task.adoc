@@ -1,0 +1,126 @@
+---
+permalink: data-protection/define-rule-policy-task.html 
+sidebar: sidebar 
+keywords: define, rule, policy 
+summary: Für benutzerdefinierte Richtlinien mit dem Richtlinientyp „Vault“ oder „Mirror-Vault“ müssen Sie mindestens eine Regel definieren, die bestimmt, welche Snapshot-Kopien während der Initialisierung und des Updates übertragen werden. Sie können auch Regeln für Standardrichtlinien mit dem Richtlinientyp „Vault“ oder „Mirror-Vault“ definieren. 
+---
+= Definieren Sie eine Regel für eine Richtlinie
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Für benutzerdefinierte Richtlinien mit dem Richtlinientyp „`Vault`“ oder „`mmirror-Vault`“ müssen Sie mindestens eine Regel definieren, die bestimmt, welche Snapshot-Kopien während der Initialisierung und Aktualisierung übertragen werden. Sie können auch Regeln für Standardrichtlinien mit dem Richtlinientyp „`Vault`“ oder „ `mmirror-Vault`“ definieren.
+
+Jede Richtlinie mit dem Richtlinientyp „`Vault`“ oder „`mMirror-Vault`“ muss über eine Regel verfügen, die festlegt, welche Snapshot Kopien repliziert werden sollen. Die Regel „`bi-monthly`“ gibt beispielsweise an, dass nur Snapshot Kopien, denen das SnapMirror Label „`bi-monthly`“ zugewiesen wurde, repliziert werden sollten. Sie geben das SnapMirror-Label an, wenn Sie die Snapshot-Richtlinie auf der Quelle konfigurieren.
+
+Jeder Richtlinientyp ist einer oder mehreren systemdefinierten Regeln zugeordnet. Diese Regeln werden einer Richtlinie automatisch zugewiesen, wenn Sie ihren Richtlinientyp angeben. Die folgende Tabelle zeigt die systemdefinierten Regeln.
+
+[cols="3*"]
+|===
+
+
+| Systemdefinierte Regel | Wird in Richtlinientypen verwendet | Ergebnis 
+
+
+ a| 
+sm_erstellt
+ a| 
+Asynchrone Spiegelung, Spiegelung/Vault, Sync, StrictSync
+ a| 
+Eine von SnapMirror erstellte Snapshot Kopie wird bei Initialisierung und Update übertragen.
+
+
+
+ a| 
+All_Source_Snapshots
+ a| 
+Asynchrone Spiegelung
+ a| 
+Neue Snapshot Kopien auf der Quelle werden bei Initialisierung und Update übertragen.
+
+
+
+ a| 
+Täglich
+ a| 
+Vault, Mirror-Vault
+ a| 
+Neue Snapshot-Kopien auf der Quelle mit dem SnapMirror-Label „`dily`“ werden bei Initialisierung und Update übertragen.
+
+
+
+ a| 
+Wöchentlich
+ a| 
+Vault, Mirror-Vault
+ a| 
+Neue Snapshot-Kopien auf der Quelle mit dem SnapMirror-Label „`Weekly`“ werden bei Initialisierung und Update übertragen.
+
+
+
+ a| 
+Monatlich
+ a| 
+Mirror-Vault
+ a| 
+Neue Snapshot-Kopien auf der Quelle mit dem SnapMirror-Label „`monthly`“ werden bei Initialisierung und Update übertragen.
+
+
+
+ a| 
+Applikationskonsistent
+ a| 
+Sync, StrictSync
+ a| 
+Snapshot-Kopien mit dem SnapMirror-Label „`App_konsistenter`“ auf der Quelle werden synchron zum Ziel repliziert. Unterstützt ab ONTAP 9.7.
+
+|===
+Mit Ausnahme des Richtlinientyps „`async-Mirror`“ können Sie bei Bedarf zusätzliche Regeln für Standard- oder benutzerdefinierte Richtlinien festlegen. Beispiel:
+
+* Für die Standardeinstellung `MirrorAndVault` Richtlinie: Sie können eine Regel mit dem Namen „`bi-monthly`“ erstellen, die Snapshot-Kopien der Quelle mit dem „`bi-monthly`“ SnapMirror Label übereinstimmt.
+* Für eine individuelle Policy mit dem Richtlinientyp „`mmirror-Vault`“ könnten Sie eine Regel namens „`bi-Weekly`“ erstellen, die Snapshot-Kopien auf der Quelle mit dem „`bi-Weekly`“ SnapMirror-Etikett übereinstimmt.
+
+
+.Schritt
+. Definieren Sie eine Regel für eine Richtlinie:
++
+`snapmirror policy add-rule -vserver _SVM_ -policy _policy_for_rule_ -snapmirror-label _snapmirror-label_ -keep _retention_count_`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel wird eine Regel mit dem SnapMirror-Label hinzugefügt `bi-monthly` Auf den Standardwert `MirrorAndVault` Richtlinie:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy add-rule -vserver svm1 -policy MirrorAndVault -snapmirror-label bi-monthly -keep 6
+----
++
+Im folgenden Beispiel wird eine Regel mit dem SnapMirror-Label hinzugefügt `bi-weekly` Auf den Benutzer `my_snapvault` Richtlinie:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy add-rule -vserver svm1 -policy my_snapvault -snapmirror-label bi-weekly -keep 26
+----
++
+Im folgenden Beispiel wird eine Regel mit dem SnapMirror-Label hinzugefügt `app_consistent` Auf den Benutzer `Sync` Richtlinie:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy add-rule -vserver svm1 -policy Sync -snapmirror-label app_consistent -keep 1
+----
++
+Sie können dann Snapshot Kopien aus dem Quell-Cluster replizieren, die mit diesem SnapMirror Etikett übereinstimmen:
+
++
+[listing]
+----
+cluster_src::> snapshot create -vserver vs1 -volume vol1 -snapshot snapshot1 -snapmirror-label app_consistent
+----
+

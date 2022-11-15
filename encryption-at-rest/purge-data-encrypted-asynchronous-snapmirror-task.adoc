@@ -1,0 +1,92 @@
+---
+permalink: encryption-at-rest/purge-data-encrypted-asynchronous-snapmirror-task.html 
+sidebar: sidebar 
+keywords: securely, purging, scrub, data, encrypted, volume, nve, netapp, volume encryption, snapmirror, asynchronous 
+summary: Ab ONTAP 9.8 können Sie Daten mithilfe von sicherem Löschen auch auf NVE-fähigen Volumes mit einer asynchronen SnapMirror-Beziehung unterbrechungsfrei „Scrub“ speichern. 
+---
+= Löschen Sie Daten mit einer asynchronen SnapMirror-Beziehung sicher auf einem verschlüsselten Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.8 kann auf NVE-fähigen Volumes mit einer asynchronen SnapMirror-Beziehung ein sicheres Löschen von Daten verwendet werden, die unterbrechungsfrei „`sCrub`“ Daten erzeugen.
+
+.Was Sie und#8217;ll benötigen
+* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Für diese Aufgabe sind erweiterte Berechtigungen erforderlich.
+
+
+Die sichere Löschung kann in Abhängigkeit von der Datenmenge in den gelöschten Dateien mehrere Minuten bis viele Stunden dauern. Sie können das verwenden `volume encryption secure-purge show` Befehl zum Anzeigen des Status des Vorgangs. Sie können das verwenden `volume encryption secure-purge abort` Befehl zum Beenden des Vorgangs.
+
+[NOTE]
+====
+Um eine sichere Löschung auf einem SAN-Host durchzuführen, müssen Sie die gesamte LUN löschen, die die zu löschenden Dateien enthält. Alternativ können Sie Löcher in der LUN für die Blöcke lochen, die zu den Dateien gehören, die gelöscht werden sollen. Wenn Sie die LUN nicht löschen können oder Ihr Host-Betriebssystem keine Stanzlöcher in der LUN unterstützt, können Sie keine sichere Löschung durchführen.
+
+====
+.Schritte
+. Ändern Sie im Storage-System die erweiterte Berechtigungsebene:
++
+`set -privilege advanced`
+
+. Löschen Sie die Dateien oder die LUN, die Sie löschen möchten.
++
+** Löschen Sie auf einem NAS-Client die Dateien, die Sie sicher löschen möchten.
+** Löschen Sie auf einem SAN-Host die LUN, die Sie löschen oder Löcher in der LUN sicher löschen möchten, damit die Blöcke zu den Dateien gehören, die gelöscht werden sollen.
+
+
+. Bereiten Sie das Zielvolumen in der asynchronen Beziehung vor, die sicher gelöscht werden soll:
++
+`volume encryption secure-purge start -vserver SVM_name -volume volume_name -prepare true`
+
++
+Wiederholen Sie diesen Schritt für jedes Volume in Ihrer asynchronen SnapMirror-Beziehung.
+
+. Wenn die Dateien, die Sie sicher löschen möchten, in Snapshot-Kopien gespeichert sind, löschen Sie die Snapshot-Kopien:
++
+`snapshot delete -vserver SVM_name -volume vol_name -snapshot`
+
+. Wenn sich die Dateien, die Sie sicher löschen möchten, in den Basiskopien befinden, führen Sie folgende Schritte aus:
++
+.. Erstellung einer Snapshot Kopie auf dem Ziel-Volume in der asynchronen SnapMirror Beziehung:
++
+`volume snapshot create -snapshot snapshot_name -vserver SVM_name -volume vol_name`
+
+.. Aktualisieren Sie SnapMirror, um die Snapshot Basiskopie nach vorn zu verschieben:
++
+`snapmirror update -source-snapshot snapshot_name -destination-path destination_path`
+
++
+Wiederholen Sie diesen Schritt für jedes Volume in der asynchronen SnapMirror-Beziehung.
+
+.. Wiederholen Sie die Schritte (A) und (b) entsprechend der Anzahl der Basis-Snapshot-Kopien plus einer.
++
+Wenn Sie beispielsweise zwei Basis-Snapshot-Kopien haben, sollten Sie die Schritte (A) und (b) dreimal wiederholen.
+
+.. Vergewissern Sie sich, dass die Snapshot Basiskopie vorhanden ist: +
+`snapshot show -vserver SVM_name -volume vol_name``
+.. Löschen Sie die Basis-Snapshot Kopie: +
+`snapshot delete -vserver SVM_name -volume vol_name -snapshot snapshot`
+
+
+. Löschen Sie gelöschte Dateien sicher:
++
+`volume encryption secure-purge start -vserver SVM_name -volume volume_name`
+
++
+Wiederholen Sie diesen Schritt für jedes Volume in der asynchronen SnapMirror-Beziehung.
+
++
+Mit dem folgenden Befehl werden die gelöschten Dateien auf „`vol1`“ auf SVM „`vs1`“ sicher gelöscht:
+
++
+[listing]
+----
+cluster1::> volume encryption secure-purge start -vserver vs1 -volume vol1
+----
+. Überprüfen Sie den Status des sicheren Löschvorgangs:
++
+`volume encryption secure-purge show`
+
+

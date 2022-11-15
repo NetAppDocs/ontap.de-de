@@ -1,0 +1,82 @@
+---
+permalink: san-admin/use-cases-odx-concept.html 
+sidebar: sidebar 
+keywords: odx, use cases 
+summary: Bei der Verwendung von ODX auf SVMs sollten Sie sich die Anwendungsfälle bewusst sein, damit Sie unter den Umständen, unter denen ODX Ihnen Performance-Vorteile bietet, die Ergebnisse erkennen können. 
+---
+= Anwendungsfälle für ODX
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bei der Verwendung von ODX auf SVMs sollten Sie sich die Anwendungsfälle bewusst sein, damit Sie unter den Umständen, unter denen ODX Ihnen Performance-Vorteile bietet, die Ergebnisse erkennen können.
+
+Windows-Server und -Clients, die ODX unterstützen, nutzen den Copy-Offload als Standardfunktion zum Kopieren von Daten zwischen Remote-Servern. Wenn der Windows-Server oder -Client keine ODX oder eine ODX-Copy-Offload unterstützt, können der Kopier- oder Verladevorgang wieder auf herkömmliche Lese- und Schreibvorgänge für den Kopier- oder Verschiebevorgang zurückgreift.
+
+In den folgenden Anwendungsfällen werden ODX Kopien und Verschiebungen unterstützt:
+
+* Intra-Volume
++
+Die Quell- und Zieldateien oder LUNs befinden sich innerhalb desselben Volumes.
+
+* Zwischen Volumes, demselben Node, gleiche SVM
++
+Die Quell- und Zieldateien oder LUNs befinden sich auf verschiedenen Volumes, die sich auf demselben Node befinden. Die Daten sind Eigentum derselben SVM.
+
+* Zwischen Volumes, verschiedenen Nodes, dieselbe SVM
++
+Die Quell- und Zieldateien oder LUNs befinden sich auf verschiedenen Volumes, die sich auf unterschiedlichen Nodes befinden. Die Daten sind Eigentum derselben SVM.
+
+* Zwischen SVM, demselben Node
++
+Die Quell- und Zieldatei bzw. die LUNs befinden sich auf verschiedenen Volumes, die sich auf demselben Node befinden. Im Besitz der Daten befinden sich unterschiedliche SVMs.
+
+* Zwischen SVMs, unterschiedliche Nodes
++
+Die Quell- und Zieldatei bzw. die LUNs befinden sich auf verschiedenen Volumes, die sich auf unterschiedlichen Nodes befinden. Im Besitz der Daten befinden sich unterschiedliche SVMs.
+
+* Cluster zwischen Clustern
++
+Die Quell- und Ziel-LUNs befinden sich auf unterschiedlichen Volumes, die sich auf verschiedenen Nodes über die Cluster befinden. Dies wird nur für SAN unterstützt und funktioniert nicht für SMB.
+
+
+
+Es gibt einige weitere spezielle Anwendungsfälle:
+
+* Bei der ONTAP ODX Implementierung können mit ODX Dateien zwischen SMB-Freigaben und virtuellen FC- oder iSCSI-Attached-Laufwerken kopiert werden.
++
+Mit Windows Explorer, Windows CLI, PowerShell, Hyper-V oder anderen Applikationen, die ODX unterstützen, können Dateien durch eine nahtlose Verschiebung von ODX Kopien zwischen SMB-Freigaben und verbundenen LUNs kopiert oder verschoben werden, sofern sich SMB-Freigaben und LUNs im selben Cluster befinden.
+
+* Hyper-V stellt weitere Anwendungsfälle für den ODX Copy-Offload zur Verfügung:
++
+** Mithilfe des ODX Copy-Offload-Pass-Through mit Hyper-V können Daten innerhalb oder zwischen VHD-Dateien (Virtual Hard Disk) kopiert oder Daten zwischen zugewiesenen SMB-Shares und verbundenen iSCSI-LUNs innerhalb desselben Clusters kopiert werden.
++
+Damit können Kopien von Gastbetriebssystemen an den zugrunde liegenden Storage weitergegeben werden.
+
+** Bei der Erstellung von VHDs mit fester Größe wird ODX zur Initialisierung der Festplatte mit Nullen verwendet, wobei ein bekannter Token mit dem Namen „Zeroed“ verwendet wird.
+** Wenn sich der Quell- und Ziel-Storage auf demselben Cluster befindet, wird eine ODX Copy Offload für die Storage-Migration bei Virtual Machines eingesetzt.
+
+
++
+[NOTE]
+====
+Um von den Anwendungsfällen für einen ODX Copy-Offload-Pass-Through mit Hyper-V zu profitieren, muss das Gastbetriebssystem ODX unterstützen. Und die Festplatten des Gastbetriebssystems müssen SCSI-Festplatten sein, die durch Storage (SMB oder SAN) unterstützt werden, der ODX unterstützt. IDE-Festplatten auf dem Gastbetriebssystem unterstützen keine ODX-Pass-Through-Unterstützung.
+
+====
+
+
+
+
+== Besondere Anforderungen an Systemdateien
+
+Sie können ODX-Dateien, die in qtrees gefunden wurden, löschen. Andere ODX-Systemdateien dürfen nur entfernt oder geändert werden, wenn Ihnen der technische Support dazu aufgefordert wird.
+
+Bei Nutzung der ODX Funktion liegen in jedem Volume des Systems ODX Systemdateien vor. Diese Dateien ermöglichen die zeitpunktgenaue Darstellung der bei der ODX-Übertragung verwendeten Daten. Die folgenden Systemdateien befinden sich auf der Root-Ebene jedes Volumes, das LUNs oder Dateien enthält, auf die Daten ausgelagert wurden:
+
+* `.copy-offload` (Ein ausgeblendtes Verzeichnis)
+* `.tokens` (Datei unter dem verborgenen `.copy-offload` Verzeichnis)
+
+
+Sie können das verwenden `copy-offload delete-tokens -path dir_path -node _node_name_` Befehl zum Löschen eines qtree mit einer ODX-Datei

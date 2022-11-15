@@ -1,0 +1,107 @@
+---
+permalink: flexgroup/manage-client-async-dir-delete-task.html 
+sidebar: sidebar 
+keywords: perform, directory, enable, delete, files, asynchronous, client rights, SMB, NFS, share, flexvol, flex vol, flexgroup, flex group 
+summary: 'Ab ONTAP 9.11.1 können Storage-Administratoren Rechte auf einem Volume erteilen, damit NFS- und SMB-Clients eine niedrige Latenz _fast Directory-Löschvorgänge ausführen können. Wenn das asynchrone Löschen aktiviert ist, können NFS Clients den verwenden `mv` Der Befehl und die SMB-Clients können den verwenden `rename` Befehl zum Löschen eines Verzeichnisses auf dem angegebenen Volume und Verschieben des Verzeichnisses in ein verborgenes Verzeichnis, das standardmäßig .ontaptrashbin heißt.' 
+---
+= Verwalten Sie die Clientrechte, um Verzeichnisse schnell zu löschen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.11.1 können Storage-Administratoren Rechte auf einem Volume gewähren, damit NFS- und SMB-Clients selbst Vorgänge mit niedriger Latenz _fast-Directory-Löschung_ durchführen können. Wenn das asynchrone Löschen auf dem Cluster aktiviert ist, können Linux-Client-Benutzer den verwenden `mv` Benutzer von Befehlen und Windows-Clients können den verwenden `rename` Befehl zum schnellen Löschen eines Verzeichnisses auf dem angegebenen Volume, indem es in ein verborgenes Verzeichnis verschoben wird, das standardmäßig .ontaptrashbin heißt.
+
+
+
+== Aktivieren Sie das asynchrone Löschen des Clientverzeichnisses
+
+.Schritte
+. Geben Sie in der Cluster-CLI den erweiterten Berechtigungsebene ein: `-privilege advance`
+. Aktivieren Sie das asynchrone Löschen des Clients und geben Sie auf Wunsch einen alternativen Namen für das Trashbin-Verzeichnis an:
++
+`volume file async-delete client enable volume _volname_ vserver _vserverName_ trashbinname _name_`
+
++
+Beispiel für den Standardname für Trashbin:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client enable -volume v1 -vserver  vs0
+
+Info: Async directory delete from the client has been enabled on volume "v1" in
+      Vserver "vs0".
+----
++
+Beispiel zur Angabe eines alternativen Trashbin-Namens:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client enable -volume test -trashbin ntaptrash -vserver vs1
+
+Success: Async directory delete from the client is enabled on volume "v1" in
+      Vserver "vs0".
+----
+. Überprüfen Sie, ob das asynchrone Löschen des Clients aktiviert ist:
++
+`volume file async-delete client show`
+
++
+Beispiel:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client show
+
+Vserver Volume      async-delete client TrashBinName
+------------ ------------ ----------------------- -------------
+vs1          vol1         Enabled          .ntaptrash
+vs2          vol2         Disabled          -
+
+2 entries were displayed.
+----
+
+
+
+
+== Deaktivieren Sie das Löschen des asynchronen Client-Verzeichnisses
+
+.Schritte
+. Aus dem Cluster CLI deaktivieren Sie das asychronous Directory des Clients löschen:
++
+`volume file async-delete client disable volume _volname_ vserver _vserverName_`
+
++
+Beispiel:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client disable -volume vol1 -vserver vs1
+
+       Success: Asynchronous directory delete client disabled successfully on volume.
+----
+. Überprüfen Sie, ob das asynchrone Löschen des Clients deaktiviert ist:
++
+`volume file async-delete client show`
+
++
+Beispiel:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client show
+
+Vserver      Volume      async-delete client      TrashBinName
+------------ ------------ ----------------------- -------------
+vs1          vol1         Disabled                -
+vs2          vol2         Disabled                -
+
+2 entries were displayed.
+----
+

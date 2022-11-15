@@ -1,0 +1,57 @@
+---
+permalink: s3-config/assess-physical-storage-requirements-task.html 
+sidebar: sidebar 
+keywords: s3, assess, physical, storage, requirements, cloud volumes ontap 
+summary: Bevor Sie S3-Storage für die Clients bereitstellen, müssen Sie sicherstellen, dass in vorhandenen Aggregaten für den neuen Objektspeicher ausreichend Speicherplatz vorhanden ist. Wird dies nicht der Fall sein, können Sie den gewünschten Typ und den gewünschten Speicherort mit Festplatten zu vorhandenen Aggregaten hinzufügen oder neue Aggregate erstellen. 
+---
+= Physischer Storage-Bedarf bewerten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie S3-Storage für die Clients bereitstellen, müssen Sie sicherstellen, dass in vorhandenen Aggregaten für den neuen Objektspeicher ausreichend Speicherplatz vorhanden ist. Wird dies nicht der Fall sein, können Sie den gewünschten Typ und den gewünschten Speicherort mit Festplatten zu vorhandenen Aggregaten hinzufügen oder neue Aggregate erstellen.
+
+Wenn Sie einen S3-Bucket in einer S3-fähigen SVM erstellen, wird automatisch ein FlexGroup-Volume erstellt, um den Bucket zu unterstützen. Sie können ONTAP Select die zugrunde liegenden Aggregate und FlexGroup Komponenten automatisch (das Standard) lassen oder Sie können die zugrunde liegenden Aggregate und FlexGroup Komponenten selbst auswählen.
+
+Wenn Sie sich entscheiden, die Aggregate und FlexGroup-Komponenten anzugeben, z. B. wenn Sie bestimmte Performance-Anforderungen für die zugrunde liegenden Festplatten haben -- sollten Sie sicherstellen, dass die Aggregatkonfiguration den Best Practice-Richtlinien für die Bereitstellung eines FlexGroup Volume entspricht. Weitere Informationen:
+
+* link:../flexgroup/index.html["Management von FlexGroup Volumes"]
+* https://www.netapp.com/pdf.html?item=/media/17251-tr4571apdf.pdf["Technischer Bericht 4571-a: NetApp ONTAP FlexGroup Volume Top Best Practices"^]
+
+
+Wenn Sie Buckets von Cloud Volumes ONTAP bereitstellen, wird dringend empfohlen, die zugrunde liegenden Aggregate manuell auszuwählen, um sicherzustellen, dass sie nur einen Node verwenden. Die Verwendung von Aggregaten beider Nodes kann sich auf die Performance auswirken, da die Nodes sich in geografisch getrennten Verfügbarkeitszonen befinden und daher anfällig für Latenzprobleme sind. Erfahren Sie mehr über link:create-bucket-task.html["Erstellen von Buckets für Cloud Volumes ONTAP"].
+
+Sie können den ONTAP S3-Server verwenden, um eine lokale FabricPool-Kapazitäts-Tier zu erstellen, d. h. im selben Cluster wie die Performance-Tier. Dies kann beispielsweise nützlich sein, wenn Sie SSD-Festplatten an ein HA-Paar angeschlossen haben und Sie _Cold_ Daten auf HDD-Festplatten in einem anderen HA-Paar verschieben möchten. In diesem Anwendungsfall sollten sich der S3-Server und der Bucket, der die lokale Kapazitäts-Tier enthält, daher in einem anderen HA-Paar als das Performance-Tier befinden. Lokales Tiering wird nicht auf Clustern mit einem oder zwei Nodes unterstützt.
+
+.Schritte
+. Anzeige des verfügbaren Speicherplatzes in vorhandenen Aggregaten:
++
+`storage aggregate show`
+
++
+Wenn genügend Speicherplatz oder der erforderliche Speicherort für ein Aggregat vorhanden ist, notieren Sie seinen Namen für die S3-Konfiguration.
+
++
+[listing]
+----
+cluster-1::> storage aggregate show
+Aggregate     Size Available Used% State   #Vols  Nodes  RAID Status
+--------- -------- --------- ----- ------- ------ ------ -----------
+aggr_0     239.0GB   11.13GB   95% online       1 node1  raid_dp,
+                                                         normal
+aggr_1     239.0GB   11.13GB   95% online       1 node1  raid_dp,
+                                                         normal
+aggr_2     239.0GB   11.13GB   95% online       1 node2  raid_dp,
+                                                         normal
+aggr_3     239.0GB   11.13GB   95% online       1 node2  raid_dp,
+                                                         normal
+aggr_4     239.0GB   238.9GB   95% online       5 node3  raid_dp,
+                                                         normal
+aggr_5     239.0GB   239.0GB   95% online       4 node4  raid_dp,
+                                                         normal
+6 entries were displayed.
+----
+. Falls keine Aggregate genügend Speicherplatz oder den erforderlichen Node-Standort vorhanden sind, fügen Sie mithilfe der Festplatten zu einem vorhandenen Aggregat hinzu `storage aggregate add-disks` Befehl, oder erstellen Sie mit dem ein neues Aggregat `storage aggregate create` Befehl.
+

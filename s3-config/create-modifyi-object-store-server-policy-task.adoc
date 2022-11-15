@@ -1,0 +1,120 @@
+---
+permalink: s3-config/create-modifyi-object-store-server-policy-task.html 
+sidebar: sidebar 
+keywords: create, modify, object, store, server, policy 
+summary: Sie können Richtlinien erstellen, die sich auf einen oder mehrere Buckets in einem Objektspeicher anwenden lassen. Serverrichtlinien für Objektspeicher können an Gruppen von Benutzern angehängt werden, wodurch das Management des Datenzugriffs über mehrere Buckets hinweg vereinfacht wird. 
+---
+= Erstellen oder Ändern einer Objektspeicherserverrichtlinie
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Richtlinien erstellen, die sich auf einen oder mehrere Buckets in einem Objektspeicher anwenden lassen. Serverrichtlinien für Objektspeicher können an Gruppen von Benutzern angehängt werden, wodurch das Management des Datenzugriffs über mehrere Buckets hinweg vereinfacht wird.
+
+Eine S3-fähige SVM mit einem S3-Server und einem Bucket muss bereits vorhanden sein.
+
+Sie können die Zugriffsrichtlinien auf der SVM-Ebene aktivieren, indem Sie eine standardmäßige oder benutzerdefinierte Richtlinie in einer Objekt-Storage-Servergruppe angeben. Die Richtlinien werden erst wirksam, wenn sie in der Gruppendefinition angegeben sind.
+
+
+NOTE: Wenn Sie die Objekt-Storage-Server-Richtlinien verwenden, geben Sie Principals (d. h. Benutzer und Gruppen) in der Gruppendefinition und nicht in der Richtlinie selbst an.
+
+Es gibt drei schreibgeschützte Standardrichtlinien für den Zugriff auf ONTAP S3-Ressourcen:
+
+* Vollzugriff
+* NoS3Access
+* ReadOnlyAccess
+
+
+Sie können auch neue benutzerdefinierte Richtlinien erstellen, neue Anweisungen für neue Benutzer und Gruppen hinzufügen oder die Attribute vorhandener Anweisungen ändern. Weitere Optionen finden Sie im `vserver object-store-server policy` link:https://docs.netapp.com/us-en/ontap-cli-9121/index.html["Befehlsreferenz"^].
+
+Wenn Sie ab ONTAP 9.9.1 und neueren Versionen die Funktionalität des AWS Client-Objekt-Tagging mit dem ONTAP S3 Server unterstützen möchten, führt Aktionen durch `GetObjectTagging`, `PutObjectTagging`, und `DeleteObjectTagging` Es müssen die Bucket- oder Gruppenrichtlinien verwendet werden.
+
+Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Verwenden Sie System Manager zum Erstellen oder Ändern einer Objektspeicherserverrichtlinie*
+
+.Schritte
+. Bearbeiten Sie den Speicher-VM: Klicken Sie auf *Storage > Storage VMs*, klicken Sie auf die Speicher-VM, klicken Sie auf *Einstellungen* und klicken Sie dann auf image:icon_pencil.gif["Bleistiftsymbol"] Unter S3.
+. Fügen Sie einen Benutzer hinzu: Klicken Sie auf *Richtlinien* und dann auf *Hinzufügen*.
++
+.. Geben Sie einen Richtliniennamen ein, und wählen Sie ihn aus einer Gruppenliste aus.
+.. Wählen Sie eine vorhandene Standardrichtlinie aus, oder fügen Sie eine neue hinzu.
++
+Beim Hinzufügen oder Ändern einer Gruppenrichtlinie können Sie die folgenden Parameter angeben:
+
++
+*** Gruppe: Die Gruppen, denen der Zugriff gewährt wird.
+*** Effekt: Ermöglicht oder verweigert den Zugriff auf eine oder mehrere Gruppen.
+*** Aktionen: Zulässige Aktionen in einem oder mehreren Buckets für eine bestimmte Gruppe.
+*** Ressourcen: Pfade und Namen von Objekten innerhalb eines oder mehrerer Buckets, für die der Zugriff gewährt oder verweigert wird. Beispiel:
++
+**** *** Gewährt Zugriff auf alle Buckets in der Storage-VM.
+**** *Bucketname* und *bucketname/** gewähren Zugang zu allen Objekten in einem bestimmten Bucket.
+**** *Bucketname/readme.txt* gewährt Zugriff auf ein Objekt in einem bestimmten Bucket.
+
+
+
+
+.. Fügen Sie gegebenenfalls Anweisungen zu bestehenden Richtlinien hinzu.
+
+
+
+
+--
+.CLI
+--
+*Verwenden Sie die CLI, um eine Objekt-Store-Serverrichtlinie zu erstellen oder zu ändern*
+
+.Schritte
+. Objekt-Storage-Server-Richtlinie erstellen:
++
+`vserver object-store-server policy create -vserver _svm_name_ -policy _policy_name_ [-comment _text_]`
+
+. Erstellen einer Anweisung für die Richtlinie:
++
+`vserver object-store-server policy statement create -vserver _svm_name_ -policy _policy_name_ -effect {allow|deny} -action _object_store_actions_ -resource _object_store_resources_ [-sid text]`
+
++
+Die folgenden Parameter definieren Zugriffsberechtigungen:
+
++
+[cols="2*"]
+|===
+
+
+ a| 
+`-effect`
+ a| 
+Die Anweisung kann den Zugriff erlauben oder verweigern
+
+
+
+ a| 
+`-action`
+ a| 
+Sie können angeben `*` Um alle Aktionen oder eine Liste mit einer oder mehreren der folgenden Aktionen zu bedeuten: `GetObject, PutObject, DeleteObject, ListBucket,GetBucketAcl, GetObjectAcl, ListAllMyBuckets, ListBucketMultipartUploads,` Und `ListMultipartUploadParts`.
+
+
+
+ a| 
+`-resource`
+ a| 
+Den Bucket und jedes darin enthaltene Objekt. Die Platzhalterzeichen `*` Und `?` Kann verwendet werden, um einen regulären Ausdruck zum Angeben einer Ressource zu bilden.
+
+|===
++
+Sie können optional einen Textstring als Kommentar mit dem angeben `-sid` Option.
+
++
+Standardmäßig werden am Ende der Liste der Anweisungen neue Anweisungen hinzugefügt, die in der Reihenfolge bearbeitet werden. Wenn Sie später Aussagen hinzufügen oder ändern, haben Sie die Möglichkeit, die Anweisungen zu ändern `-index` Einstellung zum Ändern der Verarbeitungsreihenfolge.
+
+
+
+--
+====

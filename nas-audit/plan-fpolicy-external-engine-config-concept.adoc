@@ -1,0 +1,321 @@
+---
+permalink: nas-audit/plan-fpolicy-external-engine-config-concept.html 
+sidebar: sidebar 
+keywords: plan, fpolicy, external engine, configuration 
+summary: 'Bevor Sie die FPolicy External Engine (externe Engine) konfigurieren, müssen Sie verstehen, was es bedeutet, eine externe Engine zu erstellen und welche Konfigurationsparameter verfügbar sind. Anhand dieser Informationen können Sie festlegen, welche Werte für jeden Parameter festgelegt werden sollen.' 
+---
+= Planen Sie die Konfiguration der externen FPolicy Engine
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie die FPolicy External Engine (externe Engine) konfigurieren, müssen Sie verstehen, was es bedeutet, eine externe Engine zu erstellen und welche Konfigurationsparameter verfügbar sind. Anhand dieser Informationen können Sie festlegen, welche Werte für jeden Parameter festgelegt werden sollen.
+
+
+
+== Informationen, die bei der Erstellung der externen FPolicy Engine definiert werden
+
+Die Konfiguration der externen Engine definiert die Informationen, die FPolicy Verbindungen zu den externen FPolicy Servern (FPolicy-Servern) herstellen und verwalten muss, einschließlich der folgenden Informationen:
+
+* SVM-Name
+* Motorname
+* Die IP-Adressen der primären und sekundären FPolicy Server und der zu verwendenden TCP-Portnummer für die Verbindung zu den FPolicy Servern
+* Ob der Engine-Typ asynchron oder synchron ist
+* Wie authentifiziert man die Verbindung zwischen dem Knoten und dem FPolicy-Server
++
+Wenn Sie die gegenseitige SSL-Authentifizierung konfigurieren, müssen Sie auch Parameter konfigurieren, die SSL-Zertifikatsinformationen bereitstellen.
+
+* So verwalten Sie die Verbindung mit verschiedenen erweiterten Berechtigungseinstellungen
++
+Dazu gehören Parameter, die z. B. Timeout-Werte, Wiederholungswerte, Keep-Alive-Werte, maximale Anforderungswerte, Werte für gesendete und empfangbare Puffergrößen sowie Werte für Sitzungszeitüberschreitungen definieren.
+
+
+
+Der `vserver fpolicy policy external-engine create` Mit dem Befehl wird eine FPolicy externe Engine erstellt.
+
+
+
+== Was sind die grundlegenden externen Motorparameter
+
+Sie können die folgende Tabelle mit grundlegenden FPolicy Konfigurationsparametern verwenden, um Ihre Konfiguration zu planen:
+
+[cols="70,30"]
+|===
+
+
+| Informationstyp | Option 
+
+
+ a| 
+_SVM_
+
+Gibt den SVM-Namen an, den Sie mit dieser externen Engine verknüpfen möchten.
+
+Jede FPolicy-Konfiguration ist innerhalb einer einzelnen SVM definiert. Die externe Engine, das Richtlinienereignis, der Richtlinienumfang und die Richtlinie, die gemeinsam eine FPolicy-Konfiguration erstellen, müssen mit derselben SVM verknüpft werden.
+ a| 
+`-vserver` `vserver_name`
+
+
+
+ a| 
+_Motorname_
+
+Gibt den Namen an, der der externen Engine-Konfiguration zugewiesen werden soll. Sie müssen den Namen der externen Engine später angeben, wenn Sie die FPolicy erstellen. Dadurch wird die externe Engine mit der Richtlinie verknüpft.
+
+Der Name kann bis zu 256 Zeichen lang sein.
+
+[NOTE]
+====
+Wenn Sie den Namen der externen Engine in einer Disaster-Recovery-Konfiguration von MetroCluster oder SVM konfigurieren, sollte der Name bis zu 200 Zeichen lang sein.
+
+====
+Der Name kann eine beliebige Kombination der folgenden Zeichen des ASCII-Bereichs enthalten:
+
+* `a` Bis `z`
+* `A` Bis `Z`
+* `0` Bis `9`
+* „`_`“, „`-`", and "`.`“
+
+ a| 
+`-engine-name` `engine_name`
+
+
+
+ a| 
+_Primary FPolicy Server_
+
+Gibt die primären FPolicy Server an, an die der Node Benachrichtigungen für eine bestimmte FPolicy sendet. Der Wert wird als kommagetrennte Liste von IP-Adressen angegeben.
+
+Wenn mehr als eine IP-Adresse für den primären Server angegeben wird, erstellt jeder Node, an dem die SVM teilnimmt, eine Kontrollverbindung zu jedem angegebenen primären FPolicy-Server zum Zeitpunkt der Aktivierung der Richtlinie. Wenn Sie mehrere primäre FPolicy-Server konfigurieren, werden Benachrichtigungen nach Round Robin-Verfahren an die FPolicy-Server gesendet.
+
+Wenn die externe Engine in einer MetroCluster- oder SVM-Disaster-Recovery-Konfiguration verwendet wird, sollten Sie die IP-Adressen der FPolicy-Server am Quellstandort als primäre Server angeben. Die IP-Adressen der FPolicy-Server am Zielstandort sollten als sekundäre Server angegeben werden.
+ a| 
+`-primary-servers` `IP_address`,...
+
+
+
+ a| 
+_Portnummer_
+
+Gibt die Portnummer des FPolicy-Dienstes an.
+ a| 
+`-port` `integer`
+
+
+
+ a| 
+_Secondary FPolicy Server_
+
+Gibt die sekundären FPolicy-Server an, an die Dateizugriffsereignisse für eine bestimmte FPolicy gesendet werden sollen. Der Wert wird als kommagetrennte Liste von IP-Adressen angegeben.
+
+Sekundäre Server werden nur verwendet, wenn keiner der primären Server erreichbar ist. Verbindungen zu sekundären Servern werden hergestellt, wenn die Richtlinie aktiviert ist. Benachrichtigungen werden jedoch nur an sekundäre Server gesendet, wenn keiner der primären Server erreichbar ist. Wenn Sie mehrere sekundäre Server konfigurieren, werden Benachrichtigungen nach Round Robin-Verfahren an die FPolicy-Server gesendet.
+ a| 
+`-secondary-servers` `IP_address`,...
+
+
+
+ a| 
+_Externer Motortyp_
+
+Gibt an, ob die externe Engine im synchronen oder asynchronen Modus arbeitet. FPolicy arbeitet standardmäßig im synchronen Modus.
+
+Wenn eingestellt auf `synchronous`, Die Verarbeitung von Dateianfragen sendet eine Benachrichtigung an den FPolicy-Server, wird aber dann erst fortgesetzt, nachdem eine Antwort vom FPolicy-Server erhalten wurde. In diesem Punkt wird der Anforderungsfluss entweder fortgesetzt oder die Verarbeitung führt zu Denial-DoS, je nachdem, ob die Antwort vom FPolicy-Server die angeforderte Aktion zulässt.
+
+Wenn eingestellt auf `asynchronous`, Die Verarbeitung von Dateianfragen sendet eine Benachrichtigung an den FPolicy-Server und wird dann fortgesetzt.
+ a| 
+`-extern-engine-type` `external_engine_type` Der Wert für diesen Parameter kann einer der folgenden Werte sein:
+
+* `synchronous`
+* `asynchronous`
+
+
+
+
+ a| 
+_SSL-Option zur Kommunikation mit FPolicy Server_
+
+Gibt die SSL-Option für die Kommunikation mit dem FPolicy-Server an. Dies ist ein erforderlicher Parameter. Sie können eine der Optionen basierend auf den folgenden Informationen auswählen:
+
+* Wenn eingestellt auf `no-auth`, Keine Authentifizierung erfolgt.
++
+Die Kommunikationsverbindung wird über TCP hergestellt.
+
+* Wenn eingestellt auf `server-auth`, Die SVM authentifiziert den FPolicy-Server mithilfe einer SSL-Server-Authentifizierung.
+* Wenn eingestellt auf `mutual-auth`. Gegenseitige Authentifizierung erfolgt zwischen der SVM und dem FPolicy-Server. Die SVM authentifiziert den FPolicy-Server und der FPolicy-Server authentifiziert die SVM.
++
+Wenn Sie die gegenseitige SSL-Authentifizierung konfigurieren, müssen Sie auch die konfigurieren `-certificate-common-name`, `-certificate-serial`, und `-certifcate-ca` Parameter.
+
+
+ a| 
+`-ssl-option` {`no-auth`|`server-auth`|`mutual-auth`}
+
+
+
+ a| 
+_Zertifikat FQDN oder benutzerdefinierter allgemeiner Name_
+
+Gibt den Zertifikatsnamen an, der verwendet wird, wenn die SSL-Authentifizierung zwischen der SVM und dem FPolicy-Server konfiguriert ist. Sie können den Zertifikatnamen als FQDN oder als benutzerdefinierten gemeinsamen Namen angeben.
+
+Wenn Sie angeben `mutual-auth` Für das `-ssl-option` Parameter. Sie müssen einen Wert für das angeben `-certificate-common-name` Parameter.
+ a| 
+`-certificate-common-name` `text`
+
+
+
+ a| 
+_Seriennummer des Zertifikats_
+
+Gibt die Seriennummer des Zertifikats an, das für die Authentifizierung verwendet wird, wenn die SSL-Authentifizierung zwischen der SVM und dem FPolicy-Server konfiguriert ist.
+
+Wenn Sie angeben `mutual-auth` Für das `-ssl-option` Parameter. Sie müssen einen Wert für das angeben `-certificate-serial` Parameter.
+ a| 
+`-certificate-serial` `text`
+
+
+
+ a| 
+_Zertifizierungsstelle_
+
+Gibt den CA-Namen des Zertifikats an, das für die Authentifizierung verwendet wird, wenn die SSL-Authentifizierung zwischen der SVM und dem FPolicy-Server konfiguriert ist.
+
+Wenn Sie angeben `mutual-auth` Für das `-ssl-option` Parameter. Sie müssen einen Wert für das angeben `-certificate-ca` Parameter.
+ a| 
+`-certificate-ca` `text`
+
+|===
+
+
+== Was sind die erweiterten Optionen der externen Engine
+
+Sie können die folgende Tabelle mit erweiterten FPolicy Konfigurationsparametern verwenden, wenn Sie planen, Ihre Konfiguration mit erweiterten Parametern anzupassen. Mit diesen Parametern ändern Sie das Kommunikationsverhalten zwischen den Cluster-Nodes und den FPolicy-Servern:
+
+[cols="70,30"]
+|===
+
+
+| Informationstyp | Option 
+
+
+ a| 
+_Timeout zum Abbrechen einer Anfrage_
+
+Gibt das Zeitintervall in Stunden an (`h`), Minuten (`m`) Oder Sekunden (`s`) Dass der Knoten auf eine Antwort vom FPolicy-Server wartet.
+
+Wenn das Zeitüberschreitungsintervall abgelaufen ist, sendet der Node eine Anforderung zum Abbrechen an den FPolicy-Server. Der Node sendet dann die Benachrichtigung an einen alternativen FPolicy-Server. Dieses Timeout unterstützt den Umgang mit einem FPolicy-Server, der nicht reagiert, was die Reaktion von SMB/NFS-Clients verbessern kann. Das Abbrechen von Anfragen nach einem Timeout kann außerdem dazu beitragen, Systemressourcen freizugeben, da die Benachrichtigungsanfrage von einem heruntergedrückten/schlechten FPolicy-Server auf einen alternativen FPolicy-Server verschoben wird.
+
+Der Bereich für diesen Wert ist `0` Bis `100`. Wenn der Wert auf festgelegt ist `0`, Die Option ist deaktiviert und Cancel Request Nachrichten werden nicht an den FPolicy-Server gesendet. Die Standardeinstellung lautet `20s`.
+ a| 
+`-reqs-cancel-timeout` `integer`[H m m m V natürlich]
+
+
+
+ a| 
+_Timeout für Abbruch einer Anfrage_
+
+Gibt die Zeitüberschreitung in Stunden an (`h`), Minuten (`m`) Oder Sekunden (`s`) Zum Abbruch einer Anfrage.
+
+Der Bereich für diesen Wert ist `0` Bis `200`.
+ a| 
+`-reqs-abort-timeout` `` `integer`[H m m m V natürlich]
+
+
+
+ a| 
+_Intervall für das Senden von Statusanforderungen_
+
+Gibt das Intervall in Stunden an (`h`), Minuten (`m`) Oder Sekunden (`s`) Nach dem eine Statusanforderung an den FPolicy-Server gesendet wird.
+
+Der Bereich für diesen Wert ist `0` Bis `50`. Wenn der Wert auf festgelegt ist `0`, Die Option ist deaktiviert und Status Request Nachrichten werden nicht an den FPolicy-Server gesendet. Die Standardeinstellung lautet `10s`.
+ a| 
+`-status-req-interval` `integer`[H m m m V natürlich]
+
+
+
+ a| 
+_Maximale Anzahl ausstehende Anforderungen auf dem FPolicy-Server_
+
+Gibt die maximale Anzahl der ausstehenden Anforderungen an, die auf dem FPolicy-Server in die Warteschlange gestellt werden können.
+
+Der Bereich für diesen Wert ist `1` Bis `10000`. Die Standardeinstellung lautet `50`.
+ a| 
+`-max-server-reqs` `integer`
+
+
+
+ a| 
+_Timeout zum Trennen eines nicht ansprechenden FPolicy Servers_
+
+Gibt das Zeitintervall in Stunden an (`h`), Minuten (`m`) Oder Sekunden (`s`) Nach der die Verbindung zum FPolicy-Server beendet wird.
+
+Die Verbindung wird nach dem Timeout-Zeitraum nur beendet, wenn die Warteschlange des FPolicy-Servers die maximal zulässigen Anforderungen enthält und innerhalb des Timeout-Zeitraums keine Antwort empfangen wird. Es gibt entweder eine maximal zulässige Anzahl von Anforderungen `50` (Die Standardeinstellung) oder die vom angegebene Zahl `max-server-reqs-` Parameter.
+
+Der Bereich für diesen Wert ist `1` Bis `100`. Die Standardeinstellung lautet `60s`.
+ a| 
+`-server-progress-timeout` `integer`[H m m m V natürlich]
+
+
+
+ a| 
+_Intervall zum Senden von Keep-Alive-Nachrichten an den FPolicy-Server_
+
+Gibt das Zeitintervall in Stunden an (`h`), Minuten (`m`) Oder Sekunden (`s`) Bei denen Keep-Alive-Nachrichten an den FPolicy-Server gesendet werden.
+
+Keep-Alive-Meldungen erkennen halboffene Verbindungen.
+
+Der Bereich für diesen Wert ist `10` Bis `600`. Wenn der Wert auf festgelegt ist `0`, Die Option ist deaktiviert und Keep-Alive-Nachrichten werden nicht an die FPolicy-Server gesendet. Die Standardeinstellung lautet `120s`.
+ a| 
+`-keep-alive-interval-` `integer`[H m m m V natürlich]
+
+
+
+ a| 
+_Maximale Anzahl Verbindungsversuche_
+
+Gibt die maximale Anzahl der Male an, die die SVM nach einer Verbindungsherstellung versucht, eine Verbindung zum FPolicy-Server herzustellen.
+
+Der Bereich für diesen Wert ist `0` Bis `20`. Die Standardeinstellung lautet `5`.
+ a| 
+`-max-connection-retries` `integer`
+
+
+
+ a| 
+_Puffergröße empfangen_
+
+Gibt die Empfangsbuffer-Größe des angeschlossenen Sockets für den FPolicy-Server an.
+
+Der Standardwert ist 256 Kilobyte (KB). Wenn der Wert auf 0 gesetzt ist, wird die Größe des Empfangspuffers auf einen vom System definierten Wert gesetzt.
+
+Wenn beispielsweise die Standard-Empfangspuffgröße des Sockets 65536 Byte beträgt, wird durch Setzen des einstellbaren Werts auf 0 die Socket-Puffergröße auf 65536 Byte gesetzt. Sie können einen beliebigen nicht-Standardwert verwenden, um die Größe (in Byte) des Empfangspuffers festzulegen.
+ a| 
+`-recv-buffer-size` `integer`
+
+
+
+ a| 
+_Puffergröße senden_
+
+Gibt die Sendepuffer-Größe des angeschlossenen Sockets für den FPolicy-Server an.
+
+Der Standardwert ist 256 Kilobyte (KB). Wenn der Wert auf 0 gesetzt ist, wird die Größe des Sendepuffers auf einen vom System definierten Wert gesetzt.
+
+Wenn beispielsweise die Standard-Sendepuffer-Größe des Sockets auf 65536 Byte eingestellt ist, indem der einstellbare Wert auf 0 gesetzt wird, wird die Socket-Puffergröße auf 65536 Byte gesetzt. Sie können einen beliebigen nicht-Standardwert verwenden, um die Größe (in Bytes) des Sendepuffers festzulegen.
+ a| 
+`-send-buffer-size` `integer`
+
+
+
+ a| 
+_Timeout zum Löschen einer Sitzungs-ID während der erneuten Verbindung_
+
+Gibt das Intervall in Stunden an (`h`), Minuten (`m`) Oder Sekunden (`s`) Anschließend wird während der erneuten Verbindungsversuche eine neue Sitzungs-ID an den FPolicy-Server gesendet.
+
+Wenn die Verbindung zwischen dem Speicher-Controller und dem FPolicy-Server beendet wird und eine erneute Verbindung innerhalb des hergestellt wird `-session-timeout` Intervall wird die alte Session-ID an den FPolicy Server gesendet, damit es Antworten für alte Benachrichtigungen senden kann.
+
+Der Standardwert ist 10 Sekunden.
+ a| 
+`-session-timeout` [``integer``H][``integer``M][``integer``S]
+
+|===

@@ -1,0 +1,74 @@
+---
+sidebar: sidebar 
+permalink: networking/create_lifs.html 
+keywords: create, creation, creating, add, adding, lifs, logical, interface, create lifs 
+summary: Erstellung von LIFs, um SVM-Daten für Clients bereitzustellen 
+---
+= Erstellen Sie die LIFs
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Eine SVM stellt Daten für Clients über eine oder mehrere logische Netzwerk-Schnittstellen (Logical Interfaces, LIFs) zur Verfügung. Sie müssen auf den Ports, die Sie für den Zugriff auf Daten verwenden möchten, LIFs erstellen.
+
+Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+
+Ab ONTAP 9.7 wählt ONTAP automatisch den Home Port einer LIF aus, solange mindestens eine LIF bereits im gleichen Subnetz in diesem IPspace vorhanden ist. ONTAP wählt einen Home-Port in derselben Broadcast-Domäne wie andere LIFs in diesem Subnetz. Sie können noch einen Home-Port angeben, dieser ist jedoch nicht mehr erforderlich (es sei denn, es sind noch keine LIFs in diesem Subnetz im angegebenen IPspace vorhanden).
+
+Sie sollten keine LIFs konfigurieren, die SMB-Datenverkehr transportieren, um automatisch auf ihre Home-Nodes zurückzusetzen. Diese Empfehlung ist obligatorisch, wenn der SMB-Server eine Lösung für unterbrechungsfreien Betrieb mit Hyper-V oder SQL Server over SMB hosten soll.
+
+.Schritte
+. Legen Sie fest, welche Broadcast-Domänen-Ports für das LIF verwendet werden sollen.
++
+`network port broadcast-domain show -ipspace _ipspace1_`
+
++
+....
+IPspace     Broadcast                       Update
+Name        Domain name   MTU   Port List   Status Details
+ipspace1
+            default       1500
+                                node1:e0d   complete
+                                node1:e0e   complete
+                                node2:e0d   complete
+                                node2:e0e   complete
+....
+. Vergewissern Sie sich, dass das Subnetz, das Sie für die LIFs verwenden möchten, ausreichend ungenutzte IP-Adressen enthält.
++
+`network subnet show -ipspace _ipspace1_`
+
+. Erstellen Sie mindestens einen LIFs an den Ports, mit denen Sie auf Daten zugreifen möchten.
++
+`network interface create -vserver _vs1_ -lif _lif1_ -home-node _node1_ -home-port _e0d_ -service-policy _default-data-files_ -subnet-name _ipspace1_`
+
+. Vergewissern Sie sich, dass die Konfiguration der LIF-Schnittstelle richtig ist.
++
+`network interface show -vserver vs1`
+
++
+....
+          Logical    Status     Network         Current   Current Is
+Vserver   Interface  Admin/Oper Address/Mask    Node      Port    Home
+--------- ---------- ---------- --------------- --------- ------- ----
+vs1
+           lif1       up/up      10.0.0.128/24   node1     e0d     true
+....
+. Vergewissern Sie sich, dass die Konfiguration der Failover-Gruppe die gewünschte Konfiguration ist.
++
+`network interface show -failover -vserver _vs1_`
+
++
+....
+         Logical    Home       Failover        Failover
+Vserver  interface  Node:Port  Policy          Group
+-------- ---------- ---------  ---------       --------
+vs1
+         lif1       node1:e0d  system-defined  ipspace1
+Failover Targets: node1:e0d, node1:e0e, node2:e0d, node2:e0e
+....
+

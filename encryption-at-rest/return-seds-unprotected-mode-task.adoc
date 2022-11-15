@@ -1,0 +1,114 @@
+---
+permalink: encryption-at-rest/return-seds-unprotected-mode-task.html 
+sidebar: sidebar 
+keywords: returning, fips, drive, unprotected, mode 
+summary: Ein FIPS-Laufwerk oder SED ist nur dann vor unberechtigtem Zugriff geschützt, wenn die Authentifizierungsschlüssel-ID für den Knoten auf einen anderen Wert als den Standardwert gesetzt ist. Sie können ein FIPS-Laufwerk oder eine SED in den ungeschützten Modus zurücksenden, indem Sie den Befehl Speicherverschlüsselungsfestplatte ändern verwenden, um die Schlüssel-ID auf den Standardmodus zu setzen. 
+---
+= Geben Sie ein FIPS-Laufwerk oder eine SED in den ungeschützten Modus zurück
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein FIPS-Laufwerk oder SED ist nur dann vor unberechtigtem Zugriff geschützt, wenn die Authentifizierungsschlüssel-ID für den Knoten auf einen anderen Wert als den Standardwert gesetzt ist. Sie können ein FIPS-Laufwerk oder eine SED über den in den ungeschützten Modus versetzen `storage encryption disk modify` Befehl zum Festlegen der Schlüssel-ID auf Standard.
+
+Wenn ein HA-Paar SAS- oder NVMe-Laufwerke (SED, NSE, FIPS) verwendet, müssen Sie diesen Prozess für alle Laufwerke innerhalb des HA-Paars befolgen, bevor das System initialisiert wird (Boot-Optionen 4 oder 9). Andernfalls kann es zu künftigen Datenverlusten kommen, wenn die Laufwerke einer anderen Verwendung zugewiesen werden.
+
+Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`set -privilege advanced`
+
+. Wenn ein FIPS-Laufwerk im FIPS-Compliance-Modus ausgeführt wird, legen Sie die FIPS-Authentifizierungsschlüssel-ID für den Node wieder auf den Standard MSID 0x0:
++
+`storage encryption disk modify -disk _disk_id_ -fips-key-id 0x0`
+
++
+Sie können das verwenden `security key-manager query` Befehl zum Anzeigen von Schlüssel-IDs.
+
++
+[listing]
+----
+cluster1::> storage encryption disk modify -disk 2.10.11 -fips-key-id 0x0
+
+Info: Starting modify on 14 disks.
+      View the status of the operation by using the
+      storage encryption disk show-status command.
+----
++
+Bestätigen Sie den Vorgang mit dem Befehl:
+
++
+`storage encryption disk show-status`
+
++
+Wiederholen Sie den Befehl show-Status, bis die Zahlen in „Disks gestartet“ und „Disks Fertig“ die gleichen sind.
+
++
+[listing]
+----
+cluster1:: storage encryption disk show-status
+
+            FIPS    Latest   Start               Execution   Disks   Disks Disks
+Node        Support Request  Timestamp           Time (sec)  Begun   Done  Successful
+-------     ------- -------- ------------------  ---------- ------ ------  ----------
+cluster1    true    modify   1/18/2022 15:29:38    3           14     5         5
+1 entry was displayed.
+----
+. Legen Sie die Daten-Authentifizierungsschlüssel-ID für den Knoten wieder auf die Standard-MSID 0x0:
++
+`storage encryption disk modify -disk _disk_id_ -data-key-id 0x0`
+
++
+Der Wert von `-data-key-id` Sollte auf 0x0 gesetzt werden, ob Sie ein SAS- oder NVMe-Laufwerk in den ungeschützten Modus zurücksenden.
+
++
+Sie können das verwenden `security key-manager query` Befehl zum Anzeigen von Schlüssel-IDs.
+
++
+[listing]
+----
+cluster1::> storage encryption disk modify -disk 2.10.11 -data-key-id 0x0
+
+Info: Starting modify on 14 disks.
+      View the status of the operation by using the
+      storage encryption disk show-status command.
+----
++
+Bestätigen Sie den Vorgang mit dem Befehl:
+
++
+`storage encryption disk show-status`
+
++
+Wiederholen Sie den Befehl show-Status, bis die Zahlen identisch sind. Die Operation ist abgeschlossen, wenn die Zahlen in „Platten begonnen“ und „Platten fertig“ sind die gleichen.
+
+
+
+
+
+== Wartungsmodus
+
+Ab ONTAP 9.7 können Sie eine FIPS-Festplatte aus dem Wartungsmodus neu Schlüssel aktivieren. Sie sollten den Wartungsmodus nur verwenden, wenn Sie die ONTAP-CLI-Anweisungen im vorherigen Abschnitt nicht verwenden können.
+
+.Schritte
+. Legen Sie die FIPS-Authentifizierungsschlüssel-ID für den Knoten wieder auf die Standard-MSID 0x0:
++
+`disk encrypt rekey_fips 0x0 _disklist_`
+
+. Legen Sie die Daten-Authentifizierungsschlüssel-ID für den Knoten wieder auf die Standard-MSID 0x0:
++
+`disk encrypt rekey 0x0 _disklist_`
+
+. Bestätigen Sie, dass der FIPS-Authentifizierungsschlüssel erfolgreich umcodiert wurde:
++
+`disk encrypt show_fips`
+
+. Bestätigung der erfolgreichen Verschlüsselung des Datenauthentifizierungsschlüssels mit:
++
+`disk encrypt show`
+
+

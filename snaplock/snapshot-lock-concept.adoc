@@ -1,0 +1,68 @@
+---
+permalink: snaplock/snapshot-lock-concept.html 
+sidebar: sidebar 
+keywords: snaplock, snapshot copy, lock, tamperproof 
+summary: Ab ONTAP 9.12.1 können Sie eine Snapshot-Kopie auf einem nicht-SnapLock-Volume sperren, um vor Ransomware-Angriffen zu schützen. Das Sperren von Snapshot-Kopien sorgt dafür, dass sie nicht versehentlich oder versehentlich gelöscht werden können. 
+---
+= Manipulationssichere Snapshot Kopie Sperrung – Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.12.1 können Sie eine Snapshot-Kopie auf einem nicht-SnapLock-Volume sperren, um vor Ransomware-Angriffen zu schützen. Das Sperren von Snapshot-Kopien sorgt dafür, dass sie nicht versehentlich oder versehentlich gelöscht werden können.
+
+Mithilfe der SnapLock-Funktion für Compliance-Uhren können Sie Snapshot-Kopien für einen bestimmten Zeitraum sperren, damit sie bis zum Erreichen der Verfallszeit nicht gelöscht werden können. Durch das Sperren von Snapshot-Kopien sind sie vor Ransomware-Bedrohungen geschützt. Mit gesperrten Snapshot-Kopien können Daten wiederhergestellt werden, falls ein Volume durch einen Ransomware-Angriff kompromittiert wird.
+
+
+
+== Überlegungen und Überlegungen zu Snapshot Kopien vor Manipulationen
+
+* Alle Nodes im Cluster müssen ONTAP 9.12.1 oder höher ausführen.
+* Die SnapLock Lizenz muss auf dem Cluster installiert sein.
++
+Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap/snaplock/install-license-task.html["Installieren der SnapLock Lizenz"]
+
+* Die Compliance-Uhr auf dem Cluster muss initialisiert werden.
++
+Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap/snaplock/initialize-complianceclock-task.html["Initialisieren Sie die Compliance-Uhr"]
+
+* Wenn die Snapshot-Sperrung auf einem Volume aktiviert ist, können Sie die Cluster auf eine ONTAP Version später als ONTAP 9.12.1 aktualisieren. Sie können jedoch nicht auf eine frühere Version von ONTAP zurücksetzen, bis alle gesperrten Snapshot Kopien ihr Ablaufdatum erreicht haben und gelöscht werden und das Sperren von Snapshot Kopien deaktiviert ist.
+* Wenn ein Snapshot gesperrt ist, wird die Ablaufzeit des Volumes auf die Ablaufzeit der Snapshot Kopie festgelegt. Wenn mehr als eine Snapshot Kopie gesperrt ist, gibt die Ablaufzeit des Volumes unter allen Snapshot Kopien die höchste Ablaufzeit wieder.
+* Der Aufbewahrungszeitraum für gesperrte Snapshot Kopien hat Vorrang vor der Anzahl der Snapshots. Dies bedeutet, dass die zulässige Anzahl von Kopien nicht beachtet wird, wenn der Aufbewahrungszeitraum für gesperrte Snapshot Kopien nicht abgelaufen ist.
+* In einer SnapMirror Beziehung können Sie einen Aufbewahrungszeitraum für eine Richtlinie mit Spiegelungs-Vault festlegen. Der Aufbewahrungszeitraum wird für Snapshot Kopien, die auf dem Ziel-Volume repliziert werden, angewendet, wenn die Sperrung der Snapshot Kopien aktiviert ist. Der Aufbewahrungszeitraum hat Vorrang vor der Datenanzahl. Beispielsweise werden Snapshot Kopien, die ihren Ablaufdatum nicht bestanden haben, auch dann beibehalten, wenn die behalten wird.
+* Sie können eine Snapshot-Kopie auf einem nicht-SnapLock-Volume umbenennen. Umbenennungsvorgänge für Snapshots auf dem primären Volume einer SnapMirror-Beziehung werden nur auf dem sekundären Volume wiedergegeben, wenn die Richtlinie MirrorAllSnapshots ist. Bei anderen Richtlinientypen wird die umbenannte Snapshot Kopie während Updates nicht propagiert.
+* Sie können mit dem eine gesperrte Snapshot-Kopie wiederherstellen `volume snapshot restore` Befehl nur, wenn die gesperrte Snapshot Kopie das aktuellste ist. Wenn später noch nicht abgelaufene Snapshot Kopien als der wiederherzustellende Snapshot Kopie vorhanden sind, schlägt der Wiederherstellungsvorgang für die Snapshot Kopie fehl.
+
+
+
+
+== Funktionen, die durch manipulationssichere Snapshot Kopien unterstützt werden
+
+* FlexGroup Volumes
++
+Die Sperrung von Snapshot Kopien wird auf FlexGroup Volumes unterstützt. Das Sperren von Snapshots erfolgt nur auf der Snapshot-Kopie der Root-Komponente. Das Löschen des FlexGroup-Volume ist nur zulässig, wenn die Ablaufzeit der Root-Komponente abgelaufen ist.
+
+* Konvertierung von FlexVol zu FlexGroup
++
+Sie können ein FlexVol Volume mit gesperrten Snapshot Kopien in ein FlexGroup Volume konvertieren. Snapshot-Kopien bleiben nach der Konvertierung gesperrt.
+
+* FabricPool
++
+Das Sperren von Snapshot-Kopien wird auf FabricPool-Volumes nur unterstützt, wenn das Volume keine in die Cloud abgestuften Blöcke hat und die Tiering-Richtlinie auf „keine“ gesetzt ist. Wenn die Sperrfunktion der Snapshot-Kopie aktiviert ist, ist das Einstellen der Tiering-Richtlinie auf dem Volume auf eine andere Richtlinie als „keine“ nicht zulässig.
+
+
+
+
+
+== Nicht unterstützte Funktionen
+
+Die folgenden Funktionen werden derzeit nicht durch manipulationssichere Snapshot Kopien unterstützt:
+
+* Konsistenzgruppen
+* FlexCache Volumes
+* SMTape
+* SnapMirror Business Continuity (SM-BC)
+* SnapMirror Synchronous
+

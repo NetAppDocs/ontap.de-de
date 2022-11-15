@@ -1,0 +1,137 @@
+---
+permalink: smb-admin/configure-home-directories-u-variable-task.html 
+sidebar: sidebar 
+keywords: 'create, home, directory, configuration, designate, share, name, variable, user, windows, dynamic, configure, configure home directories using the %u variable' 
+summary: 'Sie können eine Home-Verzeichnis-Konfiguration erstellen, bei der Sie den Freigabennamen mithilfe der Variablen %w angeben, aber Sie verwenden die Variable %U, um den relativen Pfad zur Home-Directory-Freigabe anzugeben. Die Benutzer können sich dann mithilfe von dynamisch mit ihrem Windows-Benutzernamen erstellten Shares mit ihren Home-Shares verbinden, ohne den tatsächlichen Namen oder Pfad des Home-Verzeichnisses kennen zu müssen.' 
+---
+= Konfigurieren Sie Home-Verzeichnisse mit der %U-Variable
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können eine Home-Verzeichnis-Konfiguration erstellen, in der Sie den Freigabennamen mithilfe der angeben `%w` Variable, aber Sie verwenden die `%u` Variable zur Angabe des relativen Pfads zur Home-Directory-Freigabe. Die Benutzer können sich dann mithilfe von dynamisch mit ihrem Windows-Benutzernamen erstellten Shares mit ihren Home-Shares verbinden, ohne den tatsächlichen Namen oder Pfad des Home-Verzeichnisses kennen zu müssen.
+
+.Schritte
+. Erstellen Sie einen qtree, um die Home Directorys des Benutzers zu enthalten: `volume qtree create -vserver vserver_name -qtree-path qtree_path`
+. Vergewissern Sie sich, dass der qtree den richtigen Sicherheitsstil verwendet: `volume qtree show`
+. Wenn der qtree nicht den gewünschten Sicherheitsstil nutzt, ändern Sie den Sicherheitsstil mithilfe von `volume qtree security` Befehl.
+. Home Directory-Freigabe hinzufügen: `+vserver cifs share create -vserver vserver -share-name %w -path %u -share-properties homedirectory ,...]+`
++
+`-vserver` `vserver` Gibt die CIFS-fähige Storage Virtual Machine (SVM) an, auf der der Suchpfad hinzugefügt werden soll.
+
++
+`-share-name` `%w` Gibt den Freigabenamen des Home-Verzeichnisses an. Der Freigabename wird dynamisch erstellt, wenn jeder Benutzer eine Verbindung zu seinem Home-Verzeichnis herstellt und von der Form _Windows_user_Name_ ist.
+
++
+[NOTE]
+====
+Sie können auch die verwenden `%u` Variable für das `-share-name` Option. Dadurch wird ein relativer Freigabepfad erstellt, der den zugeordneten UNIX-Benutzernamen verwendet.
+
+====
++
+`-path` `%u` Gibt den relativen Pfad zum Home-Verzeichnis an. Der relative Pfad wird dynamisch erstellt, wenn jeder Benutzer eine Verbindung zu seinem Home-Verzeichnis herstellt und von der Form _Mapping_UNIX_user_Name_ ist.
+
++
+[NOTE]
+====
+Der Wert für diese Option kann auch statische Elemente enthalten. Beispiel: `eng/%u`.
+
+====
++
+`-share-properties` `+homedirectory\[,...\]+` Gibt die Freigabeigenschaften für diese Freigabe an. Sie müssen das angeben `homedirectory` Wert: Sie können zusätzliche Freigabegenschaften mithilfe einer kommagetrennten Liste angeben.
+
+. Stellen Sie sicher, dass die Freigabe über die gewünschte Konfiguration verfügt `vserver cifs share show` Befehl.
+. Hinzufügen eines Suchpfads für das Home-Verzeichnis: `vserver cifs home-directory search-path add -vserver vserver -path path`
++
+`-vserver` `vserver` Gibt die SVM mit CIFS-Aktivierung an, auf der der Suchpfad hinzugefügt werden soll.
+
++
+`-path` `path` Gibt den absoluten Verzeichnispfad zum Suchpfad an.
+
+. Überprüfen Sie, ob Sie den Suchpfad mithilfe des erfolgreich hinzugefügt haben `vserver cifs home-directory search-path show` Befehl.
+. Wenn der UNIX-Benutzer nicht vorhanden ist, erstellen Sie den UNIX-Benutzer mit der `vserver services unix-user create` Befehl.
++
+[NOTE]
+====
+Der UNIX-Benutzername, dem Sie den Windows-Benutzernamen zuordnen, muss vorhanden sein, bevor Sie den Benutzer zuordnen.
+
+====
+. Erstellen Sie mit dem folgenden Befehl eine Namenszuweisung für den Windows-Benutzer für den UNIX-Benutzer: `vserver name-mapping create -vserver vserver_name -direction win-unix -priority integer -pattern windows_user_name -replacement unix_user_name`
++
+[NOTE]
+====
+Wenn bereits Namenszuordnungen vorhanden sind, die Windows-Benutzer UNIX-Benutzern zuordnen, müssen Sie den Zuordnungsschritt nicht durchführen.
+
+====
++
+Der Windows-Benutzername wird dem entsprechenden UNIX-Benutzernamen zugeordnet. Wenn der Windows-Benutzer eine Verbindung zu seiner Home Directory-Freigabe herstellt, stellen sie eine Verbindung zu einem dynamisch erstellten Home-Verzeichnis her, das einen Share-Namen hat, der ihrem Windows-Benutzernamen entspricht, ohne zu wissen, dass der Verzeichnisname dem UNIX-Benutzernamen entspricht.
+
+. Erstellen Sie bei Benutzern mit einem Home Directory ein entsprechendes Verzeichnis im qtree oder Volume, damit sie Home Directorys enthalten sollen.
++
+Wenn Sie beispielsweise einen qtree mit dem Pfad von erstellt haben `/vol/vol1/users` Und der zugeordnete UNIX-Benutzername des Benutzers, dessen Verzeichnis Sie erstellen möchten, ist „`unixuser1`“, würden Sie ein Verzeichnis mit dem folgenden Pfad erstellen: `/vol/vol1/users/unixuser1`.
+
++
+Wenn Sie ein Volume mit dem Namen „`home1`“ erstellt haben, montiert bei `/home1`, Sie würden ein Verzeichnis mit dem folgenden Pfad erstellen: `/home1/unixuser1`.
+
+. Überprüfen Sie, ob ein Benutzer eine Verbindung zur Home-Share erfolgreich herstellen kann, indem Sie ein Laufwerk zuweisen oder eine Verbindung über den UNC-Pfad herstellen.
++
+Beispiel: Wenn Benutzer mydomain\user1 UNIX-Benutzer unixuser1 zuordnet und eine Verbindung zu dem in Schritt 10 erstellten Verzeichnis herstellen möchte, das sich auf SVM vs1 befindet, würde user1 über den UNC-Pfad verbinden `\\vs1\user1`.
+
+
+
+Mit den Befehlen im folgenden Beispiel wird eine Home Directory-Konfiguration mit den folgenden Einstellungen erstellt:
+
+* Der Freigabenname ist %w.
+* Der relative Home-Verzeichnis-Pfad ist %u.
+* Der Suchpfad, der verwendet wird, um die Home-Verzeichnisse zu enthalten, `/home1`, Ist ein Volume, das mit UNIX-Sicherheitsstil konfiguriert ist.
+* Die Konfiguration wird auf SVM vs1 erstellt.
+
+
+Sie können diese Art der Home Directory-Konfiguration verwenden, wenn Benutzer von Windows-Hosts oder Windows- und UNIX-Hosts auf ihre Home Directories zugreifen. Der Dateisystemadministrator verwendet UNIX-basierte Benutzer und Gruppen, um den Zugriff auf das Dateisystem zu steuern.
+
+[listing]
+----
+cluster::> vserver cifs share create -vserver vs1 -share-name %w -path %u ‑share-properties oplocks,browsable,changenotify,homedirectory
+
+cluster::> vserver cifs share show -vserver vs1 -share-name %u
+
+                      Vserver: vs1
+                        Share: %w
+     CIFS Server NetBIOS Name: VS1
+                         Path: %u
+             Share Properties: oplocks
+                               browsable
+                               changenotify
+                               homedirectory
+           Symlink Properties: enable
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+
+cluster::> vserver cifs home-directory search-path add -vserver vs1 ‑path /home1
+
+cluster::> vserver cifs home-directory search-path show -vserver vs1
+Vserver     Position Path
+----------- -------- -----------------
+vs1         1        /home1
+
+cluster::> vserver name-mapping create -vserver vs1 -direction win-unix ‑position 5 -pattern user1 -replacement unixuser1
+
+cluster::> vserver name-mapping show -pattern user1
+Vserver        Direction Position
+-------------- --------- --------
+vs1            win-unix  5        Pattern: user1
+                              Replacement: unixuser1
+----
+xref:create-home-directory-config-w-d-variables-task.adoc[Erstellen einer Home-Verzeichnis-Konfiguration unter Verwendung der Variablen %w und %d]
+
+xref:home-directory-config-concept.adoc[Zusätzliche Home Directory-Konfigurationen]
+
+xref:display-user-home-directory-path-task.adoc[Anzeigen von Informationen über den Home-Directory-Pfad eines SMB-Benutzers]

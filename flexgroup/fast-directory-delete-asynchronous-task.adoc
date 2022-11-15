@@ -1,0 +1,90 @@
+---
+permalink: flexgroup/fast-directory-delete-asynchronous-task.html 
+sidebar: sidebar 
+keywords: perform, directory, delete, files, asynchronous, share, flexvol, flex vol, flexgroup, flex group, cancel 
+summary: Ab ONTAP 9.8 können Sie mit dem Befehl zum asynchronen Löschen von Volume-Dateien und Verzeichnissen aus Linux- und Windows-Client-Freigaben im Hintergrund löschen. Sie können sowohl auf FlexVol- als auch auf FlexGroup-Volumes asynchrone Löschung durchführen. 
+---
+= Verzeichnisse auf dem Cluster schnell löschen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.8 können Sie mit der Funktion zum Löschen von Verzeichnissen mit niedriger Latenz _fast-Directory_ asynchron (d. h. im Hintergrund) aus Linux- und Windows-Client-Freigaben löschen. Cluster- und SVM-Administratoren können asynchrone Löschvorgänge sowohl auf FlexVol als auch auf FlexGroup Volumes durchführen.
+
+Wenn Sie eine ältere Version von ONTAP als ONTAP 9.11.1 verwenden, müssen Sie ein Cluster-Administrator oder SVM-Administrator sein, der den erweiterten Berechtigungsmodus verwendet.
+
+Ab ONTAP 9.11.1 kann ein Storage-Administrator einem Volume Rechte erteilen, damit NFS- und SMB-Clients asynchrone Löschvorgänge durchführen können. Weitere Informationen finden Sie unter link:manage-client-async-dir-delete-task.html["Verwalten Sie die Clientrechte, um Verzeichnisse schnell zu löschen"].
+
+Ab ONTAP 9.8 können Sie die Funktion zum Löschen von Verzeichnissen über die ONTAP-CLI verwenden. Ab ONTAP 9.9 können Sie diese Funktion auch in System Manager verwenden. Weitere Informationen zu diesem Prozess finden Sie unter https://docs.netapp.com/us-en/ontap/task_nas_file_system_analytics_take_corrective_action.html["Durchführung von Korrekturmaßnahmen basierend auf Analysen"].
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Weitere Informationen finden Sie unter https://docs.netapp.com/us-en/ontap/task_nas_file_system_analytics_take_corrective_action.html["Durchführung von Korrekturmaßnahmen basierend auf Analysen"].
+
+--
+.CLI
+--
+*Verwenden Sie die CLI, um ein schnelles Verzeichnis zu löschen*
+
+. Wechseln Sie in den erweiterten Berechtigungsmodus:
++
+`-privilege advance`
+
+. Löschen Sie Dateien oder Verzeichnisse auf einem FlexVol oder FlexGroup Volume:
++
+`volume file async-delete start -vserver vserver_name -volume volume_name -path file_path -throttle throttle`
+
++
+Der minimale Drosselwert ist 10, der Höchstwert ist 100,000 und der Standardwert ist 5000.
+
++
+Im folgenden Beispiel wird das Verzeichnis d2 gelöscht, das sich im Verzeichnis d1 befindet.
+
++
+....
+cluster::*>volume file async-delete start -vserver vs1 -volume vol1 -path d1/d2
+....
+. Überprüfen Sie, ob das Verzeichnis gelöscht wurde:
++
+`event log show`
+
++
+Das folgende Beispiel zeigt die Ausgabe für das Ereignisprotokoll, wenn das Verzeichnis erfolgreich gelöscht wurde.
+
++
+....
+cluster-cli::*> event log show
+Time                 Node             Severity      Event
+-------------------  ---------------- ------------- --------------------
+MM/DD/YYYY 00:11:11  cluster-vsim     INFORMATIONAL asyncDelete.message.success: Async delete job on path d1/d2 of volume (MSID: 2162149232) was completed.
+....
+
+
+*Abbrechen eines Verzeichnisses löschen Job*
+
+. Wechseln Sie in den erweiterten Berechtigungsmodus:
++
+`set -privilege advanced`
+
+. Überprüfen Sie, ob das Verzeichnis gelöscht wird:
++
+`volume file async-delete show`
+
++
+Wenn die SVM, das Volume, die JobID und der Pfad Ihres Verzeichnisses angezeigt werden, können Sie den Job abbrechen.
+
+. Löschen des Verzeichnisses abbrechen:
++
+`volume file async-delete cancel -vserver _SVM_name_ -volume _volume_name_ -jobid _job_id_`
+
+
+
+--
+--
+
+--
+====

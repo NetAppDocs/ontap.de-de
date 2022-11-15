@@ -1,0 +1,51 @@
+---
+sidebar: sidebar 
+permalink: networking/removing_a_nic_from_the_node.html 
+keywords: delete, deleting, remove, removing, nic, network, interface, card, slot, maintenance, faulty, error, bad, failed, fail, node, remove a faulty NIC from its slot or move the NIC to another slot for maintenance purposes, removing a nic from the node on ontap 9.8 or later, controller-replacement, network displaced-vlans, displaced-vlans show, displaced-vlans restore, 
+summary: Entfernen Sie ONTAP 9.8 und höher eine fehlerhafte NIC aus ihrem Steckplatz oder verschieben Sie die NIC zu Wartungszwecken in einen anderen Steckplatz 
+---
+= Entfernen einer NIC aus dem Knoten auf ONTAP 9.8 oder höher
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Dieses Thema bezieht sich auf ONTAP 9.8 oder höher. Sie müssen möglicherweise eine fehlerhafte NIC aus ihrem Steckplatz entfernen oder die NIC zu Wartungszwecken in einen anderen Steckplatz verschieben.
+
+.Schritte
+. Schalten Sie den Node aus.
+. Entfernen Sie die NIC physisch aus ihrem Steckplatz.
+. Schalten Sie den Node ein.
+. Überprüfen Sie, ob der Port gelöscht wurde:
++
+....
+network port show
+....
++
+
+NOTE: ONTAP entfernt den Port automatisch von allen Interface Groups. Wenn der Port das einzige Mitglied einer Schnittstellengruppe war, wird die Schnittstellengruppe gelöscht.
+
+. Wenn auf dem Port VLANs konfiguriert waren, werden sie verschoben. Sie können Vertriebene VLANs mit dem folgenden Befehl anzeigen:
++
+....
+cluster controller-replacement network displaced-vlans show
+....
++
+
+NOTE: Der `displaced-interface show`, `displaced-vlans show`, und `displaced-vlans restore` Befehle sind eindeutig. Sie benötigen keinen vollqualifizierten Befehlsnamen, der mit beginnt `cluster controller-replacement network`.
+
+. Diese VLANs wurden gelöscht, sind aber mit folgendem Befehl wiederhergestellt:
++
+....
+displaced-vlans restore
+....
+. Wenn auf dem Port LIFs konfiguriert wären, wählt ONTAP automatisch neue Home Ports für die LIFs auf einem anderen Port der gleichen Broadcast-Domäne aus. Wenn auf dem gleichen Filer kein geeigneter Home Port gefunden wird, gelten diese LIFs als verdrängt. Sie können Vertriebene-LIFs mit dem folgenden Befehl anzeigen:
++
+`displaced-interface show`
+
+. Wenn der Broadcast-Domäne auf demselben Node ein neuer Port hinzugefügt wird, werden die Home-Ports für die LIFs automatisch wiederhergestellt. Alternativ können Sie den Home-Port mit einstellen `network interface modify -home-port -home-node or use the displaced- interface restore` Befehl.
+

@@ -1,0 +1,111 @@
+---
+permalink: encryption-at-rest/support-storage-encryption-concept.html 
+sidebar: sidebar 
+keywords: configuring, netapp, hardware-based, encryption 
+summary: 'Die hardwarebasierte Verschlüsselung von NetApp unterstützt die vollständige Festplattenverschlüsselung (Full Disk Encryption, FDE) von Daten beim Schreiben. Ohne einen auf der Firmware gespeicherten Verschlüsselungsschlüssel können die Daten nicht gelesen werden. Der Verschlüsselungsschlüssel wiederum ist nur für einen authentifizierten Knoten zugänglich.' 
+---
+= Konfiguration der hardwarebasierten NetApp Verschlüsselung – Übersicht
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die hardwarebasierte Verschlüsselung von NetApp unterstützt die vollständige Festplattenverschlüsselung (Full Disk Encryption, FDE) von Daten beim Schreiben. Ohne einen auf der Firmware gespeicherten Verschlüsselungsschlüssel können die Daten nicht gelesen werden. Der Verschlüsselungsschlüssel wiederum ist nur für einen authentifizierten Knoten zugänglich.
+
+
+
+== Allgemeines zur hardwarebasierten Verschlüsselung von NetApp
+
+Ein Node authentifiziert sich selbst auf einem Self-Encrypting Drive, wobei ein Authentifizierungsschlüssel von einem externen Verschlüsselungsmanagement-Server oder Onboard Key Manager abgerufen wird:
+
+* Der externe Verschlüsselungsmanagement-Server ist ein Drittanbietersystem in der Storage-Umgebung, das mithilfe des Key Management Interoperability Protocol (KMIP) Schlüssel zu Nodes bereitstellt. Als Best Practice wird empfohlen, externe Verschlüsselungsmanagementserver auf einem anderen Storage-System zu Ihren Daten zu konfigurieren.
+* Der integrierte Onboard Key Manager ist ein Tool, das Authentifizierungsschlüssel für Nodes aus demselben Storage-System wie Ihre Daten bereitstellt.
+
+
+Mit NetApp Volume Encryption mit hardwarebasierter Verschlüsselung können Daten auf Self-Encrypting Drives `double Encryption` verschlüsselt werden.
+
+AFF A220, AFF A800, FAS2720, FAS2750 und höher speichern Core Dumps auf ihrem Boot-Gerät. Wenn auf diesen Systemen Self-Encrypting Drives aktiviert sind, wird der Core Dump ebenfalls verschlüsselt.
+
+
+NOTE: Wenn ein HA-Paar SAS- oder NVMe-Laufwerke (SED, NSE, FIPS) verwendet, müssen Sie die Anweisungen im Thema befolgen xref:return-seds-unprotected-mode-task.html[Ein FIPS-Laufwerk oder eine SED-Festplatte in den ungeschützten Modus zurückkehren] Für alle Laufwerke innerhalb des HA-Paars vor der Initialisierung des Systems (Boot-Optionen 4 oder 9). Andernfalls kann es zu künftigen Datenverlusten kommen, wenn die Laufwerke einer anderen Verwendung zugewiesen werden.
+
+
+
+== Unterstützte Self-Encrypting Drives
+
+Es werden zwei Arten von Self-Encrypting Drives unterstützt:
+
+* FIPS-zertifizierte Self-Encrypting-SAS- oder NVMe-Laufwerke werden auf allen FAS und AFF Systemen unterstützt. Diese Laufwerke, so genannte _FIPS-Laufwerke_, entsprechen den Anforderungen der Federal Information Processing Standard Publication 140-2, Level 2. Die zertifizierten Funktionen ermöglichen neben der Verschlüsselung auch Schutz, beispielsweise die Verhinderung von Denial-of-Service-Angriffen auf dem Laufwerk. FIPS-Laufwerke können nicht mit anderen Laufwerkstypen auf demselben Node oder HA-Paar kombiniert werden.
+* Ab ONTAP 9.6 werden Self-Encrypting-NVMe-Laufwerke, die noch keine FIPS-Tests durchlaufen haben, auf AFF A800, A320 und neueren Systemen unterstützt. Diese Laufwerke, sogenannte _SEDs_, bieten dieselben Verschlüsselungsfunktionen wie FIPS-Laufwerke, können aber ohne Verschlüsselung von Laufwerken auf demselben Node oder HA-Paar kombiniert werden.
+* Alle FIPS-validierten Laufwerke verwenden ein kryptografisches Firmware-Modul, das durch die FIPS-Validierung erfolgt. Das FIPS-Laufwerk-kryptografische Modul verwendet keine Schlüssel, die außerhalb des Laufwerks generiert werden (die Authentifizierungs-Passphrase, die an das Laufwerk eingegeben wird, wird vom Laufwerk-Firmware-kryptographic-Modul verwendet, um einen Schlüssel zu erhalten).
+
+
+
+NOTE: Laufwerke ohne Verschlüsselung sind Laufwerke, die keine SEDs oder FIPS-Laufwerke sind.
+
+
+
+== Wann Sie externes Verschlüsselungsmanagement verwenden sollten
+
+Obwohl es kostengünstiger und in der Regel bequemer ist, den Onboard-Schlüsselmanager zu verwenden, sollten Sie ein externes Verschlüsselungsmanagement nutzen, wenn eine der folgenden zutrifft:
+
+* Die Richtlinie Ihres Unternehmens erfordert eine Verschlüsselungsmanagementlösung, die ein kryptografisches Modul nach FIPS 140-2 Level 2 (oder höher) verwendet.
+* Sie benötigen eine Multi-Cluster-Lösung mit zentralem Management von Verschlüsselungen.
+* Ihr Unternehmen erfordert die zusätzliche Sicherheit beim Speichern von Authentifizierungsschlüsseln auf einem System oder an einem anderen Speicherort als den Daten.
+
+
+
+
+== Support-Details
+
+In der folgenden Tabelle sind wichtige Details zur Unterstützung der Hardwareverschlüsselung aufgeführt. In der Interoperabilitäts-Matrix finden Sie die neuesten Informationen zu unterstützten KMIP-Servern, Storage-Systemen und Festplatten-Shelfs.
+
+[cols="30,70"]
+|===
+
+
+| Ressource oder Funktion | Support-Details 
+
+
+ a| 
+Nicht homogene Festplattengruppen
+ a| 
+* FIPS-Laufwerke können nicht mit anderen Laufwerkstypen auf demselben Node oder HA-Paar kombiniert werden. Die Einhaltung der HA-Paare kann bei nicht übereinstimmenden HA-Paaren im selben Cluster vorhanden sein.
+* SEDs können mit Laufwerken ohne Verschlüsselung auf demselben Node oder HA-Paar kombiniert werden.
+
+
+
+
+ a| 
+Laufwerkstyp
+ a| 
+* FIPS-Laufwerke können SAS- oder NVMe-Laufwerke sein.
+* SEDs müssen NVMe-Laufwerke sein.
+
+
+
+
+ a| 
+10-GB-Netzwerkschnittstellen
+ a| 
+Ab ONTAP 9.3 unterstützen die KMIP-Verschlüsselungsmanagementkonfigurationen 10 GB-Netzwerkschnittstellen für die Kommunikation mit externen Verschlüsselungsmanagement-Servern.
+
+
+
+ a| 
+Ports für die Kommunikation mit dem Schlüsselverwaltungsserver
+ a| 
+Ab ONTAP 9.3 können Sie jeden beliebigen Storage Controller Port zur Kommunikation mit dem Schlüsselmanagement-Server verwenden. Andernfalls sollten Sie Port E0M für die Kommunikation mit Schlüsselmanagement-Servern verwenden. Je nach Storage-Controller-Modell sind während des Bootvorgangs möglicherweise bestimmte Netzwerkschnittstellen zur Kommunikation mit wichtigen Management-Servern nicht verfügbar.
+
+
+
+ a| 
+MetroCluster (MCC)
+ a| 
+* NVMe-Laufwerke unterstützen MCC.
+* SAS-Laufwerke unterstützen MCC nicht.
+
+
+|===
+https://hwu.netapp.com/["NetApp Hardware Universe"^]

@@ -1,0 +1,90 @@
+---
+permalink: upgrade/task_verify_status.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, upgrade, verify, status, ha, ldap, dns, networking, storage, metrocluster 
+summary: Verschiedene Konfigurationseinstellungen können die Bereitschaft für Cluster-Upgrades beeinträchtigen. 
+---
+= Status überprüfen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Bevor Sie ein Upgrade durchführen, sollten Sie Folgendes überprüfen:
+
+* Status DES HA-Paars
+* LDAP-Status (für ONTAP 9.2 oder höher)
+* DNS-Serverstatus (für ONTAP 9.2 oder höher),
+* Netzwerk- und Storage-Status (für MetroCluster-Konfigurationen)
+
+
+
+
+== Der HA-Status wird überprüft
+
+Bevor Sie ein unterbrechungsfreies Upgrade durchführen, sollten Sie überprüfen, ob das Storage-Failover für jedes HA-Paar aktiviert ist. Wenn das Cluster nur aus zwei Nodes besteht, sollten Sie auch überprüfen, ob die Cluster-HA aktiviert ist.
+
+Sie müssen den HA-Status nicht überprüfen, wenn Sie ein Upgrade mit Unterbrechungen durchführen möchten, da für diese Upgrade-Methode kein Storage Failover erforderlich ist.
+
+. Überprüfen Sie, ob Storage-Failover aktiviert ist und für jedes HA-Paar möglich ist: `storage failover show`
++
+Dieses Beispiel zeigt, dass Storage-Failover aktiviert und in node0 und node1 möglich ist:
+
++
+[listing]
+----
+cluster1::> storage failover show
+                              Takeover
+Node           Partner        Possible State
+-------------- -------------- -------- -------------------------------------
+node0          node1          true     Connected to node1
+node1          node0          true     Connected to node0
+2 entries were displayed.
+----
++
+Falls erforderlich kann das Storage-Failover über den Befehl „Storage Failover modify“ aktiviert werden.
+
+. Wenn das Cluster nur aus zwei Nodes (ein einzelnes HA-Paar) besteht, überprüfen Sie, ob die Cluster HA konfiguriert ist: `cluster ha show`
++
+Dieses Beispiel zeigt, dass Cluster HA konfiguriert ist:
+
++
+[listing]
+----
+cluster1::> cluster ha show
+High Availability Configured: true
+----
++
+Bei Bedarf können Sie Cluster-HA mithilfe des Befehls „Cluster ha modify“ aktivieren.
+
+
+
+
+
+== Überprüfen des LDAP-Status (ONTAP 9.2 und höher)
+
+Wenn ab ONTAP 9.2 LDAP von Ihren Storage Virtual Machines (SVMs) verwendet wird, muss eine LDAP-Verbindung hergestellt werden, um ein unterbrechungsfreies Upgrade durchzuführen. Sie sollten die LDAP-Verbindung überprüfen, bevor Sie mit der Aktualisierung beginnen.
+
+Die Aufgabe gilt nicht, wenn Sie ein Upgrade von ONTAP 9.1 oder früher durchführen.
+
+. Überprüfen Sie den LDAP-Status: `ldap check -vserver vserver_name`
+. Wenn der LDAP-Status nicht verfügbar ist, ändern Sie ihn: `ldap client modify -client-config LDAP_client -ldap-servers ip_address`
+. Vergewissern Sie sich, dass der LDAP-Status aktiviert ist: `ldap check -vserver vserver_name`
+
+
+
+
+== Überprüfen des DNS-Serverstatus (ONTAP 9.2 und höher)
+
+Ab ONTAP 9.2 und höher sollten Sie den Status Ihres DNS-Servers (Domain Name Service) vor und nach einem unterbrechungsfreien Upgrade überprüfen.
+
+Die Aufgabe gilt nicht, wenn Sie ein Upgrade von ONTAP 9.1 oder früher durchführen.
+
+. Überprüfen Sie den Status Ihrer DNS-Server: `dns check -vserver vserver_name`
++
+Ein up-Status zeigt an, dass der Dienst ausgeführt wird. Ein Status „nicht aktiv“ zeigt an, dass der Dienst nicht ausgeführt wird.
+
+. Wenn der DNS-Server nicht verfügbar ist, ändern Sie ihn: `dns modify -vserver vserver_name -domains domain_name -name-servers name_server_ipaddress`
+. Überprüfen Sie, ob der Status des DNS-Servers aktiviert ist.
+

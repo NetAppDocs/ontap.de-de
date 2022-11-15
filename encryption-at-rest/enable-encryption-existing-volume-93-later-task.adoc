@@ -1,0 +1,82 @@
+---
+permalink: encryption-at-rest/enable-encryption-existing-volume-93-later-task.html 
+sidebar: sidebar 
+keywords: enabling, encryption, existing, volume encryption conversion start, command 
+summary: Ab ONTAP 9.3 können Sie mit dem Befehl zur Konvertierung der Volume-Verschlüsselung die Verschlüsselung eines vorhandenen Volumes ohne Verschieben des Volumes an einen anderen Ort aktivieren. 
+---
+= Aktivieren Sie die Verschlüsselung auf einem vorhandenen Volume mit dem Befehl zur Konvertierung der Volume-Verschlüsselung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.3 können Sie den verwenden `volume encryption conversion start` Befehl, um die Verschlüsselung eines vorhandenen Volume „in place“ zu aktivieren, ohne das Volume an einen anderen Speicherort verschieben zu müssen.
+
+Sobald Sie einen Konvertierungsvorgang starten, muss er abgeschlossen sein. Wenn während des Vorgangs ein Leistungsproblem auftritt, können Sie das ausführen `volume encryption conversion pause` Befehl zum Anhalten des Vorgangs, und `volume encryption conversion resume` Befehl zum Fortsetzen des Vorgangs.
+
+[NOTE]
+====
+Verwenden Sie ihn nicht `volume encryption conversion start` Um ein SnapLock Volume zu konvertieren.
+
+====
+.Schritte
+. Verschlüsselung auf einem vorhandenen Volume aktivieren:
++
+`volume encryption conversion start -vserver SVM_name -volume volume_name`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl wird die Verschlüsselung auf dem vorhandenen Volume aktiviert `vol1`:
+
++
+[listing]
+----
+cluster1::> volume encryption conversion start -vserver vs1 -volume vol1
+----
++
+Das System erstellt einen Verschlüsselungsschlüssel für das Volume. Die Daten auf dem Volume werden verschlüsselt.
+
+. Überprüfen Sie den Status des Konvertierungsvorgangs:
++
+`volume encryption conversion show`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl wird der Status des Konvertierungsvorgangs angezeigt:
+
++
+[listing]
+----
+cluster1::> volume encryption conversion show
+
+Vserver   Volume   Start Time           Status
+-------   ------   ------------------   ---------------------------
+vs1       vol1     9/18/2017 17:51:41   Phase 2 of 2 is in progress.
+----
+. Wenn der Konvertierungsvorgang abgeschlossen ist, vergewissern Sie sich, dass das Volume für die Verschlüsselung aktiviert ist:
++
+`volume show -is-encrypted true`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl werden die verschlüsselten Volumes auf angezeigt `cluster1`:
+
++
+[listing]
+----
+cluster1::> volume show -is-encrypted true
+
+Vserver  Volume  Aggregate  State  Type  Size  Available  Used
+-------  ------  ---------  -----  ----  -----  --------- ----
+vs1      vol1    aggr2     online    RW  200GB    160.0GB  20%
+----
+
+
+Wenn Sie einen KMIP-Server zum Speichern der Schlüssel für einen Node verwenden, sendet ONTAP bei der Verschlüsselung eines Volumes automatisch „`schiebt`“ einen Verschlüsselungsschlüssel an den Server.

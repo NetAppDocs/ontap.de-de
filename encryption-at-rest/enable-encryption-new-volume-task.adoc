@@ -1,0 +1,134 @@
+---
+permalink: encryption-at-rest/enable-encryption-new-volume-task.html 
+sidebar: sidebar 
+keywords: enabling, encryption, new, volume 
+summary: Sie können den Befehl Volume create verwenden, um die Verschlüsselung auf einem neuen Volume zu aktivieren. 
+---
+= Aktivieren Sie die Verschlüsselung auf einem neuen Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können das verwenden `volume create` Befehl zum Aktivieren der Verschlüsselung auf einem neuen Volume.
+
+Ab ONTAP 9.2 können Sie die Verschlüsselung auf einem SnapLock Volume aktivieren.
+
+Beginnend mit ONTAP 9.4, wenn Sie beim Einrichten des Onboard Key Managers „`cc-Mode`“ aktivieren, werden die mit dem erstellten Volumes erstellt `volume create` Der Befehl wird automatisch verschlüsselt, unabhängig davon, ob Sie angegeben haben `-encrypt true`.
+
+Ab ONTAP 9.6 können Sie mithilfe der Verschlüsselung auf Aggregatebene dem enthaltenden Aggregat Schlüssel zuweisen, damit die Volumes verschlüsselt werden können. Die im Aggregat erstellten Volumes werden standardmäßig verschlüsselt. Sie können das verwenden `-encrypt` Option zum Überschreiben der Standardeinstellung beim Erstellen des Volumes.
+
+Ab ONTAP 9.7 werden neu erstellte Volumes standardmäßig verschlüsselt, wenn Sie über die VE-Lizenz und die integrierte oder externe Schlüsselverwaltung verfügen.
+
+Ein mit einem eindeutigen Schlüssel verschlüsseltes Volume wird als _NVE Volume_ bezeichnet. Ein mit einem Aggregatschlüssel verschlüsseltes Volume wird als _NAE Aggregat_ (für NetApp Aggregate Encryption) bezeichnet. Klartext-Volumes werden in NAE-Aggregaten nicht unterstützt.
+
+.Schritte
+. Erstellen Sie ein neues Volume, und geben Sie an, ob die Verschlüsselung auf dem Volume aktiviert ist:
++
+[cols="25,75"]
+|===
+
+
+| Zu erstellen... | Befehl 
+
+
+ a| 
+ONTAP 9.7 oder höher NAE-Volume
+ a| 
+`volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name`
+
+
+
+ a| 
+Ein ONTAP 9.6 NAE-Volume (bei aktivierter Verschlüsselung auf Aggregatebene)
+ a| 
+`volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name`
+
+
+
+ a| 
+Ein ONTAP 9.7 oder höher NVE Volume
+ a| 
+`volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name`
+
+
+
+ a| 
+Ein ONTAP 9.6 oder früher NVE Volume
+ a| 
+`volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name -encrypt true`
+
+
+
+ a| 
+Nur-Text-Lautstärke
+ a| 
+`volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name -encrypt false`
+
+|===
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Ab ONTAP 9.7 oder höher wird mit dem folgenden Befehl ein NAE-Volume mit dem Namen erstellt `vol1` Ein `aggr1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume vol1 -aggregate aggr1
+----
++
+Bei Verwendung von ONTAP 9.6, vorausgesetzt, die Verschlüsselung auf Aggregatebene ist aktiviert, erstellt der folgende Befehl ein NAE-Volume mit dem Namen `vol1` Ein `aggr1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume vol1 -aggregate aggr1
+----
++
+Ab ONTAP 9.7 oder höher wird mit dem folgenden Befehl ein NVE Volume mit dem Namen erstellt `vol2` Ein `aggr1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume vol2 -aggregate aggr1
+----
++
+Bei Verwendung von ONTAP 9.6 oder einer älteren Version wird mit dem folgenden Befehl ein NVE Volume mit dem Namen erstellt `vol2` Ein `aggr1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume vol2 -aggregate aggr1 -encrypt true
+----
++
+Mit dem folgenden Befehl wird ein Klartext-Volume mit dem Namen erstellt `vol3` Ein `aggr1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume vol3 -aggregate aggr1 -encrypt false
+----
+. Vergewissern Sie sich, dass Volumes für die Verschlüsselung aktiviert sind:
++
+`volume show -is-encrypted true`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl werden die verschlüsselten Volumes auf angezeigt `cluster2`:
+
++
+[listing]
+----
+cluster2::> volume show -is-encrypted true
+
+Vserver  Volume  Aggregate  State  Type  Size  Available  Used
+-------  ------  ---------  -----  ----  -----  --------- ----
+vs1      vol1    aggr2     online    RW  200GB    160.0GB  20%
+----
+
+
+Wenn Sie einen KMIP-Server zum Speichern der Schlüssel für einen Node verwenden, sendet ONTAP bei der Verschlüsselung eines Volumes automatisch „`schiebt`“ einen Verschlüsselungsschlüssel an den Server.

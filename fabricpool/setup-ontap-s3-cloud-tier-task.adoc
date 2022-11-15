@@ -1,0 +1,90 @@
+---
+permalink: fabricpool/setup-ontap-s3-cloud-tier-task.html 
+sidebar: sidebar 
+keywords: setting up, ontap s3, cloud tier 
+summary: Wenn Sie ONTAP 9.8 oder höher verwenden, können Sie ONTAP S3 als Cloud-Tier für FabricPool einrichten. 
+---
+= ONTAP S3 als Cloud-Tier einrichten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie ONTAP 9.8 oder höher verwenden, können Sie ONTAP S3 als Cloud-Tier für FabricPool einrichten.
+
+Sie müssen im Remote-Cluster den ONTAP S3-Servernamen und die IP-Adresse der zugehörigen LIFs haben.
+
+Es müssen Intercluster LIFs sowohl auf lokalen als auch auf Remote-Clustern vorhanden sein.
+
+https://docs.netapp.com/ontap-9/topic/com.netapp.doc.pow-s3-cg/GUID-47BBD9BF-7C3A-4902-8E41-88E54A0FDB44.html["Erstellen von Intercluster-LIFs für Remote-FabricPool-Tiering"]
+
+Der Lastausgleich ist für ONTAP S3 Server in ONTAP 9.8 und höher aktiviert. Wenn der Hostname des Servers auf mehr als eine IP-Adresse auflöst, stellt ONTAP Client-Verbindungen mit allen zurückgegebenen IP-Adressen her (bis zu 16 IP-Adressen). Die IP-Adressen werden bei Verbindungsaufbau in einer Round-Robin-Methode erfasst.
+
+Sie können ONTAP S3 als Cloud-Tier für FabricPool mit ONTAP System Manager oder über die ONTAP-CLI einrichten.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Klicken Sie auf *Storage > Tiers > Cloud Tier hinzufügen* und wählen Sie ONTAP S3 als Objektspeicher-Provider aus.
+. Füllen Sie die angeforderten Informationen aus.
+. Wenn Sie einen Cloud-Spiegel erstellen möchten, klicken Sie auf *als FabricPool-Spiegel hinzufügen*.
+
+
+Ein FabricPool Mirror stellt eine Methode für Sie zum nahtlosen Austausch eines Datenspeichers dar und stellt sicher, dass im Falle eines Ausfalls Ihre Daten verfügbar sind.
+
+--
+.CLI
+--
+. Fügen Sie Einträge für den S3-Server und LIFs Ihrem DNS-Server hinzu.
++
+|===
+
+
+| Option | Beschreibung 
+
+
+ a| 
+*Wenn Sie einen externen DNS-Server verwenden*
+ a| 
+Geben Sie den S3-Servernamen und die IP-Adressen dem DNS-Serveradministrator ein.
+
+
+
+ a| 
+*Wenn Sie die DNS-Host-Tabelle Ihres lokalen Systems verwenden*
+ a| 
+Geben Sie den folgenden Befehl ein:
+
+`dns host create -vserver svm_name -address ip_address -hostname s3_server_name`
+
+|===
+. Geben Sie die Konfigurationsinformationen für ONTAP S3 mithilfe der an `storage aggregate object-store config create` Befehl mit dem `-provider-type` `ONTAP_S3` Parameter.
++
+** Der `storage aggregate object-store config create` Der Befehl schlägt fehl, wenn das lokale ONTAP-System mit den angegebenen Informationen nicht auf den ONTAP S3-Server zugreifen kann.
+** Sie verwenden das `-access-key` Parameter zum Festlegen des Zugriffsschlüssels für die Autorisierung von Anfragen an den ONTAP S3-Server.
+** Sie verwenden das `-secret-password` Parameter zur Angabe des Passworts (Secret Access Key) für die Authentifizierung von Anfragen an den ONTAP S3-Server.
+** Wenn das ONTAP S3-Serverpasswort geändert wird, sollten Sie das entsprechende Passwort, das im lokalen ONTAP-System gespeichert ist, sofort aktualisieren.
++
+Dies ermöglicht den Zugriff auf die Daten im ONTAP S3-Objektspeicher ohne Unterbrechung.
+
+** Einstellen des `-is-certificate-validation-enabled` Parameter an `false` Deaktiviert die Zertifikatprüfung für ONTAP S3.
+
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store config create
+-object-store-name myS3 -provider-type ONTAP_S3 -server myS3server
+-container-name myS3container -access-key myS3key
+-secret-password myS3pass
+----
+. Die ONTAP_S3-Konfigurationsinformationen anzeigen und überprüfen, indem Sie mit das `storage aggregate object-store config show` Befehl.
++
+Der `storage aggregate object-store config modify` Mit diesem Befehl können Sie den ändern `ONTAP_S3` Konfigurationsinformationen für FabricPool.
+
+
+
+--
+====

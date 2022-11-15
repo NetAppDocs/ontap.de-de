@@ -1,0 +1,102 @@
+---
+permalink: disks-aggregates/correct-misaligned-spare-partitions-task.html 
+sidebar: sidebar 
+keywords: correct, misaligned, partition, disk 
+summary: 'Wenn Sie einer lokalen Ebene (Aggregat) partitionierte Festplatten hinzufügen, müssen Sie eine Festplatte sowohl dem Root als auch der Datenpartition als Ersatz für jeden Node zur Verfügung stellen. Wenn dies nicht der Fall ist und der Node eine Unterbrechung erfährt, kann ONTAP den Core nicht zur freien Datenpartition ablegen.' 
+---
+= Falsch ausgerichtete Ersatzpartitionen korrigieren
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie einer lokalen Ebene (Aggregat) partitionierte Festplatten hinzufügen, müssen Sie eine Festplatte sowohl dem Root als auch der Datenpartition als Ersatz für jeden Node zur Verfügung stellen. Wenn dies nicht der Fall ist und der Node eine Unterbrechung erfährt, kann ONTAP den Core nicht zur freien Datenpartition ablegen.
+
+Sie müssen über eine Ersatzdatenpartition und eine freie Root-Partition auf dem gleichen Laufwerkstyp verfügen, der dem gleichen Node gehört.
+
+.Schritte
+. Zeigen Sie mithilfe der CLI die Ersatzpartitionen für den Knoten an:
++
+`storage aggregate show-spare-disks -original-owner _node_name_`
+
++
+Beachten Sie, welche Festplatte über eine Ersatzdatenpartition (Spare_Data) verfügt und welche Festplatte eine Ersatzroot-Partition (Spare_root) hat. Die Ersatzpartition zeigt unter dem einen Wert ungleich Null an `Local Data Usable` Oder `Local Root Usable` Spalte.
+
+. Ersetzen Sie die Festplatte durch eine Ersatzdatenpartition durch die Festplatte mit der Ersatzroot-Partition:
++
+`storage disk replace -disk _spare_data_ -replacement _spare_root_ -action start`
+
++
+Sie können die Daten in beide Richtungen kopieren, allerdings dauert das Kopieren der Root-Partition weniger Zeit bis zum Abschluss.
+
+. Überwachen Sie den Fortschritt des Festplattenaustauschs:
++
+`storage aggregate show-status -aggregate _aggr_name_`
+
+. Wenn der Ersatzvorgang abgeschlossen ist, zeigen Sie die Ersatzteile erneut an, um zu bestätigen, dass Sie über eine vollständige Ersatzfestplatte verfügen:
++
+`storage aggregate show-spare-disks -original-owner _node_name_`
+
++
+Unter „`Local Data Usable`“ und sollte eine Ersatzfestplatte mit nutzbarem Speicherplatz angezeigt werden `Local Root Usable`.
+
+
+
+Sie zeigen Ihre Ersatzpartitionen für Knoten c1-01 an und sehen, dass Ihre Ersatzpartitionen nicht ausgerichtet sind:
+
+[listing]
+----
+c1::> storage aggregate show-spare-disks -original-owner c1-01
+
+Original Owner: c1-01
+ Pool0
+  Shared HDD Spares
+                              Local    Local
+                               Data     Root  Physical
+ Disk    Type   RPM Checksum Usable   Usable      Size
+ ------- ----- ---- -------- ------- ------- --------
+ 1.0.1   BSAS  7200 block    753.8GB     0B   828.0GB
+ 1.0.10  BSAS  7200 block         0B 73.89GB  828.0GB
+----
+Sie starten den Ersatzauftrag der Festplatte:
+
+[listing]
+----
+c1::> storage disk replace -disk 1.0.1 -replacement 1.0.10 -action start
+----
+Während Sie auf den Abschluss des Ersatzvorgangs warten, wird der Fortschritt des Vorgangs angezeigt:
+
+[listing]
+----
+c1::> storage aggregate show-status -aggregate aggr0_1
+
+Owner Node: c1-01
+ Aggregate: aggr0_1 (online, raid_dp) (block checksums)
+  Plex: /aggr0_1/plex0 (online, normal, active, pool0)
+   RAID Group /aggr0_1/plex0/rg0 (normal, block checksums)
+                                    Usable Physical
+ Position Disk    Pool Type   RPM     Size     Size Status
+ -------- ------- ---- ---- ----- -------- -------- ----------
+ shared   1.0.1    0   BSAS  7200  73.89GB  828.0GB (replacing,copy in progress)
+ shared   1.0.10   0   BSAS  7200  73.89GB  828.0GB (copy 63% completed)
+ shared   1.0.0    0   BSAS  7200  73.89GB  828.0GB (normal)
+ shared   1.0.11   0   BSAS  7200  73.89GB  828.0GB (normal)
+ shared   1.0.6    0   BSAS  7200  73.89GB  828.0GB (normal)
+ shared   1.0.5    0   BSAS  7200  73.89GB  828.0GB (normal)
+----
+Nachdem der Ersatzvorgang abgeschlossen ist, vergewissern Sie sich, dass Sie über eine vollständige Ersatzfestplatte verfügen:
+
+[listing]
+----
+ie2220::> storage aggregate show-spare-disks -original-owner c1-01
+
+Original Owner: c1-01
+ Pool0
+  Shared HDD Spares
+                             Local    Local
+                              Data     Root  Physical
+ Disk   Type   RPM Checksum Usable   Usable      Size
+ ------ ----- ---- -------- -------- ------- --------
+ 1.0.1  BSAS  7200 block    753.8GB  73.89GB  828.0GB
+----

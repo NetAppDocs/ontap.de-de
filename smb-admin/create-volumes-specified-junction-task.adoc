@@ -1,0 +1,54 @@
+---
+permalink: smb-admin/create-volumes-specified-junction-task.html 
+sidebar: sidebar 
+keywords: specify, junction, point, create, data, volume, resultant, automatic, mount, configure, nas, access, create data volumes with specified junction points 
+summary: Sie können den Verbindungspunkt bei der Erstellung eines Daten-Volumes angeben. Das resultierende Volume wird automatisch am Verbindungspunkt gemountet und ist für den NAS-Zugriff sofort konfiguriert. 
+---
+= Erstellung von Daten-Volumes mit festgelegten Verbindungspunkten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können den Verbindungspunkt bei der Erstellung eines Daten-Volumes angeben. Das resultierende Volume wird automatisch am Verbindungspunkt gemountet und ist für den NAS-Zugriff sofort konfiguriert.
+
+Das Aggregat, in dem Sie das Volume erstellen möchten, muss bereits vorhanden sein.
+
+[NOTE]
+====
+Folgende Zeichen können nicht im Verbindungspfad verwendet werden: * # " > < ? \
+
+Darüber hinaus darf die Länge des Verbindungspfades nicht mehr als 255 Zeichen umfassen.
+
+====
+.Schritte
+. Volume mit einem Verbindungspunkt erstellen: `volume create -vserver _vserver_name_ -volume _volume_name_ -aggregate _aggregate_name_ -size {integer[KB|MB|GB|TB|PB]} -security-style {ntfs|unix|mixed} -junction-path _junction_path_`
++
+Der Verbindungspfad muss mit dem Root (/) beginnen und kann sowohl Verzeichnisse als auch Volumes enthalten. Der Verbindungspfad muss den Namen des Volumes nicht enthalten. Verbindungspfade sind unabhängig vom Volume-Namen.
+
++
+Die Angabe eines Volume-Sicherheitsstils ist optional. Wenn Sie keinen Sicherheitsstil angeben, erstellt ONTAP das Volume mit dem gleichen Sicherheitstyp, der auf das Root-Volume der SVM (Storage Virtual Machine) angewendet wird. Der Sicherheitsstil des Root-Volumes ist jedoch möglicherweise nicht der Sicherheitsstil, den Sie auf das von Ihnen erstellte Datenvolumen anwenden möchten. Es wird empfohlen, beim Erstellen des Volumes den Sicherheitsstil festzulegen, um Probleme mit dem Dateizugriff zu minimieren, die sich nur schwer beheben lassen.
+
++
+Die Groß-/Kleinschreibung des Verbindungspfads wird nicht berücksichtigt. `/ENG` Ist das gleiche wie `/eng`. Wenn Sie eine CIFS-Freigabe erstellen, behandelt Windows den Verbindungspfad so, als ob die Groß-/Kleinschreibung beachtet wird. Beispiel: Wenn die Verbindung lautet `/ENG`, Der Pfad einer CIFS-Freigabe muss mit beginnen `/ENG`, Nicht `/eng`.
+
++
+Es gibt viele optionale Parameter, mit denen Sie ein Daten-Volume anpassen können. Weitere Informationen dazu finden Sie auf den man-Pages für die `volume create` Befehl.
+
+. Vergewissern Sie sich, dass das Volume mit dem gewünschten Verbindungspunkt erstellt wurde: `volume show -vserver _vserver_name_ -volume _volume_name_ -junction`
+
+
+Im folgenden Beispiel wird ein Volume mit dem Namen „`home4`“ auf der SVM vs1 mit einem Verbindungspfad erstellt `/eng/home`:
+
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume home4 -aggregate aggr1 -size 1g -junction-path /eng/home
+[Job 1642] Job succeeded: Successful
+
+cluster1::> volume show -vserver vs1 -volume home4 -junction
+                  Junction                 Junction
+Vserver   Volume  Active   Junction Path   Path Source
+--------- ------- -------- --------------- -----------
+vs1       home4   true     /eng/home       RW_volume
+----

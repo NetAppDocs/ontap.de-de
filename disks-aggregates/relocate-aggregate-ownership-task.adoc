@@ -1,0 +1,111 @@
+---
+permalink: disks-aggregates/relocate-aggregate-ownership-task.html 
+sidebar: sidebar 
+keywords: relocate, aggregate, ownership, local tier 
+summary: 'Sie können die Eigentumsrechte einer lokalen Tier (Aggregat) nur zwischen den Nodes in einem HA-Paar ändern.' 
+---
+= Verschieben des Eigentums einer lokalen Ebene (Aggregat) innerhalb eines HA-Paars
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können die Eigentumsrechte an lokalen Tiers (Aggregaten) zwischen den Nodes in einem HA-Paar ändern, ohne dass der Service von den lokalen Tiers unterbrochen wird.
+
+Beide Nodes in einem HA-Paar sind physisch mit den Festplatten oder Array-LUNs des jeweils anderen verbunden. Jede Festplatte oder Array-LUN befindet sich im Besitz eines der Nodes.
+
+Eigentumsrechte an allen Festplatten oder Array-LUNs innerhalb einer lokalen Ebene (Aggregat) ändern sich vorübergehend von einem Knoten zum anderen, wenn eine Übernahme erfolgt. Allerdings können lokale Schichten Verlagerung Operationen auch dauerhaft ändern das Eigentum (z. B. wenn für die Lastverteilung getan). Die Eigentümerschaft ändert sich ohne Prozesse von Datenkopieerstellung oder physische Verschiebung der Festplatten oder Array LUNs.
+
+.Über diese Aufgabe
+* Da die Einschränkungen der Volume-Anzahl während des lokalen Tier-Versetzens programmatisch validiert werden, ist eine manuelle Überprüfung nicht erforderlich.
++
+Wenn die Anzahl der Volumes die unterstützte Grenze überschreitet, schlägt die Verschiebung des lokalen Tiers mit einer entsprechenden Fehlermeldung fehl.
+
+* Sie sollten keine lokale Ebenenverschiebung initiieren, wenn Vorgänge auf Systemebene sowohl auf dem Quell- als auch auf dem Ziel-Node ausgeführt werden. Ebenso sollten Sie diese Vorgänge während der Verschiebung der lokalen Ebene nicht starten.
++
+Dazu können folgende Vorgänge zählen:
+
++
+** Übernahme
+** Giveback
+** Herunterfahren
+** Ein anderer lokaler Standortwechsel
+** Änderungen am Festplatteneigentümer
+** Lokale Tier- oder Volume-Konfiguration
+** Austausch von Storage-Controllern
+** ONTAP-Upgrade
+** ONTAP zurücksetzen
+
+
+* Wenn Sie über eine MetroCluster-Konfiguration verfügen, sollten Sie keine lokale Tier-Verschiebung initiieren, während Disaster-Recovery-Vorgänge (_Switchover_, _healing_ oder _switback_) ausgeführt werden.
+* Wenn Sie über eine MetroCluster-Konfiguration verfügen und eine lokale Tier-Verschiebung auf einer Switched-over-lokalen Tier initiieren, kann der Vorgang fehlschlagen, da die Anzahl der Volumes des DR-Partners nicht mehr beträgt.
+* Sie sollten keine Verlagerung lokaler Ebenen auf Aggregate initiieren, die beschädigt sind oder Wartungsarbeiten durchlaufen.
+* Vor dem Starten der Verschiebung der lokalen Tier sollten Sie alle Core Dumps auf den Quell- und Ziel-Nodes speichern.
+
+
+.Schritte
+. Überprüfen Sie anhand der Aggregate auf dem Node, welche Aggregate sich verschieben lassen, und stellen Sie sicher, dass sie online und in einem guten Zustand sind:
++
+`storage aggregate show -node _source-node_`
+
++
+Mit dem folgenden Befehl werden sechs Aggregate auf den vier Nodes im Cluster angezeigt. Alle Aggregate sind online. Node1 und Node3 bilden ein HA-Paar, und Node2 und Node4 bilden ein HA-Paar.
+
++
+[listing]
+----
+cluster::> storage aggregate show
+Aggregate     Size Available Used% State   #Vols  Nodes  RAID Status
+--------- -------- --------- ----- ------- ------ ------ -----------
+aggr_0     239.0GB   11.13GB   95% online       1 node1  raid_dp,
+                                                         normal
+aggr_1     239.0GB   11.13GB   95% online       1 node1  raid_dp,
+                                                         normal
+aggr_2     239.0GB   11.13GB   95% online       1 node2  raid_dp,
+                                                         normal
+aggr_3     239.0GB   11.13GB   95% online       1 node2  raid_dp,
+                                                         normal
+aggr_4     239.0GB   238.9GB    0% online       5 node3  raid_dp,
+                                                         normal
+aggr_5     239.0GB   239.0GB    0% online       4 node4  raid_dp,
+                                                         normal
+6 entries were displayed.
+----
+. Geben Sie den Befehl aus, um die Aggregat-Verschiebung zu starten:
++
+`storage aggregate relocation start -aggregate-list _aggregate-1_, _aggregate-2_... -node _source-node_ -destination _destination-node_`
+
++
+Mit dem folgenden Befehl werden die Aggregate aggr_1 und aggr_2 von Node1 nach Node3 verschoben. Node3 ist HA-Partner von Node1. Die Aggregate können nur innerhalb des HA-Paars verschoben werden.
+
++
+[listing]
+----
+cluster::> storage aggregate relocation start -aggregate-list aggr_1, aggr_2 -node node1 -destination node3
+Run the storage aggregate relocation show command to check relocation status.
+node1::storage aggregate>
+----
+. Überwachen Sie den Fortschritt der Aggregatverschiebung mit dem `storage aggregate relocation show` Befehl:
++
+`storage aggregate relocation show -node _source-node_`
+
++
+Mit dem folgenden Befehl werden die Fortschritte der Aggregate angezeigt, die in Node3 verschoben werden:
+
++
+[listing]
+----
+cluster::> storage aggregate relocation show -node node1
+Source Aggregate   Destination    Relocation Status
+------ ----------- -------------  ------------------------
+node1
+       aggr_1      node3          In progress, module: wafl
+       aggr_2      node3          Not attempted yet
+2 entries were displayed.
+node1::storage aggregate>
+----
++
+Nach Abschluss der Verschiebung zeigt die Ausgabe dieses Befehls jedes Aggregat mit einem Versetzungsstatus von „`DOne`“ an.
+
+

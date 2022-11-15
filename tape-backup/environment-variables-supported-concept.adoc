@@ -1,0 +1,568 @@
+---
+permalink: tape-backup/environment-variables-supported-concept.html 
+sidebar: sidebar 
+keywords: environment, variables, ontap, ndmp, restore, operation, backup, default, value, dump, smtape 
+summary: Umgebungsvariablen dienen der Kommunikation von Informationen zu Backup- oder Wiederherstellungsvorgang zwischen einer NDMP-fähigen Backup-Applikation und einem Storage-System. ONTAP unterstützt Umgebungsvariablen, die einen zugeordneten Standardwert haben. Sie können diese Standardwerte jedoch manuell ändern. 
+---
+= Von ONTAP unterstützte Umgebungsvariablen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Umgebungsvariablen dienen der Kommunikation von Informationen zu Backup- oder Wiederherstellungsvorgang zwischen einer NDMP-fähigen Backup-Applikation und einem Storage-System. ONTAP unterstützt Umgebungsvariablen, die einen zugeordneten Standardwert haben. Sie können diese Standardwerte jedoch manuell ändern.
+
+Wenn Sie die von der Backup-Anwendung festgelegten Werte manuell ändern, verhält sich die Anwendung möglicherweise unvorhersehbar. Das liegt daran, dass die Backup- oder Restore-Vorgänge das tun, was die Backup-Applikation erwartet. Aber in einigen Fällen kann eine vernünftige Änderung helfen, Probleme zu identifizieren oder zu umgehen.
+
+In den folgenden Tabellen sind die Umgebungsvariablen aufgeführt, deren Verhalten bei Dump und SMTape häufig der Einsatz ist, sowie die Variablen, die nur für Dump und SMTape unterstützt werden. Die Tabellen enthalten zudem eine Beschreibung der Arbeitsweise der durch ONTAP unterstützten Umgebungsvariablen, wenn diese verwendet werden:
+
+[NOTE]
+====
+In den meisten Fällen haben Variablen, die den Wert haben, `Y` Akzeptieren Sie auch `T` Und `N` Akzeptieren Sie auch `F`.
+
+====
+
+
+== Umgebungsvariablen werden für Dump und SMTape unterstützt
+
+|===
+| Umgebungsvariable | Gültige Werte | Standard | Beschreibung 
+
+
+ a| 
+DEBUGGEN
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass Debugging-Informationen gedruckt werden.
+
+
+
+ a| 
+DATEISYSTEM
+ a| 
+`string`
+ a| 
+`none`
+ a| 
+Gibt den Pfadnamen des Stammes der zu sichernden Daten an.
+
+
+
+ a| 
+NDMP_VERSION
+ a| 
+`return_only`
+ a| 
+`none`
+ a| 
+Die Variable NDMP_VERSION sollte nicht geändert werden. Die durch den Backup-Vorgang erstellte Variable NDMP_VERSION liefert die NDMP-Version zurück.
+
+ONTAP legt die Variable NDMP_VERSION während eines Backups zur internen Verwendung fest und gibt die Variable zu Informationszwecken an eine Backup-Applikation weiter. Die NDMP-Version einer NDMP-Sitzung ist nicht mit dieser Variable festgelegt.
+
+
+
+ a| 
+PFADNAME_TRENNZEICHEN
+ a| 
+`return_value`
+ a| 
+`none`
+ a| 
+Gibt das Trennzeichen für den Pfadnamen an.
+
+Dieses Zeichen hängt vom zu sichernden Dateisystem ab. Bei ONTAP wird dieser Variable das Zeichen „`/`“ zugewiesen. Der NDMP-Server setzt diese Variable vor dem Start einer Bandsicherung.
+
+
+
+ a| 
+TYP
+ a| 
+`dump` Oder `smtape`
+ a| 
+`dump`
+ a| 
+Gibt den Typ der unterstützten Sicherung an, der die Sicherung und Wiederherstellung von Bandmedien durchführen soll.
+
+
+
+ a| 
+VERBOSE
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Erhöht die Protokollmeldungen bei einer Bandsicherung oder -Wiederherstellung.
+
+|===
+
+
+== Umgebungsvariablen werden für Dump unterstützt
+
+|===
+| Umgebungsvariable | Gültige Werte | Standard | Beschreibung 
+
+
+ a| 
+ACL_START
+ a| 
+`return_only`
+ a| 
+`none`
+ a| 
+Die Variable ACL_START wird durch den Backup-Vorgang erstellt und ist ein Offset-Wert, der von einer Wiederherstellung durch direkten Zugriff oder einer erneuerbaren NDMP-Sicherungsoperation verwendet wird.
+
+Der Offset-Wert ist der Byte-Offset in der Dump-Datei, in der die ACL-Daten (Pass V) beginnen und am Ende einer Sicherung zurückgegeben werden. Für eine Wiederherstellung der gesicherten Daten durch direkten Zugriff muss der ACL_START-Wert beim Start an den Wiederherstellungsvorgang übergeben werden. Ein neu startbarer NDMP-Backup-Vorgang verwendet den ACL_START-Wert, um mit der Backup-Applikation zu kommunizieren, wo der Einwegteil des Backup-Streams beginnt.
+
+
+
+ a| 
+BASE_DATE
+ a| 
+`0`, `-1`, Oder `DUMP_DATE` Wert
+ a| 
+`-1`
+ a| 
+Gibt das Startdatum für inkrementelle Backups an.
+
+Wenn eingestellt auf `-1`, Der BASE_DATE-Inkremental-Spezifikator ist deaktiviert. Wenn eingestellt auf `0` Bei Backups auf Ebene 0 werden inkrementelle Backups aktiviert. Nach der ersten Sicherung wird der Wert der DUMP_DATE-Variable aus dem vorherigen inkrementellen Backup der VARIABLE BASE_DATE zugewiesen.
+
+Diese Variablen sind eine Alternative zu DEN LEVEL-/UPDATE-basierten inkrementellen Backups.
+
+
+
+ a| 
+DIREKT
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass ein Restore schnell direkt an den Speicherort auf dem Band weiterleiten soll, in dem sich die Dateidaten befinden, anstatt das gesamte Tape zu scannen.
+
+Damit die direkte Wiederherstellung des Zugriffs funktioniert, muss die Backup-Anwendung Informationen zur Positionierung bereitstellen. Wenn diese Variable auf festgelegt ist `Y`, Die Backup-Anwendung gibt die Datei- oder Verzeichnisnamen und die Positionierungsinformationen an.
+
+
+
+ a| 
+DMP_NAME
+ a| 
+`string`
+ a| 
+`none`
+ a| 
+Gibt den Namen für eine Sicherung mehrerer Unterstrukturen an.
+
+Diese Variable ist für mehrere Unterbaumsicherungen obligatorisch.
+
+
+
+ a| 
+DUMP_DATE
+ a| 
+`return_value`
+ a| 
+`none`
+ a| 
+Diese Variable wird nicht direkt geändert. Sie wird vom Backup erstellt, wenn die VARIABLE BASE_DATE auf einen anderen Wert als gesetzt wird `-1`.
+
+Die DUMP_DATE-Variable wird abgeleitet, indem der 32-Bit-Wert auf einen 32-Bit-Zeitwert vorsteht, der von der Dump-Software berechnet wird. Der Level wird von dem letzten Level-Wert erhöht, der in DIE VARIABLE BASE_DATE übergeben wurde. Der resultierende Wert wird als BASIS_DATE-Wert für ein nachfolgender inkrementeller Backup verwendet.
+
+
+
+ a| 
+ENHANCED_DAR_ENABLED
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, ob die erweiterte DAR-Funktion aktiviert ist. Die verbesserte DAR-Funktion unterstützt das Verzeichnis DAR und DAS DATEN von Dateien mit NT-Streams. Sie bietet Performance-Verbesserungen.
+
+Verbessertes DAR während der Wiederherstellung ist nur möglich, wenn die folgenden Bedingungen erfüllt sind:
+
+* ONTAP unterstützt erweiterte DAR-Funktionen.
+* Der Dateiverlauf ist während der Sicherung aktiviert (HIST=Y).
+* Der `ndmpd.offset_map.enable` Die Option ist auf festgelegt `on`.
+* DIE VARIABLE ENHANCED_DAR_ENABLED ist auf festgelegt `Y` Während des Wiederherstellens.
+
+
+
+
+ a| 
+AUSSCHLIESSEN
+ a| 
+`pattern_string`
+ a| 
+`none`
+ a| 
+Gibt Dateien oder Verzeichnisse an, die beim Sichern von Daten ausgeschlossen sind.
+
+Die Ausschlussliste ist eine kommagetrennte Liste von Datei- oder Verzeichnisnamen. Wenn der Name einer Datei oder eines Verzeichnisses mit einer der Namen in der Liste übereinstimmt, wird sie von der Sicherung ausgeschlossen.
+
+Beim Angeben von Namen in der Ausschlussliste gelten die folgenden Regeln:
+
+* Der genaue Name der Datei oder des Verzeichnisses muss verwendet werden.
+* Das Sternchen (*), ein Platzhalterzeichen, muss entweder das erste oder das letzte Zeichen des Strings sein.
++
+Jeder String kann bis zu zwei Sternchen haben.
+
+* Einem Komma in einem Datei- oder Verzeichnisnamen muss ein umgekehrter Schrägstrich vorangestellt werden.
+* Die Ausschlussliste kann bis zu 32 Namen enthalten.
+
+
+[NOTE]
+====
+Dateien oder Verzeichnisse, die für die Sicherung ausgeschlossen werden sollen, werden nicht ausgeschlossen, wenn SIE NICHT_QUOTA_TREE auf setzen `Y` Gleichzeitig.
+
+====
+
+
+ a| 
+EXTRAHIEREN
+ a| 
+`Y`, `N`, Oder `E`
+ a| 
+`N`
+ a| 
+Gibt an, dass Substrukturen eines gesicherten Datensatzes wiederhergestellt werden sollen.
+
+Die Backup-Anwendung gibt die Namen der zu extrahierenden Unterstrukturen an. Wenn eine angegebene Datei einem Verzeichnis entspricht, dessen Inhalt gesichert wurde, wird das Verzeichnis rekursiv extrahiert.
+
+Um eine Datei, ein Verzeichnis oder einen qtree während der Wiederherstellung ohne Verwendung VON DAR umzubenennen, müssen Sie die Umgebungsvariable EXTRAHIEREN auf einstellen `E`.
+
+
+
+ a| 
+EXTRAHIEREN_ACL
+ a| 
+`Y` Oder `N`
+ a| 
+`Y`
+ a| 
+Gibt an, dass ACLs aus der gesicherten Datei bei einem Wiederherstellungsvorgang wiederhergestellt werden.
+
+Standardmäßig werden ACLs beim Wiederherstellen von Daten wiederhergestellt, mit Ausnahme von DARS (DIRECT=Y).
+
+
+
+ a| 
+ERZWINGEN
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Legt fest, ob der Wiederherstellungsvorgang auf Volume-Speicherplatz und Inode-Verfügbarkeit auf dem Ziel-Volume überprüfen muss.
+
+Einstellung dieser Variable auf `Y` Bewirkt, dass der Wiederherstellungsvorgang die Prüfungen auf Volume-Speicherplatz und Inode-Verfügbarkeit auf dem Zielpfad überspringen kann.
+
+Wenn auf dem Ziel-Volume nicht genügend Volume-Speicherplatz oder Inodes verfügbar sind, stellt der Wiederherstellungsvorgang so viele Daten wieder her, wie von dem Ziel-Volume-Speicherplatz und der Inode-Verfügbarkeit zulässig. Der Wiederherstellungsvorgang wird beendet, wenn kein Volume-Speicherplatz oder -Inodes verfügbar sind.
+
+
+
+ a| 
+HIST
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass Informationen zum Dateiverlauf an die Backup-Anwendung gesendet werden.
+
+Die meisten kommerziellen Backup-Anwendungen setzen die HIST-Variable auf `Y`. Wenn Sie die Geschwindigkeit eines Backup-Vorgangs erhöhen oder ein Problem mit der Dateihistorie-Sammlung beheben möchten, können Sie diese Variable auf einstellen `N`.
+
+[NOTE]
+====
+Sie sollten die HIST-Variable nicht auf einstellen `Y` Wenn die Backup-Anwendung den Dateiverlauf nicht unterstützt.
+
+====
+
+
+ a| 
+IGNORIEREN_CTIME
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass eine Datei nicht inkrementell gesichert wird, wenn sich der Ctime-Wert seit dem letzten inkrementellen Backup geändert hat.
+
+Bei einigen Anwendungen, wie z. B. bei der Virenscan-Software, wird der Ctime-Wert einer Datei innerhalb des Inode geändert, obwohl sich die Datei oder ihre Attribute nicht geändert haben. Aus diesem Grund sichert ein inkrementeller Backup Dateien, die sich nicht geändert haben. Der `IGNORE_CTIME` Variable sollte nur angegeben werden, wenn inkrementelle Backups nicht genügend Zeit oder Speicherplatz beanspruchen, da der ctime-Wert geändert wurde.
+
+[NOTE]
+====
+Der `NDMP dump` Befehlssätze `IGNORE_CTIME` Bis `false` Standardmäßig. Einstellen auf `true` Kann zu folgenden Datenverlusten führen:
+
+. Wenn `IGNORE_CTIME` Ist für eine inkrementelle Volume-Ebene auf „true“ gesetzt `ndmpcopy`, Es führt zum Löschen von Dateien, die über qtrees auf der Quelle verschoben werden.
+. Wenn `IGNORE_CTIME` Wird während eines inkrementellen Dump auf Volume-Ebene auf die true gesetzt, führt dies zum Löschen von Dateien, die während des inkrementellen Restores über qtrees auf die Quelle verschoben werden.
+
+
+Um dieses Problem zu vermeiden, `IGNORE_CTIME` Muss auf „false“ gesetzt werden, während die Lautstärke eingestellt ist `NDMP dumps` Oder `ndmpcopy`.
+
+====
+
+
+ a| 
+IGNORE_QTREES
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass der Wiederherstellungsvorgang keine qtree-Informationen aus gesicherten qtrees wiederherstellt.
+
+
+
+ a| 
+EBENE
+ a| 
+`0`-`31`
+ a| 
+`0`
+ a| 
+Gibt die Sicherungsebene an.
+
+Ebene 0 kopiert den gesamten Datensatz. Inkrementelle Backup-Level, angegeben durch Werte über 0, kopieren Sie alle Dateien (neu oder geändert) seit der letzten inkrementellen Sicherung. Ein Level 1 sichert zum Beispiel neue oder geänderte Dateien seit der Sicherung von Ebene 0, sichert ein Level 2 neue oder geänderte Dateien seit der Sicherung der Ebene 1 usw.
+
+
+
+ a| 
+LISTE
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Listet die gesicherten Dateinamen und Inode-Nummern auf, ohne die Daten wiederherstellen zu müssen.
+
+
+
+ a| 
+LIST_QTREES
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Listet die gesicherten qtrees auf, ohne die Daten wiederherstellen zu müssen.
+
+
+
+ a| 
+MULTI_SUBTREE_ NAMEN
+ a| 
+`string`
+ a| 
+`none`
+ a| 
+Gibt an, dass das Backup ein Backup mit mehreren Unterstrukturen ist.
+
+In der Zeichenfolge werden mehrere Unterbäume angegeben, die eine neu getrennte, Null-terminierte Liste von Unterbaumnamen ist. Subtrees werden durch Pfadnamen relativ zu ihrem gemeinsamen Stammverzeichnis angegeben, das als letztes Element der Liste angegeben werden muss.
+
+Wenn Sie diese Variable verwenden, müssen Sie auch die DMP_NAME-Variable verwenden.
+
+
+
+ a| 
+NDMP_UNICODE_ FH
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass zusätzlich zum NFS-Namen der Datei in den Dateiverlaufs-Informationen ein Unicode-Name enthalten ist.
+
+Diese Option wird von den meisten Backup-Anwendungen nicht verwendet und sollte erst dann eingestellt werden, wenn die Backup-Anwendung diese zusätzlichen Dateinamen erhalten soll. Die HIST-Variable muss ebenfalls eingestellt werden.
+
+
+
+ a| 
+NEIN_ACLS
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass ACLs beim Sichern von Daten nicht kopiert werden dürfen.
+
+
+
+ a| 
+NICHT_QUOTA_TREE
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass Dateien und Verzeichnisse in qtrees beim Daten-Backup ignoriert werden müssen.
+
+Wenn eingestellt auf `Y`, Objekte in qtrees im Datensatz, die von DER DATEISYSTEMVARIABLE angegeben sind, werden nicht gesichert. Diese Variable hat nur dann Wirkung, wenn die DATEISYSTEMVARIABLE ein ganzes Volume angibt. DIE Variable NON_QUOTA_TREE funktioniert nur bei Backups der Ebene 0 und funktioniert nicht, wenn DIE Variable MULTI_SUBTREE_NAMES angegeben wird.
+
+[NOTE]
+====
+Dateien oder Verzeichnisse, die für die Sicherung ausgeschlossen werden sollen, werden nicht ausgeschlossen, wenn SIE NICHT_QUOTA_TREE auf setzen `Y` Gleichzeitig.
+
+====
+
+
+ a| 
+NOWRITE
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass der Wiederherstellungsvorgang keine Daten auf die Festplatte schreiben darf.
+
+Diese Variable wird zum Debuggen verwendet.
+
+
+
+ a| 
+REKURSIV
+ a| 
+`Y` Oder `N`
+ a| 
+`Y`
+ a| 
+Gibt an, dass Verzeichniseinträge während einer DAR-Wiederherstellung erweitert werden.
+
+DIE DIREKTEN und ERWEITERTEN Umgebungsvariablen_DAR_ENABLED müssen aktiviert sein (auf festgelegt) `Y`) Auch. Wenn die REKURSIVE Variable deaktiviert ist (auf gesetzt `N`), nur die Berechtigungen und ACLs für alle Verzeichnisse im ursprünglichen Quellpfad werden von Band, nicht der Inhalt der Verzeichnisse wiederhergestellt. Wenn die REKURSIVE Variable auf festgelegt ist `N` Oder die Variable „RECOVER_FULL_PATHS“ ist auf festgelegt `Y`, Der Wiederherstellungspfad muss mit dem ursprünglichen Pfad enden.
+
+[NOTE]
+====
+Wenn die REKURSIVE Variable deaktiviert ist und es mehr als einen Wiederherstellungspfad gibt, müssen alle Wiederherstellungspfade innerhalb der längsten der Wiederherstellungspfade enthalten sein. Andernfalls wird eine Fehlermeldung angezeigt.
+
+====
+Nachfolgend finden Sie beispielsweise gültige Recovery-Pfade, da alle Recovery-Pfade innerhalb von vorhanden sind `foo/dir1/deepdir/myfile`:
+
+* `/foo`
+* `/foo/dir`
+* `/foo/dir1/deepdir`
+* `/foo/dir1/deepdir/myfile`
+
+
+Die folgenden sind ungültige Recovery-Pfade:
+
+* `/foo`
+* `/foo/dir`
+* `/foo/dir1/myfile`
+* `/foo/dir2`
+* `/foo/dir2/myfile`
+
+
+
+
+ a| 
+WIEDERHERSTELLUNG_FULL_PATHS
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Gibt an, dass der vollständige Recovery-Pfad ihre Berechtigungen und ACLs nach DEM DAR wiederhergestellt hat.
+
+DIRECT und ENHANCED_DAR_ENABLED muss aktiviert sein (auf eingestellt) `Y`) Auch. Wenn RECOVERY_FULL_PATHS auf festgelegt ist `Y`, Der Wiederherstellungspfad muss mit dem ursprünglichen Pfad enden. Sind Verzeichnisse bereits auf dem Ziel-Volume vorhanden, werden ihre Berechtigungen und ACLs nicht vom Band wiederhergestellt.
+
+
+
+ a| 
+AKTUALISIERUNG
+ a| 
+`Y` Oder `N`
+ a| 
+`Y`
+ a| 
+Aktualisiert die Metadateninformationen, um EIN LEVEL-basiertes, inkrementelles Backup zu ermöglichen.
+
+|===
+
+
+== Für SMTape unterstützte Umgebungsvariablen
+
+|===
+| Umgebungsvariable | Gültige Werte | Standard | Beschreibung 
+
+
+ a| 
+BASE_DATE
+ a| 
+`DUMP_DATE`
+ a| 
+`-1`
+ a| 
+Gibt das Startdatum für inkrementelle Backups an.
+
+ `BASE_DATE` Ist eine String-Darstellung der Snapshot Referenzkennungen. Verwenden der `BASE_DATE` Zeichenfolge, SMTape lokalisiert die Referenz-Snapshot Kopie.
+
+ `BASE_DATE` Ist nicht für Basis-Backups erforderlich. Für ein inkrementelles Backup, der Wert des `DUMP_DATE` Die Variable aus dem vorherigen Basisplan oder dem inkrementellen Backup wird dem zugewiesen `BASE_DATE` Variabel.
+
+Die Backup-Anwendung weist den zu `DUMP_DATE` Mehrwert aus einer früheren SMTape-Basis oder einem inkrementellen Backup
+
+
+
+ a| 
+DUMP_DATE
+ a| 
+`return_value`
+ a| 
+`none`
+ a| 
+AM Ende eines SMTape Backups enthält DUMP_DATE eine String-Kennung, die die für das Backup verwendete Snapshot Kopie identifiziert. Diese Snapshot Kopie kann als Referenz-Snapshot für ein nachfolgender, inkrementeller Backup verwendet werden.
+
+Der resultierende Wert von DUMP_DATE wird als BASE_DATE-Wert für nachfolgende inkrementelle Backups verwendet.
+
+
+
+ a| 
+SMTAPE_BACKUP_SET_ID
+ a| 
+`string`
+ a| 
+`none`
+ a| 
+Identifiziert die Reihenfolge der inkrementellen Backups, die mit dem Basistransfer verbunden sind.
+
+Die Backup-Set-ID ist eine eindeutige 128-Bit-ID, die während eines Basissicherung generiert wird. Die Backup-Anwendung weist diese ID als Eingabe an das zu `SMTAPE_BACKUP_SET_ID` Variable während eines inkrementellen Backups.
+
+
+
+ a| 
+SMTAPE_SNAPSHOT_NAME
+ a| 
+Alle gültigen Snapshot Kopien, die im Volume verfügbar sind
+ a| 
+`Invalid`
+ a| 
+Wenn die Variable SMTAPE_SNAPSHOT_NAME auf eine Snapshot Kopie festgelegt ist, werden diese Snapshot Kopie und ihre älteren Snapshot Kopien auf Tape gesichert.
+
+Für inkrementelle Backups legt diese Variable die inkrementelle Snapshot Kopie fest. Die Variable „BASE_DATE“ stellt die Basis-Snapshot Kopie bereit.
+
+
+
+ a| 
+SMTAPE_DELETE_SNAPSHOT
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Wenn die Variable SMTAPE_DELETE_SNAPSHOT auf festgelegt ist, wird für eine automatisch von SMTape erstellte Snapshot Kopie ausgewählt `Y`, Dann löscht SMTape nach Abschluss des Backup-Vorgangs diese Snapshot Kopie. Eine von der Backup-Applikation erstellte Snapshot Kopie wird jedoch nicht gelöscht.
+
+
+
+ a| 
+SMTAPE_BREAK_MIRROR
+ a| 
+`Y` Oder `N`
+ a| 
+`N`
+ a| 
+Wenn die Variable SMTAPE_BREAK_MIRROR auf festgelegt ist `Y`, Das Volumen des Typs `DP` Wird in A geändert `RW` Volume nach einem erfolgreichen Restore wiederherstellen.
+
+|===

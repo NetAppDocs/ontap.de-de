@@ -1,0 +1,75 @@
+---
+permalink: concepts/load-balancing-concept.html 
+sidebar: sidebar 
+keywords: 'load balance, workload, latency, overload, reduce load, ceiling, limits, iops, "mb/s", qos, min, max, policy group, throughput, headroom, floor, adaptive qos' 
+summary: 'Die Performance von Workloads wird von der Latenz beeinflusst, wenn die Arbeitsleistung auf einem Node die verfügbaren Ressourcen überschreitet. Es ist möglich, einen überlasteten Node zu managen, indem die verfügbaren Ressourcen erweitert (Upgrades von Festplatten oder CPU) oder die Last reduziert (Verschieben von Volumes oder LUNs auf unterschiedliche Nodes bei Bedarf).' 
+---
+= Lastverteilung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Performance von Workloads wird von der Latenz beeinflusst, wenn die Arbeitsleistung auf einem Node die verfügbaren Ressourcen überschreitet. Es ist möglich, einen überlasteten Node zu managen, indem die verfügbaren Ressourcen erweitert (Upgrades von Festplatten oder CPU) oder die Last reduziert (Verschieben von Volumes oder LUNs auf unterschiedliche Nodes bei Bedarf).
+
+ONTAP _Storage Quality of Service (QoS)_ kann auch verwendet werden, um sicherzustellen, dass die Performance kritischer Workloads durch andere Workloads nicht beeinträchtigt wird:
+
+* Sie können einen QoS-Durchsatz _Obergrenze_ für einen konkurrierenden Workload festlegen, um die Auswirkungen auf Systemressourcen zu begrenzen (QoS Max).
+* Sie können für kritische Workloads einen QoS-Durchsatz _floor_ einstellen, um sicherzustellen, dass er unabhängig von der Nachfrage durch konkurrierende Workloads ein Minimum an Durchsatzzielen erfüllt (QoS Min.).
+* Sie können eine QoS-Decke und Boden für denselben Workload festlegen.
+
+
+
+
+== Durchsatzdecken
+
+Eine Durchsatzbegrenzung beschränkt den Durchsatz für einen Workload auf eine maximale Anzahl an IOPS oder MB/s. In der nachfolgenden Abbildung wird durch die Durchsatzobergrenze für Workload 2 sichergestellt, dass die Workloads 1 und 3 nicht „`bully`“ ausgeführt werden.
+
+Eine _Policy Group_ definiert die Durchsatzobergrenze für einen oder mehrere Workloads. Ein Workload repräsentiert die I/O-Vorgänge für ein Objekt „_Storage“:_ ein Volume, eine Datei oder eine LUN oder alle Volumes, Dateien oder LUNs in einer SVM. Sie können beim Erstellen der Richtliniengruppe die Obergrenze festlegen oder warten, bis Sie die Workloads überwachen und sie angeben.
+
+[NOTE]
+====
+Der Durchsatz bei Workloads kann den angegebenen Höchstwert um bis zu 10 % überschreiten, insbesondere bei einem Workload, der einen schnellen Durchsatzwechsel hat. Die Decke könnte um bis zu 50 % überschritten werden, um mit Ausbrüchen zu umgehen.
+
+====
+image::../media/qos-ceiling-concepts.gif[qos-Deckenkonzepte]
+
+
+
+== Durchsatzböden
+
+Eine Durchsatzboden sorgt dafür, dass der Durchsatz für einen Workload nicht unter eine Mindestanzahl von IOPS fällt. In der Abbildung unten stellen die Durchsatzböden für Workload 1 und Workload 3 sicher, dass sie unabhängig von der Nachfrage nach Workload 2 ein Mindestdurchsatz erreichen.
+
+[TIP]
+====
+Wie die Beispiele zeigen, wird der Durchsatz durch eine Durchsatzbegrenzung direkt gedrosselt. Ein Durchsatzboden drosselt den Durchsatz indirekt, indem den Workloads, für die das Boden festgelegt wurde, Priorität eingeräumt wird.
+
+====
+Ein Workload repräsentiert die I/O-Vorgänge für ein Volume, eine LUN oder, beginnend mit ONTAP 9.3, Datei. Eine Richtliniengruppe mit Durchsatzboden kann nicht auf eine SVM angewendet werden. Sie können den Boden beim Erstellen der Richtliniengruppe angeben oder warten, bis Sie die Workloads überwachen, um sie anzugeben.
+
+[NOTE]
+====
+Der Durchsatz für einen Workload könnte unter den angegebenen Bereich liegen, wenn auf dem Node bzw. Aggregat keine Performance-Kapazität (Reserve) vorhanden ist oder während kritischer Vorgänge wie `volume move trigger-cutover`. Auch wenn genügend Kapazität verfügbar ist und kritische Vorgänge nicht stattfinden, kann der Durchsatz zu einer Arbeitslast um bis zu 5 Prozent unter die angegebene Etage fallen.
+
+====
+image::../media/qos-floor-concepts.gif[qos-Konzepte]
+
+
+
+== Anpassungsfähige QoS
+
+Normalerweise wird der Wert der Richtliniengruppe, die Sie einem Storage-Objekt zuweisen, behoben. Sie müssen den Wert manuell ändern, wenn sich die Größe des Speicherobjekts ändert. Ein Anstieg des Platzansatzes, der z. B. auf einem Volumen genutzt wird, erfordert in der Regel eine entsprechende Erhöhung der für das Volumen angegebenen Durchsatzdecke.
+
+_Adaptive QoS_ skaliert den Richtliniengruppenwert automatisch auf die Workload-Größe und behält das Verhältnis von IOPS zu TBs bei sich änderter Workload-Größe bei. Wenn Sie Hunderte oder Tausende Workloads in einer großen Implementierung managen, hat dies einen enormen Vorteil.
+
+Meist verwenden Kunden anpassungsfähige QoS zur Anpassung der Durchsatzdecken, allerdings können sie auch zum Managen von Durchsatzböden (bei einer Erhöhung der Workload-Größe) eingesetzt werden. Die Workload-Größe wird entweder als zugewiesener Speicherplatz für das Storage-Objekt oder als Speicherplatz angegeben, der vom Storage-Objekt verwendet wird.
+
+[NOTE]
+====
+Gebrauchte Flächen sind für Durchsatzböden in ONTAP 9.5 und höher verfügbar. Es wird bei Durchsatzböden in ONTAP 9.4 und früher nicht unterstützt.
+
+====
+* Eine Richtlinie „_zugewiesener Speicherplatz_“ behält das IOPS/TB-Verhältnis entsprechend der nominalen Größe des Storage-Objekts bei. Wenn das Verhältnis 100 IOPS/GB ist, wird ein 150 GB großes Volume eine Durchsatzgrenze von 15,000 IOPS aufweisen, solange das Volume diese Größe bleibt. Wenn die Volume-Größe auf 300 GB geändert wird, passt die anpassungsfähige QoS die Durchsatzdecke auf 30,000 IOPS an.
+* Eine Richtlinie „_Used space_“ (Standard) behält das Verhältnis von IOPS/TB GB entsprechend der Menge der tatsächlich gespeicherten Daten vor der Storage-Effizienz bei. Wenn das Verhältnis 100 IOPS/GB ist, würde ein 150 GB großes Volumen, das 100 GB gespeicherte Daten hat, eine Durchsatzdecke von 10,000 IOPS haben. Wenn sich die Menge des belegten Speicherplatzes ändert, passt die anpassungsfähige QoS die Durchsatzobergrenze dem Verhältnis an.
+
