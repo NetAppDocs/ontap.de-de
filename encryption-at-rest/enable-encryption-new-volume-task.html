@@ -17,7 +17,7 @@
   <meta http-equiv="encoding" content="utf-8">
   <meta http-equiv="nss-type" content="Product Documentation"/>
   <meta http-equiv="nss-subtype" content="User Guide"/><meta name="description" content="Sie können den Befehl Volume create verwenden, um die Verschlüsselung auf einem neuen Volume zu aktivieren.">
-  <meta name="keywords" content=" enabling, encryption, new, volume"><!-- Icons -->
+  <meta name="keywords" content=" encryption, new volume, NAE, NVE, volume create"><!-- Icons -->
   <link rel="icon" href="/de-de/ontap/images/favicon.ico" type="image/x-icon">
 
   <!-- RSS Feed --><!-- CSS Definitions: NetApp CSS should be defined after generic css -->
@@ -17209,11 +17209,11 @@
         SnapLock
       </a></li><li 
       data-pdf-exists="true" 
-      data-pdf-filename="Spiegelung zur Lastverteilung"
+      data-pdf-filename="Spiegelung zur Lastverteilung in ONTAP 8.3"
       data-li-level="5#" 
       class=" "
     ><a class="na-navbar-padding" href="/de-de/ontap/upgrade/task_preparing_all_load_sharing_mirrors_for_a_major_upgrade.html">
-        Spiegelung zur Lastverteilung
+        Spiegelung zur Lastverteilung in ONTAP 8.3
       </a></li><li 
       data-pdf-exists="true" 
       data-pdf-filename="NetApp Storage Encryption"
@@ -37380,7 +37380,7 @@
 <p class="page-details">
   
     
-    <time datetime="2022-11-16 16:41:18 +0000">11/16/2022</time>
+    <time datetime="2022-11-30 09:28:35 +0000">11/30/2022</time>
     
   
 
@@ -37394,19 +37394,45 @@
 <p>Sie können das verwenden <code>volume create</code> Befehl zum Aktivieren der Verschlüsselung auf einem neuen Volume.</p>
 </div>
 <div class="paragraph">
-<p>Ab ONTAP 9.2 können Sie die Verschlüsselung auf einem SnapLock Volume aktivieren.</p>
+<p>Sie können Volumes mit NetApp Volume Encryption (NVE) und ab ONTAP 9.6 mit NetApp Aggregate Encryption (NAE) verschlüsseln. Weitere Informationen zu NAE und NVE finden Sie im <a href="#configure-netapp-volume-encryption-concept">Übersicht über Volume-Verschlüsselung</a>.</p>
 </div>
 <div class="paragraph">
-<p>Beginnend mit ONTAP 9.4, wenn Sie beim Einrichten des Onboard Key Managers „<code>cc-Mode</code>“ aktivieren, werden die mit dem erstellten Volumes erstellt <code>volume create</code> Der Befehl wird automatisch verschlüsselt, unabhängig davon, ob Sie angegeben haben <code>-encrypt true</code>.</p>
+<p>Das Verfahren zur Aktivierung der Verschlüsselung in ONTAP variiert abhängig von der verwendeten ONTAP Version und der spezifischen Konfiguration:</p>
 </div>
-<div class="paragraph">
-<p>Ab ONTAP 9.6 können Sie mithilfe der Verschlüsselung auf Aggregatebene dem enthaltenden Aggregat Schlüssel zuweisen, damit die Volumes verschlüsselt werden können. Die im Aggregat erstellten Volumes werden standardmäßig verschlüsselt. Sie können das verwenden <code>-encrypt</code> Option zum Überschreiben der Standardeinstellung beim Erstellen des Volumes.</p>
-</div>
-<div class="paragraph">
+<div class="ulist">
+<ul>
+<li>
+<p>Beginnend mit ONTAP 9.4, wenn Sie aktivieren <code>cc-mode</code> Wenn Sie den Onboard Key Manager einrichten, erstellen Sie die Volumes mit dem <code>volume create</code> Der Befehl wird automatisch verschlüsselt, unabhängig davon, ob Sie angegeben haben <code>-encrypt true</code>.</p>
+</li>
+<li>
+<p>In ONTAP 9.6 und älteren Versionen müssen Sie verwenden <code>-encrypt true</code> Mit <code>volume create</code> Befehle zur Aktivierung der Verschlüsselung (vorausgesetzt, Sie haben die Verschlüsselung nicht aktiviert <code>cc-mode</code>).</p>
+</li>
+<li>
+<p>Wenn Sie NAE in ONTAP 9.6 verwenden, müssen Sie NAE auf Aggregatebene aktivieren. Siehe <a href="enable-aggregate-level-encryption-nve-license-task.html">Aktivieren Sie die Verschlüsselung auf Aggregatebene mit der VE-Lizenz</a> Für weitere Details zu dieser Aufgabe.</p>
+</li>
+<li>
 <p>Ab ONTAP 9.7 werden neu erstellte Volumes standardmäßig verschlüsselt, wenn Sie über die VE-Lizenz und die integrierte oder externe Schlüsselverwaltung verfügen.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Sofern Sie ONTAP 9.7 und neuere Versionen verwenden <code>-encrypt true</code> Zur Erstellung eines Volumes in einem NAE-Aggregat erfolgt für das Volume eine NVE-Verschlüsselung statt NAE. Alle Volumes in einem NAE-Aggregat müssen entweder mit NVE oder NAE verschlüsselt sein.</p>
+</li>
+</ul>
 </div>
-<div class="paragraph">
-<p>Ein mit einem eindeutigen Schlüssel verschlüsseltes Volume wird als <em>NVE Volume</em> bezeichnet. Ein mit einem Aggregatschlüssel verschlüsseltes Volume wird als <em>NAE Aggregat</em> (für NetApp Aggregate Encryption) bezeichnet. Klartext-Volumes werden in NAE-Aggregaten nicht unterstützt.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<img src="/us-en/ontap/images/note.svg" alt="Anmerkung">
+</td>
+<td class="content">
+Klartext-Volumes werden in NAE-Aggregaten nicht unterstützt.
+</td>
+</tr>
+</table>
 </div>
 <div class="olist arabic">
 <div class="title">Schritte</div>
@@ -37425,34 +37451,42 @@
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>ONTAP 9.7 oder höher NAE-Volume</p>
+<p>Ein NAE-Band</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name</code></p>
+<p><code>volume create -vserver <em>SVM_name</em> -volume <em>volume_name</em> -aggregate <em>aggregate_name</em></code><br></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<img src="/us-en/ontap/images/note.svg" alt="Anmerkung">
+</td>
+<td class="content">
+In ONTAP 9.6 müssen Sie NAE auf Aggregatebene aktivieren, um ein NAE-Volume zu erstellen.
+</td>
+</tr>
+</table>
 </div></div></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>Ein ONTAP 9.6 NAE-Volume (bei aktivierter Verschlüsselung auf Aggregatebene)</p>
+<p>Ein NVE Volume</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name</code></p>
-</div></div></td>
-</tr>
+<p><code>volume create -vserver <em>SVM_name</em> -volume <em>volume_name</em> -aggregate <em>aggregate_name</em></code><br></p>
+</div>
+<div class="admonitionblock note">
+<table>
 <tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>Ein ONTAP 9.7 oder höher NVE Volume</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name</code></p>
-</div></div></td>
+<td class="icon">
+<img src="/us-en/ontap/images/note.svg" alt="Anmerkung">
+</td>
+<td class="content">
+Wenn Sie ONTAP 9.6 und frühere Versionen verwenden, fügen Sie hinzu <code>-encrypt true</code> Dem Befehl. Unter Verwendung dieses Parameters in ONTAP 9.7 oder höher mit NAE-Verschlüsselung auf dem Aggregat wird auf dem Volume NVE verwendet.
+</td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>Ein ONTAP 9.6 oder früher NVE Volume</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name -encrypt true</code></p>
+</table>
 </div></div></td>
 </tr>
 <tr>
@@ -37460,53 +37494,13 @@
 <p>Nur-Text-Lautstärke</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>volume create -vserver SVM_name -volume volume_name -aggregate aggregate_name -encrypt false</code></p>
+<p><code>volume create -vserver <em>SVM_name</em> -volume <em>volume_name</em> -aggregate <em>aggregate_name</em> -encrypt false</code></p>
 </div></div></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p>Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.</p>
-</div>
-<div class="paragraph">
-<p>Ab ONTAP 9.7 oder höher wird mit dem folgenden Befehl ein NAE-Volume mit dem Namen erstellt <code>vol1</code> Ein <code>aggr1</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cluster1::&gt; volume create -vserver vs1 -volume vol1 -aggregate aggr1</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Bei Verwendung von ONTAP 9.6, vorausgesetzt, die Verschlüsselung auf Aggregatebene ist aktiviert, erstellt der folgende Befehl ein NAE-Volume mit dem Namen <code>vol1</code> Ein <code>aggr1</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cluster1::&gt; volume create -vserver vs1 -volume vol1 -aggregate aggr1</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Ab ONTAP 9.7 oder höher wird mit dem folgenden Befehl ein NVE Volume mit dem Namen erstellt <code>vol2</code> Ein <code>aggr1</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cluster1::&gt; volume create -vserver vs1 -volume vol2 -aggregate aggr1</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Bei Verwendung von ONTAP 9.6 oder einer älteren Version wird mit dem folgenden Befehl ein NVE Volume mit dem Namen erstellt <code>vol2</code> Ein <code>aggr1</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cluster1::&gt; volume create -vserver vs1 -volume vol2 -aggregate aggr1 -encrypt true</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Mit dem folgenden Befehl wird ein Klartext-Volume mit dem Namen erstellt <code>vol3</code> Ein <code>aggr1</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cluster1::&gt; volume create -vserver vs1 -volume vol3 -aggregate aggr1 -encrypt false</pre>
-</div>
+<p>Vollständige Befehlssyntax finden Sie auf der Befehlssyntax für Link:https://docs.netapp.com/us-en/ontap-cli-9121/volume-create.html[<code>volume create</code>^].</p>
 </div>
 </li>
 <li>
@@ -37515,25 +37509,13 @@
 <p><code>volume show -is-encrypted true</code></p>
 </div>
 <div class="paragraph">
-<p>Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.</p>
-</div>
-<div class="paragraph">
-<p>Mit dem folgenden Befehl werden die verschlüsselten Volumes auf angezeigt <code>cluster2</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cluster2::&gt; volume show -is-encrypted true
-
-Vserver  Volume  Aggregate  State  Type  Size  Available  Used
--------  ------  ---------  -----  ----  -----  --------- ----
-vs1      vol1    aggr2     online    RW  200GB    160.0GB  20%</pre>
-</div>
+<p>Eine vollständige Befehlssyntax finden Sie im <a href="https://docs.netapp.com/us-en/ontap-cli-9121/volume-show.html" target="_blank" rel="noopener">"Befehlsreferenz"</a>.</p>
 </div>
 </li>
 </ol>
 </div>
 <div class="paragraph">
-<p>Wenn Sie einen KMIP-Server zum Speichern der Schlüssel für einen Node verwenden, sendet ONTAP bei der Verschlüsselung eines Volumes automatisch „<code>schiebt</code>“ einen Verschlüsselungsschlüssel an den Server.</p>
+<p>Wenn Sie einen KMIP-Server zum Speichern der Schlüssel für einen Node verwenden, „sendet“ ONTAP bei der Verschlüsselung eines Volumes automatisch einen Verschlüsselungsschlüssel an den Server.</p>
 </div>
 
     </article>
