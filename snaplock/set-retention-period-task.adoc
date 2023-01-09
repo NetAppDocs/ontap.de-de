@@ -1,10 +1,10 @@
 ---
 permalink: snaplock/set-retention-period-task.html 
 sidebar: sidebar 
-keywords: snaplock, set, retention, time, default, file, volume, period 
+keywords: snaplock, set, retention, time, default, explicit, file, modify, volume, period 
 summary: Sie können die Aufbewahrungszeit für eine Datei explizit festlegen oder den Standardaufbewahrungszeitraum für das Volume verwenden, um die Aufbewahrungszeit abzuleiten. Wenn Sie die Aufbewahrungszeit nicht explizit festlegen, verwendet SnapLock den Standardaufbewahrungszeitraum zur Berechnung der Aufbewahrungszeit. 
 ---
-= Stellen Sie die Übersicht über die Aufbewahrungszeit ein
+= Aufbewahrungszeit einstellen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -13,10 +13,7 @@ summary: Sie können die Aufbewahrungszeit für eine Datei explizit festlegen od
 [role="lead"]
 Sie können die Aufbewahrungszeit für eine Datei explizit festlegen oder den Standardaufbewahrungszeitraum für das Volume verwenden, um die Aufbewahrungszeit abzuleiten. Wenn Sie die Aufbewahrungszeit nicht explizit festlegen, verwendet SnapLock den Standardaufbewahrungszeitraum zur Berechnung der Aufbewahrungszeit.
 
-
-
-== Allgemeines zu Aufbewahrungszeitraum und Aufbewahrungszeit
-
+.Allgemeines zu Aufbewahrungszeitraum und Aufbewahrungszeit
 Der_Aufbewahrungszeitraum_ für EINE WORM-Datei gibt die Zeitspanne an, die die Datei nach dem Festlegen des WORM-Status aufbewahrt werden muss. Die _Aufbewahrungszeit_ für EINE WORM-Datei ist die Zeit, nach der die Datei nicht mehr aufbewahrt werden muss. Eine Aufbewahrungsfrist von 20 Jahren für eine Datei, die am 10. November 2020 6:00 Uhr im WORM-Zustand aufbewahrt wird, würde beispielsweise eine Aufbewahrungszeit vom 10. November 2040 6:00 Uhr erreichen
 
 image::../media/retention.gif[Aufbewahrung]
@@ -26,22 +23,13 @@ image::../media/retention.gif[Aufbewahrung]
 Ab ONTAP 9.10.1 können Sie eine Aufbewahrungszeit bis zum 26. Oktober 3058 und eine Aufbewahrungsfrist von bis zu 100 Jahren festlegen. Wenn Sie die Aufbewahrungszeiträume verlängern, werden ältere Richtlinien automatisch konvertiert. In ONTAP 9.9.1 und früheren Versionen, sofern Sie den Standard-Aufbewahrungszeitraum nicht auf unendlich eingestellt, ist die maximale unterstützte Aufbewahrungszeit Januar 19 2071 (GMT).
 
 ====
-
-
-== Wichtige Überlegungen zur Replizierung
-
+.Wichtige Überlegungen zur Replizierung
 Wenn Sie eine SnapMirror Beziehung mit einem SnapLock Quell-Volume unter Verwendung eines Aufbewahrungsdatums später als dem 19. Januar 2071 (GMT) aufbauen, muss das Ziel-Cluster ONTAP 9.10.1 oder höher ausführen. Sonst schlägt der SnapMirror Transfer fehl.
 
-
-
-== Wichtige Überlegungen zum Wechsel
-
+.Wichtige Überlegungen zum Wechsel
 ONTAP verhindert, dass Sie einen Cluster von ONTAP 9.10.1 auf eine frühere ONTAP-Version zurücksetzen, wenn es Dateien mit einer Aufbewahrungsfrist später als „Januar 19, 2071 8:44:07“ gibt.
 
-
-
-== Allgemeines zu den Standardaufbewahrungszeiten
-
+.Allgemeines zu den Standardaufbewahrungszeiten
 Ein SnapLock-Compliance- oder Enterprise-Volume hat vier Aufbewahrungszeiträume:
 
 * Mindestaufbewahrungszeitraum (`min`), mit einem Standardwert von 0
@@ -62,3 +50,198 @@ Ab ONTAP 9.12.1 SIND WORM-Dateien, deren Aufbewahrungszeitraum auf festgelegt is
 
 
 Wenn Sie also die Aufbewahrungszeit nicht explizit festlegen, bevor Sie eine Compliance-Modus-Datei in DEN WORM-Status überführen, und Sie die Standardeinstellungen nicht ändern, wird die Datei 30 Jahre lang aufbewahrt. Gleiches gilt, wenn Sie die Aufbewahrungszeit nicht explizit festlegen, bevor Sie eine Enterprise-Modus-Datei in DEN WORM-Status überführen, und Sie die Standardeinstellungen nicht ändern, wird die Datei 0 Jahre lang aufbewahrt oder, effektiv, überhaupt nicht.
+
+
+
+== Legen Sie den Standardaufbewahrungszeitraum fest
+
+Sie können das verwenden `volume snaplock modify` Befehl zum Festlegen des Standardaufbewahrungszeitraums für Dateien auf einem SnapLock Volume
+
+.Was Sie benötigen
+Das SnapLock Volume muss online sein.
+
+.Über diese Aufgabe
+In der folgenden Tabelle sind die möglichen Werte für die Option Standardaufbewahrungszeitraum aufgeführt:
+
+[NOTE]
+====
+Der Standardaufbewahrungszeitraum muss größer oder gleich (>=) dem Mindestaufbewahrungszeitraum und kleiner als oder gleich (\<=) dem maximalen Aufbewahrungszeitraum sein.
+
+====
+|===
+| Wert | Einheit | Hinweise 
+
+
+ a| 
+0 bis 65535
+ a| 
+Sekunden
+ a| 
+
+
+
+ a| 
+0 bis 24
+ a| 
+Stunden
+ a| 
+
+
+
+ a| 
+0 bis 365
+ a| 
+Tage
+ a| 
+
+
+
+ a| 
+0 bis 12
+ a| 
+Monaten
+ a| 
+
+
+
+ a| 
+0 bis 100
+ a| 
+Jahren
+ a| 
+Ab ONTAP 9.10.1 Bei früheren Versionen von ONTAP beträgt der Wert 0 - 70.
+
+
+
+ a| 
+maximale
+ a| 
+-
+ a| 
+Verwenden Sie den maximalen Aufbewahrungszeitraum.
+
+
+
+ a| 
+Mindestens
+ a| 
+-
+ a| 
+Verwenden Sie den Mindestaufbewahrungszeitraum.
+
+
+
+ a| 
+Skalierbar
+ a| 
+-
+ a| 
+Bewahren Sie die Dateien für immer auf.
+
+
+
+ a| 
+Nicht angegeben
+ a| 
+-
+ a| 
+Bewahren Sie die Dateien so lange auf, bis ein absoluter Aufbewahrungszeitraum festgelegt ist.
+
+|===
+Die Werte und Bereiche für die maximale und minimale Aufbewahrungsdauer sind identisch, mit Ausnahme von `max` Und `min`, Die nicht anwendbar sind. Weitere Informationen zu dieser Aufgabe finden Sie unter link:set-retention-period-task.html["Stellen Sie die Übersicht über die Aufbewahrungszeit ein"].
+
+Sie können das verwenden `volume snaplock show` Befehl zum Anzeigen der Einstellungen für den Aufbewahrungszeitraum für das Volume. Weitere Informationen finden Sie auf der man-Page für den Befehl.
+
+[NOTE]
+====
+Nachdem eine Datei im WORM-Status übergeben wurde, können Sie den Aufbewahrungszeitraum verlängern, jedoch nicht verkürzen.
+
+====
+.Schritte
+. Legen Sie den Standardaufbewahrungszeitraum für Dateien auf einem SnapLock-Volume fest:
++
+`*volume snaplock modify -vserver _SVM_name_ -volume _volume_name_ -default-retention-period _default_retention_period_ -minimum-retention-period _min_retention_period_ -maximum-retention-period _max_retention_period_*`
+
++
+Eine vollständige Liste der Optionen finden Sie auf der man-Page für den Befehl.
+
++
+[NOTE]
+====
+In den folgenden Beispielen wird davon ausgegangen, dass die minimalen und maximalen Aufbewahrungszeiträume zuvor nicht geändert wurden.
+
+====
++
+Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für Compliance- oder Enterprise-Volumes auf 20 Tage festgelegt:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period 20days
+----
++
+Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Compliance-Volume auf 70 Jahre festgelegt:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -maximum-retention-period 70years
+----
++
+Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Enterprise-Volume auf 10 Jahre festgelegt:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period max -maximum-retention-period 10years
+----
++
+Mit den folgenden Befehlen wird die Standardaufbewahrungsdauer für Enterprise-Volumes auf 10 Tage festgelegt:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -minimum-retention-period 10days
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period min
+----
++
+Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Compliance-Volume auf „skalierbar“ gesetzt:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period infinite -maximum-retention-period infinite
+----
+
+
+
+
+== Legen Sie die Aufbewahrungszeit für eine Datei explizit fest
+
+Sie können die Aufbewahrungszeit für eine Datei explizit festlegen, indem Sie die letzte Zugriffszeit ändern. Sie können jeden entsprechenden Befehl oder jedes Programm über NFS oder CIFS verwenden, um die Uhrzeit des letzten Zugriffs zu ändern.
+
+.Über diese Aufgabe
+Nachdem eine Datei an WORM übergeben wurde, können Sie die Aufbewahrungszeit verlängern, aber nicht verkürzen. Die Aufbewahrungszeit wird im gespeichert `atime` Feld für die Datei.
+
+[NOTE]
+====
+Sie können die Aufbewahrungszeit einer Datei nicht explizit auf festlegen `infinite`. Dieser Wert ist nur verfügbar, wenn Sie den Standardaufbewahrungszeitraum zur Berechnung der Aufbewahrungszeit verwenden.
+
+====
+.Schritte
+. Verwenden Sie einen geeigneten Befehl oder ein geeignetes Programm, um die letzte Zugriffszeit für die Datei zu ändern, deren Aufbewahrungszeit Sie einstellen möchten.
++
+Verwenden Sie in einer UNIX-Shell den folgenden Befehl, um eine Aufbewahrungszeit vom 21. November 2020 6:00 Uhr festzulegen In einer Datei mit dem Namen `document.txt`:
+
++
+[listing]
+----
+touch -a -t 202011210600 document.txt
+----
++
+[NOTE]
+====
+Sie können alle geeigneten Befehle oder Programme verwenden, um die letzte Zugriffszeit in Windows zu ändern.
+
+====
+
