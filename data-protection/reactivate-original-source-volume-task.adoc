@@ -45,17 +45,20 @@ cluster_dst::> snapmirror delete -source-path svm1:volA -destination-path svm_ba
 Eine vollständige Befehlssyntax finden Sie in der man-Page.
 
 +
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen. Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen.
+[NOTE]
+====
+Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen. Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen. Der Befehl schlägt fehl, wenn eine allgemeine Snapshot Kopie nicht auf dem Quell- und Zielsystem vorhanden ist. Nutzung `snapmirror initialize` Um die Beziehung neu zu initialisieren.
 
+====
 +
 Im folgenden Beispiel wird die Beziehung zwischen dem ursprünglichen Quell-Volume umkehren: `volA` Ein `svm1`, Und dem Volumen, von dem Sie Daten bereitstellen, `volA_dst` Ein `svm_backup`:
 
 +
 [listing]
 ----
-cluster_dst::> snapmirror resync -source-path svm_backup:volA_dst -destination-path svm1:volA
+cluster_src::> snapmirror resync -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
-. Beenden Sie die Quell-SVM für die umgekehrte Beziehung:
+. Wenn Sie bereit sind, den Datenzugriff zur Originalquelle wiederherzustellen, stoppen Sie den Zugriff auf das ursprüngliche Ziel-Volume. Eine Möglichkeit besteht darin, die ursprüngliche Ziel-SVM zu stoppen:
 +
 `vserver stop -vserver _SVM_`
 
@@ -63,12 +66,18 @@ cluster_dst::> snapmirror resync -source-path svm_backup:volA_dst -destination-p
 Eine vollständige Befehlssyntax finden Sie in der man-Page.
 
 +
-Im folgenden Beispiel wird die Quell-SVM für die umgekehrte Beziehung angehalten:
+[NOTE]
+====
+Sie müssen diesen Befehl von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster ausführen. Dieser Befehl verhindert den Benutzerzugriff auf die gesamte ursprüngliche Ziel-SVM. Sie können den Zugriff auf das ursprüngliche Ziellaufwerk mithilfe anderer Methoden beenden.
+
+====
++
+Im folgenden Beispiel wird die ursprüngliche Ziel-SVM angehalten:
 
 +
 [listing]
 ----
-cluster_src::> vserver stop svm_backup
+cluster_dst::> vserver stop svm_backup
 ----
 . Aktualisierung der umgekehrten Beziehung:
 +
@@ -80,7 +89,7 @@ Eine vollständige Befehlssyntax finden Sie in der man-Page.
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der Ziel-SVM oder dem Ziel-Cluster ausführen. Der Befehl schlägt fehl, wenn eine allgemeine Snapshot Kopie auf dem Quell- und Zielsystem nicht vorhanden ist. Nutzung `snapmirror initialize` Um die Beziehung neu zu initialisieren.
+Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen.
 
 ====
 +
@@ -89,9 +98,9 @@ Im folgenden Beispiel wird die Beziehung zwischen dem Volume, von dem Sie Daten 
 +
 [listing]
 ----
-cluster_dst::> snapmirror update -source-path svm_backup:volA_dst -destination-path svm1:volA
+cluster_src::> snapmirror update -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
-. Geplante Transfers für die umgekehrte Beziehung stoppen:
+. Halten Sie geplante Transfers von der ursprünglichen SVM oder dem ursprünglichen Quell-Cluster für die umgekehrte Beziehung ab:
 +
 `snapmirror quiesce -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
 
@@ -101,39 +110,18 @@ Eine vollständige Befehlssyntax finden Sie in der man-Page.
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
+Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen.
 
 ====
 +
-Im folgenden Beispiel werden geplante Transfers zwischen dem Volume, von dem Sie Daten bereitstellen, angehalten. `volA_dst` Ein `svm_backup`, Und das ursprüngliche Quellvolumen, `volA` Ein `svm1`:
+Im folgenden Beispiel werden geplante Transfers zwischen dem ursprünglichen Ziel-Volume angehalten, `volA_dst` Ein `svm_backup`, Und das ursprüngliche Quellvolumen, `volA` Ein `svm1`:
 
 +
 [listing]
 ----
-cluster_dst::> snapmirror quiesce -source-path svm_backup:volA_dst -destination-path svm1:volA
+cluster_src::> snapmirror quiesce -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
-. Laufende Transfers für die umgekehrte Beziehung stoppen:
-+
-`snapmirror abort -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
-
-+
-Eine vollständige Befehlssyntax finden Sie in der man-Page.
-
-+
-[NOTE]
-====
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
-
-====
-+
-Im folgenden Beispiel werden die laufenden Transfers zwischen dem Volume, von dem Sie Daten bereitstellen, angehalten. `volA_dst` Ein `svm_backup`, Und das ursprüngliche Quellvolumen, `volA` Ein `svm1`:
-
-+
-[listing]
-----
-cluster_dst::> snapmirror abort -source-path svm_backup:volA_dst -destination-path svm1:volA
-----
-. Zerbrechen der umgekehrten Beziehung:
+. Wenn das endgültige Update abgeschlossen ist und die Beziehung für den Beziehungsstatus „stillgelegt“ anzeigt, führen Sie den folgenden Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster aus, um die umgekehrte Beziehung zu unterbrechen:
 +
 `snapmirror break -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
 
@@ -143,33 +131,18 @@ Eine vollständige Befehlssyntax finden Sie in der man-Page.
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
+Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem Quell-Cluster ausführen.
 
 ====
 +
-Das folgende Beispiel unterbricht die Beziehung zwischen dem Volume, aus dem Sie Daten bereitstellen, `volA_dst` Ein `svm_backup`, Und das ursprüngliche Quellvolumen, `volA` Ein `svm1`:
+Im folgenden Beispiel wird die Beziehung zwischen dem ursprünglichen Zielvolumen unterbrochen. `volA_dst` Ein `svm_backup`, Und das ursprüngliche Quellvolumen, `volA` Ein `svm1`:
 
 +
 [listing]
 ----
-cluster_dst::> snapmirror break -source-path svm_backup:volA_dst -destination-path svm1:volA
+cluster_scr::> snapmirror break -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
-. Starten der ursprünglichen Quell-SVM:
-+
-`vserver start -vserver _SVM_`
-
-+
-Eine vollständige Befehlssyntax finden Sie in der man-Page.
-
-+
-Im folgenden Beispiel wird die ursprüngliche Quell-SVM gestartet:
-
-+
-[listing]
-----
-cluster_dst::> vserver start svm1
-----
-. Löschen Sie die umgekehrte Datensicherungsbeziehung:
+. Löschen Sie in der ursprünglichen SVM oder dem ursprünglichen Quell-Cluster die verkehrte Datensicherungsbeziehung:
 +
 `snapmirror delete -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
 
@@ -177,8 +150,11 @@ cluster_dst::> vserver start svm1
 Eine vollständige Befehlssyntax finden Sie in der man-Page.
 
 +
-Sie müssen diesen Befehl für die umgekehrte Beziehung von der Quell-SVM oder dem Quell-Cluster ausführen.
+[NOTE]
+====
+Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen.
 
+====
 +
 Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen Quell-Volume gelöscht, `volA` Ein `svm1`, Und dem Volumen, von dem Sie Daten bereitstellen, `volA_dst` Ein `svm_backup`:
 
@@ -187,7 +163,41 @@ Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen
 ----
 cluster_src::> snapmirror delete -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
-. Wiederherstellung der ursprünglichen Datensicherungsbeziehung:
+. Lassen Sie die umgekehrte Beziehung von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster los.
++
+`snapmirror release -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+[NOTE]
+====
+Sie müssen diesen Befehl von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster ausführen.
+
+====
++
+Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen Ziel-Volume freigegeben. `volA_dst` Ein `svm_backup`, Und das ursprüngliche Quellvolumen, `volA` Ein `svm1`:
+
+
+
+[listing]
+----
+cluster_dst::> snapmirror release -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Starten Sie bei Bedarf die ursprüngliche Ziel-SVM:
++
+`vserver start -vserver _SVM_`
+
++
+Eine vollständige Befehlssyntax finden Sie in der man-Page.
+
++
+Im folgenden Beispiel wird die ursprüngliche Ziel-SVM gestartet:
+
++
+[listing]
+----
+cluster_dst::> vserver start svm_backup
+----
+. Wiederherstellung der ursprünglichen Datensicherungsbeziehung vom ursprünglichen Zielort:
 +
 `snapmirror resync -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
 
