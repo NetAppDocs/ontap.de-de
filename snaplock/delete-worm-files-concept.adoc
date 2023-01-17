@@ -2,7 +2,7 @@
 permalink: snaplock/delete-worm-files-concept.html 
 sidebar: sidebar 
 keywords: delete, worm, file, privileged, delete, enterprise, mode, retention, period, overview 
-summary: SIE können WORM-Dateien im Enterprise-Modus während des Aufbewahrungszeitraums mit der Funktion Privileged delete löschen. 
+summary: SIE können WORM-Dateien im Enterprise-Modus während des Aufbewahrungszeitraums mit der Funktion Privileged delete löschen. Bevor Sie diese Funktion verwenden können, müssen Sie ein SnapLock-Administratorkonto erstellen und dann die Funktion mit dem Konto aktivieren. 
 ---
 = ÜBERSICHT ZU WORM-Dateien löschen
 :allow-uri-read: 
@@ -13,7 +13,86 @@ summary: SIE können WORM-Dateien im Enterprise-Modus während des Aufbewahrungs
 [role="lead"]
 SIE können WORM-Dateien im Enterprise-Modus während des Aufbewahrungszeitraums mit der Funktion Privileged delete löschen. Bevor Sie diese Funktion verwenden können, müssen Sie ein SnapLock-Administratorkonto erstellen und dann die Funktion mit dem Konto aktivieren.
 
-* link:https://docs.netapp.com/us-en/ontap/snaplock/create-compliance-administrator-account-task.html["Erstellen Sie ein SnapLock-Administratorkonto"]
-* link:https://docs.netapp.com/us-en/ontap/snaplock/enable-privileged-delete-task.html["Aktivieren Sie die Funktion „privilegiertes Löschen“"]
-* link:https://docs.netapp.com/us-en/ontap/snaplock/implement-privileged-delete-functionality-task.html["LÖSCHEN SIE WORM-Dateien"]
+
+
+== Erstellen Sie ein SnapLock-Administratorkonto
+
+Sie benötigen Administratorrechte von SnapLock, um ein privilegiertes Löschen durchführen zu können. Diese Berechtigungen werden in der Rolle vsadmin-snaplock definiert. Wenn Sie dieser Rolle noch nicht zugewiesen haben, können Sie den Cluster-Administrator bitten, ein SVM-Administratorkonto mit der SnapLock-Administratorrolle zu erstellen.
+
+.Was Sie benötigen
+* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Sie müssen sich mit einer sicheren Verbindung (SSH, Konsole oder ZAPI) angemeldet haben.
+
+
+.Schritte
+. SVM-Administratorkonto mit der SnapLock-Administratorrolle erstellen:
++
+`*security login create -vserver _SVM_name_ -user-or-group-name _user_or_group_name_ -application _application_ -authmethod _authentication_method_ -role _role_ -comment _comment_*`
+
++
+Mit dem folgenden Befehl wird das SVM-Administratorkonto aktiviert `SnapLockAdmin` Mit dem vordefinierten `vsadmin-snaplock` Rolle für den Zugriff `SVM1` Verwenden eines Passworts:
+
++
+[listing]
+----
+cluster1::> security login create -vserver SVM1 -user-or-group-name SnapLockAdmin -application ssh -authmethod password -role vsadmin-snaplock
+----
+
+
+
+
+== Aktivieren Sie die Funktion „privilegiertes Löschen“
+
+Sie müssen das Priviledged delete-Feature auf dem Enterprise Volume, das die ZU löschenden WORM-Dateien enthält, explizit aktivieren.
+
+.Über diese Aufgabe
+Der Wert des `-privileged-delete` Mit dieser Option wird festgelegt, ob das privilegierte Löschen aktiviert ist. Mögliche Werte sind `enabled`, `disabled`, und `permanently-disabled`.
+
+[NOTE]
+====
+ `permanently-disabled` Ist der Terminalstatus. Sie können das privilegierte Löschen auf dem Volume nicht aktivieren, nachdem Sie den Status auf festgelegt haben `permanently-disabled`.
+
+====
+.Schritte
+. Privilegiertes Löschen für ein SnapLock Enterprise Volume aktivieren:
++
+`*volume snaplock modify -vserver _SVM_name_ -volume _volume_name_ -privileged-delete disabled|enabled|permanently-disabled*`
+
++
+Mit dem folgenden Befehl wird die Privileged delete-Funktion für das Enterprise Volume aktiviert `dataVol` Ein `SVM1`:
+
++
+[listing]
+----
+SVM1::> volume snaplock modify -vserver SVM1 -volume dataVol -privileged-delete enabled
+----
+
+
+
+
+== LÖSCHEN SIE WORM-Dateien im Enterprise-Modus
+
+Mit der Funktion Priviledged delete können SIE WORM-Dateien im Enterprise-Modus während des Aufbewahrungszeitraums löschen.
+
+.Was Sie benötigen
+* Sie müssen ein SnapLock-Administrator sein, um diese Aufgabe auszuführen.
+* Sie müssen ein SnapLock-Auditprotokoll erstellt und die Funktion zum Löschen von Berechtigungen auf dem Enterprise Volume aktiviert haben.
+
+
+.Über diese Aufgabe
+Sie können eine abgelaufene WORM-Datei nicht mit einem privilegierten Löschvorgang löschen. Sie können das verwenden `volume file retention show` Befehl zum Anzeigen der Aufbewahrungszeit der WORM-Datei, die Sie löschen möchten. Weitere Informationen finden Sie auf der man-Page für den Befehl.
+
+.Schritt
+. LÖSCHEN EINER WORM-Datei auf einem Enterprise Volume:
++
+`*volume file privileged-delete -vserver _SVM_name_ -file _file_path_*`
+
++
+Mit dem folgenden Befehl wird die Datei gelöscht `/vol/dataVol/f1` Auf der SVM``SVM1``:
+
++
+[listing]
+----
+SVM1::> volume file privileged-delete -file /vol/dataVol/f1
+----
 
