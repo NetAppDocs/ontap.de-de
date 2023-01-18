@@ -1,0 +1,76 @@
+---
+permalink: upgrade/task_preparing_snapmirror_relationships_for_a_nondisruptive_upgrade_or_downgrade.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, snapmirror, operations, quisce 
+summary: Es wird empfohlen, den SnapMirror Betrieb stillzulegen, bevor ein unterbrechungsfreies Upgrade der ONTAP durchgeführt wird. 
+---
+= SnapMirror Beziehungen für ein unterbrechungsfreies Upgrade vorbereiten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Es wird empfohlen, den SnapMirror Betrieb stillzulegen, bevor ein unterbrechungsfreies Upgrade der ONTAP durchgeführt wird.
+
+.Schritte
+. Verwenden Sie die `snapmirror show` Befehl zum Bestimmen des Zielpfads für jede SnapMirror Beziehung.
+. Unterbrechen Sie für jedes Ziel-Volume zukünftige SnapMirror Übertragungen:
++
+`snapmirror quiesce -destination-path destination`
+
++
+Wenn es keine aktiven Transfers für die SnapMirror-Beziehung gibt, setzt dieser Befehl seinen Status auf „stillgelegt“. Wenn die Beziehung aktive Transfers hat, wird der Status auf „Beenden“ gesetzt, bis die Übertragung abgeschlossen ist, und dann wird der Status „stillgelegt“.
+
++
+Dieses Beispiel stellt Übertragungen mit dem Zielvolume „vol1“ von „SVMvs0.example.com": bereit
+
++
+[listing]
+----
+cluster1::> snapmirror quiesce -destination-path vs0.example.com:vol1
+----
+. Vergewissern Sie sich, dass alle SnapMirror Beziehungen stillgelegt sind:
++
+`snapmirror show -status !Quiesced`
+
++
+Mit diesem Befehl werden alle SnapMirror Beziehungen angezeigt, die _nicht_ stillgelegt sind.
+
++
+Dieses Beispiel zeigt, dass alle SnapMirror Beziehungen stillgelegt sind:
+
++
+[listing]
+----
+cluster1::> snapmirror show -status !Quiesced
+There are no entries matching your query.
+----
+. Wenn aktuell SnapMirror Beziehungen übertragen werden, führen Sie eine der folgenden Optionen aus:
++
+[cols="2*"]
+|===
+| Option | Beschreibung 
+
+
+ a| 
+Warten Sie, bis die Transfers abgeschlossen sind, bevor Sie das ONTAP Upgrade durchführen.
+ a| 
+Nach jedem Transfer wird der Status der Beziehung auf „stillgelegt“ geändert.
+
+
+
+ a| 
+Stoppen Sie die Transfers:
+
+`snapmirror abort -destination-path destination -h`
+
+*Hinweis:* Sie müssen das benutzen `-foreground true` Parameter, wenn Sie die Übertragung von Load-Sharing-Spiegeln abbrechen.
+ a| 
+Dieser Befehl stoppt die SnapMirror Übertragung und stellt das Ziel-Volume auf die letzte Snapshot Kopie wieder her, die erfolgreich übertragen wurde. Die Beziehung wird auf den Status „stillgelegt“ gesetzt.
+
+|===
+
+
+.Verwandte Informationen
+xref:concept_upgrade_requirements_for_snapmirror.adoc[Upgrade-Anforderungen für SnapMirror]
