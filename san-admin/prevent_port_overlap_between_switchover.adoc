@@ -1,0 +1,86 @@
+---
+permalink: san-admin/prevent_port_overlap_between_switchover.html 
+sidebar: sidebar 
+keywords: metrocluster environments, considerations, san configuration, metrocluster, environments, san, configurations, cisco switch, brocade switch, 
+summary: Um Überschneidungen zu vermeiden, wenn der alte Port offline geschaltet wird und der neue Port online geschaltet wird, können Sie die Front-End-Switches konfigurieren. 
+---
+= Vermeiden Sie Überschneidungen zwischen Switchover und Switchback
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+In einer SAN-Umgebung können Sie die Front-End-Switches konfigurieren, um Überlappungen zu vermeiden, wenn der alte Port offline geschaltet wird und der neue Port online geschaltet wird.
+
+Während der Umschaltung meldet sich der FC-Port am verbleibenden Standort möglicherweise beim Fabric an, bevor die Fabric erkannt hat, dass der FC-Port am Disaster-Standort offline ist und diesen Port aus dem Namen- und Verzeichnisdienst entfernt hat.
+
+Wenn der FC-Port bei der Katastrophe noch nicht entfernt wird, wird der Fabric-Anmeldeversuch des FC-Ports am noch intakten Standort aufgrund eines doppelten WWPN möglicherweise abgelehnt. Dieses Verhalten der FC-Switches kann geändert werden, um die Anmeldung des vorherigen Geräts und nicht des vorhandenen zu ermöglichen. Sie sollten die Auswirkungen dieses Verhaltens auf andere Fabric-Geräte überprüfen. Weitere Informationen erhalten Sie vom Switch-Anbieter.
+
+Wählen Sie das richtige Verfahren je nach Schaltertyp aus.
+
+.Schritte
+[role="tabbed-block"]
+====
+.Cisco Switch
+--
+. Stellen Sie eine Verbindung zum Switch her, und melden Sie sich an.
+. Konfigurationsmodus aufrufen:
++
+....
+switch# config t
+switch(config)#
+....
+. Überschreiben Sie den ersten Geräteeintrag in der Namensserver-Datenbank mit dem neuen Gerät:
++
+[listing]
+----
+switch(config)# no fcns reject-duplicate-pwwn vsan 1
+----
+. Vergewissern Sie sich bei Switches, die NX-OS 8.x ausführen, dass das flogi-Timeout auf Null gesetzt ist:
++
+.. Anzeige des Zeitschaltuftzeitschaltufschaltudes:
++
+`switch(config)# show flogi interval info \| i quiesce`
+
++
+....
+ Stats:  fs flogi quiesce timerval:  0
+....
+.. Wenn die Ausgabe im vorherigen Schritt nicht angibt, dass der Zeitwert Null ist, setzen Sie ihn auf null:
++
+`switch(config)# flogi scale enable`
+
++
+`switch(config)$ flogi quiesce timeout 0`
+
+
+
+
+
+--
+.Brocade Switch
+--
+. Stellen Sie eine Verbindung zum Switch her, und melden Sie sich an.
+. Geben Sie das ein `switchDisable` Befehl.
+. Geben Sie das ein `configure` Befehl und drücken Sie `y` An der Eingabeaufforderung.
++
+....
+ F-Port login parameters (yes, y, no, n): [no] y
+....
+. Einstellung 1 auswählen:
++
+....
+- 0: First login take precedence over the second login (default)
+- 1: Second login overrides first login.
+- 2: the port type determines the behavior
+Enforce FLOGI/FDISC login: (0..2) [0] 1
+....
+. Beantworten Sie die verbleibenden Eingabeaufforderungen, oder drücken Sie *Strg + D*.
+. Geben Sie das ein `switchEnable` Befehl.
+
+
+--
+====
+.Verwandte Informationen
+link:https://docs.netapp.com/us-en/ontap-metrocluster/manage/task_perform_switchover_for_tests_or_maintenance.html["Umschaltung für Tests oder Wartung"^]

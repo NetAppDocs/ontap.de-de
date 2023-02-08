@@ -3,99 +3,18 @@
 
 
 * MetroCluster-Konfigurationen unterstützen vSAN Konfigurationen nicht auf Frontend-FC-Fabric „`Routed`“.
-* MetroCluster Konfigurationen unterstützen keine Front-End-NVMe-Host-Konnektivität.
-* Andere SAN-Protokolle werden auf MetroCluster Konfigurationen unterstützt.
-* Bei der Nutzung der SAN Client-Konfigurationen müssen Sie prüfen, ob spezielle Überlegungen für MetroCluster Konfigurationen in den Notizen, die im Interoperabilitäts-Matrix-Tool (IMT) enthalten sind, enthalten sind.
+* Ab ONTAP 9.12.1 MetroCluster werden NVMe/FC Konfigurationen mit vier Nodes unterstützt. MetroCluster Konfigurationen werden für NVMe vor ONTAP 9.12.1 nicht unterstützt.
+* Andere SAN-Protokolle wie iSCSI, FC und FCoE werden auf MetroCluster Konfigurationen unterstützt.
+* Bei der Verwendung von SAN-Client-Konfigurationen müssen Sie prüfen, ob spezielle Überlegungen für MetroCluster-Konfigurationen in den Notizen, die in aufgeführt sind, enthalten sind link:https://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^] (IMT).
 * Betriebssysteme und Applikationen müssen eine I/O-Ausfallsicherheit von 120 Sekunden bieten, um die automatische, ungeplante MetroCluster Umschaltung sowie eine Tiebreaker oder Mediator-initiierte Umschaltung zu unterstützen.
 * Das MetroCluster verwendet dieselben WWPNs auf beiden Seiten des Front-End-SAN.
 
 
+.Verwandte Informationen
+link:https://docs.netapp.com/us-en/ontap-metrocluster/manage/concept_understanding_mcc_data_protection_and_disaster_recovery.html["MetroCluster Datensicherung und Disaster Recovery verstehen"^]
 
-NOTE: Während der Umschaltung meldet sich der FC-Port am verbleibenden Standort möglicherweise beim Fabric an, bevor die Fabric erkannt hat, dass der FC-Port am Disaster-Standort offline ist und diesen Port aus dem Namen- und Verzeichnisdienst entfernt hat. Wenn der FC-Port bei der Katastrophe noch nicht entfernt wird, wird der Fabric-Anmeldeversuch des FC-Ports am noch intakten Standort aufgrund eines doppelten WWPN möglicherweise abgelehnt. Dieses Verhalten der FC-Switches kann geändert werden, um die Anmeldung des vorherigen Geräts und nicht des vorhandenen zu ermöglichen. Sie sollten die Auswirkungen dieses Verhaltens auf andere Fabric-Geräte überprüfen. Weitere Informationen erhalten Sie vom Switch-Anbieter.
-
-Weitere Informationen finden Sie unter:
-
-* link:https://docs.netapp.com/us-en/ontap-metrocluster/manage/concept_understanding_mcc_data_protection_and_disaster_recovery.html["MetroCluster Datensicherung und Disaster Recovery verstehen"]
-* link:https://docs.netapp.com/us-en/ontap-metrocluster/manage/task_perform_switchover_for_tests_or_maintenance.html["Umschaltung für Tests oder Wartung"]
-
-
-.Schritte
-Um Überlappungen zu vermeiden, wenn der alte Port offline geschaltet wird und der neue Port online geschaltet wird, konfigurieren Sie die Front-End-Switches wie folgt:
-
-[cols="20,80"]
-|===
-
-
-| Für eine... | Führen Sie folgende Schritte aus: 
-
-
- a| 
-Cisco Switch
- a| 
-. Stellen Sie eine Verbindung zum Switch her, und melden Sie sich an.
-. Konfigurationsmodus aufrufen:
-+
-....
-switch# config t
-switch(config)#
-....
-. Überschreiben Sie den ersten Geräteeintrag in der Namensserver-Datenbank mit dem neuen Gerät:
-+
-[listing]
-----
-switch(config)# no fcns reject-duplicate-pwwn vsan 1
-----
-. Vergewissern Sie sich bei Switches, die NX-OS 8.x ausführen, dass das flogi-Timeout auf Null gesetzt ist:
-+
-.. Anzeige des Zeitschaltuftzeitschaltufschaltudes:
-+
-`switch(config)# show flogi interval info | i quiesce`
-
-+
-....
- Stats:  fs flogi quiesce timerval:  0
-....
-.. Wenn die Ausgabe im vorherigen Schritt nicht angibt, dass der Zeitwert Null ist, setzen Sie ihn auf null:
-+
-`switch(config)# flogi scale enable`
-
-+
-`switch(config)$ flogi quiesce timeout 0`
-
-
-
-
-
-
-
- a| 
-Brocade Switch
- a| 
-. Stellen Sie eine Verbindung zum Switch her, und melden Sie sich an.
-. Geben Sie das ein `switchDisable` Befehl.
-. Geben Sie das ein `configure` Befehl und drücken Sie `y` An der Eingabeaufforderung.
-+
-....
- F-Port login parameters (yes, y, no, n): [no] y
-....
-. Einstellung 1 auswählen:
-+
-....
-- 0: First login take precedence over the second login (default)
-- 1: Second login overrides first login.
-- 2: the port type determines the behavior
-Enforce FLOGI/FDISC login: (0..2) [0] 1
-....
-. Beantworten Sie die verbleibenden Eingabeaufforderungen, oder drücken Sie *Strg + D*.
-. Geben Sie das ein `switchEnable` Befehl.
-
-
-|===
 Weitere MetroCluster-spezifische Host-Informationen finden Sie in den folgenden NetApp Knowledge Base Artikeln:
 
-https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/MetroCluster/What_are_AIX_Host_support_considerations_in_a_MetroCluster_configuration%3F["Was sind Überlegungen zur Unterstützung von AIX Hosts in einer MetroCluster Konfiguration?"]
+https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/MetroCluster/What_are_AIX_Host_support_considerations_in_a_MetroCluster_configuration%3F["Was sind Überlegungen zur Unterstützung von AIX Hosts in einer MetroCluster Konfiguration?"^]
 
-https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/MetroCluster/Solaris_host_support_considerations_in_a_MetroCluster_configuration["Überlegungen zum Support von Solaris Hosts in einer MetroCluster-Konfiguration"]
-
-.Verwandte Informationen
-https://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^]
+https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/MetroCluster/Solaris_host_support_considerations_in_a_MetroCluster_configuration["Überlegungen zum Support von Solaris Hosts in einer MetroCluster-Konfiguration"^]
