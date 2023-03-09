@@ -14,15 +14,18 @@ summary: Snapshot-Kopien namens Anti_Ransomware_Backup werden erstellt, wenn das
 :nofooter: 
 :icons: font
 :linkattrs: 
-:imagesdir: ./media/
+:imagesdir: ../media/
 :toc-position: content
 
 
 [role="lead"]
-Snapshot-Kopien mit dem Namen „Anti_Ransomware_Backup“ werden erstellt, wenn Autonomous Ransomware Protection (ARP) einen potenziellen Angriff erkennt. Sie können Daten aus diesen ARP Kopien oder anderen Snapshot Kopien wiederherstellen.
+Snapshot-Kopien mit dem Namen „Anti_Ransomware_Backup“ werden erstellt, wenn Autonomous Ransomware Protection (ARP) einen potenziellen Angriff erkennt. Sie können Daten aus diesen ARP-Kopien oder aus anderen Snapshot-Kopien wiederherstellen.
 
 
 NOTE: Falls ein Ransomware-Angriff stattfindet, ist der Artikel der Knowledge Base zu entnehmen link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Ransomware_prevention_and_recovery_in_ONTAP["Vorbeugung und Wiederherstellung von Ransomware in ONTAP"^] Weitere Informationen zur Wiederherstellung und Risikominimierung.
+
+.Über diese Aufgabe
+Wenn das Volume über SnapMirror Beziehungen verfügt, replizieren Sie alle gespiegelten Kopien des Volumes unmittelbar nach der Wiederherstellung aus einer Snapshot Kopie manuell. Dadurch können nicht nutzbare Spiegelkopien erstellt werden, die gelöscht und neu erstellt werden müssen.
 
 .Was Sie benötigen
 * ARP aktiviert
@@ -30,20 +33,105 @@ NOTE: Falls ein Ransomware-Angriff stattfindet, ist der Artikel der Knowledge Ba
 
 
 .Schritte
+Die Wiederherstellung von Daten kann mit System Manager oder der ONTAP CLI erfolgen.
+
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Zeigen Sie die Snapshot Kopien in Volumes an, die in einem potenziellen Angriff identifiziert wurden: Klicken Sie auf *Storage > Volumes*, wählen Sie das Volume aus und klicken Sie dann auf die Registerkarte Snapshot Kopien.
-. Stellen Sie die gewünschten Kopien gemäß folgenden Anweisungen wieder her:link:../task_dp_recover_snapshot.html["Wiederherstellung aus Snapshot-Kopien"]
+. Wenn Sie Daten aus früheren Snapshot Kopien wiederherstellen möchten, anstatt von den ARP-Kopien, müssen Sie die Snapshot-Sperre gegen Ransomware wie folgt freigeben. Wenn Sie eine Wiederherstellung aus den ARP-Kopien durchführen möchten, ist es nicht erforderlich, die Sperre freizugeben, und Sie können diesen Schritt überspringen.
++
+[cols="2"]
+|===
+| Wenn ein Systemangriff erkannt wurde, führen Sie dies durch... | Wenn ein Systemangriff nicht identifiziert wurde, führen Sie dies durch... 
+
+
+ a| 
+.. Klicken Sie Auf *Storage > Volumes*.
+.. Wählen Sie *Sicherheit* und klicken Sie auf *vermutete Dateitypen anzeigen*
+.. Markieren Sie die Dateien als "falsch positiv" .
+.. Klicken Sie auf *Update* und *Verdächtige Dateitypen löschen*
+
+ a| 
+Zum Freigeben der Snapshot-Sperre müssen Sie die ARP-Kopien vor der Wiederherstellung aus früheren Snapshot-Kopien wiederherstellen.
+
+Befolgen Sie die Schritte 2-3, um Daten aus den ARP-Kopien wiederherzustellen, und wiederholen Sie dann den Prozess für die Wiederherstellung aus früheren Snapshot-Kopien.
+
+|===
+. Anzeige der Snapshot Kopien in Volumes:
++
+Klicken Sie auf *Speicher > Volumes*, wählen Sie das Volume aus und klicken Sie auf *Snapshot-Kopien*.
+
+. Klicken Sie Auf image:icon_kabob.gif["Menüoption"] Neben der Snapshot Kopie, die Sie wiederherstellen möchten, und wählen Sie *Wiederherstellen*.
 
 
 --
 .CLI
 --
-. Zeigen Sie die Snapshot-Kopien in Volumes an, die bei einem potenziellen Angriff identifiziert wurden:
-`volume snapshot show -vserver _svm_name_ -volume _vol_name_`
-. Stellen Sie die gewünschten Kopien gemäß folgenden Anweisungen wieder her:link:../data-protection/restore-contents-volume-snapshot-task.html["Wiederherstellen von Dateien aus Snapshot-Kopien"]
+. Wenn Sie Daten aus früheren Snapshot Kopien wiederherstellen möchten, anstatt von den ARP-Kopien, müssen Sie die Snapshot-Sperre gegen Ransomware wie folgt freigeben. Wenn Sie eine Wiederherstellung aus den ARP-Kopien durchführen möchten, ist es nicht erforderlich, die Sperre freizugeben, und Sie können diesen Schritt überspringen.
++
+[NOTE]
+----
+It is only necessary to release the anti-ransomware Snaplock before restoring from earlier Snapshot copies if you are using the `volume snap restore`` command as outline below.  If you are restoring data using Flex Clone, Single File Snap Restore or other methods, this is not necessary.
+----
++
+[cols="2"]
+|===
+| Wenn ein Systemangriff erkannt wurde, führen Sie dies durch... | Wenn ein Systemangriff nicht identifiziert wurde, führen Sie dies durch... 
+
+
+ a| 
+Markieren Sie den Angriff als „falsch positiv“ und „eindeutig verdächtig“.
+
+`anti-ransomware volume attack clear-suspect -vserver _svm_name_ -volume _vol_name_ [_extension identifiers_] -false-positive true`
+
+Verwenden Sie einen der folgenden Parameter, um die Erweiterungen zu identifizieren:
+`[-seq-no _integer_]` Sequenznummer der Datei in der Liste der Verdächtigen.
+`[-extension _text_, … ]` Dateierweiterungen
+`[-start-time _date_time_ -end-time _date_time_]` Start- und Endzeiten für den zu löhenden Bereich im Format „MM/TT/JJJJ HH:MM:SS“.
+ a| 
+Zum Freigeben der Snapshot-Sperre müssen Sie die ARP-Kopien vor der Wiederherstellung aus früheren Snapshot-Kopien wiederherstellen.
+
+Befolgen Sie die Schritte 2-3, um Daten aus den ARP-Kopien wiederherzustellen, und wiederholen Sie dann den Prozess für die Wiederherstellung aus früheren Snapshot-Kopien.
+
+|===
+. Listen Sie die Snapshot Kopien in einem Volume auf:
++
+`volume snapshot show -vserver _SVM_ -volume _volume_`
+
++
+Im folgenden Beispiel werden die Snapshot Kopien in angezeigt `vol1`:
+
++
+[listing]
+----
+
+clus1::> volume snapshot show -vserver vs1 -volume vol1
+
+Vserver Volume Snapshot                State    Size  Total% Used%
+------- ------ ---------- ----------- ------   -----  ------ -----
+vs1	 vol1   hourly.2013-01-25_0005  valid   224KB     0%    0%
+               daily.2013-01-25_0010   valid   92KB      0%    0%
+               hourly.2013-01-25_0105  valid   228KB     0%    0%
+               hourly.2013-01-25_0205  valid   236KB     0%    0%
+               hourly.2013-01-25_0305  valid   244KB     0%    0%
+               hourly.2013-01-25_0405  valid   244KB     0%    0%
+               hourly.2013-01-25_0505  valid   244KB     0%    0%
+
+7 entries were displayed.
+----
+. Stellen Sie den Inhalt eines Volumes aus einer Snapshot Kopie wieder her:
++
+`volume snapshot restore -vserver _SVM_ -volume _volume_ -snapshot _snapshot_`
+
++
+Im folgenden Beispiel wird der Inhalt von wiederhergestellt `vol1`:
+
++
+[listing]
+----
+cluster1::> volume snapshot restore -vserver vs0 -volume vol1 -snapshot daily.2013-01-25_0010
+----
 
 
 --
