@@ -2,14 +2,14 @@
 sidebar: sidebar 
 permalink: concepts/capacity-measurements-in-sm-concept.html 
 keywords: capacity, measurement, physical, logical, storage, used storage, local tier capacity, aggregate capacity, block, capacity concern, add capacity, volume, used capacity, available capacity, total capacity, inactive capacity, static insights, dynamic insights, snapshot copy, snapshot copies, inactive data, overprovision, overflows, snapshot copy policy, snapshot copy reserves, reserves, policy, top volumes 
-summary: Die Systemkapazität kann als physischer oder logischer Speicherplatz gemessen werden. In neueren Versionen von System Manager werden Messungen physischer und logischer Kapazitäten verwendet. 
+summary: Die Systemkapazität kann als physischer oder logischer Speicherplatz gemessen werden. Ab ONTAP 9.7 bietet System Manager Messungen sowohl der physischen als auch der logischen Kapazität. 
 ---
 = Kapazitätsmessungen in System Manager
 :allow-uri-read: 
 
 
 [role="lead"]
-Die Systemkapazität kann als physischer oder logischer Speicherplatz gemessen werden. In neueren Versionen von System Manager werden Messungen physischer und logischer Kapazitäten verwendet.
+Die Systemkapazität kann als physischer oder logischer Speicherplatz gemessen werden. Ab ONTAP 9.7 bietet System Manager Messungen sowohl der physischen als auch der logischen Kapazität.
 
 Die Unterschiede zwischen den beiden Messungen werden in den folgenden Beschreibungen erläutert:
 
@@ -19,13 +19,6 @@ Die Unterschiede zwischen den beiden Messungen werden in den folgenden Beschreib
 
 
 NOTE: In System Manager werden Kapazitätsdarstellungen nicht auf die Root Storage Tier (Aggregat)-Kapazitäten angerechnet.
-
-<<measurements-used-cap>>
-<<cap-measurement-terms>>
-<<cap-measurement-units>>
-
-.Weitere Informationen
-Überwachen Sie die Kapazität eines Clusters, lokaler Tiers und Volumes in System Manager. Siehe link:../task_admin_monitor_capacity_in_sm.html["Überwachung der Kapazität in System Manager"].
 
 
 
@@ -72,7 +65,9 @@ Genutzter logischer Speicherplatz (wenn Storage-Effizienz-Einstellungen aktivier
 
 Bei der Beschreibung der Kapazität werden die folgenden Begriffe verwendet:
 
-* *Verfügbar*: Die Menge des physischen Speicherplatzes, der in einer lokalen Ebene zur Bereitstellung von Volumes verfügbar ist.
+* *Zugewiesene Kapazität*: Die Menge an Speicherplatz, die für Volumes in einer Speicher-VM zugewiesen wurde.
+* *Verfügbar*: Der physische Speicherplatz, der zur Speicherung von Daten oder zur Bereitstellung von Volumes in einer Storage-VM oder auf einer lokalen Ebene zur Verfügung steht.
+* *Kapazität über Volumes*: Die Summe des verwendeten Speichers und des verfügbaren Speichers aller Volumes auf einer Speicher-VM.
 * *Kundendaten*: Die Menge des von Client-Daten verwendeten Speicherplatzes (entweder physisch oder logisch).
 * * Engagement*: Die Menge der für eine lokale Ebene zugesagt Kapazität.
 * *Datenreduzierung*:
@@ -83,11 +78,34 @@ Bei der Beschreibung der Kapazität werden die folgenden Begriffe verwendet:
 
 * *Logisch genutzt*: Der Platz, der bisher genutzt wird, ohne den Platz zu berücksichtigen, der durch Storage-Effizienzfunktionen eingespart wird.
 * *Logisch genutzter %*: Der Prozentsatz der aktuell genutzten logischen Kapazität im Vergleich zur bereitgestellten Größe, ausgenommen Snapshot Reserven. Dieser Wert kann größer als 100 % sein, da dazu auch Effizienzeinsparungen im Volume zählen.
+* *Maximale Kapazität*: Der maximale Speicherplatz, der Volumes auf einer Speicher-VM zugewiesen ist.
 * *Physisch genutzt*: Die Menge an Kapazität, die in den physischen Blöcken eines Volumes oder lokalen Tiers verwendet wird.
 * *Physisch genutzter %*: Der Prozentsatz der in den physischen Blöcken eines Volumes verwendeten Kapazität im Vergleich zur bereitgestellten Größe.
 * *Reserviert*: Die Menge an Speicherplatz, der für bereits bereitgestellte Volumes in einem lokalen Tier reserviert ist.
+* *Used*: Der Speicherplatz, der Daten enthält.
 * *Genutzt und reserviert*: Die Summe des physischen und reservierten Speicherplatzes.
 
+
+
+
+== Kapazität einer Storage-VM
+
+Die maximale Kapazität einer Storage-VM wird durch den insgesamt zugewiesenen Speicherplatz für Volumes plus den verbleibenden nicht zugewiesenen Speicherplatz bestimmt.
+
+* Der zugewiesene Speicherplatz für Volumes ist die Summe der genutzten Kapazität und der Summe der verfügbaren Kapazität von FlexVol Volumes, FlexGroup Volumes und FlexCache Volumes.
+* Die Kapazität von Volumes wird in die Summen aufgenommen, selbst wenn sie eingeschränkt sind, offline sind oder nach dem Löschen in der Wiederherstellungswarteschlange sind.
+* Wenn Volumes mit Auto-grow konfiguriert werden, wird in den Summen der Wert für die maximale automatische Größe des Volumes verwendet. Ohne Auto-Grow wird die tatsächliche Kapazität des Volumes in den Summen verwendet.
+
+
+Im folgenden Diagramm wird erläutert, wie sich die Messung der Kapazität über Volumes hinweg auf das maximale Kapazitätslimit bezieht.
+
+image:max-cap-limit-cap-x-volumes.gif["Die maximale Kapazitätsgrenze umfasst den zugewiesenen Speicherplatz und den verfügbaren Speicherplatz, und die Kapazität der Volumes belegt nur den zugewiesenen Speicherplatz."]
+
+Ab ONTAP 9.13.1 sind Cluster-Administratoren möglich link:../manage-max-cap-limit-svm-in-sm-task.html["Aktivieren Sie eine maximale Kapazitätsgrenze für eine Storage-VM"]. Storage-Limits können jedoch nicht für Storage-VMs festgelegt werden, die Volumes enthalten, die für Datensicherung, in einer SnapMirror Beziehung oder in einer MetroCluster Konfiguration dienen. Außerdem können keine Kontingente konfiguriert werden, die die maximale Kapazität einer Storage-VM überschreiten.
+
+Nachdem das maximale Kapazitätslimit festgelegt wurde, kann es nicht in eine Größe geändert werden, die kleiner als die derzeit zugewiesene Kapazität ist.
+
+Wenn eine Storage-VM die maximal zulässige Kapazität erreicht, können bestimmte Vorgänge nicht ausgeführt werden. System Manager enthält Vorschläge für die nächsten Schritte in link:../insights-system-optimization-task.html["*Einblicke*"].
 
 
 
@@ -156,8 +174,10 @@ PIB
  a| 
 1024 * 1024 * 1024 * 1024 * 1024
  a| 
-1,125,898,010,834,824 Byte
+1,125,899,906,842,624 Byte
 
 |===
-.Weitere Informationen:
+.Verwandte Informationen
+link:../task_admin_monitor_capacity_in_sm.html["Überwachung der Kapazität in System Manager"]
+
 link:../volumes/logical-space-reporting-enforcement-concept.html["Berichterstellung und Durchsetzung von logischem Speicherplatz für Volumes"]

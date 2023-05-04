@@ -11,7 +11,9 @@ summary: Ab ONTAP 9.10.1 können Cluster-Administratoren eine SVM unterbrechungs
 
 
 [role="lead"]
-Ab ONTAP 9.10.1 können Cluster-Administratoren eine SVM unterbrechungsfrei von einem Quell-Cluster auf ein Ziel-Cluster verschieben, um Kapazität und Lastausgleich zu managen oder Geräte-Upgrades oder Datacenter-Konsolidierungen zu ermöglichen. Ab ONTAP 9.12.1 wird diese Funktion auf FAS und AFF Plattformen und auf Hybrid-Aggregaten unterstützt.
+Ab ONTAP 9.10.1 können Cluster-Administratoren eine SVM unterbrechungsfrei von einem Quell-Cluster zu einem Ziel-Cluster verschieben, um Kapazität und Lastausgleich zu managen oder Geräte-Upgrades oder Datacenter-Konsolidierungen über die ONTAP CLI durchzuführen.
+
+Diese unterbrechungsfreie Funktion zur Verlagerung von SVMs wird auf AFF Plattformen in ONTAP 9.10.1 und 9.11.1 unterstützt. Ab ONTAP 9.12.1 wird diese Funktion sowohl auf FAS- als auch auf AFF-Plattformen und auf hybriden Aggregaten unterstützt.
 
 Der Name und die UUID der SVM bleiben nach der Migration sowie der Daten-LIF-Name, IP-Adresse und Objektnamen, wie z. B. der Volume-Name, unverändert. Die UUID der Objekte in der SVM unterscheidet sich.
 
@@ -29,43 +31,46 @@ image::../media/workflow_svm_migrate.gif[SVM-Migrations-Workflow]
 
 Die Tabelle gibt die unterstützten Konfigurationen sowie die ONTAP Versionen an, in denen Support verfügbar ist.
 
-[cols="3,1,1,1"]
+[cols="3,1,1,1,1"]
 |===
 
 
-| Konfiguration unterstützt in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 
+| Konfiguration unterstützt in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | ONTAP 9.13.1 
 
 
-| Nur AFF Arrays | Ja. | Ja. | Nein 
+| AFF-Arrays | Ja. | Ja. | Ja. | Ja. 
 
 
-| Heterogene Plattformen (AFF-FAS, FAS-AFF, All Flash FAS mit Hybrid-Aggregaten) | Nein | Nein | Ja. 
+| FAS Plattformen und gemischte Plattformen (AFF-FAS, FAS-All Flash FAS, All Flash FAS mit hybriden Aggregaten) | Nein | Nein | Ja. | Ja. 
 
 
-| Arrays/Node-Paare insgesamt | 1 | 3 | 3 
+| Arrays/Node-Paare insgesamt | 1 | 3 | 3 | 6 
 
 
-| Migration mit einem Datacenter und einer maximalen Netzwerklatenz von: | 2 ms | 2 ms | 10 ms 
+| Migration innerhalb eines Datacenters mit einer maximalen Netzwerklatenz von: | 2 ms | 2 ms | 10 ms | 10 ms 
 |===
 
 
 == Voraussetzungen
 
-* Sie sind ein Cluster-Administrator
-* Die Quell- und Ziel-Cluster werden miteinander Peering durchgeführt
-* Auf den Quell- und Ziel-Clustern ist die Data Protection Bundle-Lizenz installiert
+* Sie müssen Cluster-Administrator sein
+* Die Quell- und Ziel-Cluster müssen miteinander verbunden sein
++
+link:https://review.docs.netapp.com/us-en/ontap_main/peering/create-cluster-relationship-93-later-task.html["Erstellen einer Cluster-Peer-Beziehung"]
+
+* Auf den Quell- und Ziel-Clustern muss die Data Protection Bundle-Lizenz installiert sein
 * Alle Nodes im Quell-Cluster müssen ONTAP 9.10.1 oder höher ausführen
 * Auf allen Nodes im Quell-Cluster muss dieselbe ONTAP-Version ausgeführt werden
-* Das Ziel-Cluster befindet sich in derselben oder einer neueren effektiven Cluster-Version (ECV) wie das Quellcluster
+* Das Ziel-Cluster muss dieselbe oder eine neuere effektive Clusterversion (ECV) wie das Quell-Cluster aufweisen
 * Die Quell- und Ziel-Cluster müssen für den Daten-LIF-Zugriff das gleiche IP-Subnetz unterstützen
 * Das Netzwerk, das die Quell- und Ziel-Cluster verbindet, muss eine maximale RTT-Dauer (Round Trip Time, RTT) von weniger als 10 ms aufweisen
-* Die Quell-SVM enthält weniger als die maximal unterstützte Anzahl an Daten-Volumes in der Version. Es werden maximal folgende Daten-Volumes unterstützt:
+* Die Quell-SVM muss weniger als die maximal unterstützte Anzahl von Daten-Volumes für das Release enthalten. Es werden maximal folgende Daten-Volumes unterstützt:
 +
-** AFF-Arrays: 100
-** FAS-Plattformen: 80
+** AFF Arrays: 200 Daten-Volumes mit Clustern mit ONTAP 9.13.1 und höheren Versionen sowie 100 Daten-Volumes mit Clustern mit ONTAP 9.12.1 und früheren Versionen
+** FAS Plattformen: 80 Datenvolumen
 
 
-* Auf dem Zielsystem ist ausreichend Platz für die Volume-Platzierung verfügbar
+* Am Ziel muss ausreichend Speicherplatz für die Platzierung des Volumes verfügbar sein
 * Der Onboard Key Manager muss auf dem Ziel konfiguriert sein, wenn die Quell-SVM verschlüsselte Volumes enthält
 
 
@@ -85,22 +90,22 @@ Sie sollten auf Vorgänge prüfen, die mit einer SVM-Migration in Konflikt stehe
 
 == Unterstützte Funktionen
 
-Die Tabelle gibt die unterstützten Funktionen sowie die ONTAP-Versionen an, in denen Support verfügbar ist.
+Die Tabelle zeigt die von der Datenmobilität SVM unterstützten ONTAP Funktionen und die ONTAP Versionen, welche Unterstützung bieten.
 
-[cols="3,1,1,1,4"]
+[cols="3,1,1,1,1,4"]
 |===
 
 
-| Funktion unterstützt in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | Weitere Informationen 
+| Funktion unterstützt in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | ONTAP 9.13.1 | Weitere Informationen 
 
 
-| SnapMirror Beziehungen zu asynchronen Kopien in die Cloud | Nein | Nein | Ja. | Wenn Sie ab ONTAP 9.12.1 eine SVM mit SnapMirror Copy-to-Cloud-Beziehungen migrieren, muss der Ziel-Cluster für die Migration die Lizenz für die Kopie in die Cloud installiert haben und über genügend Kapazität verfügen, um die Kapazität der Volumes zu verschieben, die in der Cloud gespiegelt werden. 
+| SnapMirror Beziehungen zu asynchronen Kopien in die Cloud | Nein | Nein | Ja. | Ja. | Wenn Sie ab ONTAP 9.12.1 eine SVM mit SnapMirror Copy-to-Cloud-Beziehungen migrieren, muss der Ziel-Cluster für die Migration die Lizenz für die Kopie in die Cloud installiert haben und über genügend Kapazität verfügen, um die Kapazität der Volumes zu verschieben, die in der Cloud gespiegelt werden. 
 
 
-| Asynchrones SnapMirror Ziel | Nein | Nein | Ja. |  
+| Asynchrones SnapMirror Ziel | Nein | Nein | Ja. | Ja. |  
 
 
-| Asynchrone SnapMirror Quelle | Nein | Ja. | Ja.  a| 
+| Asynchrone SnapMirror Quelle | Nein | Ja. | Ja. | Ja.  a| 
 * Übertragungen können während des Großteil der Migration so normal auf FlexVol SnapMirror Beziehungen fortgesetzt werden.
 * Fortlaufende Transfers werden während der Umstellung abgebrochen und neue Transfers scheitern während der Umstellung und können erst nach Abschluss der Migration neu gestartet werden.
 * Geplante Übertragungen, die während der Migration abgebrochen oder verpasst wurden, werden nach Abschluss der Migration nicht automatisch gestartet.
@@ -114,44 +119,66 @@ Wenn eine SnapMirror Quelle migriert wird, verhindert ONTAP nach der Migration e
 
 
 
-| Autonomer Schutz Durch Ransomware | Nein | Nein | Ja. |  
+| Autonomer Schutz Durch Ransomware | Nein | Nein | Ja. | Ja. |  
 
 
-| Externer Schlüsselmanager | Nein | Ja. | Ja. |  
+| Externer Schlüsselmanager | Nein | Ja. | Ja. | Ja. |  
 
 
-| Fanout-Beziehungen (die migrierende Quelle hat ein SnapMirror Quell-Volume mit mehr als einem Ziel) | Nein | Ja. | Ja. |  
+| FabricPool | Nein | Ja. | Ja. | Ja.  a| 
+Weitere Informationen zu xref:FabricPool support[FabricPool-Support].
 
 
-| Job-Plan-Replikation | Nein | Ja. | Ja. | In ONTAP 9.10.1 werden Job-Zeitpläne während der Migration nicht repliziert und müssen manuell auf dem Ziel erstellt werden. Ab ONTAP 9.11.1 werden von der Quelle verwendete Jobpläne während der Migration automatisch repliziert. 
+
+| Fanout-Beziehungen (die migrierende Quelle hat ein SnapMirror Quell-Volume mit mehr als einem Ziel) | Nein | Ja. | Ja. | Ja. |  
 
 
-| NetApp Volume Encryption | Ja. | Ja. | Ja. |  
+| Job-Plan-Replikation | Nein | Ja. | Ja. | Ja. | In ONTAP 9.10.1 werden Job-Zeitpläne während der Migration nicht repliziert und müssen manuell auf dem Ziel erstellt werden. Ab ONTAP 9.11.1 werden von der Quelle verwendete Jobpläne während der Migration automatisch repliziert. 
 
 
-| NFS v3, NFS v4.1 und NFS v4.2 Protokolle | Ja. | Ja. | Ja. |  
+| NetApp Volume Encryption | Ja. | Ja. | Ja. | Ja. |  
 
 
-| NFS v4.0-Protokoll | Nein | Nein | Ja. |  
+| Audit-Protokollierung von NFS und SMB | Nein | Nein | Nein | Ja.  a| 
+Vor der SVM-Migration:
+
+* Die Umleitung des Überwachungsprotokolls muss auf dem Zielcluster aktiviert sein.
+* Der Zielpfad des Überwachungsprotokolls von der Quell-SVM muss auf dem Ziel-Cluster erstellt werden.
 
 
-| SMB-Protokoll | Nein | Nein | Ja.  a| 
+
+
+| NFS v3, NFS v4.1 und NFS v4.2 | Ja. | Ja. | Ja. | Ja. |  
+
+
+| NFS Version 4.0 | Nein | Nein | Ja. | Ja. |  
+
+
+| NFS v4.0-Protokoll | Nein | Nein | Ja. |  | SMB-Protokoll 
+
+
+| Nein | Nein | Ja. | Ja.  a| 
 * Ab ONTAP 9.12.1 umfasst die SVM-Migration auch die unterbrechungsfreie Migration mit SMB.
 
-
-
-
-| SVM-Peering für SnapMirror Applikationen | Nein | Ja. | Ja. |  
+| SVM-Peering für SnapMirror Applikationen 
 |===
+
+
+=== FabricPool-Support
+
+Die SVM-Migration wird mit Volumes auf FabricPool für die folgenden Plattformen unterstützt:
+
+* Azure NetApp Files Plattform: Alle Tiering-Richtlinien werden unterstützt (nur Snapshot, automatisch, alle und keine).
+* On-Premises-Plattform. Nur die „keine“ Volume Tiering Richtlinie wird unterstützt.
+
+
 
 
 == Nicht unterstützte Funktionen
 
 Die folgenden Funktionen werden bei der SVM-Migration nicht unterstützt:
 
-* Prüfung
 * Cloud Volumes ONTAP
-* FabricPool
 * Flash Pool-Aggregate
 * FlexCache Volumes
 * FlexGroup Volumes
@@ -167,7 +194,6 @@ Die folgenden Funktionen werden bei der SVM-Migration nicht unterstützt:
 * SVM-DR
 * SVM-Migration, wenn der Onboard Key Manager (OKM) des Quell-Clusters den Common Criteria-Modus (CC) aktiviert hat
 * Synchronous SnapMirror, SnapMirror Business Continuity
-* System Manager
 * Qtree, Kontingente
 * VIP/BGP-LIF
 * Virtual Storage Console für VMware vSphere (VSC ist Teil der https://docs.netapp.com/us-en/ontap-tools-vmware-vsphere/index.html["ONTAP Tools für die virtuelle VMware vSphere Appliance"^] Ab VSC 7.0.)

@@ -93,6 +93,251 @@ Das Beispiel zeigt, dass das Passwort von "mediator1" in "mediator2" geändert w
 
 
 
+== Beenden Sie den ONTAP Mediator-Dienst
+
+So beenden Sie den ONTAP Mediator-Dienst:
+
+.Schritte
+. Stoppen Sie den ONTAP Mediator.
++
+`systemctl stop ontap_mediator`
+
+. SCST stoppen.
++
+`systemctl stop mediator-scst`
+
+. Deaktivieren Sie ONTAP Mediator und SCST.
++
+`systemctl diable ontap_mediator mediator-scst`
+
+
+
+
+
+== Aktivieren Sie den ONTAP Mediator-Dienst erneut
+
+So aktivieren Sie den ONTAP Mediator-Dienst erneut:
+
+.Schritte
+. Aktivieren Sie ONTAP Mediator und SCST.
++
+`systemctl enable ontap_mediator mediator-scst`
+
+. SCST starten.
++
+`systemctl start mediator-scst`
+
+. Starten Sie den ONTAP Mediator.
++
+`systemctl start ontap_mediator`
+
+
+
+
+
+== Überprüfen Sie, ob der ONTAP Mediator ordnungsgemäß funktioniert
+
+Nach der Installation des ONTAP Mediators sollten Sie überprüfen, ob die ONTAP Mediatordienste ausgeführt werden.
+
+.Schritte
+. Den Status der ONTAP Mediatordienste anzeigen:
++
+.. `systemctl status ontap_mediator`
++
+[listing]
+----
+[root@scspr1915530002 ~]# systemctl status ontap_mediator
+
+ ontap_mediator.service - ONTAP Mediator
+Loaded: loaded (/etc/systemd/system/ontap_mediator.service; enabled; vendor preset: disabled)
+Active: active (running) since Mon 2022-04-18 10:41:49 EDT; 1 weeks 0 days ago
+Process: 286710 ExecStop=/bin/kill -s INT $MAINPID (code=exited, status=0/SUCCESS)
+Main PID: 286712 (uwsgi)
+Status: "uWSGI is ready"
+Tasks: 3 (limit: 49473)
+Memory: 139.2M
+CGroup: /system.slice/ontap_mediator.service
+      ├─286712 /opt/netapp/lib/ontap_mediator/pyenv/bin/uwsgi --ini /opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini
+      ├─286716 /opt/netapp/lib/ontap_mediator/pyenv/bin/uwsgi --ini /opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini
+      └─286717 /opt/netapp/lib/ontap_mediator/pyenv/bin/uwsgi --ini /opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini
+
+[root@scspr1915530002 ~]#
+----
+.. `systemctl status mediator-scst`
++
+[listing]
+----
+[root@scspr1915530002 ~]# systemctl status mediator-scst
+   Loaded: loaded (/etc/systemd/system/mediator-scst.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2022-04-18 10:41:47 EDT; 1 weeks 0 days ago
+  Process: 286595 ExecStart=/etc/init.d/scst start (code=exited, status=0/SUCCESS)
+ Main PID: 286662 (iscsi-scstd)
+    Tasks: 1 (limit: 49473)
+   Memory: 1.2M
+   CGroup: /system.slice/mediator-scst.service
+           └─286662 /usr/local/sbin/iscsi-scstd
+
+[root@scspr1915530002 ~]#
+----
+
+
+. Bestätigen Sie die Ports, die vom ONTAP Mediator-Dienst verwendet werden:
++
+`netstat`
+
++
+[listing]
+----
+[root@scspr1905507001 ~]# netstat -anlt | grep -E '3260|31784'
+
+         tcp   0   0 0.0.0.0:31784   0.0.0.0:*      LISTEN
+
+         tcp   0   0 0.0.0.0:3260    0.0.0.0:*      LISTEN
+
+         tcp6  0   0 :::3260         :::*           LISTEN
+----
+
+
+
+
+== Deinstallieren Sie SCST manuell, um die Hostwartung durchzuführen
+
+Um SCST zu deinstallieren, benötigen Sie das SCST tar-Paket, das für die installierte Version von ONTAP Mediator verwendet wird.
+
+.Schritte
+. Laden Sie das entsprechende SCST-Paket herunter (wie in der folgenden Tabelle gezeigt) und enttar es.
++
+[cols="50,50"]
+|===
+
+
+| Für diese Version ... | Verwenden Sie dieses tar-Bündel... 
+
+
+ a| 
+ONTAP Mediator 1.0
+ a| 
+Scst-3.3.0.tar.bz2
+
+
+
+ a| 
+ONTAP Mediator 1.1
+ a| 
+Scst-3.4.0.tar.bz2
+
+
+
+ a| 
+ONTAP Mediator 1.2
+ a| 
+Scst-3.4.0.tar.bz2
+
+
+
+ a| 
+ONTAP Mediator 1.3
+ a| 
+Scst-3.5.0.tar.bz2
+
+
+
+ a| 
+ONTAP Mediator 1.4
+ a| 
+Scst-3.6.0.tar.bz2
+
+
+
+ a| 
+ONTAP Mediator 1.5
+ a| 
+Scst-3.6.0.tar.bz2
+
+
+
+ a| 
+ONTAP Mediator 1.6
+ a| 
+Scst-3.7.0.tar.bz2
+
+|===
+. Geben Sie die folgenden Befehle im Verzeichnis „scst“ ein:
++
+.. `systemctl stop mediator-scst`
+.. `make scstadm_uninstall`
+.. `make iscsi_uninstall`
+.. `make usr_uninstall`
+.. `make scst_uninstall`
+.. `depmod`
+
+
+
+
+
+
+== Installieren Sie SCST manuell, um die Hostwartung durchzuführen
+
+Um SCST manuell zu installieren, benötigen Sie das SCST tar-Paket, das für die installierte Version von ONTAP Mediator verwendet wird (siehe <<scst-bundle-table,Tabelle oben>>).
+
+. Geben Sie die folgenden Befehle im Verzeichnis „scst“ ein:
++
+.. `make 2release`
+.. `make scst_install`
+.. `make usr_install`
+.. `make iscsi_install`
+.. `make scstadm_install`
+.. `depmod`
+.. `cp scst/src/certs/scst_module_key.der /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/.`
+.. `cp scst/src/certs/scst_module_key.der /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/.`
+.. `patch /etc/init.d/scst < /opt/netapp/lib/ontap_mediator/systemd/scst.patch`
+
+
+. (Optional) Wenn Secure Boot aktiviert ist, führen Sie vor dem Neustart die folgenden Schritte aus:
++
+.. Bestimmen Sie jeden Dateinamen für die Module „scst_vdisk“, „scst“ und „iscsi_scst“.
++
+....
+`[root@localhost ~]# modinfo -n scst_vdisk`
+`[root@localhost ~]# modinfo -n scst`
+`[root@localhost ~]# modinfo -n iscst_scst_vdisk`
+....
+.. Bestimmen Sie die Kernel-Version.
++
+....
+[root@localhost ~]# uname -r
+....
+.. Signieren Sie jede Datei mit dem Kernel.
++
+....
+[root@localhost ~]# /usr/src/kernels/<KERNEL-RELEASE>/scripts/sign-file \sha256 \
+/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.priv \
+/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der \
+_module-filename_
+....
+.. Installieren Sie den richtigen Schlüssel mit der UEFI-Firmware.
++
+Anweisungen zur Installation des UEFI-Schlüssels finden Sie unter:
+
++
+`/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/README.module-signing`
+
++
+Der generierte UEFI-Schlüssel befindet sich unter:
+
++
+`/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der`
+
+
+
+. Führen Sie einen Neustart durch.
++
+`reboot`
+
+
+
+
+
 == Deinstallieren Sie den ONTAP Mediator-Dienst
 
 .Bevor Sie beginnen

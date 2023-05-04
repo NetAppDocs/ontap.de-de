@@ -95,19 +95,15 @@ Die folgenden SAN-Objektbeschränkungen sind in der folgenden Tabelle enthalten 
 
 == Unterstützte Konfigurationen und Funktionen
 
+SM-BC wird von zahlreichen Betriebssystemen und ONTAP-Funktionen unterstützt, darunter:
 
+* AIX (ab ONTAP 9.11.1)
+* Fan-out-Konfigurationen
+* HP-UX (ab ONTAP 9.10.1)
+* NDMP Kopie (ab ONTAP 9.13.1)
+* Partielle Dateiwiederherstellung (ab ONTAP 9.12.1)
+* Solaris 11.4 (ab ONTAP 9.10.1)
 
-=== Partielle Dateiwiederherstellung
-
-Ab ONTAP 9.12.1 wird für SM-BC Volumes eine partielle LUN-Wiederherstellung unterstützt. Weitere Informationen zu diesem Prozess finden Sie unter link:../data-protection/restore-part-file-snapshot-task.html["Wiederherstellen eines Teils einer Datei aus einer Snapshot Kopie"].
-
-
-
-=== Fan-out-Konfigurationen
-
-SM-BC unterstützt xref:../data-protection/supported-deployment-config-concept.html[Fan-out-Konfigurationen] Mit dem `MirrorAllSnapshots` Richtlinie und ab ONTAP 9.11.1 die `MirrorAndVault` Richtlinie: Fan-out-Konfigurationen werden in SM-BC auf nicht unterstützt `XDPDefault` Richtlinie:
-
-Wenn Sie in einer Fan-out-Konfiguration ein Failover auf dem SM-BC-Ziel durchführen, müssen Sie es manuell durchführen xref:resume-protection-fan-out-configuration.html[Setzen Sie den Schutz in der Fan-out-Konfiguration fort].
 
 
 
@@ -118,6 +114,42 @@ Ab ONTAP 9.11.1 wird AIX mit SM-BC unterstützt. Mit einer AIX-Konfiguration ist
 In einer AIX-Konfiguration ist ein Failover mit Unterbrechungen verbunden. Bei jedem Failover müssen Sie einen Re-Scan am Host durchführen, um I/O-Vorgänge wiederaufzunehmen.
 
 Informationen zur Konfiguration für AIX-Host mit SM-BC finden Sie im Knowledge Base-Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/SnapMirror/How_to_configure_an_AIX_host_for_SnapMirror_Business_Continuity_(SM-BC)["So konfigurieren Sie einen AIX Host für SnapMirror Business Continuity (SM-BC)"].
+
+
+
+=== HP-UX Bekannte Probleme und Einschränkungen für SM-BC-Konfiguration
+
+Ab ONTAP 9.10.1 wird SM-BC für HP-UX unterstützt. Wenn im isolierten Master-Cluster in der SM-BC-Konfiguration ein automatisches ungeplantes Failover (AUFO)-Ereignis auftritt, kann es mehr als 120 Sekunden dauern, bis die I/O-Vorgänge auf dem HP-UX-Host fortgesetzt werden. Je nach laufenden Applikationen kann dies keine I/O-Unterbrechungen oder Fehlermeldungen führen. Wenn ein AUFO-Ereignis auf dem isolierten Master-Cluster auftritt, müssen Sie Anwendungen auf dem HP-UX-Host mit einer Unterbrechungstoleranz von weniger als 120 Sekunden neu starten.
+
+Ein AUFO-Ereignis auf dem isolierten Master-Cluster kann zu einem doppelten Ereignis führen, wenn die Verbindung zwischen dem primären und dem sekundären Cluster unterbrochen wird und die Verbindung zwischen dem primären Cluster und dem Mediator verloren geht. Dies gilt im Gegensatz zu anderen AUFO-Ereignissen als ein seltenes Ereignis.
+
+
+
+=== FabricPool
+
+SM-BC unterstützt Quell- und Ziel-Volumes auf FabricPool-Aggregaten mit der Tiering-Richtlinie „Keine“, „Snapshot“ oder „automatisch“. SM-S SM-BC unterstützt keine FabricPool-Aggregate mit einer Tiering Policy von allen.
+
+
+
+=== Fan-out-Konfigurationen
+
+SM-BC unterstützt xref:../data-protection/supported-deployment-config-concept.html[Fan-out-Konfigurationen] Mit dem `MirrorAllSnapshots` Richtlinie und ab ONTAP 9.11.1 `MirrorAndVault` Richtlinie: Fan-out-Konfigurationen werden in SM-BC auf nicht unterstützt `XDPDefault` Richtlinie:
+
+Wenn Sie in einer Fan-out-Konfiguration ein Failover auf dem SM-BC-Ziel durchführen, müssen Sie es manuell durchführen xref:resume-protection-fan-out-configuration.html[Setzen Sie den Schutz in der Fan-out-Konfiguration fort].
+
+
+
+=== NDMP-Wiederherstellung
+
+Ab ONTAP 9.13.1 können Sie NDMP verwenden, um Daten mit SM-BC zu kopieren und wiederherzustellen. Mithilfe von NDMP können Sie Daten auf die SM-BC Quelle verschieben, um eine Wiederherstellung durchzuführen, ohne den Schutz anzuhalten. Dies ist insbesondere bei Fan-out-Konfigurationen von Vorteil.
+
+Weitere Informationen zu diesem Prozess finden Sie unter xref:../tape-backup/transfer-data-ndmpcopy-task.html[Datenübertragung mithilfe einer ndmp-Kopie].
+
+
+
+=== Partielle Dateiwiederherstellung
+
+Ab ONTAP 9.12.1 wird für SM-BC Volumes eine partielle LUN-Wiederherstellung unterstützt. Weitere Informationen zu diesem Prozess finden Sie unter link:../data-protection/restore-part-file-snapshot-task.html["Wiederherstellen eines Teils einer Datei aus einer Snapshot Kopie"].
 
 
 
@@ -151,11 +183,3 @@ svl_fops_name = 0xa00298d69e0 "conf f_tpgs"
 
 
 NOTE: `conf` Wird dem hinzugefügt `svl_fops_name` Wenn ein `scsi-vhci-failover-override` Wurde angewendet. Weitere Informationen und empfohlene Änderungen an den Standardeinstellungen finden Sie im NetApp KB-Artikel https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/SnapMirror/Solaris_Host_support_recommended_settings_in_SnapMirror_Business_Continuity_(SM-BC)_configuration["Solaris Host Support Empfohlene Einstellungen in SnapMirror Business Continuity (SM-BC)-Konfiguration"].
-
-
-
-=== HP-UX bekannte Probleme und Einschränkungen für SM-BC-Konfiguration
-
-Ab ONTAP 9.10.1 wird SM-BC für HP-UX unterstützt. Wenn im isolierten Master-Cluster in der SM-BC-Konfiguration ein automatisches ungeplantes Failover (AUFO)-Ereignis auftritt, kann es mehr als 120 Sekunden dauern, bis die I/O-Vorgänge auf dem HP-UX-Host fortgesetzt werden. Je nach laufenden Applikationen kann dies keine I/O-Unterbrechungen oder Fehlermeldungen führen. Wenn ein AUFO-Ereignis auf dem isolierten Master-Cluster auftritt, müssen Sie Anwendungen auf dem HP-UX-Host mit einer Unterbrechungstoleranz von weniger als 120 Sekunden neu starten.
-
-Ein AUFO-Ereignis auf dem isolierten Master-Cluster kann zu einem doppelten Ereignis führen, wenn die Verbindung zwischen dem primären und dem sekundären Cluster unterbrochen wird und die Verbindung zwischen dem primären Cluster und dem Mediator verloren geht. Dies gilt im Gegensatz zu anderen AUFO-Ereignissen als ein seltenes Ereignis.

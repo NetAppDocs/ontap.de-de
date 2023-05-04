@@ -1,0 +1,96 @@
+---
+permalink: s3-config/create-bucket-lifecycle-rule-task.html 
+sidebar: sidebar 
+keywords: s3, bucket, cli, lifecycle, rule 
+summary: Ab ONTAP 9.13.1 können Sie S3-Objektablauf implementieren. 
+---
+= Erstellen einer Bucket-Lifecycle-Management-Regel
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.13.1 können Sie S3-Objektablauf implementieren. Ablaufaktionen definieren, wann Objekte in einem Bucket ablaufen. Diese Funktion ermöglicht das Management von Objektversionen, sodass Sie Aufbewahrungsanforderungen erfüllen und den gesamten S3 Objekt-Storage effektiv managen können.
+
+.Bevor Sie beginnen
+Eine S3-fähige SVM mit einem S3-Server und einem Bucket muss bereits vorhanden sein. Siehe link:create-svm-s3-task.html["Erstellung einer SVM für S3"] Finden Sie weitere Informationen.
+
+.Über diese Aufgabe
+Wenn Sie Ihre Bucket Lifecycle Management-Regel erstellen, müssen Sie einen der drei folgenden Ablaufaktionstypen auswählen:
+
+* `Expiration` – Die Ablaufaktion läuft Objekte ab, die durch die Regel identifiziert werden. Wenn die Case-Versionierung auf dem Bucket aktiviert ist, sind alle abgelaufenen Objekte in S3 nicht verfügbar. Wenn die Versionierung nicht aktiviert ist, wird das Objekt durch diese Regel dauerhaft gelöscht.
+* `NoncurrentVersionExpiration` – Diese Aktion wird verwendet, um anzugeben, wann S3 nicht aktuelle Objekte dauerhaft entfernt. Diese gelöschten Objekte können nicht wiederhergestellt werden.
+* `AbortIncompleteMultipartUpload` – Der Administrator kann dieses Element verwenden, um eine maximale Zeit (in Tagen), die sie wollen, um mehrteilige Uploads in Bearbeitung bleiben
+
+
+Sie müssen die erforderlichen Felder für jeden Ablaufaktionstyp definieren, wenn Sie eine Bucket Lifecycle Management-Regel erstellen. Diese Felder können nach der ersten Erstellung geändert werden. In der folgenden Tabelle werden die eindeutigen Felder für jeden Aktionstyp angezeigt.
+
+[cols="30,70"]
+|===
+
+
+| Aktionstyp | Eindeutige Felder 
+
+
+ a| 
+NichtCurrentVersionAblauf
+ a| 
+* `-non-curr-days` - Anzahl der Tage, nach denen nicht aktuelle Versionen gelöscht werden
+* `-new-non-curr-versions` - Anzahl der neuesten nicht-aktuellen Versionen, die beibehalten werden sollen
+
+
+
+
+ a| 
+Ablauf
+ a| 
+* `-obj-age-days` - Anzahl der Tage seit der Erstellung, nach denen die aktuelle Version der Objekte gelöscht werden kann
+* `-obj-exp-date` - Bestimmtes Datum, wann die Objekte ablaufen sollen
+* `-expired-obj-del-markers` - Löschen von Objektmarkierungen
+
+
+
+
+ a| 
+AbortInsetteMultipartUpload
+ a| 
+* `-after-initiation-days` - Anzahl der Tage der Initiierung, nach denen der Upload abgebrochen werden kann
+
+
+|===
+Damit die Bucket-Lifecycle-Management-Regel nur auf eine bestimmte Untergruppe von Objekten angewendet werden kann, müssen Administratoren beim Erstellen der Regel jeden Filter festlegen. Wenn diese Filter beim Erstellen der Regel nicht festgelegt werden, wird die Regel auf alle Objekte innerhalb des Buckets angewendet.
+
+Alle Filter können nach der ersten Erstellung geändert werden _außer_ für Folgendes: +
+
+* `-prefix`
+* `-tags`
+* `-obj-size-greater-than`
+* `-obj-size-less-than`
+
+
+.Schritte
+. Verwenden Sie die `vserver object-store-server bucket lifecycle-management-rule create` Befehl mit den erforderlichen Feldern für Ihren Ablaufaktionstyp, um Ihre Bucket-Lifecycle-Management-Regel zu erstellen.
+
+
+.Beispiel
+Mit dem folgenden Befehl wird eine Lebenszyklusverwaltungsregel für den Bucket „NonCurrentVersionExpiration“ erstellt:
+
+[listing]
+----
+vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action NonCurrentVersionExpiration -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -new-non-curr-versions <integer> -non-curr-days <integer>
+----
+.Beispiel
+Mit dem folgenden Befehl wird eine Management-Regel für AblaufBucket-Lebenszyklus erstellt:
+
+[listing]
+----
+vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action Expiration -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -obj-age-days <integer> -obj-exp-date <"MM/DD/YYYY HH:MM:SS"> -expired-obj-del-marker {true|false}
+----
+.Beispiel
+Mit dem folgenden Befehl wird eine AbortIncompleMultipartUpload Bucket Lifecycle Management-Regel erstellt:
+
+[listing]
+----
+vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action AbortIncompleteMultipartUpload -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -after-initiation-days <integer>
+----

@@ -2,44 +2,45 @@
 permalink: authentication/setup-ssh-multifactor-authentication-task.html 
 sidebar: sidebar 
 keywords: enable, ssh, multifactor authentication, mfa, hardware authentication device 
-summary: Ab ONTAP 9.3 können Sie mit dem Befehl zum Erstellen von Sicherheitsanmeldung die Sicherheit erhöhen, da Administratoren sich bei einem Administrator oder einer Daten-SVM sowohl mit einem öffentlichen SSH-Schlüssel als auch mit einem Benutzerpasswort anmelden müssen. 
+summary: 'Dank der Multi-Faktor-Authentifizierung (MFA) können Sie die Sicherheit erhöhen, da Benutzer zur Anmeldung bei einem Administrator oder einer Daten-SVM zwei Authentifizierungsmethoden bereitstellen müssen.' 
 ---
-= Multi-Faktor-SSH-Authentifizierung (MFA) aktivieren
+= Aktivieren Sie Multi-Faktor-Authentifizierung
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Ab ONTAP 9.3 können Sie den verwenden `security login create` Um die Sicherheit zu verbessern, müssen sich Administratoren bei einem Administrator oder einer Daten-SVM sowohl mit einem öffentlichen SSH-Schlüssel als auch mit einem Benutzerpasswort einloggen.
-
-Ab ONTAP 9.12.1 können Sie Yubikey-Hardware-Authentifizierungsgeräte für SSH-Client MFA verwenden, indem Sie die Authentifizierungsstandards FIDO2 (Fast Identity Online) oder PIV (Personal Identity Verification) verwenden.
-
-Weitere Informationen zu link:https://www.netapp.com/pdf.html?item=/media/17055-tr4647pdf.pdf["Mehrstufige Authentifizierung in ONTAP 9 (TR-4647)"^].
-
-.Bevor Sie beginnen
-Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+Dank der Multi-Faktor-Authentifizierung (MFA) können Sie die Sicherheit erhöhen, da Benutzer zur Anmeldung bei einem Administrator oder einer Daten-SVM zwei Authentifizierungsmethoden bereitstellen müssen.
 
 .Über diese Aufgabe
-* Sie müssen den öffentlichen Schlüssel dem Konto zuordnen, bevor das Konto auf die SVM zugreifen kann.
+* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Wenn Sie sich nicht sicher sind, welche Rolle bei der Zugriffssteuerung Sie dem Login-Konto zuweisen möchten, können Sie das verwenden `security login modify` Befehl, um die Rolle später hinzuzufügen.
++
+link:modify-role-assigned-administrator-task.html["Ändern der Rolle, die einem Administrator zugewiesen ist"]
+
+* Wenn Sie einen öffentlichen Schlüssel für die Authentifizierung verwenden, müssen Sie den öffentlichen Schlüssel dem Konto zuordnen, bevor das Konto auf die SVM zugreifen kann.
 +
 link:manage-public-key-authentication-concept.html["Einem Benutzerkonto einen öffentlichen Schlüssel zuordnen"]
 
 +
 Sie können diese Aufgabe vor oder nach dem Aktivieren des Kontozugriffs ausführen.
 
-* Wenn Sie sich nicht sicher sind, welche Rolle bei der Zugriffssteuerung Sie dem Login-Konto zuweisen möchten, können Sie das verwenden `security login modify` Befehl, um die Rolle später hinzuzufügen.
+* Ab ONTAP 9.12.1 können Sie Yubikey-Hardware-Authentifizierungsgeräte für SSH-Client MFA verwenden, indem Sie die Authentifizierungsstandards FIDO2 (Fast Identity Online) oder PIV (Personal Identity Verification) verwenden.
+
+
+
+
+== Aktivieren Sie MFA mit öffentlichem SSH-Schlüssel und Benutzerpasswort
+
+Ab ONTAP 9.3 kann ein Cluster-Administrator lokale Benutzerkonten für die Anmeldung mit einem öffentlichen SSH-Schlüssel und einem Benutzerpasswort einrichten.
+
+. Aktivieren Sie MFA auf einem lokalen Benutzerkonto mit öffentlichem SSH-Schlüssel und Benutzerpasswort:
 +
-link:modify-role-assigned-administrator-task.html["Ändern der Rolle, die einem Administrator zugewiesen ist"]
-
-* Der Benutzer wird immer mit Authentifizierung des öffentlichen Schlüssels und der Kennwortauthentifizierung authentifiziert.
-
-
-.Schritt
-. Lokale Administratorkonten erforderlich, um über SSH MFA auf eine SVM zuzugreifen:
-+
-`security login create -vserver _SVM_ -user-or-group-name _user_name_ -application ssh -authentication-method password|publickey -role admin -second-authentication-method password|publickey`
-
+[source, cli]
+----
+security login create -vserver <svm_name> -user-or-group-name <user_name> -application ssh -authentication-method <password|publickey> -role admin -second-authentication-method <password|publickey>
+----
 +
 Der folgende Befehl erfordert das SVM-Administratorkonto `admin2` Mit dem vordefinierten `admin` Rolle zum Anmelden bei der SVM``engData1`` Sowohl mit einem öffentlichen SSH-Schlüssel als auch mit einem Benutzerpasswort:
 
@@ -54,7 +55,89 @@ Warning: To use public-key authentication, you must create a public key for user
 ----
 
 
-.Nachdem Sie fertig sind
-Falls Sie dem Administratorkonto keinen öffentlichen Schlüssel zugeordnet haben, müssen Sie dies tun, bevor das Konto auf die SVM zugreifen kann.
 
+
+== Aktivieren Sie MFA mit TOTP
+
+Ab ONTAP 9.13.1 können Sie die Sicherheit erhöhen, indem Sie lokale Benutzer über einen öffentlichen SSH-Schlüssel oder ein Benutzerkennwort und ein zeitbasiertes Einmalpasswort (TOTP) bei einem Administrator oder einer Daten-SVM einloggen müssen. Nachdem das Konto für MFA mit TOTP aktiviert wurde, muss sich der lokale Benutzer bei anmelden link:configure-local-account-mfa-totp-task.html["Schließen Sie die Konfiguration ab"].
+
+TOTP ist ein Computeralgorithmus, der die aktuelle Zeit verwendet, um ein Einmalpasswort zu generieren. Wenn TOTP verwendet wird, ist es immer die zweite Form der Authentifizierung nach dem öffentlichen SSH-Schlüssel oder dem Benutzerpasswort.
+
+.Bevor Sie beginnen
+Sie müssen ein Storage-Administrator sein, um diese Aufgaben auszuführen.
+
+.Schritte
+Sie können MFA für mit einem Benutzerpasswort oder einem öffentlichen SSH-Schlüssel als erste Authentifizierungsmethode und TOTP als zweite Authentifizierungsmethode einrichten.
+
+[role="tabbed-block"]
+====
+.Aktivieren Sie MFA mit Benutzerpasswort und TOTP
+--
+. Aktivieren Sie ein Benutzerkonto für Multi-Faktor-Authentifizierung mit einem Benutzerpasswort und einem TOTP.
++
+*Für neue Benutzerkonten*
+
++
+[source, cli]
+----
+security login create -vserver <svm_name> -user-or-group-name <user_or_group_name> -application ssh -authentication-method password -second-authentication-method totp -role <role> -comment <comment>
+----
++
+*Für bestehende Benutzerkonten*
+
++
+[source, cli]
+----
+security login modify -vserver <svm_name> -user-or-group-name <user_or_group_name> -application ssh -authentication-method password -second-authentication-method totp -role <role> -comment <comment>
+----
+. Vergewissern Sie sich, dass MFA mit TOTP aktiviert ist:
++
+[listing]
+----
+security login show
+----
+
+
+--
+.Aktivieren Sie MFA mit öffentlichem SSH-Schlüssel und TOTP
+--
+. Aktivieren Sie ein Benutzerkonto für Multi-Faktor-Authentifizierung mit einem öffentlichen SSH-Schlüssel und TOTP.
++
+*Für neue Benutzerkonten*
+
++
+[source, cli]
+----
+security login create -vserver <svm_name> -user-or-group-name <user_or_group_name> -application ssh -authentication-method publickey -second-authentication-method totp -role <role> -comment <comment>
+----
++
+*Für bestehende Benutzerkonten*
+
++
+[source, cli]
+----
+security login modify -vserver <svm_name> -user-or-group-name <user_or_group_name> -application ssh -authentication-method publickey -second-authentication-method totp -role <role> -comment <comment>
+----
+. Vergewissern Sie sich, dass MFA mit TOTP aktiviert ist:
++
+[listing]
+----
+security login show
+----
+
+
+--
+====
+.Nachdem Sie fertig sind
+* Falls Sie dem Administratorkonto keinen öffentlichen Schlüssel zugeordnet haben, müssen Sie dies tun, bevor das Konto auf die SVM zugreifen kann.
++
 link:manage-public-key-authentication-concept.html["Verknüpfen eines öffentlichen Schlüssels mit einem Benutzerkonto"]
+
+* Der lokale Benutzer muss sich anmelden, um die MFA-Konfiguration mit TOTP abzuschließen.
++
+link:configure-local-account-mfa-totp-task.html["Konfigurieren Sie das lokale Benutzerkonto für MFA mit TOTP"]
+
+
+
+.Verwandte Informationen
+Weitere Informationen zu link:https://www.netapp.com/pdf.html?item=/media/17055-tr4647pdf.pdf["Mehrstufige Authentifizierung in ONTAP 9 (TR-4647)"^].

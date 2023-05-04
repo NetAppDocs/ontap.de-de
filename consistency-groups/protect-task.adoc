@@ -1,8 +1,8 @@
 ---
 permalink: consistency-groups/protect-task.html 
 sidebar: sidebar 
-keywords: consistency groups, consistency group, application protection, parent, child, configure, two-phase commit, 2 phase 
-summary: Legen Sie eine Schutzrichtlinie für eine Konsistenzgruppe fest, um Applikations-Backups mit lokalen Snapshot-Richtlinien oder Remote SM-BC-Schutz zu ermöglichen 
+keywords: application protection, two-phase commit, 2 phase, smbc, async snapmirror, local, remote, snapshot 
+summary: 'Schützen Sie Ihre Konsistenzgruppe mithilfe von lokalem Snapshot, SnapMirror Business Continuity (SM-BC) oder asynchronem SnapMirror Schutz.' 
 ---
 = Sichern einer Konsistenzgruppe
 :hardbreaks:
@@ -14,13 +14,18 @@ summary: Legen Sie eine Schutzrichtlinie für eine Konsistenzgruppe fest, um App
 [role="lead"]
 Konsistenzgruppen bieten einfach lokalen und Remote-Schutz für SAN-, NAS- und NVMe-Applikationen, die mehrere Volumes umfassen.
 
-Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Lokale und/oder Remote-Schutzrichtlinien können zum Zeitpunkt der Erstellung oder nach dem Erstellen der Konsistenzgruppe festgelegt werden. Sicherungsrichtlinien können lokale Snapshot Kopien oder Remote SnapMirror Sicherung mit SnapMirror Business Continuity (SM-BC) beinhalten. Wenn Sie geschachtelte Konsistenzgruppen verwenden, können Sie unterschiedliche Sicherungsrichtlinien für einzelne Volumes festlegen.
+Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Sicherungsrichtlinien können zum Zeitpunkt der Erstellung oder nach der Erstellung der Konsistenzgruppe festgelegt werden. Sie können Konsistenzgruppen schützen, indem Sie:
+
+* Lokale Snapshot-Richtlinien
+* SnapMirror Business Continuity (SM-BC)
+* SnapMirror asynchron (ab 9.13.1)
+
+
+Wenn Sie geschachtelte Konsistenzgruppen verwenden, können Sie verschiedene Schutzrichtlinien für die übergeordneten und untergeordneten Konsistenzgruppen festlegen.
 
 Ab ONTAP 9.11.1 bieten Konsistenzgruppen <<two-phase,Erstellung von Snapshots mit zwei Phasen einer Konsistenzgruppe>>. Der zweiphasige Snapshot führt eine Vorprüfung durch und stellt sicher, dass der Snapshot erfolgreich erfasst wird.
 
 Die Wiederherstellung kann für eine gesamte Konsistenzgruppe, eine einzelne Konsistenzgruppe in einer hierarchischen Konfiguration oder für einzelne Volumes innerhalb der Konsistenzgruppe erfolgen. Das Recovery kann durch Auswahl der Konsistenzgruppe, von der Sie wiederherstellen möchten, durch Auswahl des Typs der Snapshot Kopie und dann durch Identifizieren der Snapshot Kopie auf der Basis der Wiederherstellung erfolgen. Weitere Informationen zu diesem Prozess finden Sie unter link:../task_dp_restore_from_vault.html["Wiederherstellung eines Volume aus einer früheren Snapshot Kopie"].
-
-Ab ONTAP 9.10.1 visualisiert der System Manager LUN-Zuordnungen im Menü *Schutz > Beziehungen*. Wenn Sie eine Quellbeziehung auswählen, zeigt System Manager eine Visualisierung der Quellbeziehungen an. Durch Auswahl eines Volumes können Sie sich näher mit diesen Beziehungen befassen, um eine Liste der enthaltenen LUNs und der Beziehungen zu Initiatorgruppen anzuzeigen. Diese Informationen können in der Ansicht der einzelnen Volumes als Excel-Arbeitsmappe heruntergeladen werden. Die Aufgabe wird im Hintergrund ausgeführt.
 
 
 
@@ -42,7 +47,9 @@ Durch das Festlegen einer lokalen Snapshot-Schutzrichtlinie können Sie eine Ric
 
 == Erstellen von Snapshots mit zwei Phasen einer Konsistenzgruppe
 
-Ab ONTAP 9.11.1 unterstützen Konsistenzgruppen die Commits für die Erstellung von Snapshots der Konsistenzgruppe (CG), die vor dem Übersetzen des Snapshots eine Vorabprüfung durchführen. Diese Funktion ist nur für die ONTAP REST API verfügbar. Die Erstellung von CG-Snapshots in zwei Phasen ist nur für die Snapshot-Erstellung verfügbar, keine Konsistenzgruppen bereitstellen oder Konsistenzgruppen wiederherstellen.
+Ab ONTAP 9.11.1 unterstützen Konsistenzgruppen die Commits für die Erstellung von Snapshots der Konsistenzgruppe (CG), die vor dem Übersetzen des Snapshots eine Vorabprüfung durchführen. Diese Funktion ist nur für die ONTAP REST API verfügbar.
+
+Die Erstellung von CG-Snapshots in zwei Phasen ist nur für die Snapshot-Erstellung verfügbar, keine Konsistenzgruppen bereitstellen oder Konsistenzgruppen wiederherstellen.
 
 Durch die Erstellung eines Snapshots mit zwei Phasen wird der Snapshot-Erstellungsprozess unterbrochen, der durch eine POST-Anforderung an das aufgerufen wird `/application/consistency-groups/{consistency_group_uuid}/snapshots` endpunkt in einer Reihe von zwei Phasen:
 
@@ -52,7 +59,7 @@ Durch die Erstellung eines Snapshots mit zwei Phasen wird der Snapshot-Erstellun
 
 Weitere Informationen zur ONTAP REST API finden Sie im link:https://docs.netapp.com/us-en/ontap-automation/reference/api_reference.html["API-Referenz"^] Oder besuchen Sie die link:https://devnet.netapp.com/restapi.php["ONTAP REST API SEITE"^] Im NetApp Entwicklernetzwerk finden Sie eine vollständige Liste der API-Endpunkte.
 
-.Überlegungen bei Snapshots von zwei-Phasen-Konsistenzgruppen
+.Bevor Sie beginnen
 * Um Snapshots mit zwei Phasen zu verwenden, müssen alle Nodes im Cluster ONTAP 9.11.1 oder höher ausführen.
 * Es wird immer nur ein aktiver Aufruf einer Snapshot-Erstellung von Konsistenzgruppen auf einer Konsistenzgruppeinstanz unterstützt, unabhängig davon, ob es sich um eine ein- oder zwei-Phasen-Instanz handelt. Der Versuch, eine Snapshot-Erstellung zu starten, während eine andere gerade läuft, führt zu einem Ausfall.
 * Die Erstellung von Snapshots mit der zwei-Phasen-Konsistenzgruppe kann mit aufgerufen werden `action=start` Parameter.
@@ -61,8 +68,8 @@ Zusätzlich können Sie den verwenden `action_timeout` Parameter, um die maximal
 
 
 
-.Erstellen eines Snapshots von zwei Phasen einer Konsistenzgruppe
-. Rufen Sie die Snapshot Erstellung mit einer POST-Anforderung mithilfe des am Endpunkt der Konsistenzgruppe auf `action=start` Parameter.
+.Schritte
+. Rufen Sie die Snapshot-Erstellung auf. Senden Sie eine POST-Anforderung mithilfe von an den Endpunkt der Konsistenzgruppe `action=start` Parameter.
 +
 [source, curl]
 ----
@@ -74,7 +81,7 @@ curl -k -X POST 'https://<IP_address>/application/consistency-groups/<cg-uuid>/s
   "snapmirror_label": "<SnapMirror_label>"
 }'
 ----
-. Wenn die POST-Anforderung erfolgreich ist, enthält Ihre Ausgabe eine Snapshot-UUID. Senden Sie unter Verwendung dieser Informationen EINE PATCH-Anfrage, um den Snapshot zu übergeben.
+. Wenn die POST-Anforderung erfolgreich ist, enthält Ihre Ausgabe eine Snapshot-UUID. Übermitteln Sie mithilfe dieser UUID eine PATCH-Anforderung, um den Snapshot zu übergeben.
 +
 [source, curl]
 ----
@@ -84,30 +91,77 @@ curl -k -X PATCH 'https://<IP_address>/application/consistency-groups/<cg_uuid>/
 
 
 
-== Legen Sie eine SM-BC-Richtlinie für das Remote-Ziel fest
+== Legen Sie den Remote-Schutz für eine Konsistenzgruppe fest
 
-Wenn Sie Remote SM-BC-Schutz verwenden, um sicherzustellen, dass Snapshot Kopien der auf der Konsistenzgruppe erstellten Konsistenzgruppen in das Ziel kopiert werden, müssen die Richtlinienetiketten im Quell- und Ziel-Cluster übereinstimmen. SM-BC repliziert Snapshot Kopien nicht standardmäßig, es sei denn, eine Regel mit einem SnapMirror-Label wird dem vordefinierten hinzugefügt `AutomatedFailOver` Richtlinie und die Snapshot Kopien werden mit diesem Etikett erstellt. Weitere Informationen zu diesem Prozess finden Sie unter link:../task_san_configure_protection_for_business_continuity.html["Schutz für Business Continuity konfigurieren"].
+Konsistenzgruppen bieten Remote-Schutz über SM-BC und ab ONTAP 9.13.1 asynchronen SnapMirror.
+
+
+
+=== Konfigurieren Sie den Schutz mit SM-BC
+
+Sie können SM-BC verwenden, um sicherzustellen, dass Snapshot Kopien von Konsistenzgruppen, die in der Konsistenzgruppe erstellt werden, auf das Ziel kopiert werden. Weitere Informationen über SM-BC finden Sie unter xref:../task_san_configure_protection_for_business_continuity.html[Schutz für Business Continuity konfigurieren].
+
+.Bevor Sie beginnen
+* SM-BC-Beziehungen können nicht auf Volumes eingerichtet werden, die für den NAS-Zugriff gemountet sind.
+* Die Richtlinienbeschriftungen im Quell- und Ziel-Cluster müssen übereinstimmen.
+* SM-BC repliziert Snapshot Kopien nicht standardmäßig, es sei denn, eine Regel mit einem SnapMirror-Label wird dem vordefinierten hinzugefügt `AutomatedFailOver` Richtlinie und die Snapshot Kopien werden mit diesem Etikett erstellt.
++
+Weitere Informationen zu diesem Prozess finden Sie unter link:../task_san_configure_protection_for_business_continuity.html["Schutz für Business Continuity konfigurieren"].
+
+* Ab ONTAP 9.13.1 ist dies unterbrechungsfrei xref:modify-task.html#add-volumes-to-a-consistency-group[Fügen Sie einer Konsistenzgruppe Volumes hinzu] Mit einer aktiven SM-BC-Beziehung. Bei allen anderen Änderungen an einer Konsistenzgruppe müssen Sie die SM-BC-Beziehung unterbrechen, die Konsistenzgruppe ändern, dann die Beziehung wiederherstellen und neu synchronisieren.
+
 
 .Schritte
-. Stellen Sie sicher, dass Sie die Voraussetzungen für die Verwendung von SM-BC erfüllt haben. Siehe link:../smbc/smbc_plan_prerequisites.html["Voraussetzungen für SM-BC"]
-+
-
-NOTE: SM-BC-Beziehungen können nicht auf Volumes eingerichtet werden, die für den NAS-Zugriff gemountet sind.
-
+. Stellen Sie sicher, dass Sie den erfüllt haben link:../smbc/smbc_plan_prerequisites.html["Voraussetzungen für die Verwendung von SM-BC"].
 . Wählen Sie *Storage > Consistency Groups* aus.
 . Wählen Sie die Konsistenzgruppe aus, die Sie im Menü Konsistenzgruppe erstellt haben.
 . Rechts oben auf der Übersichtsseite wählen Sie *Mehr* und dann *schützen*.
-. Die Informationen auf der Quelle werden automatisch gefüllt. Wählen Sie die entsprechende Cluster- und Storage-VM für das Ziel aus. Wählen Sie eine Schutzrichtlinie aus. Vergewissern Sie sich, dass *Beziehung initialisieren* überprüft wird.
+. System Manager füllt die Informationen auf der Quellseite automatisch aus. Wählen Sie die entsprechende Cluster- und Storage-VM für das Ziel aus. Wählen Sie eine Schutzrichtlinie aus. Vergewissern Sie sich, dass *Beziehung initialisieren* überprüft wird.
 . Wählen Sie *Speichern*.
-. Die Konsistenzgruppe muss initialisiert und synchronisiert werden. Wenn dieser abgeschlossen ist, wird unter *SnapMirror (Remote)* der Status „`protected`“ neben angezeigt image:../media/icon_shield.png["alt=grünes Schild-Symbol"].
+. Die Konsistenzgruppe muss initialisiert und synchronisiert werden. Bestätigen Sie, dass die Synchronisierung erfolgreich abgeschlossen wurde, indem Sie zum Menü *Consistency Group* zurückkehren. Der Status *SnapMirror (Remote)* wird angezeigt `Protected` Neben image:../media/icon_shield.png["alt=grünes Schild-Symbol"].
 
 
-.Nächste Schritte
+
+
+=== Konfigurieren Sie den asynchronen SnapMirror Schutz
+
+Ab ONTAP 9.13.1 können Sie asynchronen SnapMirror Schutz für eine einzelne Konsistenzgruppe konfigurieren.
+
+.Bevor Sie beginnen
+* Der asynchrone SnapMirror Schutz ist nur für einzelne Konsistenzgruppen verfügbar. Sie wird für hierarchische Konsistenzgruppen nicht unterstützt. Informationen zum Konvertieren einer hierarchischen Konsistenzgruppe in eine einzige Konsistenzgruppe finden Sie unter xref:modify-geometry-task.html[Ändern der Architektur von Konsistenzgruppen].
+* xref:../data-protection/supported-deployment-config-concept.html[Kaskadenimplementierungen] Werden mit SM-BC nicht unterstützt.
+* Die Richtlinienbeschriftungen im Quell- und Ziel-Cluster müssen übereinstimmen.
+* Unterbrechungsfrei xref:modify-task.html#add-volumes-to-a-consistency-group[Fügen Sie einer Konsistenzgruppe Volumes hinzu] Mit einer aktiven asynchronen SnapMirror Beziehung. Bei allen anderen Änderungen an einer Konsistenzgruppe müssen Sie die SnapMirror Beziehung unterbrechen, die Konsistenzgruppe ändern, dann die Beziehung wiederherstellen und neu synchronisieren.
+* Wenn Sie eine asynchrone SnapMirror-Sicherungsbeziehung für mehrere einzelne Volumes konfiguriert haben, können Sie diese Volumes in eine Konsistenzgruppe konvertieren, während die vorhandenen Snapshots beibehalten werden. So konvertieren Sie Volumes erfolgreich:
+* Es muss eine allgemeine Snapshot-Kopie der Volumes vorhanden sein.
+* Sie müssen die bestehende SnapMirror-Beziehung trennen, xref:configure-task.html[Fügen Sie die Volumes einer einzelnen Konsistenzgruppe hinzu], Und synchronisieren Sie die Beziehung anschließend mithilfe des folgenden Workflows erneut.
+
+
+.Schritte
+. Wählen Sie im Zielcluster *Storage > Consistency Groups* aus.
+. Wählen Sie die Konsistenzgruppe aus, die Sie im Menü Konsistenzgruppe erstellt haben.
+. Rechts oben auf der Übersichtsseite wählen Sie *Mehr* und dann *schützen*.
+. System Manager füllt die Informationen auf der Quellseite automatisch aus. Wählen Sie die entsprechende Cluster- und Storage-VM für das Ziel aus. Wählen Sie eine Schutzrichtlinie aus. Vergewissern Sie sich, dass *Beziehung initialisieren* überprüft wird.
++
+Wenn Sie eine asynchrone Richtlinie auswählen, haben Sie die Option **Übertragungszeitplan überschreiben**.
+
+. Wählen Sie *Speichern*.
+. Die Konsistenzgruppe muss initialisiert und synchronisiert werden. Bestätigen Sie, dass die Synchronisierung erfolgreich abgeschlossen wurde, indem Sie zum Menü *Consistency Group* zurückkehren. Der Status *SnapMirror (Remote)* wird angezeigt `Protected` Neben image:../media/icon_shield.png["alt=grünes Schild-Symbol"].
+
+
+
+
+== Beziehungen visualisieren
+
+System Manager visualisiert LUN-Zuordnungen im Menü *Schutz > Beziehungen*. Wenn Sie eine Quellbeziehung auswählen, zeigt System Manager eine Visualisierung der Quellbeziehungen an. Durch Auswahl eines Volumes können Sie sich näher mit diesen Beziehungen befassen, um eine Liste der enthaltenen LUNs und der Beziehungen zu Initiatorgruppen anzuzeigen. Diese Informationen können als Excel-Arbeitsmappe aus der Ansicht der einzelnen Volumes heruntergeladen werden. Der Download-Vorgang wird im Hintergrund ausgeführt.
+
+.Verwandte Informationen
 * link:clone-task.html["Klonen einer Konsistenzgruppe"]
 * link:../task_dp_configure_snapshot.html["Konfigurieren von Snapshot Kopien"]
 * link:../task_dp_create_custom_data_protection_policies.html["Erstellen benutzerdefinierter Datensicherungsrichtlinien"]
-link:../task_dp_recover_snapshot.html["Wiederherstellung aus Snapshot-Kopien"]
+* link:../task_dp_recover_snapshot.html["Wiederherstellung aus Snapshot-Kopien"]
 * link:../task_dp_restore_from_vault.html["Wiederherstellung eines Volume aus einer früheren Snapshot Kopie"]
 * link:../smbc/index.html["SM-BC – Übersicht"]
 * link:https://docs.netapp.com/us-en/ontap-automation/["Dokumentation zur ONTAP-Automatisierung"^]
+* xref:../data-protection/snapmirror-disaster-recovery-concept.html[Grundlagen der asynchronen SnapMirror Disaster Recovery]
 

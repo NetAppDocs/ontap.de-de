@@ -61,6 +61,10 @@ Wenn bei der Erstellung eines FlexClone Volume eine Dateiumverteilung erfolgt, e
 +
 Wenn eine Datei während der Ausbalancierung von FlexGroup verschoben wird, wird die Dateigröße als Teil der Kontingentrechnung sowohl für die Quell- als auch Zielkomponenten gemeldet. Nach Abschluss der Verschiebung kehrt die Quotenbuchhaltung auf Normal zurück, und die Dateigröße wird nur auf dem neuen Ziel gemeldet.
 
+* Autonomer Schutz Durch Ransomware
++
+Ab ONTAP 9.13.1 kann der Autonome Ransomware-Schutz sowohl für einen unterbrechungsfreien als auch für einen unterbrechungsfreien Ausgleichsoperationen zwischen Inodes kopiert werden.
+
 
 
 
@@ -68,6 +72,8 @@ Wenn eine Datei während der Ausbalancierung von FlexGroup verschoben wird, wird
 == FlexGroup-Ausbalancierung aktivieren
 
 Ab ONTAP 9.12.1 ist die automatische, unterbrechungsfreie Ausbalancierung von FlexGroup Volumes möglich, um Dateien zwischen FlexGroup Komponenten neu zu verteilen.
+
+Ab ONTAP 9.13.1 können Sie einen Vorgang zur Ausbalancierung in einem einzelnen FlexGroup planen, der zu einem späteren Zeitpunkt beginnt.
 
 .Bevor Sie beginnen
 Sie müssen die aktiviert haben `granular-data` Option auf dem FlexGroup Volume vor Aktivierung der FlexGroup-Ausbalancierung. Sie können die Aktivierung mit einer der folgenden Methoden aktivieren:
@@ -85,8 +91,10 @@ Sie können die FlexGroup-Ausbalancierung mit ONTAP System Manager oder der ONTA
 --
 .Schritte
 . Navigieren Sie zu *Storage > Volumes*, und suchen Sie das FlexGroup Volume, um es auszugleichen.
-. Klicken Sie Auf image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die Volume-Details anzuzeigen.
-. Klicken Sie Auf *Balance*.
+. Wählen Sie image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die Volume-Details anzuzeigen.
+. Wählen Sie * Neuausgleich*.
+. Ändern Sie im Fenster *Restalance Volume* die Standardeinstellungen nach Bedarf.
+. Um den Vorgang für die Neuverteilung zu planen, wählen Sie *später neu ausgleichen* und geben Sie Datum und Uhrzeit ein.
 
 
 --
@@ -95,7 +103,28 @@ Sie können die FlexGroup-Ausbalancierung mit ONTAP System Manager oder der ONTA
 .Schritte
 . Automatische Ausbalancierung starten: `volume rebalance start -vserver _SVM_name_ -volume _volume_name_`
 +
-Optional können Sie folgende Optionen festlegen: [[-max-Laufzeit] <Zeitintervall>] maximale Laufzeit [-max-threw <percent>] maximale Unwucht Schwellenwert pro konstituierender [-min-threaringe <percent>] Mindestabstand Schwellenwert pro konstituierende [-max-file-Moves <integer>] maximale Paralleldatei bewegt sich per Konstitent [-min-file-size {<gGB>[KB MB natürlich} Snapshot] {} Snapshot-Dateien mit der Größe ausschließen
+Optional können Sie die folgenden Optionen angeben:
+
++
+[[-max-Runtime] <time interval>] maximale Laufzeit
+
++
+[-max-threshold <percent>] maximale Unwuchtschwelle pro Konstituent
+
++
+[-min-threshold <percent>] Minimaler Ungleichgewichtsschwellenwert pro Konstituierende
+
++
+[-max-file-moves <integer>] maximale gleichzeitige Dateiverschiebungen pro Konstituent
+
++
+[-min-file-size {<integer>[KB/TB]}] Minimale Dateigröße
+
++
+[-Start-Time <mm/dd/yyyy-00:00:00>] Startzeit und -Uhrzeit für Neuausgleich planen
+
++
+[-exclude-Snapshots {true}] schließt Dateien aus, die in Snapshot-Kopien stecken
 
 +
 Beispiel:
@@ -105,8 +134,6 @@ Beispiel:
 ----
 volume rebalance start -vserver vs0 -volume fg1
 ----
-. Ändern Sie im Fenster *Restalance Volume* die Standardeinstellungen, falls erforderlich.
-. Klicken Sie auf *Speichern*, um die Standardeinstellungen zu übernehmen.
 
 
 --
@@ -115,7 +142,7 @@ volume rebalance start -vserver vs0 -volume fg1
 
 == Ändern Sie die FlexGroup Ausgleichkonfigurationen
 
-Sie können eine FlexGroup Ausgleichkonfiguration ändern, um den Ungleichgewichtsschwellenwert zu aktualisieren, die Anzahl der gleichzeitigen Dateien verschiebt minimale Dateigröße, maximale Laufzeit und um Snapshot Kopien einzuschließen oder auszuschließen.
+Sie können eine FlexGroup Ausgleichkonfiguration ändern, um den Ungleichgewichtsschwellenwert zu aktualisieren, die Anzahl der gleichzeitigen Dateien verschiebt minimale Dateigröße, maximale Laufzeit und um Snapshot Kopien einzuschließen oder auszuschließen. Ab ONTAP 9.13.1 stehen Optionen zur Änderung Ihres FlexGroup Rebalancing-Zeitplans zur Verfügung.
 
 [role="tabbed-block"]
 ====
@@ -123,10 +150,9 @@ Sie können eine FlexGroup Ausgleichkonfiguration ändern, um den Ungleichgewich
 --
 .Schritte
 . Navigieren Sie zu *Storage > Volumes*, und suchen Sie das FlexGroup Volume, um es auszugleichen.
-. Klicken Sie Auf image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die Volume-Details anzuzeigen.
-. Klicken Sie Auf *Balance*.
+. Wählen Sie image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die Volume-Details anzuzeigen.
+. Wählen Sie * Neuausgleich*.
 . Ändern Sie im Fenster *Restalance Volume* die Standardeinstellungen nach Bedarf.
-. Klicken Sie Auf *Speichern*.
 
 
 --
@@ -135,7 +161,28 @@ Sie können eine FlexGroup Ausgleichkonfiguration ändern, um den Ungleichgewich
 .Schritt
 . Ändern der automatischen Ausbalancierung: `volume rebalance modify -vserver _SVM_name_ -volume _volume_name_`
 +
-Sie können eine oder mehrere der folgenden Optionen angeben: [[-max-Runtime] <time interval>] maximale Laufzeit [-max-threshold <percent>] maximale Unwucht Schwellenwert pro konstituierende [-min-threaringe <percent>] Minimale Unwucht Schwellenwert pro Konstitent [-max-file-Moves <integer>] maximale Paralleldatei bewegt sich [-min-file-size {<mailly} Snapshot {mailly} mailly mailly mailly mailly mailly masuly masuly masuly masuly-
+Sie können eine oder mehrere der folgenden Optionen angeben:
+
++
+[[-max-Runtime] <time interval>] maximale Laufzeit
+
++
+[-max-threshold <percent>] maximale Unwuchtschwelle pro Konstituent
+
++
+[-min-threshold <percent>] Minimaler Ungleichgewichtsschwellenwert pro Konstituierende
+
++
+[-max-file-moves <integer>] maximale gleichzeitige Dateiverschiebungen pro Konstituent
+
++
+[-min-file-size {<integer>[KB/TB]}] Minimale Dateigröße
+
++
+[-Start-Time <mm/dd/yyyy-00:00:00>] Startzeit und -Uhrzeit für Neuausgleich planen
+
++
+[-exclude-Snapshots {true}] schließt Dateien aus, die in Snapshot-Kopien stecken
 
 
 
@@ -145,7 +192,7 @@ Sie können eine oder mehrere der folgenden Optionen angeben: [[-max-Runtime] <t
 
 == Stoppen Sie den Lastausgleich für FlexGroup
 
-Wenn die FlexGroup-Ausbalancierung aktiviert ist, können Sie sie jederzeit beenden.
+Nachdem die FlexGroup-Ausbalancierung aktiviert oder geplant wurde, können Sie sie jederzeit beenden.
 
 [role="tabbed-block"]
 ====
@@ -153,8 +200,8 @@ Wenn die FlexGroup-Ausbalancierung aktiviert ist, können Sie sie jederzeit been
 --
 .Schritte
 . Navigieren Sie zu *Storage > Volumes* und suchen Sie das FlexGroup Volume.
-. Klicken Sie Auf image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die Volume-Details anzuzeigen.
-. Klicken Sie Auf *Stop Rebalance*.
+. Wählen Sie image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die Volume-Details anzuzeigen.
+. Wählen Sie *Neuausgleich Stoppen*.
 
 
 --
@@ -178,9 +225,9 @@ Sie können den Status zu einem FlexGroup Ausgleichvorgang, zur FlexGroup Ausgle
 --
 .Schritte
 . Navigieren Sie zu *Storage > Volumes* und suchen Sie das FlexGroup Volume.
-. Klicken Sie Auf image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die FlexGroup-Details anzuzeigen.
+. Wählen Sie image:icon_dropdown_arrow.gif["Detailsymbol anzeigen"] Um die FlexGroup-Details anzuzeigen.
 . *Der FlexGroup-Kontostand* wird unten im Detailfenster angezeigt.
-. Um Informationen zum letzten Ausgleichvorgang anzuzeigen, klicken Sie auf *Status der letzten Volume-Ausbalancierung*.
+. Um Informationen über den letzten Ausgleichsoperation anzuzeigen, wählen Sie *Last Volume Rebalance Status*.
 
 
 --

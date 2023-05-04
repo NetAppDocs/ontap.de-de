@@ -1,0 +1,115 @@
+---
+permalink: authentication/manage-ssh-public-keys-and-certificates.html 
+sidebar: sidebar 
+keywords: associate, public key, administrator account 
+summary: Für die SSH-Authentifizierung mit öffentlichem Schlüssel können Sie den öffentlichen Schlüssel und dessen Zuordnung zu X.509-Zertifikaten verwalten für ein Administratorkonto können Sie die Befehle für die Sicherheitsanmeldung für öffentliche Schlüssel und Zertifikate für ein Administratorkonto verwenden. 
+---
+= Verwalten von öffentlichen SSH-Schlüsseln und X.509-Zertifikaten für ein Administratorkonto
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Um die SSH-Authentifizierungssicherheit mit Administratorkonten zu erhöhen, können Sie die verwenden `security login publickey` Satz von Befehlen zur Verwaltung des öffentlichen SSH-Schlüssels und seiner Verknüpfung mit X.509-Zertifikaten.
+
+
+
+== Verknüpfen Sie einen öffentlichen Schlüssel und ein X.509-Zertifikat mit einem Administratorkonto
+
+Ab ONTAP 9.13.1 können Sie ein X.509-Zertifikat mit dem öffentlichen Schlüssel verknüpfen, den Sie mit dem Administratorkonto verknüpfen. Dadurch erhalten Sie die zusätzliche Sicherheit bei der Überprüfung des Zertifikatablaufs oder des Widerrufs bei der SSH-Anmeldung für dieses Konto.
+
+.Bevor Sie beginnen
+* Sie müssen ein Cluster- oder SVM-Administrator sein, um diese Aufgabe durchzuführen.
+* Sie müssen den SSH-Schlüssel generiert haben.
+* Wenn Sie nur das X.509-Zertifikat auf Gültigkeit prüfen müssen, können Sie ein selbstsigniertes Zertifikat verwenden.
+* Wenn Sie das X.509-Zertifikat auf Ablaufdatum und Widerruf prüfen müssen:
++
+** Sie müssen das Zertifikat von einer Zertifizierungsstelle erhalten haben.
+** Sie müssen die Zertifikatskette (Zwischen- und Stammzertifizierungsstellen) mit installieren `security certificate install` Befehle.
+** Sie müssen OCSP für SSH aktivieren. Siehe link:../system-admin/verify-digital-certificates-valid-ocsp-task.html["Überprüfen Sie, ob digitale Zertifikate mit OCSP gültig sind"^] Weitere Anweisungen.
+
+
+
+
+.Über diese Aufgabe
+Wenn Sie ein Konto über SSH sowohl mit einem öffentlichen SSH-Schlüssel als auch mit einem X.509-Zertifikat authentifizieren, überprüft ONTAP die Gültigkeit des X.509-Zertifikats, bevor es sich mit dem öffentlichen SSH-Schlüssel authentifiziert. Die SSH-Anmeldung wird abgelehnt, wenn das Zertifikat abgelaufen ist oder widerrufen wurde, und der öffentliche Schlüssel wird automatisch deaktiviert.
+
+.Schritte
+. Einen öffentlichen Schlüssel und ein X.509-Zertifikat einem Administratorkonto zuordnen:
++
+`security login publickey create -vserver _SVM_name_ -username _user_name_ -index _index_ -publickey _certificate_ -x509-certificate install`
+
++
+Eine vollständige Befehlssyntax finden Sie in der Worksheet-Referenz für link:config-worksheets-reference.html#associate-a-public-key-with-a-user-account["Verknüpfen eines öffentlichen Schlüssels mit einem Benutzerkonto"^].
+
+. Überprüfen Sie die Änderung, indem Sie den öffentlichen Schlüssel anzeigen:
++
+`security login publickey show -vserver _SVM_name_ -username _user_name_ -index _index_`
+
+
+
+.Beispiel
+Mit dem folgenden Befehl werden ein öffentlicher Schlüssel und ein X.509-Zertifikat dem SVM-Administratorkonto zugeordnet `svmadmin2` Für die SVM `engData2`. Der öffentliche Schlüssel wird mit der Indexnummer 6 belegt.
+
+[listing]
+----
+cluster1::> security login publickey create -vserver engData2 -username svmadmin2 -index 6 -publickey
+"<key text>" -x509-certificate install
+Please enter Certificate: Press <Enter> when done
+<certificate text>
+----
+
+
+== Entfernen Sie die Zertifikatszuordnung aus dem öffentlichen SSH-Schlüssel für ein Administratorkonto
+
+Sie können die aktuelle Zertifikatzuordnung aus dem öffentlichen SSH-Schlüssel des Kontos entfernen und dabei den öffentlichen Schlüssel beibehalten.
+
+.Bevor Sie beginnen
+Sie müssen ein Cluster- oder SVM-Administrator sein, um diese Aufgabe durchzuführen.
+
+.Schritte
+. Entfernen Sie die X.509-Zertifikatszuordnung aus einem Administratorkonto, und behalten Sie den vorhandenen öffentlichen SSH-Schlüssel bei:
++
+`security login publickey modify -vserver SVM_name -username user_name -index index -x509-certificate delete`
+
+. Überprüfen Sie die Änderung, indem Sie den öffentlichen Schlüssel anzeigen:
++
+`security login publickey show -vserver _SVM_name_ -username _user_name_ -index _index_`
+
+
+
+.Beispiel
+Mit dem folgenden Befehl wird die X.509-Zertifikatzuordnung aus dem SVM-Administratorkonto entfernt `svmadmin2` Für die SVM `engData2` Bei Indexnummer 6.
+
+[listing]
+----
+cluster1::> security login publickey modify -vserver engData2 -username svmadmin2 -index 6 -x509-certificate delete
+----
+
+
+== Entfernen Sie den öffentlichen Schlüssel und die Zertifikatzuordnung aus einem Administratorkonto
+
+Sie können den aktuellen öffentlichen Schlüssel und die Zertifikatkonfiguration aus einem Konto entfernen.
+
+.Bevor Sie beginnen
+Sie müssen ein Cluster- oder SVM-Administrator sein, um diese Aufgabe durchzuführen.
+
+.Schritte
+. Entfernen Sie den öffentlichen Schlüssel und eine X.509-Zertifikatzuordnung aus einem Administratorkonto:
++
+`security login publickey delete -vserver _SVM_name_ -username _user_name_ -index _index_`
+
+. Überprüfen Sie die Änderung, indem Sie den öffentlichen Schlüssel anzeigen:
++
+`security login publickey show -vserver _SVM_name_ -username _user_name_ -index _index_`
+
+
+
+.Beispiel
+Mit dem folgenden Befehl werden ein öffentlicher Schlüssel und ein X.509-Zertifikat aus dem SVM-Administratorkonto entfernt `svmadmin3` Für die SVM `engData3` Bei Indexnummer 7.
+
+[listing]
+----
+cluster1::> security login publickey delete -vserver engData3 -username svmadmin3 -index 7
+----

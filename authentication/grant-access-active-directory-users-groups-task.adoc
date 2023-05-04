@@ -26,6 +26,7 @@ xref:enable-ad-users-groups-access-cluster-svm-task.adoc[Active Directory-Domän
 +
 Sie können diese Aufgabe vor oder nach dem Aktivieren des Kontozugriffs ausführen.
 
+* Ab ONTAP 9.13.1 können Sie einen öffentlichen SSH-Schlüssel als primäre oder sekundäre Authentifizierungsmethode mit einem AD-Benutzerpasswort verwenden.
 * Ab ONTAP 9.11.1 können Sie dies nutzen link:../nfs-admin/ldap-fast-bind-nsswitch-authentication-task.html["LDAP fast bind für nsswitch-Authentifizierung"] Wenn es vom AD LDAP-Server unterstützt wird.
 * Wenn Sie sich nicht sicher sind, welche Rolle bei der Zugriffssteuerung Sie dem Login-Konto zuweisen möchten, können Sie das verwenden `security login modify` Befehl, um die Rolle später hinzuzufügen.
 +
@@ -35,36 +36,66 @@ xref:modify-role-assigned-administrator-task.adoc[Ändern der Rolle, die einem A
 
 [NOTE]
 ====
-Der Zugriff auf das Konto FÜR DIE ANZEIGENGRUPPE wird nur mit dem unterstützt `SSH` Und `ontapi` Applikationen unterstützt.
+Der Zugriff auf das Konto FÜR DIE ANZEIGENGRUPPE wird nur mit dem unterstützt `SSH` Und `ontapi` Applikationen unterstützt. AD-Gruppen werden mit der SSH-Authentifizierung für öffentliche Schlüssel, die häufig für Multi-Faktor-Authentifizierung verwendet wird, nicht unterstützt.
 
 ====
 .Schritt
 . Aktivieren Sie AD-Benutzer- oder Gruppenadministratorkonten für den Zugriff auf eine SVM:
 +
-`security login create -vserver SVM_name -user-or-group-name user_or_group_name -application application -authmethod domain -role role -comment comment [-is-ldap-fastbind true]`
+*Für AD-Nutzer:*
 
 +
-Eine vollständige Befehlssyntax finden Sie im link:config-worksheets-reference.html["Arbeitsblatt"].
+[cols="1,1,1,4"]
+|===
+| ONTAP-Version | Primäre Authentifizierung | Sekundäre Authentifizierung | Befehl 
 
-+
-link:config-worksheets-reference.html["Erstellen oder Ändern von Anmeldekonten"]
 
-+
-Mit dem folgenden Befehl wird das AD-Cluster-Administratorkonto aktiviert `DOMAIN1\guest1` Mit dem vordefinierten `backup` Rolle für den Zugriff auf die Administrator-SVM``engCluster``.
-
-+
+| 9.13.1 und höher | Öffentlicher Schlüssel | Keine  a| 
 [listing]
 ----
-cluster1::>security login create -vserver engCluster -user-or-group-name DOMAIN1\guest1 -application ssh -authmethod domain -role backup
+security login create -vserver <svm_name> -user-or-group-name <user_name> -application ssh -authentication-method publickey -role <role>
 ----
-+
-Mit dem folgenden Befehl werden die SVM-Administratorkonten im AD-Gruppenkonto aktiviert `DOMAIN1\adgroup` Mit dem vordefinierten `vsadmin-volume` Rolle für den Zugriff auf die SVM``engData``.
 
-+
+
+| 9.13.1 und höher | Domäne | Öffentlicher Schlüssel  a| 
+*Für einen neuen Benutzer*
+
 [listing]
 ----
-cluster1::>security login create -vserver engData -user-or-group-name DOMAIN1\adgroup -application ssh -authmethod domain -role vsadmin-volume
+security login create -vserver <svm_name> -user-or-group-name <user_name> -application ssh -authentication-method domain -second-authentication-method publickey -role <role>
 ----
+*Für einen bestehenden Benutzer*
+
+[listing]
+----
+security login modify -vserver <svm_name> -user-or-group-name <user_name> -application ssh -authentication-method domain -second-authentication-method publickey -role <role>
+----
+
+
+| 9.0 und höher | Domäne | Keine  a| 
+[listing]
+----
+security login create -vserver <svm_name> -user-or-group-name <user_name> -application <application> -authentication-method domain -role <role> -comment <comment> [-is-ldap-fastbind true]
+----
+|===
++
+*Für AD-Gruppen:*
+
++
+[cols="1,1,1,4"]
+|===
+| ONTAP-Version | Primäre Authentifizierung | Sekundäre Authentifizierung | Befehl 
+
+
+| 9.0 und höher | Domäne | Keine  a| 
+[listing]
+----
+security login create -vserver <svm_name> -user-or-group-name <user_name> -application <application> -authentication-method domain -role <role> -comment <comment> [-is-ldap-fastbind true]
+----
+|===
++
+Eine vollständige Befehlssyntax finden Sie unter link:config-worksheets-reference.html["Worksheets zur Administratorauthentifizierung und RBAC-Konfiguration"]
+
 
 
 .Nachdem Sie fertig sind

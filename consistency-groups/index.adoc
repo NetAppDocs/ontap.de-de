@@ -11,25 +11,25 @@ summary: Eine Consistency Group besteht aus einer Sammlung von Volumes, die als 
 
 
 [role="lead"]
-Eine Konsistenzgruppe ist eine Sammlung von Volumes, die als eine Einheit gemanagt werden. In ONTAP sorgen Consistency Groups für ein einfaches Management und eine Schutzgarantie für einen Applikations-Workload, der mehrere Volumes abdeckt.
+Eine Konsistenzgruppe ist eine Sammlung von Volumes, die als eine Einheit gemanagt werden. In ONTAP sorgen Konsistenzgruppen für ein einfaches Management und eine Garantie für die Sicherung eines Applikations-Workloads, der sich über mehrere Volumes erstreckt.
 
-Sie können Konsistenzgruppen verwenden, um das Storage-Management zu vereinfachen. Stellen Sie sich vor, Sie verfügen über eine wichtige Datenbank mit zwanzig LUNs. Sie können die LUNs individuell verwalten oder die LUNs als einzelnen Datensatz behandeln und sie in einer einzigen Konsistenzgruppe gruppieren.
+Sie können Konsistenzgruppen verwenden, um das Storage-Management zu vereinfachen. Stellen Sie sich vor, Sie verfügen über eine wichtige Datenbank mit zwanzig LUNs. Sie können die LUNs auf individueller Basis managen oder die LUNs als einzelnen Datensatz behandeln und sie in einer einzigen Konsistenzgruppe organisieren.
 
-Konsistenzgruppen vereinfachen das Management von Applikations-Workloads, sorgen für das einfache Management von lokalen und Remote-Sicherungsrichtlinien und ermöglichen gleichzeitig absturzkonsistente oder applikationskonsistente Snapshot Kopien einer Sammlung von Volumes zu einem bestimmten Zeitpunkt. Snapshots in Konsistenzgruppen ermöglichen die Wiederherstellung eines gesamten Applikations-Workloads.
+Konsistenzgruppen erleichtern das Management von Applikations-Workloads, sorgen dabei für einfach konfigurierte lokale und Remote-Sicherungsrichtlinien sowie gleichzeitige absturzkonsistente oder applikationskonsistente Snapshot Kopien einer Sammlung von Volumes zu einem bestimmten Zeitpunkt. Snapshots in Konsistenzgruppen ermöglichen die Wiederherstellung eines gesamten Applikations-Workloads.
 
 
 
-== Funktionen
+== Informationen zu Konsistenzgruppen
 
 Konsistenzgruppen unterstützen unabhängig vom Protokoll (NAS, SAN oder NVMe) jedes FlexVol Volume und können über die Rest-API von ONTAP oder im System Manager unter dem Menüpunkt *Storage > Konsistenzgruppen* gemanagt werden.
 
-Konsistenzgruppen können als einzelne Entitäten oder in einer hierarchischen Beziehung bestehen. Eine einzelne Konsistenzgruppe ist eine Sammlung von Volumes. Volumes können über ihre eigene Volume-granulare Snapshot-Richtlinie verfügen. Die Konsistenzgruppe, mit der das Volume verknüpft ist, kann zudem eine eigene Snapshot-Richtlinie besitzen. Die Konsistenzgruppe kann nur eine SnapMirror Business Continuity (SM-BC) Beziehung und gemeinsame SM-BC Richtlinie haben, die zur Wiederherstellung der gesamten Konsistenzgruppe verwendet werden kann.
+Consistency Groups können als einzelne Entitäten – als Sammlung von Volumes – oder in einer hierarchischen Beziehung existieren, die aus anderen Consistency Groups besteht. Einzelne Volumes können über eine eigene Snapshot-Richtlinie auf Volume-Granularität verfügen. Darüber hinaus kann es eine Snapshot-Richtlinie für die gesamte Konsistenzgruppe geben. Die Konsistenzgruppe kann nur eine SnapMirror Business Continuity (SM-BC) Beziehung und gemeinsame SM-BC Richtlinie haben, die zur Wiederherstellung der gesamten Konsistenzgruppe verwendet werden kann.
 
 Im folgenden Diagramm wird veranschaulicht, wie Sie eine einzelne Konsistenzgruppe verwenden könnten. Die Daten für eine auf gehostete Applikation `SVM1` Umfasst zwei Volumes: `vol1` Und `vol2`. Eine Snapshot-Richtlinie auf der Konsistenzgruppe erfasst alle 15 Minuten Snapshots der Daten.
 
 image:../media/consistency-group-single-diagram.gif["Diagramm einer einzelnen Konsistenzgruppe mit ihren zusammengehörigen Volumes und der lokalen Snapshot-Richtlinie"]
 
-Bei größeren Applikations-Workloads sind möglicherweise mehrere Konsistenzgruppen erforderlich. In diesen Fällen können Sie hierarchische Konsistenzgruppen erstellen, wobei eine einzelne Konsistenzgruppe die untergeordneten Komponenten einer übergeordneten Konsistenzgruppe wird. Die übergeordnete Konsistenzgruppe kann bis zu fünf untergeordnete Konsistenzgruppen enthalten. Wie bei einzelnen Konsistenzgruppen kann eine Remote SM-BC-Sicherungsrichtlinie auf die gesamte Konfiguration von Konsistenzgruppen (übergeordnete und untergeordnete Elemente) angewendet werden, um den Applikations-Workload wiederherzustellen.
+Bei größeren Applikations-Workloads sind möglicherweise mehrere Konsistenzgruppen erforderlich. In diesen Situationen können Sie hierarchische Konsistenzgruppen erstellen, wobei eine einzelne Konsistenzgruppe zu den untergeordneten Komponenten einer übergeordneten Konsistenzgruppe wird. Die übergeordnete Konsistenzgruppe kann bis zu fünf untergeordnete Konsistenzgruppen enthalten. Wie bei einzelnen Konsistenzgruppen kann eine Remote SM-BC-Sicherungsrichtlinie auf die gesamte Konfiguration von Konsistenzgruppen (übergeordnete und untergeordnete Elemente) angewendet werden, um den Applikations-Workload wiederherzustellen.
 
 Im folgenden Beispiel wird eine Applikation auf gehostet `SVM1`. Der Administrator hat eine übergeordnete Konsistenzgruppe erstellt. `SVM1_app`, Die zwei Child-Konsistenzgruppen umfasst: `SVM1appDataCG` Für die Daten und `SVM1app_logCG` Für die Protokolle. Jede Child-Konsistenzgruppe verfügt über eine eigene Snapshot-Richtlinie. Snapshots der Volumen in `SVM1appDataCG` Werden alle 15 Minuten gebraucht. Snapshots von `SVM1app_logCG` Werden stündlich genommen. Die übergeordnete Konsistenzgruppe `SVM1_app` Hat eine SM-BC-Richtlinie, die die Daten repliziert, um einen kontinuierlichen Service im Notfall zu gewährleisten.
 
@@ -45,24 +45,39 @@ Weitere Informationen zur ONTAP REST API finden Sie unter https://docs.netapp.co
 
 
 
-== Darstellt
+== Überwachen von Konsistenzgruppen
 
-Konsistenzgruppen bieten:
+Ab ONTAP 9.13.1 bieten Konsistenzgruppen das Kapazitäts- und Performance-Monitoring in Echtzeit sowie darüber hinaus Erkenntnisse zur Performance von Applikationen und einzelnen Konsistenzgruppen.
 
-* Lokaler Schutz durch Snapshot-Richtlinien
-* Remote-Sicherung mit xref:../smbc/index.html[SnapMirror Business Continuity (SM-BC)] Oder <<mcc>>
+Die Überwachungsdaten von Konsistenzgruppen werden über einen Zeitraum von bis zu einem Jahr aufbewahrt. Sie können Metriken verfolgen für:
+
+* Performance: IOPS, Latenz und Durchsatz
+* Kapazität: Größe, verfügbare Kapazität, genutzte Kapazität
 
 
-Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Lokale und/oder Remote-Sicherheitsrichtlinien können beim Erstellen oder nach dem Erstellen einer Konsistenzgruppe festgelegt werden.
 
-Informationen zum Konfigurieren des lokalen Schutzes für eine Konsistenzgruppe finden Sie unter link:protect-task.html["Sichern einer Konsistenzgruppe"].
+NOTE: Sie können historische Kennzahlen nur mit der REST-API abrufen. Historische Kennzahlen können in System Manager nicht angezeigt werden.
+
+
+
+== Schützen Sie Konsistenzgruppen
+
+Konsistenzgruppen bieten Schutz über:
+
+* Snapshot-Richtlinien
+* xref:../smbc/index.html[SnapMirror Business Continuity (SM-BC)]
+* <<mcc>> (Anfang 9.11.1)
+* xref:../data-protection/snapmirror-disaster-recovery-concept.html[SnapMirror – asynchron] (Anfang 9.13.1)
+
+
+Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Richtlinien für den lokalen und Remote-Schutz können beim Erstellen einer Konsistenzgruppe oder nach dem Erstellen festgelegt werden.
+
+Informationen zum Konfigurieren von Schutz für eine Konsistenzgruppe finden Sie unter link:protect-task.html["Sichern einer Konsistenzgruppe"].
 
 Um die Remote-Sicherung zu nutzen, müssen Sie die Anforderungen für erfüllen xref:../smbc/smbc_plan_prerequisites.html#licensing[SnapMirror für Business Continuity-Implementierungen].
 
 
 NOTE: SM-BC-Beziehungen können nicht auf Volumes eingerichtet werden, die für den NAS-Zugriff gemountet sind.
-
-Ab ONTAP 9.11.1 unterstützen Konsistenzgruppen auch link:protect-task.html#two-phase["Erstellen von Snapshots von Konsistenzgruppen in zwei Phasen"].
 
 
 
@@ -92,7 +107,7 @@ Wenn sich einige oder alle Volumes einer Konsistenzgruppe auf nicht gespiegelten
 
 
 
-=== Replizierung der Konsistenzgruppe
+=== Konfigurationen von Konsistenzgruppen für die Replikation
 
 Wenn Standort B ONTAP 9.10.1 oder eine frühere Version ausführt, werden nur die Volumes repliziert, die mit den Konsistenzgruppen in gespiegelten Aggregaten verknüpft sind Die Konfigurationen der Konsistenzgruppen werden nur an Standort B repliziert, wenn auf beiden Standorten ONTAP 9.11.1 oder höher ausgeführt wird. Nachdem Standort B auf ONTAP 9.11.1 aktualisiert wurde, werden die Daten für Konsistenzgruppen auf Standort A repliziert, bei denen alle zugehörigen Volumes in gespiegelten Aggregaten platziert sind
 
@@ -100,13 +115,63 @@ Wenn Standort B ONTAP 9.10.1 oder eine frühere Version ausführt, werden nur di
 
 == Upgrade-Überlegungen
 
-Consistency Groups, die mit SM-BC in ONTAP 9.8 und 9.9.1 erstellt wurden, werden automatisch aktualisiert und können unter *Storage > Consistency Groups* in System Manager oder der ONTAP REST API beim Upgrade auf ONTAP 9.10.1 gemanagt werden. Weitere Informationen zum Upgrade finden Sie unter link:../smbc/smbc_admin_upgrade_and_revert_considerations.html["SM-BC Upgrade und Überlegungen zurücksetzen"].
+Consistency Groups, die mit SM-BC in ONTAP 9.8 und 9.9.1 erstellt wurden, werden beim Upgrade auf ONTAP 9.10.1 oder höher automatisch aktualisiert und unter *Speicher > Consistency Groups* im System Manager oder der ONTAP REST API verwaltet. Weitere Informationen zum Upgrade von ONTAP 9.8 oder 9.9.1 finden Sie unter link:../smbc/smbc_admin_upgrade_and_revert_considerations.html["SM-BC Upgrade und Überlegungen zurücksetzen"].
 
-Mit der ONTAP REST-API erstellte Konsistenzgruppen-Snapshots können über die Konsistenzgruppenschnittstelle von System Manager und über Endpunkte der Konsistenzgruppen-API gemanagt werden.
+Snapshots von Konsistenzgruppen die ONTAP REST-API kann über die Konsistenzgruppenschnittstelle von System Manager und über REST-API-Endpunkte von Konsistenzgruppen gemanagt werden.
 
 
-NOTE: Snapshots, die mit den ONTAPI-Befehlen erstellt wurden `cg-start` Und `cg-commit` Werden nicht als Snapshots der Konsistenzgruppen erkannt und können daher nicht über die Konsistenzgruppenschnittstelle oder die Endpunkte der Konsistenzgruppen in der ONTAP-API gemanagt werden.
+NOTE: Snapshots, die mit den ONTAPI-Befehlen erstellt wurden `cg-start` Und `cg-commit` Diese Funktion wird nicht als Snapshots der Konsistenzgruppe erkannt und kann daher nicht über die Konsistenzgruppenschnittstelle von System Manager oder die Endpunkte der Konsistenzgruppe in der ONTAP REST API gemanagt werden.
 
+
+
+== Unterstützte Funktionen von Version
+
+[cols="3,1,1,1,1"]
+|===
+|  | ONTAP 9.13.1 | ONTAP 9.12.1 | ONTAP 9.11.1 | ONTAP 9.10.1 
+
+
+| Hierarchische Konsistenzgruppen | X | X | X | X 
+
+
+| Lokaler Snapshot-Schutz | X | X | X | X 
+
+
+| SnapMirror Business Continuity | X | X | X | X 
+
+
+| MetroCluster Support | X | X | X |  
+
+
+| Zwei-Phasen-Commits (nur REST API) | X | X | X |  
+
+
+| Applikations- und Komponenten-Tags | X | X |  |  
+
+
+| Klonen von Konsistenzgruppen | X | X |  |  
+
+
+| Hinzufügen und Entfernen von Volumes | X | X |  |  
+
+
+| Erstellen Sie CGS mit neuen NAS-Volumes | X | Nur REST API |  |  
+
+
+| CGS mit neuen NVMe-Namespaces erstellen | X | Nur REST API |  |  
+
+
+| Verschieben Sie Volumes zwischen untergeordneten Konsistenzgruppen | X |  |  |  
+
+
+| Ändern der Geometrie der Konsistenzgruppe | X |  |  |  
+
+
+| Monitoring | X |  |  |  
+
+
+| Asynchron SnapMirror (nur einzelne Konsistenzgruppen) | X |  |  |  
+|===
 
 
 == Weitere Informationen zu Konsistenzgruppen
@@ -114,4 +179,7 @@ NOTE: Snapshots, die mit den ONTAPI-Befehlen erstellt wurden `cg-start` Und `cg-
 video::j0jfXDcdyzE[youtube,width=848,height=480]
 .Weitere Informationen
 * link:https://docs.netapp.com/us-en/ontap-automation/["Dokumentation zur ONTAP-Automatisierung"^]
+* xref:../smbc/index.html[SnapMirror Business Continuity]
+* xref:../data-protection/snapmirror-disaster-recovery-concept.html[Grundlagen der asynchronen SnapMirror Disaster Recovery]
+* link:https://docs.netapp.com/us-en/ontap-metrocluster/["MetroCluster-Dokumentation"]
 

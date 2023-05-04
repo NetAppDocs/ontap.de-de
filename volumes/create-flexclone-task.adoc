@@ -11,12 +11,16 @@ summary: Erstellung eines FlexClone Volume
 
 
 [role="lead"]
-Sie können ein FlexClone Volume für die Datensicherung von einem SnapMirror Ziel-Volume oder von einem übergeordneten FlexVol Volume, das ein sekundäres SnapVault Volume ist, erstellen. Nachdem Sie ein FlexClone Volume erstellt haben, können Sie das übergeordnete Volume nicht löschen, während das FlexClone Volume vorhanden ist.
+Sie können ein FlexClone Volume für die Datensicherung von einem SnapMirror Ziel-Volume oder von einem übergeordneten FlexVol Volume, das ein sekundäres SnapVault Volume ist, erstellen. Ab ONTAP 9.7 können Sie ein FlexClone Volume von einem FlexGroup Volume erstellen. Nachdem Sie ein FlexClone Volume erstellt haben, können Sie das übergeordnete Volume nicht löschen, während das FlexClone Volume vorhanden ist.
 
 .Was Sie benötigen
 * Die FlexClone Lizenz muss auf dem Cluster installiert sein.
 * Das Volume, das geklont werden soll, muss online sein.
 
+
+
+
+== Erstellung eines FlexClone Volume einer FlexVol oder FlexGroup
 
 .Schritt
 . Erstellung eines FlexClone Volume:
@@ -40,4 +44,37 @@ Während Sie ein FlexClone Volume mit Lese- und Schreibvorgängen aus dem überg
 +
 `volume clone create -vserver vs1 -flexclone vol_dp_clone -type DP -parent-volume dp_vol -parent-snapshot snap1`
 
+
+
+
+
+== Erstellen Sie einen FlexClone beliebiger SnapLock-Typen
+
+Ab ONTAP 9.13.1 können Sie einen von drei SnapLock-Typen angeben, `compliance`, `enterprise`, `non-snaplock`, Beim Erstellen eines FlexClone eines RW-Volumens. Standardmäßig wird ein FlexClone Volume mit demselben SnapLock-Typ wie das übergeordnete Volume erstellt. Sie können den Standardwert jedoch mit der überschreiben `snaplock-type` Option während der Erstellung von FlexClone Volume.
+
+Verwenden der `non-snaplock` Parameter mit `snaplock-type` Mit dieser Option können Sie ein nicht vom SnapLock Typ FlexClone Volume von einem übergeordneten SnapLock Volume erstellen, um bei Bedarf eine schnellere Methode zum Zurückschalten von Daten bereitzustellen.
+
+Weitere Informationen zu link:https://docs.netapp.com/us-en/ontap/snaplock/index.html["SnapLock"].
+
+.Bevor Sie beginnen
+Sie sollten die folgenden Einschränkungen bei FlexClone Volume kennen, wenn sie einen anderen SnapLock-Typ als das übergeordnete Volume haben.
+
+* Es werden nur RW-Klone unterstützt. DP-Klone mit einem anderen SnapLock-Typ als dem übergeordneten Volume werden nicht unterstützt.
+* Volumes mit LUNs können nicht mit der snaplock-Typ-Option geklont werden, da SnapLock Volumes keine LUNs unterstützen.
+* Ein Volume auf einem gespiegelten MetroCluster Aggregat kann nicht mit einem Compliance SnapLock-Typ geklont werden, da SnapLock Compliance Volumes auf gespiegelten MetroCluster Aggregaten nicht unterstützt werden.
+* SnapLock Compliance Volumes mit Legal Hold können nicht mit einem anderen SnapLock-Typ geklont werden. Legal Hold wird nur auf SnapLock-Compliance-Volumes unterstützt.
+* SnapLock Volumes werden vom SVM-DR nicht unterstützt. Der Versuch, einen SnapLock-Klon von einem Volume in einer SVM zu erstellen, das Teil einer SVM-DR-Beziehung ist, schlägt fehl.
+* In den Best Practices von FabricPool wird empfohlen, dass Klone dieselbe Tiering-Richtlinie wie das übergeordnete Objekt behalten. Allerdings kann für einen SnapLock Compliance-Klon eines FabricPool aktivierten Volumes nicht dieselbe Tiering-Richtlinie wie das übergeordnete Volume gelten. Die Tiering-Richtlinie muss auf festgelegt werden `none`. Versuch, einen SnapLock-Compliance-Klon von einem übergeordneten Objekt mit einer anderen Tiering-Richtlinie als zu erstellen `none` Wird fehlschlagen.
+
+
+.Schritte
+. Erstellung eines FlexClone Volume mit einem SnapLock-Typ: `volume clone create -vserver _svm_name_ -flexclone _flexclone_name_ -type RW [ -snaplock-type {non-snaplock|compliance|enterprise} ]`
++
+Beispiel:
+
++
+[listing]
+----
+> volume clone create -vserver vs0 -flexclone vol1_clone -type RW -snaplock-type enterprise -parent-volume vol1
+----
 

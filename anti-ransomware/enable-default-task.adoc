@@ -37,19 +37,38 @@ Anti_Ransomware
 
 
  a| 
-ONTAP 9.8-9.10.1
+ONTAP 9.10.1
  a| 
 MT_EK_MGMT (mandantenfähiger Schlüsselmanagement)
 
 |===
+* Optional, aber empfohlen: Ab ONTAP 9.13.1 können Sie die Multi-Admin-Verifizierung (MAV) aktivieren, so dass zwei oder mehr authentifizierte Benutzeradministratoren für den Ransomware-Schutz erforderlich sind. link:../multi-admin-verify/enable-disable-task.html["Weitere Informationen ."^].
 
 
 .Über diese Aufgabe
-Neue Volumes werden standardmäßig mit ARP im deaktivierten Modus erstellt, die Einstellung können Sie jedoch in System Manager und über die CLI ändern. Standardmäßig sind die Volumes, die aktiviert sind, im Lernmodus auf ARP eingestellt.
+Neue Volumes werden standardmäßig mit ARP im deaktivierten Modus erstellt, die Einstellung können Sie jedoch in System Manager und über die CLI ändern. Standardmäßig sind die Volumes, die aktiviert sind, im Lernmodus auf ARP eingestellt. Ab ONTAP 9.13.1 wurde das adaptive Lernen zur ARP-Analyse hinzugefügt und der Wechsel vom Lernmodus zum aktiven Modus erfolgt automatisch.
 
 [NOTE]
 ====
 Durch die Aktivierung von ARP für neue Volumes in einer SVM wird ARP automatisch für vorhandene Volumes in dieser SVM nicht aktiviert. Erfahren Sie, wie Sie link:enable-task.html["Aktivieren Sie ARP in einem vorhandenen Volume"].
+
+====
+.Autonomes ARP-Umschalten vom Lernen zum aktiven Modus
+[%collapsible]
+====
+Ab ONTAP 9.13.1 wurde das adaptive Lernen zur ARP-Analyse hinzugefügt und der Wechsel vom Lernmodus zum aktiven Modus erfolgt automatisch. Die autonome Entscheidung von ARP, automatisch vom Lernmodus in den aktiven Modus zu wechseln, basiert auf den Konfigurationseinstellungen der folgenden Optionen:
+
+[listing]
+----
+ -anti-ransomware-auto-switch-minimum-incoming-data-percent
+ -anti-ransomware-auto-switch-duration-without-new-file-extension
+ -anti-ransomware-auto-switch-minimum-learning-period
+ -anti-ransomware-auto-switch-minimum-file-count
+ -anti-ransomware-auto-switch-minimum-file-extension
+----
+Wenn die Kriterien für diese Optionen nach 30 Tagen nicht erfüllt werden, wechselt das Volume automatisch in den ARP-aktiven Modus. Diese Dauer kann mit der Option konfiguriert werden `anti-ransomware-auto-switch-duration-without-new-file-extension`, Aber der Maximalwert beträgt 30 Tage.
+
+Weitere Informationen zu ARP-Konfigurationsoptionen, einschließlich der Standardwerte, finden Sie auf den ONTAP-man-Pages.
 
 ====
 .Schritte
@@ -57,8 +76,12 @@ Durch die Aktivierung von ARP für neue Volumes in einer SVM wird ARP automatisc
 ====
 .System Manager
 --
-. Klicken Sie auf *Storage > Storage VMs* und wählen Sie dann die Speicher-VM für Standard-Antivirus.
-. Klicken Sie auf der Registerkarte *Einstellungen* [im Abschnitt *Sicherheit*] auf image:icon_pencil.gif["Stift-Symbol"] Aktivieren Sie im Feld *Anti-Ransomware* das Kontrollkästchen, um ARP für NAS-Volumes zu aktivieren.
+. Klicken Sie auf *Speicher > Speicher-VMs* und wählen Sie dann die Speicher-VM aus, die Volumes enthält, die Sie mit ARP schützen möchten.
+. Klicken Sie auf der Registerkarte *Einstellungen* [im Abschnitt *Sicherheit*] auf image:icon_pencil.gif["Stift-Symbol"] Aktivieren Sie im Feld *Anti-Ransomware* das Kontrollkästchen, um ARP für NAS-Volumes zu aktivieren. Aktivieren Sie das Zusatzfeld, um ARP auf allen in Frage kommenden NAS-Volumes in der Speicher-VM zu aktivieren.
++
+
+NOTE: Wenn Sie ein Upgrade auf ONTAP 9.13.1 durchgeführt haben, wird die Einstellung *nach ausreichend Lernen automatisch vom Lernmodus zum aktiven Modus wechseln* automatisch aktiviert. Auf diese Weise kann ARP das optimale Lernintervall bestimmen und den Wechsel zum aktiven Modus automatisieren. Deaktivieren Sie die Einstellung, wenn Sie manuell in den aktiven Modus wechseln möchten.
+
 
 
 --
@@ -69,6 +92,12 @@ Durch die Aktivierung von ARP für neue Volumes in einer SVM wird ARP automatisc
 +
 Über die CLI können Sie auch eine neue SVM erstellen, wobei ARP standardmäßig für neue Volumes aktiviert ist.
 `vserver create -vserver svm_name -anti-ransomware-default-volume-state dry-run [_other parameters as needed_]`
+
++
+Wenn Sie ein Upgrade auf ONTAP 9.13.1 oder höher durchgeführt haben, ist das adaptive Lernen aktiviert, sodass die Änderung des aktiven Status automatisch erfolgt. Wenn dieses Verhalten nicht automatisch aktiviert werden soll, verwenden Sie den folgenden Befehl:
+
++
+`vserver modify _svm_name_ -anti-ransomware-auto-switch-from-learning-to-enabled false`
 
 
 

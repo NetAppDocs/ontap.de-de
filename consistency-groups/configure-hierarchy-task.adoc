@@ -13,29 +13,39 @@ summary: Erstellen einer hierarchischen Consistency Group für das Management gr
 [role="lead"]
 Wenn Ihr Applikations-Workload aus mehr als einem Teilbereich von Volumes besteht, wobei jede Untergruppe in ihren eigenen zugehörigen Volumes konsistent ist, können Sie mit ONTAP eine hierarchische Konsistenzgruppe erstellen.
 
-Hierarchische Konsistenzgruppen verfügen über ein übergeordnetes Objekt, das bis zu fünf individuelle Konsistenzgruppen umfassen kann. Hierarchische Konsistenzgruppen können unterschiedliche lokale Snapshot-Richtlinien über Konsistenzgruppen oder einzelne Volumes hinweg unterstützen. Wenn Sie eine Remote SnapMirror Business Continuity-Richtlinie (SM-BC) verwenden, gilt diese für die gesamte hierarchische Konsistenzgruppe (übergeordnete und untergeordnete Elemente).
+Hierarchische Konsistenzgruppen verfügen über ein übergeordnetes Objekt, das bis zu fünf individuelle Konsistenzgruppen umfassen kann. Hierarchische Konsistenzgruppen können unterschiedliche lokale Snapshot-Richtlinien über Konsistenzgruppen oder einzelne Volumes hinweg unterstützen. Wenn Sie eine Remote-Schutzrichtlinie verwenden, gilt diese für die gesamte hierarchische Konsistenzgruppe (übergeordnete und untergeordnete Elemente).
+
+Ab ONTAP 9.13.1 ist dies möglich xref:modify-geometry-task.html[Ändern Sie die Geometrie der Konsistenzgruppen] Und xref:modify-task.html[Verschieben Sie Volumes zwischen untergeordneten Konsistenzgruppen].
 
 Informationen zu Objektbeschränkungen für Konsistenzgruppen finden Sie unter xref:limits.html[Objektbeschränkungen für Konsistenzgruppen].
 
 
 
-== Erstellen Sie eine hierarchische Konsistenzgruppe mit neuen LUNs
+== Hierarchische Konsistenzgruppe mit neuen LUNs oder Volumes erstellen
 
-Beim Erstellen einer hierarchischen Konsistenzgruppe können Sie sie mit neuen LUNs füllen.
+Beim Erstellen einer hierarchischen Konsistenzgruppe können Sie sie mit neuen LUNs füllen. Ab ONTAP 9.13.1 können auch neue NVMe-Namespaces und NAS-Volumes verwendet werden.
 
 .Schritte
 . Wählen Sie *Storage > Consistency Groups* aus.
-. Wählen Sie *+Add* und dann *mit neuen LUNs* aus.
-. Benennen Sie die Konsistenzgruppe. Legen Sie die Anzahl der LUNs und die Kapazität pro LUN fest.
+. Wählen Sie *+Add* und wählen Sie dann das Protokoll für Ihr Speicherobjekt aus.
 +
-.. **Anwendungstyp**: Wenn Sie ONTAP 9.12.1 oder höher verwenden, wählen Sie einen Anwendungstyp aus. Wenn kein Wert ausgewählt ist, wird der Konsistenzgruppe standardmäßig der Typ von **Other** zugewiesen. Erfahren Sie mehr über das Tagging von Konsistenz in xref:index.html#application-and-component-tags[Applikations- und Komponenten-Tags]. Wenn Sie eine SM-BC-Beziehung erstellen möchten, müssen Sie *other* verwenden.
+In ONTAP 9.10.1 bis 9.12.1 ist die einzige Option für ein neues Speicherobjekt **mit neuen LUNs**. Ab ONTAP 9.13.1 unterstützt System Manager das Erstellen von Konsistenzgruppen mit neuen NVMe-Namespaces und neuen NAS-Volumes.
+
+. Benennen Sie die Konsistenzgruppe. Geben Sie die Anzahl der Volumes oder LUNs und die Kapazität pro Volume oder LUN an.
++
+.. **Anwendungstyp**: Wenn Sie ONTAP 9.12.1 oder höher verwenden, wählen Sie einen Anwendungstyp aus. Wenn kein Wert ausgewählt ist, wird der Konsistenzgruppe standardmäßig der Typ von **Other** zugewiesen. Erfahren Sie mehr über das Tagging von Konsistenz in xref:index.html#application-and-component-tags[Applikations- und Komponenten-Tags]. Wenn Sie eine Richtlinie für den Remote-Schutz verwenden möchten, müssen Sie *andere* wählen.
 
 
 . Wählen Sie das Host-Betriebssystem und das LUN-Format aus. Geben Sie die Informationen zum Host-Initiator ein.
-. Um Schutzrichtlinien zu konfigurieren, fügen Sie eine untergeordnete Consistency Group hinzu oder weitere Optionen zu Host-Initiatoren anzeigen, wählen Sie *More options* aus.
-. Um eine untergeordnete Konsistenzgruppe hinzuzufügen, wählen Sie *+untergeordnete Konsistenzgruppe hinzufügen* aus.
-. Wählen Sie das Performance-Level, die Anzahl der LUNs und die Kapazität pro LUN aus. Legen Sie das Host-Betriebssystem, das LUN-Format fest und wählen Sie eine neue oder vorhandene Host-Initiatorgruppe aus.
-. *Optional*: Wählen Sie eine lokale Snapshot Policy.
++
+.. Für **Neue LUNs**: Wählen Sie das Host-Betriebssystem und das LUN-Format aus. Geben Sie die Informationen zum Host-Initiator ein.
+.. Für **Neue NAS-Volumes**: Wählen Sie die entsprechende Exportoption (NFS oder SMB/CIFS) basierend auf der NAS-Konfiguration Ihrer SVM.
+.. Für **Neue NVMe-Namespaces**: Wählen Sie das Host-Betriebssystem und das NVMe-Subsystem aus.
+
+
+. Um eine untergeordnete Consistency Group hinzuzufügen, wählen Sie *More options* und dann *+Add child Consistency Group* aus.
+. Wählen Sie das Performance-Level, die Anzahl der LUNs oder Volumes und die Kapazität pro LUN oder Volume aus. Legen Sie die entsprechenden Exportkonfigurationen oder Betriebssysteminformationen auf der Grundlage des verwendeten Protokolls fest.
+. Wählen Sie optional eine lokale Snapshot-Richtlinie aus und legen Sie die Zugriffsberechtigungen fest.
 . Wiederholen Sie dies für bis zu fünf Child-Konsistenzgruppen.
 . Wählen Sie *Speichern*.
 . Überprüfen Sie, ob die Konsistenzgruppe erstellt wurde, indem Sie zum Hauptmenü der Konsistenzgruppe zurückkehren, wo sie nach Abschluss des ONTAP-Jobs angezeigt wird. Wenn Sie eine Schutzrichtlinie festlegen, achten Sie auf die entsprechende Richtlinie, Remote oder lokal, die einen grünen Schild mit einem Häkchen anzeigen soll.
@@ -54,12 +64,18 @@ Vorhandene Volumes können in einer hierarchischen Konsistenzgruppe organisiert 
 . Wählen Sie die vorhandenen Volumes aus, die einbezogen werden sollen. Nur Volumes, die nicht bereits zu einer Konsistenzgruppe gehören, können ausgewählt werden.
 . Um eine untergeordnete Consistency Group hinzuzufügen, wählen Sie *+Child Consistency Group* hinzufügen. Erstellen Sie die erforderlichen Konsistenzgruppen, die automatisch benannt werden.
 +
-.. **Komponententyp**: Wenn Sie ONTAP 9.12.1 oder höher verwenden, wählen Sie einen Komponententyp von „Daten“, „Logs“ oder „Sonstige“ aus. Wenn kein Wert ausgewählt ist, wird der Konsistenzgruppe standardmäßig der Typ von **Other** zugewiesen. Erfahren Sie mehr über das Tagging von Konsistenz in xref:index.html#application-and-component-tags[Applikations- und Komponenten-Tags]. Wenn Sie eine SM-BC-Beziehung erstellen möchten, müssen Sie *other* verwenden.
+.. **Komponententyp**: Wenn Sie ONTAP 9.12.1 oder höher verwenden, wählen Sie einen Komponententyp von „Daten“, „Logs“ oder „Sonstige“ aus. Wenn kein Wert ausgewählt ist, wird der Konsistenzgruppe standardmäßig der Typ von **Other** zugewiesen. Erfahren Sie mehr über das Tagging von Konsistenz in xref:index.html#application-and-component-tags[Applikations- und Komponenten-Tags]. Wenn Sie eine Richtlinie für den Remote-Schutz verwenden möchten, müssen Sie *andere* verwenden.
 
 
 . Weisen Sie jeder Konsistenzgruppe vorhandene Volumes zu.
-. *Optional*: Wählen Sie eine lokale Snapshot Policy.
+. Wählen Sie optional eine lokale Snapshot-Richtlinie aus.
 . Wiederholen Sie dies für bis zu fünf Child-Konsistenzgruppen.
 . Wählen Sie *Speichern*.
 . Überprüfen Sie, ob die Konsistenzgruppe erstellt wurde, indem Sie zum Hauptmenü der Konsistenzgruppe zurückkehren, wo sie nach Abschluss des ONTAP-Jobs angezeigt wird. Wenn Sie eine Schutzrichtlinie ausgewählt haben, bestätigen Sie, dass die Richtlinie richtig eingestellt wurde, indem Sie Ihre Konsistenzgruppe aus dem Menü auswählen. Unter dem entsprechenden Richtlinientyp wird ein grüner Schild mit einem Häkchen angezeigt.
+
+
+.Nächste Schritte
+* xref:xref:modify-geometry-task.html[Ändern Sie die Geometrie einer Konsistenzgruppen]
+* xref:modify-task.html[Ändern einer Konsistenzgruppe]
+* xref:protect-task.html[Sichern einer Konsistenzgruppe]
 

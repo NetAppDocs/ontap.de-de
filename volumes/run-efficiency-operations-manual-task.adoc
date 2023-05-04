@@ -1,7 +1,7 @@
 ---
 permalink: volumes/run-efficiency-operations-manual-task.html 
 sidebar: sidebar 
-keywords: starting deduplication manually, starting data compression manually, efficiency, run 
+keywords: starting deduplication manually, starting data compression manually, efficiency, run, sequential packing 
 summary: Sie können Effizienzvorgänge manuell auf einem Volume ausführen, indem Sie den Befehl „Volume Efficiency Start“ verwenden. 
 ---
 = Führen Sie Effizienzvorgänge manuell aus
@@ -17,17 +17,44 @@ Sie können Effizienzvorgänge manuell auf einem Volume mit der ausführen `volu
 Abhängig von dem Effizienzvorgang, der manuell ausgeführt werden soll, muss die Deduplizierung oder beide Datenkomprimierung und Deduplizierung auf einem Volume aktiviert sein.
 
 .Über diese Aufgabe
-Wenn Deduplizierung und Datenkomprimierung auf einem Volume aktiviert sind, wird die Datenkomprimierung anfänglich durchgeführt - gefolgt von der Deduplizierung.
+Wenn auf einem Volume temperaturabhängige Storage-Effizienz aktiviert ist, wird die Deduplizierung zunächst gefolgt von der Datenkomprimierung durchgeführt.
 
 Die Deduplizierung ist ein Hintergrundprozess, der während der Ausführung Systemressourcen verbraucht. Wenn sich die Daten in einem Volume nicht häufig ändern, sollte die Deduplizierung am besten weniger häufig durchgeführt werden. Mehrere gleichzeitige Deduplizierungsvorgänge auf einem Storage-System führen zu einem höheren Verbrauch von Systemressourcen.
 
 Es können maximal acht gleichzeitige Deduplizierungs- oder Datenkomprimierungsvorgänge pro Node ausgeführt werden. Wenn weitere Effizienzvorgänge geplant werden, werden die Vorgänge in die Warteschlange verschoben.
 
+Wenn ab ONTAP 9.13.1 temperaturempfindliche Storage-Effizienz auf einem Volume aktiviert ist, können Sie die Volume-Effizienz für vorhandene Daten nutzen, um die Vorteile von sequenziellem Packing zu nutzen und die Storage-Effizienz weiter zu verbessern.
+
+
+
+== Effizienz manuell ausführen
+
 .Schritt
-. Verwenden Sie die `volume efficiency start` Befehl zum Starten des Effizienzvorgangs auf einem Volume.
-
-
+. Starten Sie den Effizienzvorgang auf einem Volume: `volume efficiency start`
++
 .Beispiel
-Mit dem folgenden Befehl können Sie nur noch Deduplizierung oder Datenkomprimierung manuell starten, gefolgt von Deduplizierung auf dem Volume Vola:
+Mit dem folgenden Befehl können Sie nur die Deduplizierung oder Deduplizierung manuell starten, gefolgt von der logischen Komprimierung und der Container-Komprimierung auf dem Volume Vola
 
-`volume efficiency start -vserver vs1 -volume VolA`
++
+[listing]
+----
+volume efficiency start -vserver vs1 -volume VolA
+----
+
+
+
+
+== Vorhandene Daten neu packen
+
+Um die in ONTAP 9.13.1 eingeführte sequenzielle Datenpaketspeicherung auf Volumes mit aktivierter temperaturempfindlicher Storage-Effizienz zu nutzen, können Sie vorhandene Daten erneut packen. Sie müssen sich im erweiterten Berechtigungsmodus befinden, um diesen Befehl zu verwenden.
+
+.Schritt
+. Legen Sie die Berechtigungsebene fest: `set -privilege advanced`
+. Vorhandene Daten neu packen: `volume efficiency inactive-data-compression start -vserver _vserver_name_ -volume _volume_name_ -scan-mode extended_recompression`
++
+.Beispiel
+[listing]
+----
+volume efficiency inactive-data-compression start -vserver vs1 -volume vol1 -scan-mode extended_recompression
+----
+
