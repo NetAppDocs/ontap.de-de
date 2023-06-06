@@ -1,10 +1,10 @@
 ---
 permalink: volumes/rehost-smb-task.html 
 sidebar: sidebar 
-keywords: rehost, cifs volumes 
+keywords: rehost, cifs volumes, smb 
 summary: Sie können Volumes, die Daten über das SMB-Protokoll bereitstellen, neu hosten. Nachdem Sie das CIFS Volume neu gehostet haben, müssen Sie Richtlinien und die zugehörigen Regeln manuell konfigurieren, um weiterhin über das SMB-Protokoll auf Daten zugreifen zu können. 
 ---
-= CIFS Volumes neu hosten
+= Rehosting von SMB-Volumes
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -13,25 +13,16 @@ summary: Sie können Volumes, die Daten über das SMB-Protokoll bereitstellen, n
 [role="lead"]
 Sie können Volumes, die Daten über das SMB-Protokoll bereitstellen, neu hosten. Nachdem Sie das CIFS Volume neu gehostet haben, müssen Sie Richtlinien und die zugehörigen Regeln manuell konfigurieren, um weiterhin über das SMB-Protokoll auf Daten zugreifen zu können.
 
-.Was Sie benötigen
-* Das Volume muss online sein.
-* Volume-Managementvorgänge wie Volume-Verschiebung oder LUN-Verschiebung dürfen nicht ausgeführt werden.
-* Der Datenzugriff auf das neu gehostete Volume muss gestoppt werden.
-* Die ns-Switch- und Name-Services-Konfiguration der Ziel-SVM muss konfiguriert werden, um den Datenzugriff des Rehosting Volume zu unterstützen.
-* Die Quell-SVM und die Ziel-SVM müssen dieselbe Active Directory und RealmDNS-Domäne aufweisen.
-* Die Benutzer-ID und Gruppen-ID des Volumes muss in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
-+
-[NOTE]
-====
-Wenn lokale Benutzer und Gruppen konfiguriert sind und sich Dateien und Verzeichnisse auf diesem Volume befinden, deren Berechtigungen für diese Benutzer oder Gruppen festgelegt sind, sind diese Berechtigungen nicht mehr wirksam.
-
-====
-
-
 .Über diese Aufgabe
 * Das Rehosting ist ein störender Betrieb.
 * Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
 * Wenn sich die Quell-SVM und die Ziel-SVM Active Directory-Domänen unterscheiden, können Sie unter Umständen auf die Objekte auf dem Volume zugreifen.
+* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Wenn Sie einen integrierten Schlüsselmanager verwenden, werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht geändert.
++
+Bei Verwendung von ONTAP 9.8 oder früher müssen Sie die Verschlüsselung des Volumes aufheben, bevor Sie den Host-Vorgang wiederholen.
+
+
+
 * Wenn die Quell-SVM lokale Benutzer und Gruppen hat, sind die festgelegten Berechtigungen für die Dateien und Verzeichnisse (ACLs) nicht mehr effektiv nach dem Rehosting des Volumes.
 +
 Das gleiche gilt für Audit ACLs (SACLs)
@@ -50,6 +41,19 @@ Das gleiche gilt für Audit ACLs (SACLs)
 
 
 
+.Bevor Sie beginnen
+* Das Volume muss online sein.
+* Volume-Managementvorgänge wie Volume-Verschiebung oder LUN-Verschiebung dürfen nicht ausgeführt werden.
+* Der Datenzugriff auf das neu gehostete Volume muss gestoppt werden.
+* Die ns-Switch- und Name-Services-Konfiguration der Ziel-SVM muss konfiguriert werden, um den Datenzugriff des Rehosting Volume zu unterstützen.
+* Die Quell-SVM und die Ziel-SVM müssen dieselbe Active Directory und RealmDNS-Domäne aufweisen.
+* Die Benutzer-ID und Gruppen-ID des Volumes muss in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
++
+
+NOTE: Wenn lokale Benutzer und Gruppen konfiguriert sind und sich Dateien und Verzeichnisse auf diesem Volume befinden, deren Berechtigungen für diese Benutzer oder Gruppen festgelegt sind, sind diese Berechtigungen nicht mehr wirksam.
+
+
+
 .Schritte
 . Notieren Sie Informationen über die CIFS-Freigaben, um zu vermeiden, dass Informationen auf CIFS-Freigaben verloren gehen, falls der Rehosting des Volumes fehlschlägt.
 . Heben Sie die Bereitstellung des Volumes vom übergeordneten Volume ab:
@@ -62,7 +66,7 @@ Das gleiche gilt für Audit ACLs (SACLs)
 
 . Erneutes Hosten des Volumes auf der Ziel-SVM:
 +
-`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+`volume rehost -vserver _source_svm_ -volume _vol_name_ -destination-vserver _destination_svm_`
 
 . Mounten Sie das Volume unter dem entsprechenden Verbindungspfad in der Ziel-SVM:
 +

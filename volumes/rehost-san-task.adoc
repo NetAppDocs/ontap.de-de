@@ -13,7 +13,28 @@ summary: Sie können Volumes mit zugeordneten LUNs neu hosten. Nach dem erneuten
 [role="lead"]
 Sie können Volumes mit zugeordneten LUNs neu hosten. Nach dem erneuten Erstellen der Initiatorgruppe in der Ziel-SVM kann das Volume Rehosting automatisch das Volume auf derselben SVM zuordnen.
 
-.Was Sie benötigen
+.Über diese Aufgabe
+* Das Rehosting ist ein störender Betrieb.
+* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
+* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Wenn Sie einen integrierten Schlüsselmanager verwenden, werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht geändert.
++
+Bei Verwendung von ONTAP 9.8 oder früher müssen Sie die Verschlüsselung des Volumes aufheben, bevor Sie den Host-Vorgang wiederholen.
+
+
+
+* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
++
+** Virenschutz-Richtlinien
+** Volume-Effizienzrichtlinie
+** Quality of Service-Richtlinien (QoS
+** Snapshot-Richtlinien
+** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
+** Benutzer- und Gruppen-IDs
+
+
+
+
+.Bevor Sie beginnen
 * Das Volume muss sich online sein.
 * Volume-Managementvorgänge wie das Verschieben von Volumes oder LUNs dürfen nicht ausgeführt werden.
 * Es darf keine aktive I/O-Vorgänge auf den Volumes oder LUNs vorhanden sein.
@@ -29,25 +50,10 @@ Wenn die Initiatorgruppe denselben Namen hat, müssen Sie die Initiatorgruppe in
 
 
 
-.Über diese Aufgabe
-* Das Rehosting ist ein störender Betrieb.
-* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
-* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
-+
-** Virenschutz-Richtlinien
-** Volume-Effizienzrichtlinie
-** Quality of Service-Richtlinien (QoS
-** Snapshot-Richtlinien
-** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
-** Benutzer- und Gruppen-IDs
-
-
-
-
 .Schritte
 . Erfassen Sie die LUN-Zuordnungsinformationen für das Ziel-Volume:
 +
-`lun mapping show–volume volume to be rehosted-vserver source vserver`
+`lun mapping show volume _volume_ vserver _source_svm_`
 
 +
 Dies ist ein vorsorgender Schritt, um zu vermeiden, dass Informationen über die LUN-Zuordnung verloren gehen, falls das Rehosting des Volumes fehlschlägt.
@@ -55,7 +61,7 @@ Dies ist ein vorsorgender Schritt, um zu vermeiden, dass Informationen über die
 . Löschen der dem Ziel-Volume zugeordneten Initiatorgruppen.
 . Erneutes Hosten des Ziel-Volume auf die Ziel-SVM:
 +
-`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+`volume rehost -vserver _source_svm_ -volume _volume_name_ -destination-vserver _destination_svm_`
 
 . Ordnen Sie LUNs auf dem Ziel-Volume entsprechenden Initiatorgruppen zu.
 +
