@@ -17,7 +17,7 @@ NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie, mit der Da
 
 == Allgemeines zu NVE
 
-Beide Daten, einschließlich Snapshot Kopien und Metadaten sind verschlüsselt. Der Zugriff auf die Daten erfolgt über einen eindeutigen XTS-AES-256-Schlüssel, einen pro Volume. Ein externer Verschlüsselungsmanagement-Server oder Onboard Key Manager stellt Schlüssel zu Knoten bereit:
+Mit NVE werden Metadaten und Daten (einschließlich Snapshot Kopien) verschlüsselt. Der Zugriff auf die Daten erfolgt über einen eindeutigen XTS-AES-256-Schlüssel, einen pro Volume. Ein externer Schlüsselmanagementserver oder Onboard Key Manager (OKM) bedient Schlüssel zu Knoten:
 
 * Der externe Verschlüsselungsmanagement-Server ist ein Drittanbietersystem in der Storage-Umgebung, das mithilfe des Key Management Interoperability Protocol (KMIP) Schlüssel zu Nodes bereitstellt. Als Best Practice wird empfohlen, externe Verschlüsselungsmanagementserver auf einem anderen Storage-System zu Ihren Daten zu konfigurieren.
 * Der Onboard Key Manager ist ein integriertes Tool, das Schlüssel zu Nodes aus demselben Storage-System wie Ihre Daten bereitstellt.
@@ -27,18 +27,14 @@ Ab ONTAP 9.7 ist die Aggregat- und Volume-Verschlüsselung standardmäßig aktiv
 
 Sie können die Verschlüsselung auf einem neuen oder vorhandenen Volume aktivieren. NVE unterstützt eine breite Palette an Storage-Effizienzfunktionen, einschließlich Deduplizierung und Komprimierung.
 
-[NOTE]
-====
-Wenn Sie SnapLock verwenden, können Sie nur die Verschlüsselung auf neuen, leeren SnapLock Volumes aktivieren. Sie können die Verschlüsselung auf einem vorhandenen SnapLock-Volume nicht aktivieren.
 
-====
+NOTE: Wenn Sie SnapLock verwenden, können Sie nur die Verschlüsselung auf neuen, leeren SnapLock Volumes aktivieren. Sie können die Verschlüsselung auf einem vorhandenen SnapLock-Volume nicht aktivieren.
+
 NVE kann für jeden Aggregattyp (HDD, SSD, Hybrid, Array LUN), mit jedem RAID-Typ und in jeder unterstützten ONTAP Implementierung, einschließlich ONTAP Select, eingesetzt werden. NVE kann auch mit hardwarebasierter Verschlüsselung verwendet werden, um Daten auf Self-Encrypting Drives `double Encryption` zu verschlüsseln.
 
-[NOTE]
-====
-AFF A220, AFF A800, FAS2720, FAS2750 und höher speichern Core Dumps auf ihrem Boot-Gerät. Wenn NVE auf diesen Systemen aktiviert ist, wird der Core Dump ebenfalls verschlüsselt.
 
-====
+NOTE: AFF A220, AFF A800, FAS2720, FAS2750 und höher speichern Core Dumps auf ihrem Boot-Gerät. Wenn NVE auf diesen Systemen aktiviert ist, wird der Core Dump ebenfalls verschlüsselt.
+
 
 
 == Verschlüsselung auf Aggregatebene
@@ -175,14 +171,16 @@ Ab ONTAP 9.6 unterstützt NVE nicht Onboard Key Manager, sondern lediglich den U
  a| 
 Storage-Effizienz
  a| 
-Deduplizierung, Komprimierung, Data-Compaction, FlexClone: Klone verwenden denselben Schlüssel wie das übergeordnete Objekt, auch nachdem der Klon vom übergeordneten Objekt geteilt wurde. Sie werden gewarnt, den geteilten Klon erneut zu keylen.
+Deduplizierung, Komprimierung, Data-Compaction, FlexClone:
+
+Klone verwenden denselben Schlüssel wie das übergeordnete Objekt, auch nachdem der Klon vom übergeordneten Objekt geteilt wurde. Sie sollten eine durchführen `volume move` Auf einem geteilten Klon, nach dem der geteilte Klon einen anderen Schlüssel hat.
 
 
 
  a| 
 Replizierung
  a| 
-* Für die Volume-Replikation muss das Ziel-Volume zur Verschlüsselung aktiviert sein. Die Verschlüsselung kann für die Quelle konfiguriert und für das Ziel nicht konfiguriert und umgekehrt werden.
+* Für die Volume-Replikation können die Quell- und Ziel-Volumes über unterschiedliche Verschlüsselungseinstellungen verfügen. Die Verschlüsselung kann für die Quelle konfiguriert und für das Ziel nicht konfiguriert und umgekehrt werden.
 * Bei der SVM-Replikation wird das Ziel-Volume automatisch verschlüsselt, es sei denn, das Ziel enthält keinen Node, der Volume Encryption unterstützt. In diesem Fall ist die Replikation erfolgreich, das Ziel-Volume ist jedoch nicht verschlüsselt.
 * Bei MetroCluster-Konfigurationen zieht jedes Cluster externe Verschlüsselungsmanagementschlüssel von den konfigurierten Schlüsselservern ab. OKM-Schlüssel werden vom Konfigurations-Replikationsservice auf den Partnerstandort repliziert.
 
