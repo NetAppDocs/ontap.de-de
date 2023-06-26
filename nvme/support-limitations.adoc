@@ -11,70 +11,103 @@ summary: Der NVMe Support ist abhängig von Ihrer Version von ONTAP, der Plattfo
 
 
 [role="lead"]
-NVMe-Unterstützung und -Einschränkungen variieren je nach Version von ONTAP, Ihrer Plattform und Konfiguration.
+Der NVMe-Support und die Einschränkungen hängen von Ihrer Version von ONTAP, Ihrer Plattform und Ihrer Konfiguration ab. Weitere Informationen zu Ihrer spezifischen Konfiguration finden Sie im link:https://imt.netapp.com/matrix/["NetApp Interoperabilitäts-Matrix-Tool"].
 
-
-
-== Protokollunterstützung
+Protokollunterstützung
 
 [cols="3*"]
 |===
 
 
-| Protokoll | Beginnend mit ... | Zulässig von... 
+| Protokoll | Beginnt mit ONTAP... | Zulässig von... 
 
 
-| TCP | ONTAP 9.10.1 | Standard 
+| TCP | 9.10.1 | Standard 
 
 
-| FC | ONTAP 9.4 | Standard 
+| FC | 9.4 | Standard 
 |===
+Ab ONTAP 9.8 können SCSI-, NAS- und NVMe-Protokolle auf derselben Storage Virtual Machine (SVM) konfiguriert werden.
+In ONTAP 9.7 und älteren Versionen kann NVMe das einzige Protokoll auf der SVM sein.
+
 
 
 == Unterstützung und Einschränkungen bei Plattform- und Konfigurationsunterstützung
 
-Die Unterstützung des NVMe-of-Protokolls ist je nach Plattform und Konfiguration unterschiedlich. Weitere Informationen zu Ihrer spezifischen Konfiguration finden Sie im link:https://imt.netapp.com/matrix/["NetApp Interoperabilitäts-Matrix-Tool"].
+NVMe/FC- und NVMe/TCP-Protokolle werden wie folgt unterstützt.  NVME/FC wird auf den unten aufgeführten Plattformen nur mit 32-GB-FC-HBAs unterstützt.
 
-
-NOTE: Ab ONTAP 9.12.1 werden MetroCluster IP-Konfigurationen mit 4 Nodes auf NVMe/FC unterstützt. MetroCluster Konfigurationen werden für NVMe vor 9.12.1 nicht unterstützt.
-
-[cols="2*"]
+[cols="3*"]
 |===
 
 
-| Beginnt mit ONTAP... | Plattformen 
+| Beginnt mit ONTAP... | Plattformen | Max. Nodes pro Cluster 
 
 
 | 9.12.1  a| 
-* FAS
-* All Flash FAS (AFF)
-* San Array (ASA)-Plattformen
+* AFF
+* ASA
+* C-Serie
+
+| 12 
 
 
+| 9.10.1  a| 
+* AFF
+* ASA
+
+| 4 
 
 
 | 9.9.1  a| 
 * AFF
 * ASA
 
+| 4 
 
 
-
-| 9.4 | Nur AFF Plattformen 
+| 9.4 | Nur AFF | 4 
 |===
+
+
+== MetroCluster Konfigurationen
+
+Ab ONTAP 9.12.1 werden MetroCluster IP-Konfigurationen mit 4 Nodes auf NVMe/FC unterstützt. MetroCluster Konfigurationen werden für NVMe vor 9.12.1 nicht unterstützt.
+
 
 
 == Namespace-Unterstützung und -Einschränkungen
 
-Um das NVMe-Protokoll in Ihrer SAN-Umgebung einzurichten, müssen Sie eine SVM für NVMe konfigurieren, Namespaces und Subsysteme erstellen, eine NVMe/FC-LIF konfigurieren und anschließend die Namespaces den Subsystemen zuordnen. Bei der Arbeit mit NVMe Namespaces sind die folgenden Punkte zu beachten:
+Die Unterstützung für NVMe-Namespace variiert je nach Ihrer Version der ONTAP.
 
-* Ab ONTAP 9.10.1 ist dies möglich xref:../nvme/resize-namespace-task.html[Größe eines Namespace ändern]. Die Größe eines Namespace wird in Versionen vor ONTAP 9.10.1 nicht unterstützt.
-* Ab ONTAP 9.6 unterstützen Namespaces 512-Byte-Blöcke und 4096-Byte-Blöcke.
+[cols="2*"]
+|===
+
+
+| Beginnt mit ONTAP... | Unterstützung für NVMe-Namespaces... 
+
+
+| 9.10.1 | xref:../nvme/resize-namespace-task.html[Größe Ändern]
+
+Die Größe eines Namespace wird in Versionen vor ONTAP 9.10.1 nicht unterstützt. 
+
+
+| 9.8 | LUNs und Namespaces können auf demselben Volume gemischt werden. 
+
+
+| 9.6  a| 
+* 512-Byte-Blöcke und 4096-Byte-Blöcke
 +
 Der Standardwert ist 4096. 512 sollte nur verwendet werden, wenn das Host-Betriebssystem keine 4096-Byte-Blöcke unterstützt.
 
+* Volume-Verschiebung mit zugeordneten Namespaces
+
+
+|===
+Wenn Sie mit NVMe-Namespaces arbeiten, sollten Sie auch die folgenden beachten:
+
 * Wenn Daten in einer LUN verloren gehen, kann sie nicht aus einem Namespace wiederhergestellt werden, und umgekehrt.
 * Die Platzgarantie für Namespaces ist identisch mit der Speicherplatzgarantie für das enthaltende Volume.
+* Sie können auf einem Volume-Übergang von Data ONTAP im 7-Mode keinen Namespace erstellen.
 * Namespaces bieten keine Unterstützung für Folgendes:
 +
 ** Umbenennungen
@@ -83,6 +116,36 @@ Sie können einen Namespace nicht umbenennen.
 
 ** Verschiebung zwischen Volumes
 ** Kopie zwischen Volumes
+** Copy-on-Demand
 
 
 
+
+
+
+== Failover/Giveback für Multipath HA-Paare
+
+Ab ONTAP 9.5 unterstützt NVMe Multipath HA Paar Failover/Giveback.
+
+
+
+== Weitere Einschränkungen
+
+* Die folgenden ONTAP Funktionen werden von NVMe Konfigurationen nicht unterstützt:
++
+** Synchron
+** Virtual Storage Console
+
+
+* Folgendes gilt nur für Nodes mit ONTAP 9.4:
++
+** NVMe LIFs und Namespaces müssen auf demselben Node gehostet werden.
+** Der NVMe-Service muss vor Erstellung der NVMe-LIF erstellt werden.
+
+
+
+
+Siehe https://hwu.netapp.com["NetApp Hardware Universe"^] Erhalten Sie eine vollständige Liste der NVMe Limits.
+
+.Verwandte Informationen
+link:https://www.netapp.com/pdf.html?item=/media/10680-tr4080.pdf["Best Practices für modernes SAN"]
