@@ -1,0 +1,61 @@
+---
+permalink: volumes/storage-efficiency-behavior-snapmirror-reference.html 
+sidebar: sidebar 
+keywords: storage, efficiency, temperature, change, efficient, snapmirror, volume, move 
+summary: Die Art und Weise, wie Storage-Effizienz bei einer Volume-Verschiebung oder bei SnapMirror angewendet wird und was nach der manuellen Aktivierung temperaturempfindlicher Storage-Effizienz geschieht, hängt von der Art der Effizienz auf dem Quell-Volume ab. 
+---
+= Storage-Effizienzverhalten bei Volume-Verschiebung und SnapMirror Operationen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wie sich die Storage-Effizienz auf einem Volume verhält, wenn Sie eine Volume-Verschiebung oder einen SnapMirror Vorgang durchführen und was bei der Durchführung einer SnapMirror Pause und der manuellen Aktivierung temperaturempfindlicher Storage-Effizienz geschieht, hängt von der Art der Effizienz auf dem Quell-Volume ab.
+
+Die folgende Tabelle beschreibt das Verhalten eines Quell-Volume und Ziel-Volume, wenn Sie eine Volume-Verschiebung oder SnapMirror mit verschiedenen Storage-Effizienztypen durchführen. Außerdem werden das Verhalten beschrieben, wenn Sie temperaturempfindliche Storage-Effizienz (TSSE) manuell aktivieren.
+
+[cols="1,1,1,2,1,1,2"]
+|===
+
+
+| Effizienz des Quell-Volumes 3+| Standardverhalten des Zielvolume 3+| Standardverhalten nach manueller Aktivierung von TSSE (nach SnapMirror Pause) 
+
+
+|  | *Art der Storage-Effizienz* | *Neue Schreibvorgänge* | *Kaltdatenkomprimierung* | *Art der Storage-Effizienz* | *Neue Schreibvorgänge* | *Kaltdatenkomprimierung* 
+
+
+| Keine Storage-Effizienz (wahrscheinlicher FAS) | Dateikomprimierung | Bei neu geschriebenen Daten wird inline mit der Dateikomprimierung versucht | Keine „kalte“ Datenkomprimierung, Daten bleiben unverändert | TSSE mit Cold-Data-Scan-Algorithmus als ZStd | es wird versucht, eine 8-kb-Inline-Komprimierung im TSSE-Format durchzuführen | *Datei komprimierte Daten*: N/A
+   +
+   *Unkomprimierte Daten*: 32K Komprimierung versucht, nachdem Schwellwerttage erfüllt wurden
+   +
+   *Neu geschriebene Daten*: 32K Komprimierung versucht nach Schwellwerttagen erfüllt 
+
+
+| Keine Storage-Effizienz (wahrscheinlicher FAS) | Dateikomprimierung auf Plattformen der C-Serie mit ONTAP 9.11.1P10 oder ONTAP 9.12.1P3 | Keine TSSE-fähige Kaltdatenkomprimierung | *Datei komprimierte Daten*: N/A | TSSE mit Cold-Data-Scan-Algorithmus als ZStd | 8 KB Inline-Komprimierung | *Datei komprimierte Daten*: N/A
+   +
+   *Unkomprimierte Daten*: 32K Komprimierung versucht, nachdem Schwellwerttage erfüllt wurden
+   +
+   *Neu geschriebene Daten*: 32K Komprimierung versucht nach Schwellwerttagen erfüllt 
+
+
+| Keine Storage-Effizienz (wahrscheinlicher FAS) | TSSE auf Plattformen der C-Serie mit ONTAP 9.12.1P4 und höher oder ONTAP 9.13.1 und höher | Es wird versucht, eine 8-KB-Inline-Komprimierung im TSSE-Format durchzuführen | *Datei komprimierte Daten*: N/A
+   +
+   *Unkomprimierte Daten*: 32K Komprimierung versucht, nachdem Schwellwerttage erfüllt wurden
+   +
+   *Neu geschriebene Daten*: 32K Komprimierung versucht nach Schwellwerttagen erfüllt | TSSE mit Cold-Data-Scan-Algorithmus als ZStd | Es wird versucht, eine 8-KB-Inline-Komprimierung im TSSE-Format durchzuführen | *Datei komprimierte Daten*: N/A
+   +
+   *Unkomprimierte Daten*: 32K Komprimierung versucht, nachdem Schwellwerttage erfüllt wurden
+   +
+   *Neu geschriebene Daten*: 32K Komprimierung versucht nach Schwellwerttagen erfüllt 
+
+
+| Dateikomprimierungsgruppe | Wie Quelle | Bei neu geschriebenen Daten wird inline mit der Dateikomprimierung versucht | Keine „kalte“ Datenkomprimierung, Daten bleiben unverändert | TSSE mit Cold-Data-Scan-Algorithmus als ZStd | es wird versucht, eine 8-kb-Inline-Komprimierung im TSSE-Format durchzuführen | *Datei komprimierte Daten*: Nicht komprimiert
+  +
+  *Unkomprimierte Daten*: 32K Komprimierung wird nach Erreichen des Schwellwerts an Tagen versucht
+  +
+  *Neu geschriebene Daten*: 32K Komprimierung wird versucht, nachdem Schwellwerttage erreicht wurden 
+
+
+| TSSE-Kaltdaten-Scan | TSSE verwendet denselben Komprimierungsalgorithmus wie Quellvolumen (LZOPro->LZOPro und ZStd->ZStd) | Es wurde versucht, eine 8-KB-Inline-Komprimierung im TSSE-Format durchzuführen | Bei LzoPro wird versucht, eine 32K-Komprimierung durchzuführen, nachdem die auf Schwellenwerttagen basierende Kälte sowohl für vorhandene als auch für neu geschriebene Daten erfüllt wurde. | TSSE ist aktiviert. HINWEIS: Der LZOPro Cold Data Scan Algorithmus kann auf ZStd geändert werden. | Es wird versucht, eine 8-KB-Inline-Komprimierung im TSSE-Format durchzuführen | Nach Erreichen der Schwellenwerttage wird mit einer 32.000-Komprimierung sowohl für vorhandene als auch für neu geschriebene Daten versucht. 
+|===
