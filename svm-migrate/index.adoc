@@ -27,60 +27,102 @@ image::../media/workflow_svm_migrate.gif[SVM-Migrations-Workflow]
 
 
 
-== Unterstützte Konfigurationen
+== Unterstützung der SVM-Migrationsplattform
 
-Die Tabelle gibt die unterstützten Konfigurationen sowie die ONTAP Versionen an, in denen Support verfügbar ist.
-
-[cols="3,1,1,1,1"]
+[cols="1,1"]
 |===
 
 
-| Konfiguration unterstützt in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | ONTAP 9.13.1 
+| Controller-Familie | Unterstützte ONTAP-Versionen 
 
 
-| AFF-Arrays | Ja. | Ja. | Ja. | Ja. 
+| AFF-A-Serie | ONTAP 9.10.1 und höher 
 
 
-| FAS Plattformen und gemischte Plattformen (AFF-FAS, FAS-All Flash FAS, All Flash FAS mit hybriden Aggregaten) | Nein | Nein | Ja. | Ja. 
+| AFF-C-Serie | ONTAP 9.12.1 Patch 4 und höher 
 
 
-| Arrays/Node-Paare insgesamt | 1 | 3 | 3 | 6 
-
-
-| Migration innerhalb eines Datacenters mit einer maximalen Netzwerklatenz von: | 2 ms | 2 ms | 10 ms | 10 ms 
+| FAS | ONTAP 9.12.1 und höher 
 |===
 
 NOTE: Bei der Migration von einem AFF-Cluster zu einem FAS-Cluster mit hybriden Aggregaten versucht die automatische Volume-Platzierung, eine ähnliche Aggregatabgleichung durchzuführen. Wenn das Quell-Cluster beispielsweise 60 Volumes umfasst, versucht die Volume-Platzierung, ein AFF-Aggregat auf dem Ziel zu finden, um die Volumes zu platzieren. Ist in den AFF Aggregaten kein ausreichender Speicherplatz vorhanden, werden die Volumes in Aggregaten mit nicht-Flash-Festplatten platziert.
 
 
 
+== Unterstützung der Skalierbarkeit durch die ONTAP Version
+
+[cols="1,1"]
+|===
+
+
+| ONTAP-Version | HA-Paare in Quelle und Ziel 
+
+
+| ONTAP 9.10.1 | 1 
+
+
+| ONTAP 9.11.1 | 3 
+
+
+| ONTAP 9.13.1 | 6 
+|===
+
+
+== Anforderungen an die Leistung der Netzwerkinfrastruktur für TCP-Round Trip Time (RTT)
+
+|===
+
+
+| ONTAP-Version | Maximale RTT 
+
+
+| ONTAP 9.11.1 und früher | 2 ms 
+
+
+| ONTAP 9.12.1 und höher | 10 ms 
+|===
+
+
+== Maximale Anzahl unterstützter Volumes pro SVM
+
+[cols="2,1,1"]
+|===
+
+
+| ONTAP-Version 2+| Maximale Anzahl unterstützter Volumes pro SVM 
+
+
+|  | *AFF* | *FAS* 
+
+
+| ONTAP 9.12.1 und frühere Versionen | 100 | 80 
+
+
+| ONTAP 9.13.1 und höher | 200 | 80 
+|===
+
+
 == Voraussetzungen
 
-* Sie müssen Cluster-Administrator sein
-* Die Quell- und Ziel-Cluster müssen miteinander verbunden sein
-+
-link:https://review.docs.netapp.com/us-en/ontap_main/peering/create-cluster-relationship-93-later-task.html["Erstellen einer Cluster-Peer-Beziehung"]
+Bevor Sie eine SMV-Migration starten, müssen Sie die folgenden Voraussetzungen erfüllen:
 
-* Auf den Quell- und Ziel-Clustern muss die Data Protection Bundle-Lizenz installiert sein
-* Alle Nodes im Quell-Cluster müssen ONTAP 9.10.1 oder höher ausführen
-* Auf allen Nodes im Quell-Cluster muss dieselbe ONTAP-Version ausgeführt werden
-* Auf allen Nodes im Ziel-Cluster muss die gleiche ONTAP-Version ausgeführt werden
-* Das Ziel-Cluster muss dieselbe oder eine neuere effektive Clusterversion (ECV) wie das Quell-Cluster aufweisen
-* Die Quell- und Ziel-Cluster müssen für den Daten-LIF-Zugriff das gleiche IP-Subnetz unterstützen
-* Das Netzwerk, das die Quell- und Ziel-Cluster verbindet, muss eine maximale RTT-Dauer (Round Trip Time, RTT) von weniger als 10 ms aufweisen
-* Die Quell-SVM muss weniger als die maximal unterstützte Anzahl von Daten-Volumes für das Release enthalten. Es werden maximal folgende Daten-Volumes unterstützt:
-+
-** AFF Arrays: 200 Daten-Volumes mit Clustern mit ONTAP 9.13.1 und höheren Versionen sowie 100 Daten-Volumes mit Clustern mit ONTAP 9.12.1 und früheren Versionen
-** FAS Plattformen: 80 Datenvolumen
-
-
+* Sie müssen ein Cluster-Administrator sein.
+* link:https://docs.netapp.com/us-en/ontap/peering/create-cluster-relationship-93-later-task.html["Die Quell- und Ziel-Cluster müssen aufeinander peered werden"^].
+* Auf den Quell- und Ziel-Clustern muss die Data Protection Bundle-Lizenz installiert sein.
+* Auf allen Knoten im Quellcluster muss ONTAP 9.10.1 oder höher ausgeführt werden. Informationen zur spezifischen Unterstützung von ONTAP-Array-Controllern finden Sie unter
+* Auf allen Nodes im Quellcluster muss die gleiche ONTAP-Version ausgeführt werden.
+* Auf allen Nodes im Ziel-Cluster muss die gleiche ONTAP-Version ausgeführt werden.
+* Das Ziel-Cluster muss sich auf dem gleichen oder nicht mehr als zwei neuere effektive Cluster-Versionen (ECV) befinden wie das Quell-Cluster.
+* Die Quell- und Ziel-Cluster müssen für den Zugriff auf Daten-LIFs dasselbe IP-Subnetz unterstützen.
+* Das Netzwerk, das die Quell- und Ziel-Cluster verbindet, muss eine maximale Round-Trip-Zeit (RTT) von maximal 10 ms aufweisen
+* Die Quell-SVM muss weniger als die enthalten xref:Maximum supported volumes per SVM[Maximale Anzahl unterstützter Daten-Volumes für die Version].
 * Am Ziel muss ausreichend Speicherplatz für die Platzierung des Volumes verfügbar sein
 * Der Onboard Key Manager muss auf dem Ziel konfiguriert sein, wenn die Quell-SVM verschlüsselte Volumes enthält
 
 
 
 
-== Vorgänge, die einen Konflikt verursachen
+== SVM-Vorgänge
 
 Sie sollten auf Vorgänge prüfen, die mit einer SVM-Migration in Konflikt stehen können:
 
@@ -92,24 +134,24 @@ Sie sollten auf Vorgänge prüfen, die mit einer SVM-Migration in Konflikt stehe
 
 
 
-== Unterstützte Funktionen
+== Unterstützte und nicht unterstützte Funktionen
 
 Die Tabelle zeigt die von der Datenmobilität SVM unterstützten ONTAP Funktionen und die ONTAP Versionen, welche Unterstützung bieten.
 
-[cols="3,1,1,1,1,4"]
+[cols="3,1,4"]
 |===
 
 
-| Funktion unterstützt in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | ONTAP 9.13.1 | Weitere Informationen 
+| Merkmal | Release wird zuerst unterstützt | Kommentare 
 
 
-| SnapMirror Beziehungen zu asynchronen Kopien in die Cloud | Nein | Nein | Ja. | Ja. | Wenn Sie ab ONTAP 9.12.1 eine SVM mit SnapMirror Copy-to-Cloud-Beziehungen migrieren, muss der Ziel-Cluster für die Migration die Lizenz für die Kopie in die Cloud installiert haben und über genügend Kapazität verfügen, um die Kapazität der Volumes zu verschieben, die in der Cloud gespiegelt werden. 
+| SnapMirror Beziehungen zu asynchronen Kopien in die Cloud | ONTAP 9.12.1 | Wenn Sie ab ONTAP 9.12.1 eine SVM mit SnapMirror Copy-to-Cloud-Beziehungen migrieren, muss der Ziel-Cluster für die Migration die Lizenz für die Kopie in die Cloud installiert haben und über genügend Kapazität verfügen, um die Kapazität der Volumes zu verschieben, die in der Cloud gespiegelt werden. 
 
 
-| Asynchrones SnapMirror Ziel | Nein | Nein | Ja. | Ja. |  
+| Asynchrones SnapMirror Ziel | ONTAP 9.12.1 |  
 
 
-| Asynchrone SnapMirror Quelle | Nein | Ja. | Ja. | Ja.  a| 
+| Asynchrone SnapMirror Quelle | ONTAP 9.12.1  a| 
 * Übertragungen können während des Großteil der Migration so normal auf FlexVol SnapMirror Beziehungen fortgesetzt werden.
 * Fortlaufende Transfers werden während der Umstellung abgebrochen und neue Transfers scheitern während der Umstellung und können erst nach Abschluss der Migration neu gestartet werden.
 * Geplante Übertragungen, die während der Migration abgebrochen oder verpasst wurden, werden nach Abschluss der Migration nicht automatisch gestartet.
@@ -123,30 +165,60 @@ Wenn eine SnapMirror Quelle migriert wird, verhindert ONTAP nach der Migration e
 
 
 
-| Autonomer Schutz Durch Ransomware | Nein | Nein | Ja. | Ja. |  
+| Autonomer Schutz Durch Ransomware | ONTAP 9.12.1 |  
 
 
-| Externer Schlüsselmanager | Nein | Ja. | Ja. | Ja. |  
+| Cloud Volumes ONTAP | Nicht unterstützt |  
 
 
-| FabricPool | Nein | Ja. | Ja. | Ja.  a| 
+| Externer Schlüsselmanager | ONTAP 9.11.1 |  
+
+
+| FabricPool | ONTAP 9.11.1  a| 
 Weitere Informationen zu xref:FabricPool support[FabricPool-Support].
 
 
 
-| Fanout-Beziehungen (die migrierende Quelle hat ein SnapMirror Quell-Volume mit mehr als einem Ziel) | Nein | Ja. | Ja. | Ja. |  
+| Fanout-Beziehungen (die migrierende Quelle hat ein SnapMirror Quell-Volume mit mehr als einem Ziel) | ONTAP 9.11.1 |  
 
 
-| Flash Pool | Nein | Nein | Ja. | Ja. |  
+| FC SAN | Nicht unterstützt |  
 
 
-| Job-Plan-Replikation | Nein | Ja. | Ja. | Ja. | In ONTAP 9.10.1 werden Job-Zeitpläne während der Migration nicht repliziert und müssen manuell auf dem Ziel erstellt werden. Ab ONTAP 9.11.1 werden von der Quelle verwendete Jobpläne während der Migration automatisch repliziert. 
+| Flash Pool | ONTAP 9.12.1 |  
 
 
-| NetApp Volume Encryption | Ja. | Ja. | Ja. | Ja. |  
+| FlexCache Volumes | Nicht unterstützt |  
 
 
-| Audit-Protokollierung von NFS und SMB | Nein | Nein | Nein | Ja.  a| 
+| FlexGroup | Nicht unterstützt |  
+
+
+| IPsec-Richtlinien | Nicht unterstützt |  
+
+
+| IPv6-LIFs | Nicht unterstützt |  
+
+
+| ISCI SAN | Nicht unterstützt |  
+
+
+| Job-Plan-Replikation | ONTAP 9.11.1 | In ONTAP 9.10.1 werden Job-Zeitpläne während der Migration nicht repliziert und müssen manuell auf dem Ziel erstellt werden. Ab ONTAP 9.11.1 werden von der Quelle verwendete Jobpläne während der Migration automatisch repliziert. 
+
+
+| Spiegelung zur Lastverteilung | Nicht unterstützt |  
+
+
+| MetroCluster SVMs | Nicht unterstützt |  
+
+
+| NDMP-Konfigurationen | Nicht unterstützt |  
+
+
+| NetApp Volume Encryption | ONTAP 9.10.1 |  
+
+
+| Audit-Protokolle für NFS und SMB | ONTAP 9.13.1  a| 
 Vor der SVM-Migration:
 
 * Die Umleitung des Überwachungsprotokolls muss auf dem Zielcluster aktiviert sein.
@@ -155,21 +227,60 @@ Vor der SVM-Migration:
 
 
 
-| NFS v3, NFS v4.1 und NFS v4.2 | Ja. | Ja. | Ja. | Ja. |  
+| NFS v3, NFS v4.1 und NFS v4.2 | ONTAP 9.10.1 |  
 
 
-| NFS Version 4.0 | Nein | Nein | Ja. | Ja. |  
+| NFS Version 4.0 | ONTAP 9.12.1 |  
 
 
-| NFS v4.0-Protokoll | Nein | Nein | Ja. | Ja. |  
+| NVMe over Fabric | Nicht unterstützt |  
 
 
-| SMB-Protokoll | Nein | Nein | Ja. | Ja.  a| 
-Ab ONTAP 9.12.1 umfasst die SVM-Migration auch die unterbrechungsfreie Migration mit SMB.
+| Onboard Key Manager (OKM) mit aktiviertem Common Criteria-Modus auf Quell-Cluster | Nicht unterstützt |  
+
+
+| Qtrees | ONTAP 9.10.1 |  
+
+
+| S3 | Nicht unterstützt |  
+
+
+| SMB-Protokoll | ONTAP 9.12.1  a| 
+SMB-Migrationen führen zu Unterbrechungen und erfordern nach der Migration eine Aktualisierung durch den Kunden.
 
 
 
-| SVM-Peering für SnapMirror Applikationen | Nein | Ja. | Ja. | Ja. |  
+| SMTape-Einstellungen | Nicht unterstützt |  
+
+
+| SnapLock | Nicht unterstützt |  
+
+
+| SnapMirror Business Continuity | Nicht unterstützt |  
+
+
+| Peer-Beziehungen für SnapMirror SVM | ONTAP 9.12.1 |  
+
+
+| Disaster Recovery für SnapMirror SVM | Nicht unterstützt |  
+
+
+| SnapMirror Synchronous | Nicht unterstützt |  
+
+
+| Snapshot Kopie | ONTAP 9.10.1 |  
+
+
+| Virtuelle IP LIFs/BGP | Nicht unterstützt |  
+
+
+| Virtual Storage Console 7.0 und höher | Nicht unterstützt | VSC ist Teil des https://docs.netapp.com/us-en/ontap-tools-vmware-vsphere/index.html["ONTAP Tools für die virtuelle VMware vSphere Appliance"^] Ab VSC 7.0 
+
+
+| Volume-Klone | Nicht unterstützt |  
+
+
+| VStorage | Nicht unterstützt |  
 |===
 
 
@@ -183,27 +294,90 @@ Die SVM-Migration wird mit Volumes auf FabricPool für die folgenden Plattformen
 
 
 
-== Nicht unterstützte Funktionen
+== Unterstützte Vorgänge während der Migration
 
-Die folgenden Funktionen werden bei der SVM-Migration nicht unterstützt:
+In der folgenden Tabelle wird die Unterstützung von Volume-Operationen basierend auf dem Migrationsstatus angegeben:
 
-* Cloud Volumes ONTAP
-* FlexCache Volumes
-* FlexGroup Volumes
-* IPsec-Richtlinie
-* IPv6-LIFs
-* ISCSI-Workloads
-* Spiegelung zur Lastverteilung
-* MetroCluster
-* NDMP
-* SAN, NVMe over Fibre, VSCAN, vStorage, S3 Replizierung
-* SMTape
-* SnapLock
-* SVM-DR
-* SVM-Migration, wenn der Onboard Key Manager (OKM) des Quell-Clusters den Common Criteria-Modus (CC) aktiviert hat
-* Synchronous SnapMirror, SnapMirror Business Continuity
-* Qtree, Kontingente
-* VIP/BGP-LIF
-* Virtual Storage Console für VMware vSphere (VSC ist Teil der https://docs.netapp.com/us-en/ontap-tools-vmware-vsphere/index.html["ONTAP Tools für die virtuelle VMware vSphere Appliance"^] Ab VSC 7.0.)
-* Volume-Klone
+[cols="2,1,1,1"]
+|===
 
+
+| Volume-Betrieb 3+| SVM-Migrationsstatus 
+
+
+|  | *In Bearbeitung* | *Angehalten* | *Umstellung* 
+
+
+| Erstellen | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Löschen | Nicht zulässig | Zulässig | Nicht unterstützt 
+
+
+| Dateisystemanalyse 2+| Siehe Dateisystemanalyse | Nicht unterstützt 
+
+
+| Ändern | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Offline/Online | Nicht zulässig | Zulässig | Nicht unterstützt 
+
+
+| Verschieben/Rehosten | Nicht zulässig | Zulässig | Nicht unterstützt 
+
+
+| Qtreecreate/modify | Nicht zulässig | Nicht zulässig | Nicht unterstützt 
+
+
+| Erstellen/Ändern von Kontingenten | Nicht zulässig | Nicht zulässig | Nicht unterstützt 
+
+
+| Umbenennen | Nicht zulässig | Zulässig | Nicht unterstützt 
+
+
+| Größe Ändern | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Beschränken | Nicht zulässig | Zulässig | Nicht unterstützt 
+
+
+| Die Attribute der Snapshot Kopie werden geändert | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Snapshot Kopie Autodelete | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Erstellen von Snapshot Kopien | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Löschen der Snapshot Kopie | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Datei aus Snapshot Kopie wiederherstellen | Zulässig | Zulässig | Nicht unterstützt 
+|===
+Die folgende Tabelle zeigt die Unterstützung von Dateivorgängen basierend auf dem Migrationsstatus:
+
+[cols="2,1,1,1"]
+|===
+
+
+| Dateivorgang 3+| SVM-Migrationsstatus 
+
+
+|  | *In Bearbeitung* | *Angehalten* | *Umstellung* 
+
+
+| Asynchrones Löschen | Nicht zulässig | Nicht zulässig | Nicht unterstützt 
+
+
+| Klonerstellung/-Löschung/-Teilung | Zulässig | Zulässig | Nicht unterstützt 
+
+
+| Kopieren ändern/zerstören | Nicht zulässig | Nicht zulässig | Nicht unterstützt 
+
+
+| Bewegen | Nicht zulässig | Nicht zulässig | Nicht unterstützt 
+
+
+| Reservieren | Zulässig | Zulässig | Nicht unterstützt 
+|===
