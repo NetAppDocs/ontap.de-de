@@ -49,19 +49,166 @@ Dies schließt die LIFs ein, die für Passthrough-Read-Verbindungen verwendet we
 
 == Best Practices und Empfehlungen beim Einrichten von FPolicy
 
-Wenn Sie FPolicy auf Storage Virtual Machines (SVMs) einrichten, müssen Sie mit Best Practices und Empfehlungen der Konfiguration vertraut sein, um sicherzustellen, dass Ihre FPolicy Konfiguration über robuste Monitoring-Performance und Ergebnisse verfügt, die Ihre Anforderungen erfüllen.
+Wenn Sie FPolicy auf Storage Virtual Machines (SVMs) einrichten, lernen Sie die allgemeinen Best Practices und Empfehlungen der Konfiguration kennen. So können Sie sicherstellen, dass Ihre FPolicy-Konfiguration eine robuste Monitoring-Performance sowie Ergebnisse liefert, die Ihre Anforderungen erfüllen.
 
-* Externe FPolicy-Server (FPolicy Server) sollten mit hoher Bandbreite in direkter Nähe zum Cluster platziert werden, um eine minimale Latenz und Konnektivität mit hoher Bandbreite zu bieten.
-* Die externe FPolicy Engine sollte mit mehr als einem FPolicy-Server konfiguriert werden, um Ausfallsicherheit und hohe Verfügbarkeit der FPolicy-Server-Benachrichtigungsverarbeitung zu gewährleisten, insbesondere wenn Richtlinien für synchrones Screening konfiguriert wurden.
-* Es wird empfohlen, die FPolicy zu deaktivieren, bevor Sie Konfigurationsänderungen vornehmen.
+Arbeiten Sie mit Ihrer FPolicy-Partnerapplikation zusammen, um spezifische Richtlinien in Bezug auf Performance, Größenbestimmung und Konfiguration zu erhalten.
+
+
+
+=== Konfiguration von Richtlinien
+
+Die Konfiguration der externen FPolicy Engine, Ereignisse und Umfang für SVMs können die Benutzerfreundlichkeit und die Sicherheit insgesamt verbessern.
+
+* Konfiguration der FPolicy externen Engine für SVMs:
 +
-Wenn Sie beispielsweise eine IP-Adresse in der für die aktivierte Richtlinie konfigurierten externen Engine FPolicy hinzufügen oder ändern möchten, sollten Sie diese zunächst deaktivieren.
+** Zusätzliche Sicherheit ist mit Performance-Kosten verbunden. Die Aktivierung der SSL-Kommunikation (Secure Sockets Layer) wirkt sich auf die Leistung des Zugriffs auf Freigaben aus.
+** Die externe FPolicy Engine sollte mit mehr als einem FPolicy Server konfiguriert werden, um Ausfallsicherheit und Hochverfügbarkeit bei der Verarbeitung von FPolicy Serverbenachrichtigungen zu gewährleisten.
 
-* Das Cluster-Node-to-FPolicy-Serververhältnis sollte optimiert werden, um sicherzustellen, dass FPolicy Server nicht überlastet sind. Dies kann Latenzen bedeuten, wenn die SVM auf Client-Anforderungen reagiert.
+
+* Konfiguration von FPolicy Ereignissen für SVMs:
 +
-Das optimale Verhältnis hängt von der Applikation ab, für die der FPolicy-Server verwendet wird.
+Die Überwachung von Dateioperationen wirkt sich auf Ihre Gesamterfahrung aus. Das Filtern unerwünschter Dateioperationen auf der Storage-Seite verbessert beispielsweise die Benutzerfreundlichkeit. NetApp empfiehlt die Einrichtung der folgenden Konfiguration:
+
++
+** Überwachung der Mindestanforderungen an Dateioperationen und Aktivierung der maximalen Anzahl von Filtern ohne Unterbrechung des Anwendungsfalls.
+** Verwenden von Filtern für getattr-, Lese-, Schreib-, Öffnen- und Schließvorgänge. In den Home Directory-Umgebungen SMB und NFS kommt ein hoher Prozentsatz dieser Vorgänge zum Einsatz.
 
 
+* Konfiguration des FPolicy Umfangs für SVMs:
++
+Schränken Sie die Richtlinien auf relevante Storage-Objekte wie Freigaben, Volumes und Exporte ein, anstatt sie über die gesamte SVM zu aktivieren. NetApp empfiehlt, die Verzeichniserweiterungen zu überprüfen. Wenn der `is-file-extension-check-on-directories-enabled` Parameter ist auf festgelegt `true`, Verzeichnis-Objekte werden den gleichen Erweiterungen Prüfungen wie normale Dateien unterzogen.
+
+
+
+
+
+=== Netzwerkkonfiguration
+
+Die Netzwerkverbindung zwischen dem FPolicy-Server und dem Controller sollte geringe Latenz aufweisen. NetApp empfiehlt die Trennung des FPolicy-Datenverkehrs vom Client-Verkehr über ein privates Netzwerk.
+
+Außerdem sollten sich externe FPolicy Server (FPolicy-Server) in der Nähe des Clusters mit hoher Bandbreite befinden, um minimale Latenz und Konnektivität mit hoher Bandbreite zu ermöglichen.
+
+
+NOTE: In einem Szenario, in dem die LIF für FPolicy-Datenverkehr auf einem anderen Port zur LIF für Client-Datenverkehr konfiguriert wird, kann die FPolicy LIF aufgrund eines Portausfalls einen Failover auf den anderen Node durchführen. Infolgedessen kann der FPolicy-Server von dem Node nicht mehr erreicht werden, was dazu führt, dass die FPolicy-Benachrichtigungen für Dateivorgänge auf dem Node fehlschlagen. Um dieses Problem zu vermeiden, überprüfen Sie, ob der FPolicy-Server über mindestens eine logische Schnittstelle auf dem Node erreichbar ist, um FPolicy-Anfragen für die Dateivorgänge zu verarbeiten, die auf diesem Node ausgeführt werden.
+
+
+
+=== Hardwarekonfiguration
+
+Der FPolicy-Server kann entweder auf einem physischen oder einem virtuellen Server ausgeführt werden. Wenn sich der FPolicy-Server in einer virtuellen Umgebung befindet, sollten Sie dem virtuellen Server dedizierte Ressourcen (CPU, Netzwerk und Arbeitsspeicher) zuweisen.
+
+Das Cluster-Node-to-FPolicy-Serververhältnis sollte optimiert werden, um sicherzustellen, dass FPolicy Server nicht überlastet sind. Dies kann Latenzen bedeuten, wenn die SVM auf Client-Anforderungen reagiert. Das optimale Verhältnis hängt von der Partnerapplikation ab, für die der FPolicy-Server verwendet wird. NetApp empfiehlt die Zusammenarbeit mit Partnern, um den geeigneten Wert zu ermitteln.
+
+
+
+=== Konfiguration mehrerer Richtlinien
+
+Die FPolicy-Richtlinie für natives Blockieren hat unabhängig von der Sequenznummer die höchste Priorität und Richtlinien zur Änderung der Entscheidungsfindung haben eine höhere Priorität als andere. Die Priorität der Richtlinie hängt von dem jeweiligen Anwendungsfall ab. NetApp empfiehlt die Zusammenarbeit mit Partnern, um die entsprechende Priorität zu bestimmen.
+
+
+
+=== Überlegungen zur Größe
+
+FPolicy überwacht SMB- und NFS-Vorgänge inline, sendet Benachrichtigungen an den externen Server und wartet je nach Kommunikationsmodus der externen Engine (synchron oder asynchron) auf eine Antwort. Dieser Prozess wirkt sich auf die Performance von SMB- und NFS-Zugriffs- sowie CPU-Ressourcen aus.
+
+Um Probleme zu beheben, empfiehlt NetApp, gemeinsam mit Partnern die Umgebung zu bewerten und zu dimensionieren, bevor FPolicy aktiviert wird. Die Performance wird von verschiedenen Faktoren beeinflusst, darunter die Benutzeranzahl und Workload-Merkmale wie Vorgänge pro Benutzer und Datengröße, Netzwerklatenz sowie Ausfall- oder Server-Langsamkeit.
+
+
+
+== Monitoring der Performance
+
+FPolicy ist ein auf Benachrichtigungen basierendes System. Benachrichtigungen werden zur Verarbeitung an einen externen Server gesendet, um eine Antwort an ONTAP zu generieren. Durch diesen Round-Trip-Prozess erhöht sich die Latenz für den Client-Zugriff.
+
+Durch das Monitoring der Performance-Zähler auf dem FPolicy-Server und in ONTAP können Engpässe in der Lösung identifiziert und die Parameter nach Bedarf für eine optimale Lösung angepasst werden. Eine Zunahme der FPolicy-Latenz wirkt sich beispielsweise kaskadierend auf die Latenz des SMB- und NFS-Zugriffs aus. Daher sollten Sie sowohl die Workload- (SMB und NFS) als auch die FPolicy-Latenz überwachen. Zudem können Sie mithilfe von Quality-of-Service-Richtlinien in ONTAP einen Workload für jedes Volume oder jede SVM einrichten, die für FPolicy aktiviert ist.
+
+NetApp empfiehlt, den auszuführen `statistics show –object workload` Befehl zum Anzeigen von Workload-Statistiken. Außerdem sollten Sie die folgenden Parameter überwachen:
+
+* Durchschnittliche Lese-, Schreib- und Leselatenz
+* Gesamtzahl der Vorgänge
+* Zähler lesen und schreiben
+
+
+Die Performance von FPolicy-Subsystemen kann mit den folgenden FPolicy-Zählern überwacht werden.
+
+
+NOTE: Sie müssen sich im Diagnosemodus befinden, um Statistiken zu FPolicy zu sammeln.
+
+.Schritte
+. FPolicy-Zähler sammeln:
++
+.. `statistics start -object fpolicy -instance _instance_name_ -sample-id _ID_`
+.. `statistics start -object fpolicy_policy -instance _instance_name_ -sample-id _ID_`
+
+
+. FPolicy-Zähler anzeigen:
++
+.. `statistics show -object fpolicy –instance _instance_name_ -sample-id _ID_`
+.. `statistics show -object fpolicy_server –instance _instance_name_ -sample-id _ID_`
+
+
++
+--
+Der `fpolicy` Und `fpolicy_server` Zähler bieten Informationen zu verschiedenen Leistungsparametern, die in der folgenden Tabelle beschrieben werden.
+
+[cols="25,75"]
+|===
+| Zähler | Beschreibung 
+
+
+ a| 
+* „fpolicy“-Zähler*
+
+
+
+| max_request_Latenz | Maximale Verzögerung bei Bildschirmanforderungen 
+
+
+| Ausstehende_Anforderungen | Gesamtanzahl der in Bearbeitung vorhandenen Bildschirmanforderungen 
+
+
+| Request_Latency_hist | Histogramm der Latenz für Bildschirmanforderungen 
+
+
+| Requests_sended_Rate | Anzahl der pro Sekunde versandten Bildschirmanfragen 
+
+
+| Requests_received_Rate | Anzahl der empfangenen Bildschirmanforderungen pro Sekunde 
+
+
+ a| 
+* Zähler „fpolicy_Server“*
+
+
+
+| max_request_Latenz | Maximale Latenz für eine Bildschirmanforderung 
+
+
+| Ausstehende_Anforderungen | Gesamtzahl der auf Antwort wartenden Bildschirmanforderungen 
+
+
+| Request_Latency | Durchschnittliche Latenz für Bildschirmanforderung 
+
+
+| Request_Latency_hist | Histogramm der Latenz für Bildschirmanforderungen 
+
+
+| Request_sent_Rate | Anzahl der an den FPolicy-Server gesendeten Bildschirmanfragen pro Sekunde 
+
+
+| Response_received_Rate | Anzahl der vom FPolicy-Server empfangenen Bildschirmantworten pro Sekunde 
+|===
+--
+
+
+
+
+=== Managen Sie FPolicy Workflows und Abhängigkeit von anderen Technologien
+
+NetApp empfiehlt, eine FPolicy-Richtlinie zu deaktivieren, bevor Sie Konfigurationsänderungen vornehmen. Wenn Sie beispielsweise eine IP-Adresse in der externen Engine hinzufügen oder ändern möchten, die für die aktivierte Richtlinie konfiguriert ist, deaktivieren Sie zunächst die Richtlinie.
+
+Wenn Sie FPolicy zur Überwachung von NetApp FlexCache Volumes konfigurieren, empfiehlt NetApp, FPolicy nicht für die Überwachung von Lese- und getattr-Dateivorgängen zu konfigurieren. Zur Überwachung dieser Vorgänge in ONTAP ist der Abruf von I2P-Daten (Inode-to-Path) erforderlich. Da die I2P-Daten nicht von FlexCache-Volumes abgerufen werden können, müssen sie vom Ursprungs-Volume abgerufen werden. Daher eliminiert das Monitoring dieser Operationen die Performance-Vorteile, die FlexCache bieten kann.
+
+Wenn FPolicy und eine Off-Box-Antivirus-Lösung implementiert werden, erhält die Virenschutzlösung zuerst Benachrichtigungen. Die FPolicy-Verarbeitung wird erst gestartet, nachdem die Virenprüfung abgeschlossen ist. Es ist wichtig, dass Sie Virenschutzlösungen korrekt dimensionieren, da ein langsamer Virenschutzscanner die Gesamtleistung beeinträchtigen kann.
 
 
 
@@ -79,8 +226,8 @@ Nachdem alle Knoten auf eine Version von ONTAP aktualisiert wurden, die FPolicy 
 
 === Zurücksetzen
 
-Bevor Sie zu einer Version von ONTAP zurückkehren, die FPolicy PassThrough-read nicht unterstützt, müssen die folgenden Bedingungen erfüllt sein:
+Bevor Sie auf eine Version von ONTAP zurücksetzen, die FPolicy Passthrough-Read nicht unterstützt, müssen Sie die folgenden Bedingungen erfüllen:
 
-* Alle Richtlinien, die Passthrough-Read verwenden, müssen deaktiviert werden, und dann müssen die betroffenen Konfigurationen geändert werden, damit sie kein Passthrough-Read verwenden.
-* Die FPolicy-Funktion muss auf dem Cluster deaktiviert werden, indem jede FPolicy auf dem Cluster deaktiviert wird.
+* Deaktivieren Sie alle Richtlinien mit Passthrough-read, und ändern Sie dann die betroffenen Konfigurationen, sodass sie keine Passthrough-Read-Einstellungen verwenden.
+* Deaktivieren Sie FPolicy-Funktionen auf dem Cluster, indem Sie alle FPolicy-Richtlinien auf dem Cluster deaktivieren.
 
