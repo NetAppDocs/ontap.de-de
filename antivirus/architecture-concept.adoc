@@ -2,7 +2,7 @@
 permalink: antivirus/architecture-concept.html 
 sidebar: sidebar 
 keywords: antivirus, architecture 
-summary: Die Antiviren-Architektur von NetApp besteht aus einem Vscan Server und einer Reihe von ONTAP Konfigurationen. 
+summary: Die NetApp Virenschutzarchitektur besteht aus der Vscan-Serversoftware und den zugehörigen Einstellungen. 
 ---
 = Virenschutz-Architektur
 :allow-uri-read: 
@@ -11,57 +11,57 @@ summary: Die Antiviren-Architektur von NetApp besteht aus einem Vscan Server und
 
 
 [role="lead"]
-Die Antiviren-Architektur von NetApp besteht aus einem Vscan Server und einer Reihe von ONTAP Konfigurationen.
+Die NetApp Virenschutzarchitektur besteht aus der Vscan-Serversoftware und den zugehörigen Einstellungen.
 
 
 
-== Vscan-Server-Komponenten
+== Vscan Server-Software
 
-Sie müssen die folgenden Komponenten auf dem Vscan-Server installieren.
+Sie müssen diese Software auf dem Vscan-Server installieren.
 
 * *ONTAP Antivirus Connector*
 +
-Der von NetApp bereitgestellte Antivirus Connector ONTAP behandelt die Kommunikation zwischen ONTAP und dem Vscan Server.
+Hierbei handelt es sich um die von NetApp bereitgestellte Software, die die Kommunikation von Scananforderungen und -antworten zwischen SVMs und Virenschutz-Software übernimmt. Er kann auf einer virtuellen Maschine ausgeführt werden, um die bestmögliche Leistung zu erzielen, verwenden Sie jedoch eine physische Maschine. Sie können diese Software von der NetApp Support-Website herunterladen (Anmeldung erforderlich).
 
 * *Antivirus-Software*
 +
-Die ONTAP-konforme Virenschutzsoftware anderer Anbieter überprüft Dateien auf Viren oder andere Malware. Sie geben die Abhilfemaßnahmen für infizierte Dateien an, wenn Sie die Software konfigurieren.
+Dies ist eine vom Partner bereitgestellte Software, die Dateien auf Viren oder anderen schädlichen Code scannt. Sie geben die Abhilfemaßnahmen für infizierte Dateien an, wenn Sie die Software konfigurieren.
 
 
 
 
 
-== ONTAP-Konfigurationen
+== Vscan-Softwareeinstellungen
 
-Sie müssen die folgenden Elemente auf dem NetApp Storage-System konfigurieren.
+Sie müssen diese Softwareeinstellungen auf dem Vscan-Server konfigurieren.
 
 * *Scanner-Pool*
 +
-Ein Scanner-Pool definiert die Vscan-Server und privilegierten Benutzer, die eine Verbindung zu SVMs herstellen können. Es definiert auch eine Zeitdauer für die Scan-Anforderung, nach der die Scan-Anforderung an einen alternativen Vscan-Server gesendet wird, wenn eine verfügbar ist.
+Diese Einstellung definiert die Vscan-Server und privilegierten Benutzer, die eine Verbindung zu SVMs herstellen können. Es definiert auch eine Zeitdauer für die Scan-Anforderung, nach der die Scan-Anforderung an einen alternativen Vscan-Server gesendet wird, wenn eine verfügbar ist.
 
 +
 [NOTE]
 ====
-Es empfiehlt sich, den Zeitraum für die Zeitüberschreitung in der Antivirensoftware auf dem Vscan-Server auf fünf Sekunden zu setzen, die unter dem Timeout-Zeitraum für die Scannerpoolanforderung liegen. Um Situationen zu vermeiden, in denen der Dateizugriff komplett verzögert oder verweigert wird, weil die Zeitdauer auf der Software größer ist als die Zeitdauer für die Scan-Anforderung.
+Sie sollten in der Antivirensoftware auf dem Vscan-Server die Zeitdauer für die Zeitüberschreitung bei Scan-Request-Anforderung des Scanners auf fünf Sekunden einstellen. Dadurch werden Situationen vermieden, in denen der Dateizugriff verzögert oder ganz verweigert wird, da die Zeitüberschreitung auf der Software größer ist als die Zeitdauer für die Scananforderung.
 
 ====
 * *Privilegierter Benutzer*
 +
-Ein privilegierter Benutzer ist ein Domain-Benutzerkonto, das von einem Vscan-Server zur Verbindung mit der SVM verwendet wird. Das Konto muss in die Liste der privilegierten Benutzer enthalten sein, die im Scannerpool definiert sind.
+Diese Einstellung ist ein Domänenbenutzerkonto, das ein Vscan-Server verwendet, um eine Verbindung mit der SVM herzustellen. Das Konto muss in der Liste der privilegierten Benutzer im Scanner-Pool vorhanden sein.
 
 * *Scanner-Richtlinie*
 +
-Eine Scannerrichtlinie bestimmt, ob ein Scannerpool aktiv ist. Eine Scannerrichtlinie kann einen der folgenden Werte aufweisen:
+Diese Einstellung bestimmt, ob ein Scannerpool aktiv ist. Scannerrichtlinien sind systemdefiniert, sodass Sie keine benutzerdefinierten Scannerrichtlinien erstellen können. Nur diese drei Richtlinien sind verfügbar:
 
 +
 ** `Primary` Gibt an, dass der Scannerpool aktiv ist.
-** `Secondary` Gibt an, dass der Scannerpool nur aktiv ist, wenn keiner der Vscan-Server im primären Scannerpool angeschlossen ist.
-** `Idle` Gibt an, dass der Scannerpool inaktiv ist. Die Scannerrichtlinien sind systemdefiniert. Sie können keine benutzerdefinierte Scannerrichtlinie erstellen.
+** `Secondary` Gibt an, dass der Scanner-Pool nur aktiv ist, wenn keiner der Vscan-Server im primären Scanner-Pool verbunden ist.
+** `Idle` Gibt an, dass der Scannerpool inaktiv ist.
 
 
 * *Zugangsrichtlinie*
 +
-Eine Zugriffsrichtlinie definiert den Umfang eines Scans beim Zugriff. Sie können die maximale Größe der zu scannenden Dateien, die Erweiterungen der Dateien, die in den Scan aufgenommen werden sollen, sowie die Erweiterungen und Pfade der Dateien angeben, die vom Scan ausgeschlossen werden sollen.
+Diese Einstellung definiert den Umfang eines Scans bei Zugriff. Sie können die maximale Dateigröße für den Scan, Dateierweiterungen und Pfade für den Scan sowie Dateierweiterungen und -Pfade für den Scan angeben.
 
 +
 Standardmäßig werden nur Lese- und Schreib-Volumes gescannt. Sie können Filter festlegen, die das Scannen von schreibgeschützten Volumes ermöglichen oder das Scannen auf Dateien beschränken, die mit dem Zugriff ausführen geöffnet wurden:
@@ -72,51 +72,53 @@ Standardmäßig werden nur Lese- und Schreib-Volumes gescannt. Sie können Filte
 +
 [NOTE]
 ====
-„`Execute Access`“ ist nicht identisch mit „`Execute Permission`“. Ein bestimmter Client hat „`Execute Access`“ in einer ausführbaren Datei nur dann, wenn die Datei mit „`Execute Intent`“ geöffnet wurde.
+„`Zugriff ausführen`“ unterscheidet sich von „`Berechtigung ausführen`“. Ein bestimmter Client hat nur dann "`Execute Access`" auf eine ausführbare Datei, wenn die Datei mit "`Execute Intent`" geöffnet wurde.
 
 ====
 
 
 +
-Sie können die einstellen `scan-mandatory` Option „aus“, um festzulegen, dass der Dateizugriff zulässig ist, wenn keine Vscan-Server für Virenprüfungen verfügbar sind.
+Sie können die einstellen `scan-mandatory` Option „aus“, um festzulegen, dass der Dateizugriff zulässig ist, wenn keine Vscan-Server für Virenprüfungen verfügbar sind. Im On-Access-Modus können Sie aus den folgenden beiden Optionen wählen, die sich gegenseitig ausschließen:
+
++
+** Obligatorisch: Mit dieser Option versucht Vscan, die Scananforderung an den Server zu senden, bis die Timeout-Zeit abläuft. Wenn die Scananforderung vom Server nicht akzeptiert wird, wird die Clientzugriffsanforderung abgelehnt.
+** Nicht obligatorisch: Mit dieser Option erlaubt Vscan immer den Client-Zugriff, unabhängig davon, ob ein Vscan-Server für den Virenscanner verfügbar war oder nicht.
+
 
 * *On-Demand Task*
 +
-Ein On-Demand-Task definiert den Umfang eines Scans nach Bedarf. Sie können die maximale Größe der zu scannenden Dateien, die Erweiterungen und Pfade der Dateien angeben, die in den Scan aufgenommen werden sollen, sowie die Erweiterungen und Pfade der Dateien, die vom Scan ausgeschlossen werden sollen. Dateien in Unterverzeichnissen werden standardmäßig gescannt.
+Diese Einstellung definiert den Umfang eines On-Demand-Scans. Sie können die maximale Dateigröße für den Scan, Dateierweiterungen und Pfade für den Scan sowie Dateierweiterungen und -Pfade für den Scan angeben. Dateien in Unterverzeichnissen werden standardmäßig gescannt.
 
 +
 Sie verwenden einen Cron-Zeitplan, um festzulegen, wann die Aufgabe ausgeführt wird. Sie können das verwenden `vserver vscan on-demand-task run` Befehl zum sofortigen Ausführen der Aufgabe.
 
 * *Vscan-Dateioperationen-Profil (nur beim Scannen beim Zugriff)*
 +
-Der `-vscan-fileop-profile` Parameter für das `vserver cifs share create` Der Befehl definiert, welche Vorgänge auf einer SMB-Freigabe einen Virus-Scan auslösen können. Standardmäßig ist der Parameter auf festgelegt `standard`, Das ist die NetApp Best Practice.
-
-+
-Sie können diesen Parameter beim Erstellen oder Ändern einer SMB-Freigabe nach Bedarf anpassen:
+Der `vscan-fileop-profile` Parameter für das `vserver cifs share create` Befehl definiert, welche SMB-Dateioperationen einen Virus-Scan auslösen. Standardmäßig ist der Parameter auf festgelegt `standard`, Das ist NetApp Best Practice. Sie können diesen Parameter bei Bedarf anpassen, wenn Sie eine SMB-Freigabe erstellen oder ändern:
 
 +
 ** `no-scan` Gibt an, dass Virenscans nie für die Freigabe ausgelöst werden.
-** `standard` Gibt an, dass Virenprüfungen durch Öffnen, Schließen und Umbenennen von Vorgängen ausgelöst werden können.
-** `strict` Gibt an, dass Virenprüfungen durch Öffnen, Lesen, Schließen und Umbenennen von Vorgängen ausgelöst werden können.
+** `standard` Gibt an, dass Virenscans durch Öffnen, Schließen und Umbenennen ausgelöst werden.
+** `strict` Gibt an, dass Virenscans durch Öffnen, Lesen, Schließen und Umbenennen ausgelöst werden.
 +
 Der `strict` Profil bietet erhöhte Sicherheit für Situationen, in denen mehrere Clients gleichzeitig auf eine Datei zugreifen. Wenn ein Client eine Datei schließt, nachdem ein Virus darauf geschrieben wurde, und die gleiche Datei weiterhin auf einem zweiten Client geöffnet bleibt, `strict` Stellt sicher, dass ein Lesevorgang auf dem zweiten Client einen Scan auslöst, bevor die Datei geschlossen wird.
 
 +
-Sie sollten vorsichtig sein, die zu beschränken `strict` Profil für Freigaben, die Dateien enthalten, auf die Sie erwarten, wird gleichzeitig zugegriffen. Da das Profil mehr Scananforderungen generiert als die anderen, kann es sich negativ auf die Leistung auswirken.
+Sie sollten vorsichtig sein, die zu beschränken `strict`` Profil für Freigaben, die Dateien enthalten, auf die Sie erwarten, wird gleichzeitig zugegriffen. Da dieses Profil mehr Scananforderungen generiert, kann dies die Performance beeinträchtigen.
 
-** `writes-only` Gibt an, dass Virenprüfungen nur ausgelöst werden können, wenn eine geänderte Datei geschlossen wurde.
+** `writes-only` Gibt an, dass Virenscans nur ausgelöst werden, wenn geänderte Dateien geschlossen werden.
 +
+Seit `writes-only` Weniger Scananforderungen werden generiert, in der Regel wird die Performance verbessert.
+
++
+Wenn Sie dieses Profil verwenden, muss der Scanner so konfiguriert sein, dass nicht reparierbare infizierte Dateien gelöscht oder isoliert werden können, sodass kein Zugriff darauf möglich ist. Wenn beispielsweise ein Client eine Datei nach dem Schreiben eines Virus schließt und die Datei nicht repariert, gelöscht oder isoliert wird, kann jeder Client, der auf die Datei zugreift, eine Datei schließen `without` Das Schreiben wird infiziert sein.
+
+
+
+
+
 [NOTE]
 ====
 Wenn eine Client-Anwendung einen Umbenennung durchführt, wird die Datei mit dem neuen Namen geschlossen und nicht gescannt. Wenn ein solcher Betrieb in Ihrer Umgebung Sicherheitsaspekte mit sich bringt, sollten Sie den verwenden `standard` Oder `strict` Profil:
 
 ====
-+
-Weil `writes-only` Generiert weniger Scananforderungen als die anderen Profile (außer `no-scan`), es verbessert in der Regel die Leistung.
-
-+
-Beachten Sie jedoch, dass der Scanner konfiguriert werden muss, wenn Sie dieses Profil für eine Freigabe verwenden, um eine nicht pairable infizierte Datei zu löschen oder zu isolieren, damit später keine Clients darauf zugreifen können. Wenn z. B. ein Client eine Datei nach dem Schreiben eines Virus schließt und die Datei nicht repariert, gelöscht oder isoliert wird, wird jeder Client, der auf die Datei zugreift, infiziert.
-
-
-
-
