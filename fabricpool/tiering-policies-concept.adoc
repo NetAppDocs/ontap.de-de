@@ -19,6 +19,15 @@ Die Tiering-Richtlinien von FabricPool ermöglichen ein effizientes Verschieben 
 
 FabricPool Tiering-Richtlinien bestimmen, wann oder ob die Benutzerdatenblöcke eines Volumes in FabricPool basierend auf dem Volume „`Temperature`“ (aktiv) oder „kalt“ (inaktiv) in den Cloud-Tier verschoben werden. Das Volumen „`temperature`“ erhöht sich, wenn es häufig aufgerufen wird und sinkt, wenn es nicht. Einige Tiering-Richtlinien weisen einen zugehörigen Mindestkühlzeitraum für das Tiering auf. In diesem Fall wird die Zeit festgelegt, die Benutzerdaten in einem Volume von FabricPool inaktiv bleiben müssen, damit die Daten als „`Cold`“ gelten und in die Cloud-Tier verschoben werden.
 
+Nachdem ein Block als „kalt“ identifiziert wurde, wird er als „geeignet für Tiering“ markiert.  Ein täglicher Hintergrund-Tiering Scan sucht nach kalten Blöcken. Wenn genug 4-KB-Blöcke vom selben Volume erfasst wurden, werden sie in ein 4-MB-Objekt verkettet und basierend auf der Volume-Tiering-Richtlinie in die Cloud-Ebene verschoben.
+
+[NOTE]
+====
+Daten in Volumes mithilfe von `all` die tiering-Richtlinie wird sofort als „kalt“ markiert und beginnt schnellstmöglich mit dem Tiering in die Cloud-Tier. Es muss nicht darauf gewartet werden, dass der tägliche Tiering Scan ausgeführt wird.
+
+====
+Sie können das verwenden `volume object-store tiering show` Befehl zum Anzeigen des Tiering-Status eines FabricPool Volumes. Weitere Informationen finden Sie im link:https://docs.netapp.com/us-en/ontap-cli-9131/["Befehlsreferenz"].
+
 Die FabricPool Tiering-Richtlinie wird auf Volume-Ebene festgelegt. Vier Optionen stehen zur Verfügung:
 
 * Der `snapshot-only` die tiering-Richtlinie (Standard) verschiebt Benutzerdatenblöcke des Volume-Snapshot-Kopien, die nicht dem aktiven Dateisystem zugeordnet sind, in die Cloud-Tier.
@@ -32,7 +41,10 @@ Der standardmäßige Tiering-Mindestkühlzeitraum beträgt 31 Tage und gilt für
 +
 Sie können die Standardeinstellung für den Tiering-Mindestkühlzeitraum mit dem ändern `-tiering-minimum-cooling-days` Parameter in der erweiterten Berechtigungsebene von `volume create` Und `volume modify` Befehle. Gültige Werte sind 2 bis 183 Tage.
 
-* Der `all` Die tier-Richtlinie, die nur auf ONTAP 9.6 und höher unterstützt wird, verschiebt alle Benutzerdatenblöcke sowohl im aktiven Dateisystem als auch bei Snapshot Kopien in die Cloud-Tier. Er ersetzt das `backup` tiering-Richtlinie:
+* Der `all` die tiering-Richtlinie, die nur mit ONTAP 9.6 und höher unterstützt wird, verschiebt alle Benutzerdaten sowohl im aktiven Filesystem als auch Snapshot Kopien in die Cloud-Tier. Er ersetzt das `backup` tiering-Richtlinie:
++
+Der `all` Die Volume-Tiering-Richtlinie sollte nicht auf Lese-/Schreib-Volumes verwendet werden, die über normalen Client-Datenverkehr verfügen.
+
 +
 Die minimale Kühldauer für das Tiering gilt nicht, da die Daten die Cloud-Tier verschieben, sobald die Tiering-Scan ausgeführt wird, und Sie können die Einstellung nicht ändern.
 
