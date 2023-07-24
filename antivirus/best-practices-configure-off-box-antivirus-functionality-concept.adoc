@@ -1,0 +1,90 @@
+---
+permalink: antivirus/best-practices-configure-off-box-antivirus-functionality-concept.html 
+sidebar: sidebar 
+keywords: off-box, clustered ONTAP, antivirus, 
+summary: Ziehen Sie die folgenden Empfehlungen in Betracht, um die Off-Box-Antivirus-Funktion in Clustered ONTAP zu konfigurieren. 
+---
+= Best Practices zur Konfiguration der Off-Box-Antivirus-Funktion in Clustered ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prüfen Sie die folgenden Empfehlungen zur Konfiguration der Off-Box-Funktion in Clustered ONTAP.
+
+* Beschränken Sie privilegierte Benutzer auf Virenscans. Von normalen Benutzern sollte abgeraten werden
+Verwenden privilegierter Benutzeranmeldeinformationen. Diese Einschränkung kann erreicht werden, indem die Anmelderechte für deaktiviert werden
+Privilegierte Benutzer in Active Directory.
+* Privilegierte Benutzer müssen nicht Teil einer Benutzergruppe sein, die über eine große Anzahl von Rechten im verfügt
+Domäne, z. B. die Gruppe „Administratoren“ oder die Gruppe „Backup Operators“. Privilegierte Benutzer müssen sein
+Wird nur vom Storage-System validiert, sodass sie Vscan-Serververbindungen und erstellen dürfen
+Zugriff auf Dateien für Virenscans
+* Verwenden Sie die Computer, auf denen Vscan-Server ausgeführt werden, nur für Virenprüfungen. Um den General zu entmutigen
+Deaktivieren Sie die Windows-Terminaldienste und andere RAS-Bestimmungen auf diesen Computern
+Und gewähren das Recht, neue Software auf diesen Maschinen nur Administratoren zu installieren.
+* Widmen Sie Vscan Servern Virenprüfungen und verwenden Sie sie nicht für andere Vorgänge, z. B. Backups.
+Sie können den Vscan-Server als virtuelle Maschine (VM) ausführen. Wenn dies der Fall ist, stellen Sie sicher, dass
+Die der VM zugewiesenen Ressourcen werden nicht gemeinsam genutzt, sodass ein Virenscan durchgeführt werden kann. Beraten
+link:http://www.symantec.com/business/support/index?page=home["Symantec"^] Für Anweisungen zu den Anforderungen der Antiviren-Engine.
+* Bereitstellen einer ausreichenden CPU-, Arbeitsspeicher- und Festplattenkapazität für den Vscan-Server, um Ressourcen zu vermeiden
+Engpässe: Die meisten Vscan-Server sind für die Verwendung mehrerer CPU-Core-Server und die Verteilung der konzipiert
+Last über die CPUs hinweg. Beraten link:http://www.symantec.com/business/support/index?page=home["Symantec"^] Für Anweisungen zu den Anforderungen der Antiviren-Engine.
+* NetApp empfiehlt, für die Verbindung von der SVM ein dediziertes Netzwerk mit einem privaten VLAN zu verwenden
+Auf den Vscan-Server, damit der Scandatenverkehr nicht durch anderen Netzwerkverkehr des Clients beeinträchtigt wird. Erstellen Sie ein
+Separate NIC, die für das Virenschutz-VLAN auf dem Vscan-Server und die Daten-LIF auf dem reserviert ist
+SVM: Dieser Schritt vereinfacht die Administration und die Fehlerbehebung bei Netzwerkproblemen.
+Der AV-Verkehr sollte über ein privates Netzwerk getrennt werden. Der AV-Server sollte auf konfiguriert werden
+Die Kommunikation mit dem Domänencontroller (DC) und Clustered ONTAP kann auf eine der folgenden Arten erfolgen:
++
+** Das DC sollte über das private Netzwerk, das zur Trennung des Datenverkehrs verwendet wird, mit den AV-Servern kommunizieren.
+** Der DC- und AV-Server sollte über ein anderes Netzwerk kommunizieren (nicht das zuvor erwähnte private Netzwerk), das nicht mit dem CIFS-Client-Netzwerk identisch ist.
+
+
+
+
+Damit die Kerberos-Authentifizierung für die AV-Kommunikation funktioniert, erstellen Sie einen DNS-Eintrag für die private
+LIFs und ein Service-Principal-Name auf dem DC entsprechend dem für die private erstellte DNS-Eintrag
+LIF: Verwenden Sie diesen Namen, wenn Sie dem AV-Connector eine LIF hinzufügen. Der DNS sollte in der Lage sein, einen zurückzugeben
+Eindeutiger Name für jede private LIF, die mit dem AV-Connector verbunden ist.
+
+
+NOTE: WICHTIG: Wenn die LIF für Vscan-Datenverkehr auf einem anderen Port als die LIF für Client-Datenverkehr konfiguriert ist, kann die Vscan LIF möglicherweise
+Führen Sie bei einem Port-Ausfall ein Failover auf einen anderen Node durch. Durch die Änderung kann der Vscan-Server nicht von erreicht werden
+Der neue Knoten und die Scanbenachrichtigungen für Dateivorgänge auf dem Knoten schlagen fehl.
+Stellen Sie sicher, dass der Vscan-Server über mindestens eine LIF auf einem Node erreichbar ist, damit er die Überprüfung verarbeiten kann
+Anforderungen für Dateivorgänge, die auf diesem Node ausgeführt werden.
+
+* Verbinden Sie das NetApp Storage-System und den Vscan-Server über mindestens ein 1-GbE-Netzwerk.
+* Verbinden Sie in einer Umgebung mit mehreren Vscan-Servern alle Server, die eine ähnliche hohe Performance haben
+Netzwerkverbindungen. Die Verbindung der Vscan-Server verbessert die Leistung durch die Möglichkeit der Lastverteilung.
+* Für Remote-Standorte und Niederlassungen empfiehlt NetApp die Verwendung eines lokalen Vscan-Servers statt eines
+Remote-Vscan-Server, weil ersterer ein perfekter Kandidat für hohe Latenz ist. Wenn Kosten ein Faktor sind, verwenden Sie
+Ein Laptop oder PC für moderaten Virenschutz. Sie können regelmäßige vollständige Dateisystemscans planen
+Durch Freigabe von Volumes oder qtrees und Scannen von jedem System am Remote-Standort aus.
+* Verwenden Sie mehrere Vscan-Server, um die Daten auf der SVM für Lastverteilung und Redundanz zu scannen
+Erstellt. Die Menge der CIFS-Workloads und der daraus resultierende Virenschutzdatenverkehr variieren je SVM. CIFS überwachen
+Und Latenzen beim Virenscan auf dem Storage Controller. Führen Sie die Ergebnisse im Laufe der Zeit zu einem Trend. Bei CIFS-Latenz
+Zudem nehmen die Latenzen von Virus-Scans aufgrund von CPU- oder Applikationsengpässen auf den Vscan-Servern zu
+Jenseits der Trendschwellenwerte können CIFS-Clients lange Wartezeiten erleben. Fügen Sie zusätzliche Vscan-Server hinzu
+Um die Last zu verteilen.
+* Installieren Sie die neueste Version von Antivirus Connector. Ausführliche Informationen zu Supportmöglichkeiten finden Sie im
+link:https://imt.netapp.com/matrix/#welcome["NetApp Interoperabilitäts-Matrix-Tool (IMT)"].
+* Halten Sie Virenschutz-Engines und Definitionen auf dem neuesten Stand. Beraten link:https://login.broadcom.com/["Symantec"^] Für Empfehlungen zur Aktualisierung
+Frequenz.
+* In einer mandantenfähigen Umgebung kann ein Scanner-Pool (Pool von Vscan-Servern) mit mehreren gemeinsam genutzt werden
+SVMs gaben an, dass die Vscan-Server und SVMs Teil derselben oder einer vertrauenswürdigen Domäne sind
+Domäne.
+* Die AV-Softwarerichtlinie für infizierte Dateien sollte auf Löschen oder Quarantäne gesetzt werden, was die Standardeinstellung ist
+Mehrwert, den die meisten AV-Anbieter bieten. Für den Fall `vscan-fileop-profile` Ist auf festgelegt `write_only`Und wenn
+Eine infizierte Datei wird gefunden, die Datei bleibt in der Freigabe und kann geöffnet werden, da das Öffnen einer Datei nicht möglich ist
+Starten Sie einen Scan. Der AV-Scan wird erst nach dem Schließen der Datei ausgelöst.
+* Der `scan-engine timeout` Der Wert muss kleiner sein als der `scanner-pool request-timeout`.
+Wenn sie auf einen höheren Wert eingestellt ist, kann der Zugriff auf Dateien verzögert werden und möglicherweise eine Zeitverzögerung erreichen.
+Um dies zu vermeiden, konfigurieren Sie das `scan-engine timeout` Bis 5 Sekunden kleiner als der `scanner-pool
+request-timeout` Wert: Anweisungen dazu finden Sie in der Dokumentation des Scannerherstellers
+Ändern Sie die `scan-engine timeout` Einstellungen. Der `scanner-pool timeout` Kann von geändert werden
+Verwenden Sie den folgenden Befehl im erweiterten Modus und indem Sie den entsprechenden Wert für den angeben `request-timeout` Parameter:
+`vserver vscan scanner-pool modify`
+* Für eine Umgebung, die auf Scan-Workloads bei Zugriff ausgelegt ist und On-Demand-Scans durchführen muss, wird empfohlen, den On-Demand-Scan-Job außerhalb der Stoßzeiten zu planen, um eine zusätzliche Belastung der vorhandenen AV-Infrastruktur zu vermeiden.
+
