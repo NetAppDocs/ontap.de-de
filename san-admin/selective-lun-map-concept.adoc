@@ -1,7 +1,7 @@
 ---
 permalink: san-admin/selective-lun-map-concept.html 
 sidebar: sidebar 
-keywords: select, lun, map 
+keywords: select, selective, lun, map, slm, enabled, modify, reporting, nodes, list 
 summary: 'Die selektive LUN-Zuordnung (Selective LUN Map, SLM) reduziert die Anzahl der Pfade vom Host zur LUN. Wenn bei SLM eine neue LUN-Zuordnung erstellt wird, ist der Zugriff auf die LUN nur über Pfade auf dem Node möglich, der die LUN und deren HA-Partner besitzt.' 
 ---
 = Übersicht über selektive LUN-Zuordnung
@@ -18,3 +18,45 @@ SLM ermöglicht das Management einer einzelnen Initiatorgruppe pro Host und unte
 Portsätze können mit SLM wie in früheren Versionen von ONTAP verwendet werden, um den Zugriff bestimmter Ziele auf bestimmte Initiatoren weiter zu beschränken. Wenn Sie SLM mit Portsätzen verwenden, sind die LUNs für den Satz der LIFs im Portsatz auf dem Node, der die LUN besitzt, und auf dem HA-Partner dieses Node zugänglich.
 
 SLM ist standardmäßig auf allen neuen LUN-Zuordnungen aktiviert.
+
+
+
+== Ermitteln Sie, ob SLM auf einer LUN-Zuordnung aktiviert ist
+
+Wenn in Ihrer Umgebung LUNs kombiniert wurden, die in ONTAP erstellt wurden, und der Übergang von älteren Versionen erfolgt, müssen Sie möglicherweise feststellen, ob Selective LUN Map (SLM) für eine bestimmte LUN aktiviert ist.
+
+Sie können die in der Ausgabe von angezeigten Informationen verwenden `lun mapping show -fields reporting-nodes, node` Befehl, um zu bestimmen, ob SLM auf Ihrer LUN-Zuordnung aktiviert ist. Wenn SLM nicht aktiviert ist, wird „-“ in den Zellen in der Spalte „`rePorting-Nodes`“ der Befehlsausgabe angezeigt. Wenn SLM aktiviert ist, wird die unter der Spalte „`Nodes`“ angezeigte Liste der Knoten in der Spalte „`rePorting-Nodes`“ dupliziert.
+
+
+
+== Ändern Sie die Liste der SLM-Reporting-Nodes
+
+Wenn Sie eine LUN oder ein Volume mit LUNs auf ein anderes HA-Paar (High Availability) innerhalb desselben Clusters verschieben, sollten Sie die Liste mit Berichterstellungknoten für Selective LUN Map (SLM) ändern, bevor Sie die Verschiebung initiieren, um sicherzustellen, dass aktive, optimierte LUN-Pfade beibehalten werden.
+
+.Schritte
+. Fügen Sie den Ziel-Node und seinen Partner-Node zur Liste der Reporting-Nodes des Aggregats oder Volumes hinzu:
++
+`lun mapping add-reporting-nodes -vserver _vserver_name_ -path _lun_path_ -igroup _igroup_name_ [-destination-aggregate _aggregate_name_|-destination-volume _volume_name_]`
+
++
+Wenn Sie eine konsistente Namenskonvention haben, können Sie mehrere LUN-Zuordnungen gleichzeitig ändern, indem Sie verwenden `_igroup_prefix*_` Statt `_igroup_name_`.
+
+. Prüfen Sie den Host erneut, um die neu hinzugefügten Pfade zu finden.
+. Wenn Ihr Betriebssystem benötigt wird, fügen Sie die neuen Pfade zu Ihrer Multipath-Netzwerk-I/O (MPIO)-Konfiguration hinzu.
+. Führen Sie den Befehl für den Vorgang der erforderlichen Verschiebung aus, und warten Sie, bis der Vorgang abgeschlossen ist.
+. Vergewissern Sie sich, dass die I/O-Verarbeitung über den aktiv/optimierten Pfad erfolgt:
++
+`lun mapping show -fields reporting-nodes`
+
+. Entfernen Sie den vorherigen LUN-Eigentümer und seinen Partner-Node aus der Liste der Reporting-Nodes:
++
+`lun mapping remove-reporting-nodes -vserver _vserver_name_ -path _lun_path_ -igroup _igroup_name_ -remote-nodes`
+
+. Vergewissern Sie sich, dass die LUN aus der vorhandenen LUN-Zuordnung entfernt wurde:
++
+`lun mapping show -fields reporting-nodes`
+
+. Entfernen Sie alle veralteten Geräteeinträge für das Host-Betriebssystem.
+. Ändern Sie gegebenenfalls alle Multipathing-Konfigurationsdateien.
+. Der Host wird erneut gescannt, um das Entfernen alter Pfade zu überprüfen. + Informationen zu bestimmten Schritten finden Sie in Ihrer Host-Dokumentation, um Ihre Hosts erneut zu scannen.
+

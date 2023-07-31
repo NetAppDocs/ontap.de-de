@@ -14,22 +14,25 @@ summary: 'Sie können eine bestehende SnapMirror Beziehung mit einem Recovery Po
 
 
 [role="lead"]
-Sie können eine bestehende SnapMirror Beziehung mit einem Recovery Point Schutz von null (RPO von null) in eine SM-BC Zero RTO synchrone SnapMirror Consistency Group-Beziehung umwandeln.
+Wenn Sie eine bestehende synchrone SnapMirror-Beziehung zwischen einem Quell- und Ziel-Cluster haben, können Sie sie in eine SM-BC-Beziehung konvertieren. Auf diese Weise können Sie die gespiegelten Volumes einer Konsistenzgruppe zuordnen, um für einen Workload mit mehreren Volumes einen RPO von null zu gewährleisten. Außerdem können Sie vorhandene SnapMirror Snapshots behalten, wenn Sie zu einem bestimmten Zeitpunkt vor dem Herstellen der SM-BC-Beziehung zurücksetzen müssen.
 
 .Bevor Sie beginnen
-* Eine synchrone SnapMirror Beziehung mit einem RPO von null besteht zwischen dem primären und dem sekundären Volume.
-* Die Zuordnung aller LUNs auf dem Ziel-Volume wird aufgehoben, bevor die RTO SnapMirror Beziehung Null erstellt wird.
+* Zwischen dem primären und dem sekundären Cluster muss eine synchrone SnapMirror Beziehung mit einem RPO von null bestehen.
+* Die Zuordnung aller LUNs auf dem Ziel-Volume muss aufgehoben werden, bevor die SnapMirror Beziehung zum RTO von null erstellt werden kann.
 * SM-BC unterstützt nur SAN-Protokolle (keine NFS/CIFS). Stellen Sie sicher, dass für den NAS-Zugriff keine Komponente der Konsistenzgruppe bereitgestellt ist.
 
 
 .Über diese Aufgabe
-* Sie müssen ein Cluster und SVM-Administrator auf der Quelle und dem Ziel sein.
+* Sie müssen ein Cluster- und SVM-Administrator auf den primären und sekundären Clustern sein.
 * Sie können keine RPO von null auf ein RTO von null konvertieren, indem Sie die SnapMirror Richtlinie ändern.
-* Wenn vorhandene LUNs auf dem sekundären Volume zugeordnet sind, `snapmirror create` Bei der AutomatedFailover-Richtlinie wird ein Fehler ausgelöst. Sie müssen sicherstellen, dass die Zuordnung der LUNs aufgehoben wird, bevor Sie die ausgeben `snapmirror create` Befehl.
+* Sie müssen sicherstellen, dass die Zuordnung der LUNs aufgehoben wird, bevor Sie die ausgeben `snapmirror create` Befehl.
++
+Wenn vorhandene LUNs auf dem sekundären Volume zugeordnet sind, und der `AutomatedFailover` Policy wird konfiguriert, der `snapmirror create` Löst einen Fehler aus.
+
 
 
 .Schritte
-. Durchführen eines SnapMirror Update Vorgangs für die vorhandene Beziehung:
+. Führen Sie aus dem sekundären Cluster ein SnapMirror Update der bestehenden Beziehung durch:
 +
 `destination::>snapmirror update -destination-path vs1_dst:vol1`
 
@@ -62,7 +65,7 @@ Sie können eine bestehende SnapMirror Beziehung mit einem Recovery Point Schutz
 +
 `destination::> snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol1:@vol1,vol2:@vol2 -policy AutomatedFailover`
 
-. RTO-Konsistenzgruppe von null neu synchronisieren:
+. Neusynchronisierung der Konsistenzgruppe:
 +
 `destination::> snapmirror resync -destination-path vs1_dst:/cg/cg_dst`
 

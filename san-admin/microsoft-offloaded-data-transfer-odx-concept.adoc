@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: microsoft, offloaded, data, transfer, odx 
 summary: 'Microsoft Offloaded Data Transfer (ODX), auch bekannt als Copy Offload, ermöglicht direkte Datentransfers innerhalb eines Storage-Geräts oder zwischen kompatiblen Storage-Geräten, ohne die Daten über den Host-Computer zu übertragen.' 
 ---
-= Überblick über Microsoft Offloaded Data Transfer (ODX)
+= Microsoft Offloaded Data Transfer (ODX)
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -20,3 +20,129 @@ Bei Dateiübertragungen ohne ODX werden die Daten von der Quelle gelesen und üb
 Da ODX Offloaded Kopien direkt zwischen Quelle und Ziel erstellt werden, lassen sich erhebliche Performance-Vorteile erzielen. Dazu gehören u. a. schnellere Kopierzeiten, geringere CPU- und Arbeitsspeicherauslastung auf dem Client sowie geringere Auslastung der Netzwerk-I/O-Bandbreite.
 
 Bei SAN-Umgebungen ist ODX nur verfügbar, wenn er sowohl vom Host als auch vom Storage-System unterstützt wird. Client-Computer, die ODX unterstützen und ODX-fähig sind, nutzen die verlagerte Dateiübertragung automatisch und transparent, wenn Dateien verschoben oder kopiert werden. ODX wird unabhängig davon verwendet, ob Sie Dateien per Drag-and-Drop über den Windows Explorer ziehen oder Befehle zur Befehlszeilendatei kopieren verwenden oder ob eine Client-Applikation Dateikopieanforderungen initiiert.
+
+
+
+== Anforderungen für die Nutzung von ODX
+
+Wenn Sie Vorhaben, ODX für Copy-Offloaded zu verwenden, müssen Sie sich mit den Anforderungen an Volume-Support, Systemanforderungen und Softwarefunktionen vertraut machen.
+
+Zur Nutzung von ODX ist bei Ihrem System Folgendes erforderlich:
+
+* ONTAP
++
+ODX ist bei unterstützten Versionen von ONTAP automatisch aktiviert.
+
+* Mindestquellenvolumen: 2 GB
++
+Für eine optimale Leistung sollte das Quellvolumen größer als 260 GB sein.
+
+* Deduplizierung
++
+ODX verwendet Deduplizierung als Teil des Kopierprozesses. Wenn Sie keine Deduplizierung auf Ihrer SVM wünschen, sollten Sie ODX auf dieser SVM deaktivieren.
+
+* ODX-Unterstützung auf dem Windows-Client
++
+ODX wird unter Windows Server 2012 oder höher und in Windows 8 oder höher unterstützt. Die Interoperabilitäts-Matrix enthält die neuesten Informationen zu unterstützten Windows-Clients.
+
++
+https://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^]
+
+* Applikationssupport für ODX
++
+Die Applikation, die den Datentransfer durchführt, muss ODX unterstützen. Zu den Applikationsprozessen, die ODX unterstützen, gehören unter anderem:
+
++
+** Management von Hyper-V, z. B. Erstellen und Konvertieren von virtuellen Festplatten (VHDs), Verwalten von Snapshot Kopien und Kopieren von Dateien zwischen Virtual Machines
+** Betrieb in Windows Explorer
+** Windows PowerShell Kopierbefehle
+** Befehle zum Kopieren von Windows-Befehlen die Microsoft TechNet-Bibliothek enthält weitere Informationen zu unterstützten ODX-Anwendungen auf Windows-Servern und -Clients.
+
+
+* Bei Verwendung komprimierter Volumes muss die Größe der Komprimierungsgruppen 8 KB sein.
++
+Die Größe der Komprimierungsgruppen 32.000 wird nicht unterstützt.
+
+
+
+ODX funktioniert nicht bei den folgenden Volume-Typen:
+
+* Quellvolumen mit einer Kapazität von weniger als 2 GB
+* Schreibgeschützte Volumes
+* link:../flexcache/supported-unsupported-features-concept.html["FlexCache Volumes"]
+* link:../san-admin/san-volumes-concept.html#semi-thick-provisioning-for-volumes["Semi-Thick Provisioning Volumes"]
+
+
+
+
+== Besondere Anforderungen an Systemdateien
+
+Sie können ODX-Dateien, die in qtrees gefunden wurden, löschen. Andere ODX-Systemdateien dürfen nur entfernt oder geändert werden, wenn Ihnen der technische Support dazu aufgefordert wird.
+
+Bei Nutzung der ODX Funktion liegen in jedem Volume des Systems ODX Systemdateien vor. Diese Dateien ermöglichen die zeitpunktgenaue Darstellung der bei der ODX-Übertragung verwendeten Daten. Die folgenden Systemdateien befinden sich auf der Root-Ebene jedes Volumes, das LUNs oder Dateien enthält, auf die Daten ausgelagert wurden:
+
+* `.copy-offload` (Ein ausgeblendtes Verzeichnis)
+* `.tokens` (Datei unter dem verborgenen `.copy-offload` Verzeichnis)
+
+
+Sie können das verwenden `copy-offload delete-tokens -path dir_path -node _node_name_` Befehl zum Löschen eines qtree mit einer ODX-Datei
+
+
+
+== Anwendungsfälle für ODX
+
+Bei der Verwendung von ODX auf SVMs sollten Sie sich die Anwendungsfälle bewusst sein, damit Sie unter den Umständen, unter denen ODX Ihnen Performance-Vorteile bietet, die Ergebnisse erkennen können.
+
+Windows-Server und -Clients, die ODX unterstützen, nutzen den Copy-Offload als Standardfunktion zum Kopieren von Daten zwischen Remote-Servern. Wenn der Windows-Server oder -Client keine ODX oder eine ODX-Copy-Offload unterstützt, können der Kopier- oder Verladevorgang wieder auf herkömmliche Lese- und Schreibvorgänge für den Kopier- oder Verschiebevorgang zurückgreift.
+
+In den folgenden Anwendungsfällen werden ODX Kopien und Verschiebungen unterstützt:
+
+* Intra-Volume
++
+Die Quell- und Zieldateien oder LUNs befinden sich innerhalb desselben Volumes.
+
+* Zwischen Volumes, demselben Node, gleiche SVM
++
+Die Quell- und Zieldateien oder LUNs befinden sich auf verschiedenen Volumes, die sich auf demselben Node befinden. Die Daten sind Eigentum derselben SVM.
+
+* Zwischen Volumes, verschiedenen Nodes, dieselbe SVM
++
+Die Quell- und Zieldateien oder LUNs befinden sich auf verschiedenen Volumes, die sich auf unterschiedlichen Nodes befinden. Die Daten sind Eigentum derselben SVM.
+
+* Zwischen SVM, demselben Node
++
+Die Quell- und Zieldatei bzw. die LUNs befinden sich auf verschiedenen Volumes, die sich auf demselben Node befinden. Im Besitz der Daten befinden sich unterschiedliche SVMs.
+
+* Zwischen SVMs, unterschiedliche Nodes
++
+Die Quell- und Zieldatei bzw. die LUNs befinden sich auf verschiedenen Volumes, die sich auf unterschiedlichen Nodes befinden. Im Besitz der Daten befinden sich unterschiedliche SVMs.
+
+* Cluster zwischen Clustern
++
+Die Quell- und Ziel-LUNs befinden sich auf unterschiedlichen Volumes, die sich auf verschiedenen Nodes über die Cluster befinden. Dies wird nur für SAN unterstützt und funktioniert nicht für SMB.
+
+
+
+Es gibt einige weitere spezielle Anwendungsfälle:
+
+* Bei der ONTAP ODX Implementierung können mit ODX Dateien zwischen SMB-Freigaben und virtuellen FC- oder iSCSI-Attached-Laufwerken kopiert werden.
++
+Mit Windows Explorer, Windows CLI, PowerShell, Hyper-V oder anderen Applikationen, die ODX unterstützen, können Dateien durch eine nahtlose Verschiebung von ODX Kopien zwischen SMB-Freigaben und verbundenen LUNs kopiert oder verschoben werden, sofern sich SMB-Freigaben und LUNs im selben Cluster befinden.
+
+* Hyper-V stellt weitere Anwendungsfälle für den ODX Copy-Offload zur Verfügung:
++
+** Mithilfe des ODX Copy-Offload-Pass-Through mit Hyper-V können Daten innerhalb oder zwischen VHD-Dateien (Virtual Hard Disk) kopiert oder Daten zwischen zugewiesenen SMB-Shares und verbundenen iSCSI-LUNs innerhalb desselben Clusters kopiert werden.
++
+Damit können Kopien von Gastbetriebssystemen an den zugrunde liegenden Storage weitergegeben werden.
+
+** Bei der Erstellung von VHDs mit fester Größe wird ODX zur Initialisierung der Festplatte mit Nullen verwendet, wobei ein bekannter Token mit dem Namen „Zeroed“ verwendet wird.
+** Wenn sich der Quell- und Ziel-Storage auf demselben Cluster befindet, wird eine ODX Copy Offload für die Storage-Migration bei Virtual Machines eingesetzt.
+
+
++
+[NOTE]
+====
+Um von den Anwendungsfällen für einen ODX Copy-Offload-Pass-Through mit Hyper-V zu profitieren, muss das Gastbetriebssystem ODX unterstützen. Und die Festplatten des Gastbetriebssystems müssen SCSI-Festplatten sein, die durch Storage (SMB oder SAN) unterstützt werden, der ODX unterstützt. IDE-Festplatten auf dem Gastbetriebssystem unterstützen keine ODX-Pass-Through-Unterstützung.
+
+====
+

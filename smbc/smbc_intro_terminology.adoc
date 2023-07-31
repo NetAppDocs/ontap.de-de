@@ -1,8 +1,8 @@
 ---
 sidebar: sidebar 
 permalink: smbc/smbc_intro_terminology.html 
-keywords: SM-BC, SMBC, Mediator, terminology 
-summary: Wenn Sie die Business Continuity von ONTAP SnapMirror erkunden und eine Implementierung planen, sollten Sie sich mit den wichtigsten Terminologie und den Konzepten vertraut machen. 
+keywords: SM-BC, SMBC, overview, benefits, use cases, architecture 
+summary: Vor der Verwendung von SM-BC sollten Sie einige Schlüsselkonzepte kennen. 
 ---
 = Schlüsselkonzepte
 :hardbreaks:
@@ -14,35 +14,56 @@ summary: Wenn Sie die Business Continuity von ONTAP SnapMirror erkunden und eine
 
 
 [role="lead"]
-Wenn Sie die Business Continuity von ONTAP SnapMirror erkunden und eine Implementierung planen, sollten Sie sich mit den wichtigsten Terminologie und den Konzepten vertraut machen.
+SnapMirror Business Continuity (SM-BC) nutzt Funktionen wie Konsistenzgruppen und den ONTAP Mediator, um sicherzustellen, dass Ihre Daten repliziert und auch im Notfall bereitgestellt werden. Bei der Planung Ihrer SM-BC-Implementierung ist es wichtig, die wesentlichen Konzepte in SM-BC und seiner Architektur zu verstehen.
 
-.SM-BC
-Akronym für SnapMirror Business Continuity (SM-BC) Lösung, verfügbar ab ONTAP 9.8.
+
+
+== Der Netapp Architektur Sind
+
+Die folgende Abbildung zeigt eine allgemeine Übersicht über eine SM-BC-Bereitstellung.
+
+image:workflow_san_snapmirror_business_continuity.png["SnapMirror Workflow für Business Continuity"]
+
+Das Diagramm zeigt eine Enterprise-Applikation, die auf einer Storage-VM (SVM) im primären Datacenter gehostet wird. Die SVM enthält fünf Volumes, drei davon sind Teil einer Konsistenzgruppe. Die drei Volumes in der Konsistenzgruppe werden in einem sekundären Datacenter gespiegelt. Unter normalen Bedingungen werden alle Schreibvorgänge im primären Datacenter durchgeführt. Dieses Datacenter dient praktisch als Quelle für I/O-Vorgänge, während das sekundäre Datacenter als Ziel dient.
+
+Im Falle eines Katastrophenfalls im primären Rechenzentrum leitet der ONTAP-Mediator das sekundäre Rechenzentrum als primäres Rechenzentrum an, das alle I/O-Operationen bedient. Es werden nur die Volumes bedient, die in der Konsistenzgruppe gespiegelt werden. Alle Vorgänge, die die anderen beiden Volumes auf der SVM betreffen, sind durch den Notfall betroffen.
+
+
+
+== Grundlegende Konzepte
+
+Das Verständnis der folgenden Begriffe hilft Ihnen bei der Bereitstellung von SM-BC.
 
 .Konsistenzgruppe
-Ab ONTAP 9.10.1 sind Consistency Groups zur Management-Einheit für erste Bestellungen geworden. Weitere Informationen zu Konsistenzgruppen finden Sie unter link:../consistency-groups/index.html["Übersicht über Konsistenzgruppen"].
+Eine Konsistenzgruppe ist eine Sammlung von Volumes oder LUNs, die eine Garantie der Schreibreihenfolge für den Applikations-Workload bietet, der für Business Continuity gesichert werden muss. Eine Konsistenzgruppe stellt sicher, dass alle Volumes dieses Datensatzes stillgelegt und dann zum selben Zeitpunkt wieder eingesetzt werden. Dadurch wird ein datenkonsistenter Restore-Punkt über die Volumes hinweg für diesen Datensatz bereitgestellt.
 
-Eine Konsistenzgruppe (CG) ist eine Sammlung von FlexVol-Volumes, die eine konsistente Schreibreihenfolge für den Applikations-Workload gewährleisten, die zur Gewährleistung der Business Continuity geschützt werden muss. Eine Konsistenzgruppe dient dazu, simultane absturzkonsistente Snapshot Kopien einer Sammlung von Volumes zu einem bestimmten Zeitpunkt zu erstellen. In regulärer Implementierung wird die Gruppe von Volumes, die als Teil einer CG ausgewählt wurden, einer Applikationsinstanz zugeordnet. SnapMirror-Beziehungen, die auch als CG-Beziehung bekannt sind, werden zwischen einer Quell-CG und einer Ziel-CG eingerichtet. Die Quell- und Ziel-CGS müssen die gleiche Anzahl und den gleichen Typ von Volumes enthalten.
+In SM-BC erstellen Sie eine primäre und sekundäre Konsistenzgruppe für Replikation und Datenschutz. Die sekundäre Konsistenzgruppe stellt Ihre Daten im Falle einer Unterbrechung bereit.
+
+Weitere Informationen zu Konsistenzgruppen finden Sie unter link:../consistency-groups/index.html["Übersicht über Konsistenzgruppen"].
 
 .Konstitutive
-Die einzelnen FlexVol Volumes, die Teil einer Konsistenzgruppe sind.
+Ein einzelnes Volume oder LUN, die Teil einer Konsistenzgruppe ist, die durch die SM-BC-Beziehung geschützt ist.
 
-.Mediator
-ONTAP Mediator stellt einen alternativen Integritätspfad zum Peer-Cluster bereit, wobei die Intercluster-LIFs den anderen Systemzustandspfad bereitstellen. Dank der Zustandsinformationen des Mediators können Cluster zwischen einem LIF-Intercluster-Ausfall und einem Standortausfall unterscheiden. Wenn die Site ausfällt, gibt der Mediator die Gesundheitsinformationen bei Bedarf an das Peer-Cluster weiter und erleichtert so das Failover des Peer-Clusters. Aufgrund der vom Mediator bereitgestellten Informationen und der Zustandsprüfung der Intercluster LIF bestimmt ONTAP, ob ein automatischer Failover durchgeführt werden soll, wenn ein Failover nicht möglich ist, fahren Sie fort oder beenden Sie den Vorgang.
+.ONTAP Mediator
+Die ONTAP Mediatoren überwachen die beiden ONTAP-Cluster und orchestrieren das Failover für den Fall, dass Ihr primäres Speichersystem ausfällt. Mit dem ONTAP Mediator stellt Ihre Anwendung automatisch wieder eine Verbindung zu den Ressourcen im sekundären Speichersystem her.
 
-Mediator ist eine von drei Parteien im SM-BC-Quorum und arbeitet mit dem primären Cluster und dem sekundären Cluster, um einen Konsens zu erreichen. Ein Konsens erfordert mindestens zwei Parteien im Quorum, eine Operation zu vereinbaren.
+Durch die Integritätsinformationen des ONTAP Mediators können Cluster zwischen einem Cluster-LIF-Ausfall und einem Standortausfall unterscheiden. Wenn der Standort ausfällt, leitet ONTAP Mediator die Integritätsinformationen bei Bedarf an den Peer-Cluster weiter, wodurch der Peer-Cluster ein Failover ermöglicht wird.
 
-.Out-of-Sync (OOS)
-Der Applikations-I/O repliziert nicht in das sekundäre Storage-System. Das Ziel-Volume ist nicht mit dem Quell-Volume synchronisiert, da die SnapMirror-Replizierung nicht erfolgt. Wenn der Mirror-Status Snapmirrored ist, weist dies auf einen Übertragungsfehler oder einen Fehler hin, der durch einen nicht unterstützten Vorgang verursacht wird.
-
-.Kein RPO
-Recovery-Zeitpunkt 0 Das ist die akzeptable Menge an Daten, die durch Ausfallzeiten entstehen.
-
-.Kein RTO
-Eine Recovery-Zeitvorgabe oder ein transparenter Applikations-Failover wird durch den Einsatz von Software-basiertem Host Multipath I/O (MPIO)-Pfad-Failover erreicht, um unterbrechungsfreien Zugriff auf den Storage zu ermöglichen.
+Erfahren Sie mehr über das link:../mediator/index.html["ONTAP Mediator"^].
 
 .Geplantes Failover
-Ein manueller Vorgang zum Ändern der Rollen von Kopien in einer SM-BC-Beziehung. Der primäre wird zum sekundären und zum primären. ALUA-Reporting ändert sich auch.
+Ein manueller Vorgang zum Ändern der Rollen von Kopien in einer SM-BC-Beziehung. Die primären Standorte werden zum sekundären Standort und der sekundäre zum primären Standort.
 
 .Automatisches ungeplantes Failover (AUFO)
 Ein automatischer Vorgang zum Durchführen eines Failovers der Spiegelkopie. Der Vorgang erfordert Unterstützung von Mediator, um zu erkennen, dass die primäre Kopie nicht verfügbar ist.
+
+.Out-of-Sync (OOS)
+Wenn die Anwendungs-I/O nicht auf das sekundäre Speichersystem repliziert wird, wird es als **nicht synchron** gemeldet. Ein Status „nicht synchron“ bedeutet, dass die sekundären Volumes nicht mit dem primären Volume (Quelle) synchronisiert werden und dass die SnapMirror Replizierung nicht stattfindet.
+
+Wenn der Spiegelungsstatus lautet `Snapmirrored`Dies zeigt einen Übertragungsfehler oder einen Fehler aufgrund eines nicht unterstützten Vorgangs an.
+
+.Kein RPO
+RPO steht für das Recovery Point Objective. Dies ist die Menge an Datenverlusten, die in einem bestimmten Zeitraum als akzeptabel erachtet werden. Ein RPO von null bedeutet, dass kein Datenverlust akzeptabel ist.
+
+.Kein RTO
+RTO steht für die Recovery Time Objective. Diese Zeitdauer wird für eine Applikation nach einem Ausfall, Ausfall oder anderen Datenverlusten als akzeptabel erachtet. Kein RTO bedeutet, dass keine Ausfallzeiten akzeptabel sind.

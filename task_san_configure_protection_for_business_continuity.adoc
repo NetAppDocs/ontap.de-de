@@ -1,10 +1,10 @@
 ---
 sidebar: sidebar 
 permalink: task_san_configure_protection_for_business_continuity.html 
-keywords: netapp, ontap, System Manager, LUNs, source cluster, protect, protection, storage VM, volume, volumes, source, destination, cluster, IOPS activity 
-summary: Zum Konfigurieren von Schutz für Business Continuity müssen im ONTAP Quell-Cluster LUNs ausgewählt und einer Konsistenzgruppe hinzugefügt werden. Öffnen Sie System Manager über einen Browser im Quell-Cluster, um mit der Konfiguration des Schutzes für Business Continuity zu beginnen. 
+keywords: SM-BC, snapmirror business continuity, consistency group, remote protection, 9.8, 9.9.1, destination 
+summary: Zum Konfigurieren von Schutz für Business Continuity müssen im ONTAP Quell-Cluster LUNs ausgewählt und einer Konsistenzgruppe hinzugefügt werden. 
 ---
-= Schutz für Business Continuity konfigurieren
+= Sicherung mit SnapMirror Business Continuity
 :toc: macro
 :hardbreaks:
 :toclevels: 1
@@ -19,25 +19,71 @@ summary: Zum Konfigurieren von Schutz für Business Continuity müssen im ONTAP 
 
 
 [role="lead"]
-Zum Konfigurieren von Schutz für Business Continuity müssen im ONTAP Quell-Cluster LUNs ausgewählt und einer Konsistenzgruppe hinzugefügt werden. Öffnen Sie System Manager über einen Browser im Quell-Cluster, um mit der Konfiguration des Schutzes für Business Continuity zu beginnen.
+Bei der Konfiguration der Sicherung mit SnapMirror Business Continuity werden LUNs auf dem ONTAP Quell-Cluster ausgewählt und einer Konsistenzgruppe hinzugefügt.
 
-Dieser Workflow wurde für ONTAP 9.8 und 9.9 entwickelt. Ab ONTAP 9.10.1 wird empfohlen, mit dem Erstellen einer Konsistenzgruppe zu beginnen und dann SM-BC als Remote-Schutz zu verwenden.
+.Bevor Sie beginnen
+* Sie müssen über eine SnapMirror Synchronous Lizenz verfügen.
+* Sie müssen ein Cluster- oder Storage-VM-Administrator sein.
+* Alle zusammengehörigen Volumes einer Konsistenzgruppe müssen sich in einer einzelnen Storage VM (SVM) befinden.
++
+** LUNs können auf verschiedenen Volumes residieren.
 
 
-
-== Über diese Aufgabe
-
-* LUNs müssen sich auf derselben Storage-VM befinden.
-* LUNs können auf verschiedenen Volumes residieren.
 * Das Quell- und Ziel-Cluster kann nicht identisch sein.
+* Sie können keine SM-BC-Beziehungen zu Konsistenzgruppen über ASA-Cluster und nicht-ASA-Cluster hinweg aufbauen.
 * SM-BC benötigt den standardmäßigen IPspace für Cluster-Peer-Beziehungen. Benutzerdefinierter IPspace wird nicht unterstützt.
+* Der Name der Konsistenzgruppe muss eindeutig sein.
+* Die Volumes auf dem sekundären (Ziel-) Cluster müssen den Typ DP aufweisen.
+* Die primären und sekundären SVMs müssen in einer Peering-Beziehung vorliegen.
 
 
 .Schritte
-. Wählen Sie die zu schützenden LUNs aus und fügen Sie sie einer Schutzgruppe hinzu: *Schutz > Übersicht > Schutz für Business Continuity > LUNs schützen*.
-. Wählen Sie eine oder mehrere LUNs aus, die auf dem Quellcluster geschützt werden sollen.
+Sie können eine Konsistenzgruppe mithilfe der ONTAP CLI oder von System Manager konfigurieren.
+
+Ab ONTAP 9.10.1 bietet ONTAP einen Endpunkt und ein Menü für Konsistenzgruppen in System Manager, das zusätzliche Management Utilities bietet. Wenn Sie ONTAP 9.10.1 oder höher verwenden, finden Sie weitere Informationen unter link:../consistency-groups/configure-task.html["Konfigurieren einer Konsistenzgruppe"] Dann link:../consistency-groups/protect-task.html["Schutz konfigurieren"] Um eine SM-BC-Beziehung zu erstellen.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie im primären Cluster zu *Schutz > Übersicht > Schutz für Business Continuity > LUNs schützen*.
+. Wählen Sie die zu schützenden LUNs aus, und fügen Sie sie einer Schutzgruppe hinzu.
 . Wählen Sie das Ziel-Cluster und die SVM aus.
 . *Initialize Relationship* ist standardmäßig ausgewählt. Klicken Sie auf *Speichern*, um den Schutz zu starten.
 . Gehen Sie zu *Dashboard > Performance*, um die IOPS-Aktivität für die LUNs zu überprüfen.
 . Verwenden Sie auf dem Ziel-Cluster System Manager, um zu überprüfen, ob der Schutz für die Business Continuity-Beziehung synchron ist: *Schutz > Beziehungen*.
 
+
+--
+.CLI
+--
+. Erstellen einer Konsistenzgruppenbeziehung vom Ziel-Cluster
+`Destination:> snapmirror create -source-path _source-path_ -Destination-path _Destination-path_ -cg-item-Mappings _Volume-paths_ -Policy _Policy-Name_
++
+Mit dem können Sie bis zu 12 zusammengehörige Volumes zuordnen `cg-item-mappings` Parameter auf dem `snapmirror create` Befehl.
+
++
+Im folgenden Beispiel werden zwei Konsistenzgruppen erstellt: `cg_src_ on the source with `vol1` Und `vol2` Und einer gespiegelten Ziel-Konsistenzgruppe, `cg_dst`.
+
++
+`destination::> snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol_src1:@vol_dst1,vol_src2:@vol_dst2 -policy AutomatedFailOver`
+
+. Initialisieren Sie vom Ziel-Cluster die Konsistenzgruppe.
++
+`destination::>snapmirror initialize -destination-path _destination-consistency-group_`
+
+. Bestätigen Sie, dass der Initialisierungsvorgang erfolgreich abgeschlossen wurde. Der Status sollte sein `InSync`.
++
+`snapmirror show`
+
+. Erstellen Sie auf jedem Cluster eine Initiatorgruppe, damit Sie dem Initiator auf dem Applikations-Host LUNs zuordnen können.
+`lun igroup create -igroup _name_ -protocol _fcp|iscsi_ -ostype _os_ -initiator _initiator_name_`
+. Ordnen Sie auf jedem Cluster LUNs der Initiatorgruppe zu:
++
+`lun map -path _path_name_ -igroup _igroup_name_`
+
+. Überprüfen Sie, ob die LUN-Zuordnung mit dem erfolgreich abgeschlossen wurde `lun map` Befehl. Anschließend können Sie die neuen LUNs auf dem Anwendungshost ermitteln.
+
+
+--
+====

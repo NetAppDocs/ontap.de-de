@@ -4,7 +4,7 @@ permalink: smbc/index.html
 keywords: SM-BC, SMBC, overview, benefits, use cases, architecture 
 summary: 'Ab ONTAP 9.8 können Sie die SnapMirror Business Continuity (SM-BC) verwenden, um Applikationen mit LUNs zu sichern und dadurch ein transparentes Failover für Applikationen zu ermöglichen, um bei einem Notfall die Business Continuity zu gewährleisten.' 
 ---
-= Überblick
+= Überblick über die Business Continuity in SnapMirror
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,13 +14,15 @@ summary: 'Ab ONTAP 9.8 können Sie die SnapMirror Business Continuity (SM-BC) ve
 
 
 [role="lead"]
-Ab ONTAP 9.8 können Sie SnapMirror Business Continuity (SM-BC) verwenden, um Applikationen mit LUNs zu sichern und somit ein transparentes Failover für Applikationen zu ermöglichen, um bei einem Notfall die Business Continuity zu gewährleisten. SM-BC wird auf AFF Clustern (einschließlich AFF C-Serie) oder All SAN Array (ASA) unterstützt, wobei die primären und sekundären Cluster entweder AFF oder ASA sein können. SM-BC sichert Applikationen mit iSCSI oder FCP LUNs.
+SnapMirror Business Continuity (SM-BC) sorgt dafür, dass die Business Services auch bei einem vollständigen Standortausfall weiterlaufen und Applikationen mithilfe einer sekundären Kopie einen transparenten Failover unterstützen. Zum Auslösen eines Failovers mit SM-BC sind weder manuelle Eingriffe noch zusätzliche Skripte erforderlich.
+
+SM-BC ist ab ONTAP 9.8 verfügbar. SM-BC wird auf AFF Clustern oder All SAN Array (ASA) Clustern unterstützt, bei denen die primären und sekundären Cluster entweder AFF oder ASA sein können. SM-BC sichert Applikationen mit iSCSI oder FCP LUNs.
 
 
 
 == Vorteile
 
-Die Business Continuity von SnapMirror bietet folgende Vorteile:
+SM-BC bietet folgende Vorteile:
 
 * Kontinuierliche Verfügbarkeit für geschäftskritische Applikationen
 * Möglichkeit zum abwechselnd Hosten kritischer Applikationen vom primären und sekundären Standort aus
@@ -32,19 +34,13 @@ Die Business Continuity von SnapMirror bietet folgende Vorteile:
 
 
 
-== Typische Anwendungsfälle
+== Anwendungsfälle
 
+.Applikationsimplementierung für Objekt mit null Recovery-Zeit (RTO)
+In einer SM-BC-Bereitstellung verfügen Sie über ein primäres und ein sekundäres Cluster. Eine LUN im primären Cluster  `1LP`) Wird einen Spiegel haben (`L1s`) Auf der sekundären; beide LUNs teilen sich dieselbe serielle ID und werden als Lese-Schreib-LUNs an den Host gemeldet. Lese- und Schreibvorgänge werden jedoch nur auf der primären LUN gewartet. `1LP`. Alle Schreibvorgänge auf die Spiegelung `L1S` Werden von Proxy bedient.
 
-
-=== Applikationsimplementierung ohne RTO oder transparentes Applikations-Failover
-
-Transparent Application Failover basiert auf dem Software-basierten Pfad-Failover (MPIO) des Hosts auf Multipath I/O (Multipath I/O) und erreicht so einen unterbrechungsfreien Zugriff auf den Storage. Beide LUN-Kopien, beispielsweise primäre(L1P) und gespiegelte Kopie (L1S), haben die gleiche Identität (Seriennummer) und werden dem Host als lesegeschrieben gemeldet. Lese- und Schreibzugriffe werden jedoch nur vom primären Volume verarbeitet. I/O-Anfragen, die an die gespiegelte Kopie ausgegeben werden, werden in die primäre Kopie Proxykopie verwendet. Der bevorzugte Pfad des Hosts zu L1 ist VS1:N1, basierend auf dem Zugriffsstatus Asymmetric Logical Unit Access (ALUA) Active Optimized (A/O). Mediator wird als Teil der Implementierung empfohlen, in erster Linie für das Failover bei einem Storage-Ausfall auf dem primären System.
-
-
-
-=== Notfallszenario
-
-Der Standort, auf dem der primäre Cluster gehostet wird, kommt zu einem Ausfall. Host-Multipathing-Software markiert alle Pfade durch das Cluster als Down und verwendet Pfade vom sekundären Cluster. Das Ergebnis ist ein unterbrechungsfreier Failover der gespiegelten Kopie für LUN L1. L1S wird von einer Spiegelkopie in eine aktive Kopie von LUN L1 konvertiert. Der Failover erfolgt automatisch, wenn ein externer Mediator konfiguriert ist. Der bevorzugte Pfad des Hosts zu L1 lautet VS2:N1.
+.Notfallszenario
+Mit SM-BC können Sie mehrere Volumes synchron für eine Applikation zwischen Standorten an geografisch verteilten Standorten replizieren. Bei Unterbrechungen des primären Storage kann automatisch ein Failover auf die sekundäre Kopie durchgeführt werden. Dies ermöglicht Business Continuity für Tier-1-Applikationen.
 
 
 
@@ -53,3 +49,12 @@ Der Standort, auf dem der primäre Cluster gehostet wird, kommt zu einem Ausfall
 Die folgende Abbildung zeigt den Betrieb der SnapMirror Business Continuity-Funktion auf hoher Ebene.
 
 image:workflow_san_snapmirror_business_continuity.png["SnapMirror Workflow für Business Continuity"]
+
+In Abschnitt 1 des Diagramms wird eine Applikation auf einer SVM im primären Datacenter implementiert. Die Volumes, die zur primären Konsistenzgruppe hinzugefügt wurden, sind mit SM-BC geschützt und werden auf die sekundäre Konsistenzgruppe in einem sekundären Rechenzentrum gespiegelt. Bei einer Unterbrechung erfolgt ein Failover der Volumes in der primären Konsistenzgruppe auf die gespiegelte Konsistenzgruppe. Volumes, die sich nicht in einer gespiegelten Konsistenzgruppe befinden, werden im Falle eines Failovers nicht bedient.
+
+
+
+== Weitere Informationen
+
+* link:https://www.netapp.com/pdf.html?item=/media/21888-tr-4878.pdf["TR-4878: SnapMirror Business Continuity"^]
+
