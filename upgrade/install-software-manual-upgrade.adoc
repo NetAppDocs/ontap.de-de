@@ -1,0 +1,85 @@
+---
+permalink: upgrade/install-software-manual-upgrade.html 
+sidebar: sidebar 
+keywords: ontap, software, image, download, downloading, install, installing 
+summary: Nachdem Sie das ONTAP-Softwarepaket für ein Upgrade heruntergeladen haben, müssen Sie es lokal installieren, bevor Sie mit dem Upgrade beginnen 
+---
+= Installieren Sie das ONTAP Softwarepaket für manuelle Upgrades
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Nachdem Sie das ONTAP-Softwarepaket für ein Upgrade heruntergeladen haben, müssen Sie es lokal installieren, bevor Sie mit dem Upgrade beginnen.
+
+.Schritte
+. Stellen Sie die Berechtigungsebene auf Erweitert ein, und geben Sie bei Aufforderung * y* ein, um fortzufahren: `set -privilege advanced`
++
+Die erweiterte Eingabeaufforderung (`*>`Erscheint.
+
+. Installieren Sie das Image.
++
+[cols="2"]
+|===
+| Wenn Sie die folgende Konfiguration haben... | Befehl 
+
+
+ a| 
+** Ohne MetroCluster
+** MetroCluster mit 2 Nodes
+
+ a| 
+`system node image update -node * -package _location_ -replace-package true -setdefault true -background true`
+
+_Location_ kann ein Webserver oder ein lokaler Ordner sein, abhängig von der ONTAP-Version. Siehe `system node image update` Man-Page für Details.
+
+Mit diesem Befehl wird das Software-Image gleichzeitig auf allen Nodes installiert. Um das Image nacheinander auf jedem Knoten zu installieren, geben Sie nicht den an `-background` Parameter.
+
+
+
+ a| 
+** MetroCluster mit 4 Nodes
+** MetroCluster-Konfiguration mit 8 Nodes
+
+ a| 
+`system node image update -node * -package location -replace-package true -background true -setdefault false`
+
+Diesen Befehl müssen Sie bei beiden Clustern ausgeben.
+
+Dieser Befehl verwendet eine erweiterte Abfrage, um das Ziel-Software-Image zu ändern, das als alternatives Image auf jedem Node installiert wird.
+
+|===
+. Eingabe `y` Fortfahren, wenn Sie dazu aufgefordert werden.
+. Vergewissern Sie sich, dass das Software-Image auf jedem Node installiert ist.
++
+`system node image show-update-progress -node *`
+
++
+Dieser Befehl zeigt den aktuellen Status der Software-Image-Installation an. Sie sollten diesen Befehl weiter ausführen, bis alle Knoten einen *Run Status* von *Exited* und einen *Exit Status* von *Erfolg* melden.
+
++
+Der Befehl zum Aktualisieren des System-Node-Images kann fehlschlagen und zeigt Fehler- oder Warnmeldungen an. Nach Beheben von Fehlern oder Warnungen können Sie den Befehl erneut ausführen.
+
++
+Dieses Beispiel zeigt ein Cluster mit zwei Nodes, in dem das Software-Image erfolgreich auf beiden Nodes installiert wird:
+
++
+[listing]
+----
+cluster1::*> system node image show-update-progress -node *
+There is no update/install in progress
+Status of most recent operation:
+        Run Status:     Exited
+        Exit Status:    Success
+        Phase:          Run Script
+        Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node0.
+There is no update/install in progress
+Status of most recent operation:
+        Run Status:     Exited
+        Exit Status:    Success
+        Phase:          Run Script
+        Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node1.
+2 entries were acted on.
+----
+
