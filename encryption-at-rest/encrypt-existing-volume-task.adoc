@@ -1,16 +1,100 @@
 ---
 permalink: encryption-at-rest/encrypt-existing-volume-task.html 
 sidebar: sidebar 
-keywords: enabling, encryption, existing, volume, volume move start, command 
-summary: Sie können den Befehl Volume Move Start verwenden, um die Verschlüsselung durch Verschieben eines vorhandenen Volumes zu aktivieren. Sie müssen die Volume-Verschiebung ab ONTAP 9.2 und früher verwenden. Sie können dasselbe oder ein anderes Aggregat verwenden. 
+keywords: enabling, encryption, existing, volume, volume move start, command, volume encryption conversion start 
+summary: Sie können eine der beiden Methoden verwenden, um die Verschlüsselung auf einem vorhandenen Volume zu aktivieren - mit dem Befehl Volume move Start oder mit dem Befehl Volume Encryption Conversion Start. 
 ---
-= Aktivieren Sie die Verschlüsselung auf einem vorhandenen Volume mit dem Befehl Volume move Start
+= Aktivieren Sie die Verschlüsselung auf einem vorhandenen Volume
 :allow-uri-read: 
-:icons: font
-:imagesdir: ../media/
 
 
 [role="lead"]
+Sie können eine der beiden Methoden verwenden, um die Verschlüsselung auf einem vorhandenen Volume&mdash zu aktivieren `volume move start command` Oder verwenden Sie die `volume encryption conversion start` Befehl.
+
+.Über diese Aufgabe
+* Ab ONTAP 9.3 können Sie den verwenden `volume encryption conversion start` Befehl, um die Verschlüsselung eines vorhandenen Volume „in place“ zu aktivieren, ohne das Volume an einen anderen Speicherort verschieben zu müssen. Alternativ können Sie den verwenden `volume move start` Befehl.
+* Bei ONTAP 9.2 und älteren Versionen können Sie nur die verwenden `volume move start` Befehl zum Aktivieren der Verschlüsselung durch Verschieben eines vorhandenen Volumes
+
+
+
+
+== Aktivieren Sie die Verschlüsselung auf einem vorhandenen Volume mit dem Befehl zur Konvertierung der Volume-Verschlüsselung
+
+Ab ONTAP 9.3 können Sie den verwenden `volume encryption conversion start` Befehl, um die Verschlüsselung eines vorhandenen Volume „in place“ zu aktivieren, ohne das Volume an einen anderen Speicherort verschieben zu müssen.
+
+Nachdem Sie eine Konvertierung gestartet haben, muss sie abgeschlossen sein. Wenn während des Vorgangs ein Leistungsproblem auftritt, können Sie das ausführen `volume encryption conversion pause` Befehl zum Anhalten des Vorgangs, und `volume encryption conversion resume` Befehl zum Fortsetzen des Vorgangs.
+
+[NOTE]
+====
+Sie können nicht verwenden `volume encryption conversion start` Um ein SnapLock Volume zu konvertieren.
+
+====
+.Schritte
+. Verschlüsselung auf einem vorhandenen Volume aktivieren:
++
+`volume encryption conversion start -vserver SVM_name -volume volume_name`
+
++
+Die gesamte Befehlssyntax finden Sie auf der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl wird die Verschlüsselung für ein vorhandenes Volume aktiviert `vol1`:
+
++
+[listing]
+----
+cluster1::> volume encryption conversion start -vserver vs1 -volume vol1
+----
++
+Das System erstellt einen Verschlüsselungsschlüssel für das Volume. Die Daten auf dem Volume werden verschlüsselt.
+
+. Überprüfen Sie den Status des Konvertierungsvorgangs:
++
+`volume encryption conversion show`
+
++
+Die gesamte Befehlssyntax finden Sie auf der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl wird der Status des Konvertierungsvorgangs angezeigt:
+
++
+[listing]
+----
+cluster1::> volume encryption conversion show
+
+Vserver   Volume   Start Time           Status
+-------   ------   ------------------   ---------------------------
+vs1       vol1     9/18/2017 17:51:41   Phase 2 of 2 is in progress.
+----
+. Wenn der Konvertierungsvorgang abgeschlossen ist, überprüfen Sie, ob das Volume für die Verschlüsselung aktiviert ist:
++
+`volume show -is-encrypted true`
+
++
+Die gesamte Befehlssyntax finden Sie auf der man-Page für den Befehl.
+
++
+Mit dem folgenden Befehl werden die verschlüsselten Volumes auf angezeigt `cluster1`:
+
++
+[listing]
+----
+cluster1::> volume show -is-encrypted true
+
+Vserver  Volume  Aggregate  State  Type  Size  Available  Used
+-------  ------  ---------  -----  ----  -----  --------- ----
+vs1      vol1    aggr2     online    RW  200GB    160.0GB  20%
+----
+
+
+.Ergebnis
+Wenn Sie einen KMIP-Server zum Speichern der Schlüssel für einen Node verwenden, sendet ONTAP bei der Verschlüsselung eines Volumes automatisch „`schiebt`“ einen Verschlüsselungsschlüssel an den Server.
+
+
+
+== Aktivieren Sie die Verschlüsselung auf einem vorhandenen Volume mit dem Befehl Volume move Start
+
 Sie können das verwenden `volume move start` Befehl zum Aktivieren der Verschlüsselung durch Verschieben eines vorhandenen Volumes Sie müssen verwenden `volume move start` In ONTAP 9.2 und früher. Sie können dasselbe oder ein anderes Aggregat verwenden.
 
 .Was Sie benötigen
@@ -19,11 +103,10 @@ Sie müssen ein Cluster-Administrator sein, um diese Aufgabe durchzuführen, ode
 link:delegate-volume-encryption-svm-administrator-task.html["Delegieren von Berechtigungen zum Ausführen des Befehls zum Verschieben von Volumes"]
 
 .Über diese Aufgabe
-Ab ONTAP 9.8 können Sie dies nutzen `volume move start` Aktivieren der Verschlüsselung auf einem SnapLock oder FlexGroup Volume
+* Ab ONTAP 9.8 können Sie dies nutzen `volume move start` Aktivieren der Verschlüsselung auf einem SnapLock oder FlexGroup Volume
+* Ab ONTAP 9.6 können Sie mithilfe der Verschlüsselung auf Aggregatebene dem enthaltenden Aggregat Schlüssel zuweisen, damit die Volumes verschoben werden können. Ein mit einem eindeutigen Schlüssel verschlüsseltes Volume wird als _NVE Volume_ bezeichnet. Ein mit einem Aggregatschlüssel verschlüsseltes Volume wird als _NAE Volume_ (für NetApp Aggregate Encryption) bezeichnet. Klartext-Volumes werden in NAE-Aggregaten nicht unterstützt.
+* Beginnend mit ONTAP 9.4, wenn Sie beim Einrichten des Onboard Key Managers „`cc-Mode`“ aktivieren, werden die mit dem erstellten Volumes erstellt `volume move start` Befehl wird automatisch verschlüsselt. Sie müssen nicht angeben `-encrypt-destination true`.
 
-Beginnend mit ONTAP 9.4, wenn Sie beim Einrichten des Onboard Key Managers „`cc-Mode`“ aktivieren, werden die mit dem erstellten Volumes erstellt `volume move start` Befehl wird automatisch verschlüsselt. Sie müssen nicht angeben `-encrypt-destination true`.
-
-Ab ONTAP 9.6 können Sie mithilfe der Verschlüsselung auf Aggregatebene dem enthaltenden Aggregat Schlüssel zuweisen, damit die Volumes verschoben werden können. Ein mit einem eindeutigen Schlüssel verschlüsseltes Volume wird als _NVE Volume_ bezeichnet. Ein mit einem Aggregatschlüssel verschlüsseltes Volume wird als _NAE Volume_ (für NetApp Aggregate Encryption) bezeichnet. Klartext-Volumes werden in NAE-Aggregaten nicht unterstützt.
 
 .Schritte
 . Verschieben Sie ein vorhandenes Volume und geben Sie an, ob die Verschlüsselung auf dem Volume aktiviert ist:
@@ -70,7 +153,7 @@ Ein NVE Volume auf ein Klartext-Volume
 
 |===
 +
-Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+Die gesamte Befehlssyntax finden Sie auf der man-Page für den Befehl.
 
 +
 Mit dem folgenden Befehl wird ein Klartext-Volume mit dem Namen konvertiert `vol1` Zu einem NVE Volume:
@@ -120,7 +203,7 @@ cluster1::> volume move start -vserver vs1 -volume vol2 -destination-aggregate a
 Der `encryption-type` Field steht in ONTAP 9.6 und höher zur Verfügung.
 
 +
-Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+Die gesamte Befehlssyntax finden Sie auf der man-Page für den Befehl.
 
 +
 Mit dem folgenden Befehl wird der Verschlüsselungstyp von Volumes in angezeigt `cluster2`:
@@ -141,7 +224,7 @@ vs3      vol3    aggregate
 `volume show -is-encrypted true`
 
 +
-Eine vollständige Befehlssyntax finden Sie in der man-Page für den Befehl.
+Die gesamte Befehlssyntax finden Sie auf der man-Page für den Befehl.
 
 +
 Mit dem folgenden Befehl werden die verschlüsselten Volumes auf angezeigt `cluster2`:

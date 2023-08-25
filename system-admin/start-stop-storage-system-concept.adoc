@@ -1,7 +1,7 @@
 ---
 permalink: system-admin/start-stop-storage-system-concept.html 
 sidebar: sidebar 
-keywords: start, stop, node, cli, ontap, troubleshoot, sp 
+keywords: start, stop, node, cli, ontap, troubleshoot, sp, reboot, system, boot, compactflash, shut down, shutdown,  unresponsive, shut, down, node, unresponsive, support, personnel, direct, troubleshoot 
 summary: Möglicherweise müssen Sie einen Node aus Wartungs- oder Fehlerbehebungsgründen starten oder stoppen. Dies können Sie über die ONTAP CLI, die Eingabeaufforderung der Boot-Umgebung oder die SP-CLI ausführen. 
 ---
 = Starten oder Stoppen einer Knotenübersicht
@@ -14,3 +14,168 @@ summary: Möglicherweise müssen Sie einen Node aus Wartungs- oder Fehlerbehebun
 Möglicherweise müssen Sie einen Node aus Wartungs- oder Fehlerbehebungsgründen starten oder stoppen. Dies können Sie über die ONTAP CLI, die Eingabeaufforderung der Boot-Umgebung oder die SP-CLI ausführen.
 
 Verwenden des SP-CLI-Befehls `system power off` Oder `system power cycle` Zum aus- und Wiedereinschalten eines Knotens kann es zu einem unsachgemäßen Herunterfahren des Knotens (auch als „ _dirty Shutdown_“ bezeichnet) führen und nicht als Ersatz für ein graziertes Herunterfahren über die ONTAP dienen `system node halt` Befehl.
+
+
+
+== Booten Sie einen Node an der Eingabeaufforderung des Systems neu
+
+Sie können einen Node im normalen Modus von der Eingabeaufforderung des Systems neu booten. Ein Node wird für das Booten über das Boot-Gerät, z. B. eine PC CompactFlash Card, konfiguriert.
+
+.Schritte
+. Wenn das Cluster vier oder mehr Nodes enthält, vergewissern Sie sich, dass der neu zu bootende Node das Epsilon nicht hält:
++
+.. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`*set -privilege advanced*`
+
+.. Bestimmen Sie, auf welchem Node das Epsilon enthalten ist:
++
+`*cluster show*`
+
++
+Das folgende Beispiel zeigt, dass „`node1`“ Epsilon enthält:
+
++
+[listing]
+----
+cluster1::*> cluster show
+Node                 Health  Eligibility   Epsilon
+-------------------- ------- ------------  ------------
+node1                true    true          true
+node2                true    true          false
+node3                true    true          false
+node4                true    true          false
+4 entries were displayed.
+----
+.. Wenn der zu bootende Node das Epsilon hält, entfernen Sie das Epsilon vom Knoten:
++
+`*cluster modify -node _node_name_ -epsilon false*`
+
+.. Weisen Sie Epsilon einem anderen Knoten zu, der weiter oben bleibt:
++
+`*cluster modify -node _node_name_ -epsilon true*`
+
+.. Zurück zur Administratorberechtigungsebene:
++
+`*set -privilege admin*`
+
+
+
+. Verwenden Sie die `system node reboot` Befehl zum Neubooten des Node.
++
+Wenn Sie den nicht angeben `-skip-lif-migration` Parameter, der Befehl versucht, vor dem Neubooten Daten und Cluster-Management-LIFs synchron auf einen anderen Node zu migrieren. Wenn die LIF-Migration fehlschlägt oder zeitausgeführt wird, wird der Neustart abgebrochen und ONTAP zeigt einen Fehler an, der den Fehler bei der LIF-Migration angibt.
+
++
+[listing]
+----
+cluster1::> system node reboot -node node1 -reason "software upgrade"
+----
++
+Der Node startet den Neubootvorgang. Die Eingabeaufforderung für die Anmeldung bei ONTAP wird angezeigt und gibt an, dass der Neustart abgeschlossen ist.
+
+
+
+
+
+== Starten Sie ONTAP an der Eingabeaufforderung der Boot-Umgebung
+
+Sie können die aktuelle Version oder das Backup-Release von ONTAP booten, wenn Sie sich an der Eingabeaufforderung eines Node in der Boot-Umgebung befinden.
+
+.Schritte
+. Rufen Sie die Eingabeaufforderung der Boot-Umgebung über die Eingabeaufforderung des Speichersystems mit auf `system node halt` Befehl.
++
+Auf der Konsole des Storage-Systems wird die Eingabeaufforderung der Boot-Umgebung angezeigt.
+
+. Geben Sie an der Eingabeaufforderung der Boot-Umgebung einen der folgenden Befehle ein:
++
+|===
+| Zum Booten... | Eingeben... 
+
+
+ a| 
+Der aktuellen Version von ONTAP
+ a| 
+`boot_ontap`
+
+
+
+ a| 
+Das primäre ONTAP-Image vom Boot-Gerät
+ a| 
+`boot_primary`
+
+
+
+ a| 
+Das ONTAP Backup-Image vom Startgerät aus
+ a| 
+`boot_backup`
+
+|===
++
+Wenn Sie sich nicht sicher sind, welches Bild verwendet werden soll, sollten Sie dies verwenden `boot_ontap` Im ersten Fall.
+
+
+
+
+
+== Fahren Sie einen Node herunter
+
+Sie können einen Node herunterfahren, wenn er nicht mehr reagiert, oder wenn das Support-Personal sie als Teil der Fehlerbehebung aufgibt.
+
+.Schritte
+. Wenn das Cluster vier oder mehr Nodes enthält, vergewissern Sie sich, dass der zu heruntergefahren zu gefahrende Node das Epsilon nicht hält:
++
+.. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`*set -privilege advanced*`
+
+.. Bestimmen Sie, auf welchem Node das Epsilon enthalten ist:
++
+`*cluster show*`
+
++
+Das folgende Beispiel zeigt, dass „`node1`“ Epsilon enthält:
+
++
+[listing]
+----
+cluster1::*> cluster show
+Node                 Health  Eligibility   Epsilon
+-------------------- ------- ------------  ------------
+node1                true    true          true
+node2                true    true          false
+node3                true    true          false
+node4                true    true          false
+4 entries were displayed.
+----
+.. Wenn der zu heruntergefahrende Knoten das Epsilon hält, entfernen Sie das Epsilon vom Knoten:
++
+`*cluster modify -node _node_name_ -epsilon false*`
+
+.. Weisen Sie Epsilon einem anderen Knoten zu, der weiter oben bleibt:
++
+`*cluster modify -node _node_name_ -epsilon true*`
+
+.. Zurück zur Administratorberechtigungsebene:
++
+`*set -privilege admin*`
+
+
+
+. Verwenden Sie die `system node halt` Befehl zum Herunterfahren des Node.
++
+Wenn Sie den nicht angeben `-skip-lif-migration` Parameter, der Befehl versucht, vor dem Herunterfahren Daten- und Cluster-Management-LIFs synchron auf einen anderen Node zu migrieren. Wenn die LIF-Migration fehlschlägt oder eine Zeitüberschreitung ausfällt, wird der Shutdown-Prozess abgebrochen und ONTAP zeigt einen Fehler an, der den Fehler bei der LIF-Migration angibt.
+
++
+Sie können einen Core Dump beim Herunterfahren manuell auslösen, indem Sie beide verwenden `-dump` Parameter.
+
++
+Im folgenden Beispiel wird der Node mit dem Namen „`node1`“ für die Hardware-Wartung heruntergefahren:
+
++
+[listing]
+----
+cluster1::> system node halt -node node1 -reason 'hardware maintenance'
+----
+

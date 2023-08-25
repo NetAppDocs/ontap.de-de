@@ -1,0 +1,162 @@
+---
+permalink: system-admin/manage-node-root-volumes-aggregates-task.html 
+sidebar: sidebar 
+keywords: node, governing, root, volume, aggregate, files, special, directories, free, space, full, delete, file, core, dump 
+summary: Das Root-Volume eines Node ist ein FlexVol-Volume, das werkseitig oder über die Setup-Software installiert wird. 
+---
+= Node-Root-Volumes und Root-Aggregate managen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Das Root-Volume eines Node ist ein FlexVol-Volume, das werkseitig oder über die Setup-Software installiert wird. Er ist für Systemdateien, Log-Dateien und Core-Dateien reserviert. Der Verzeichnisname lautet `/mroot`, Die nur über die Systemshell durch technischen Support zugänglich ist. Die Mindestgröße für das Root-Volume eines Node hängt vom Plattformmodell ab.
+
+
+
+== Regeln für Root-Volumes und Root-Aggregate der Nodes – Übersicht
+
+Das Root-Volume eines Node enthält spezielle Verzeichnisse und Dateien für diesen Node. Das Root-Aggregat enthält das Root-Volume. Einige Regeln regeln das Root-Volume und das Root-Aggregat eines Nodes.
+
+* Die folgenden Regeln regeln das Root-Volume des Nodes:
++
+** Sofern Sie vom technischen Support nicht dazu aufgefordert werden, ändern Sie die Konfiguration oder den Inhalt des Root-Volumes nicht.
+** Speichern Sie keine Benutzerdaten im Root-Volume.
++
+Das Speichern von Benutzerdaten im Root-Volume erhöht die Storage-Giveback zwischen Nodes in einem HA-Paar.
+
+** Sie können das Root-Volume zu einem anderen Aggregat verschieben.  Siehe <<relocate-root>>.
+
+
+* Das Root-Aggregat ist nur dem Root-Volumen des Knotens zugewiesen.
++
+ONTAP verhindert, dass Sie andere Volumes im Root-Aggregat erstellen.
+
+
+
+https://hwu.netapp.com["NetApp Hardware Universe"^]
+
+
+
+== Geben Sie Speicherplatz im Root-Volume eines Node frei
+
+Eine Warnmeldung wird angezeigt, wenn das Root-Volume eines Node voll oder fast voll ist. Der Knoten kann nicht ordnungsgemäß ausgeführt werden, wenn sein Root-Volume voll ist. Sie können Speicherplatz auf dem Root-Volume eines Node freigeben, indem Sie Core Dump-Dateien, Paket-Trace-Dateien und Snapshot Kopien des Root-Volumes löschen.
+
+.Schritte
+. Core Dump-Dateien des Node und ihre Namen anzeigen:
++
+`system node coredump show`
+
+. Löschen Sie unerwünschte Core Dump-Dateien vom Node:
++
+`system node coredump delete`
+
+. Zugriff auf die Hölle:
++
+`*system node run -node _nodename_*`
+
++
+`_nodename_` Ist der Name des Node, dessen Root-Volume-Platz Sie freigeben möchten.
+
+. Wechseln Sie zur nodeshell erweiterten Privilege-Ebene aus der nodeshell:
++
+`*priv set advanced*`
+
+. Die Paketverfolgungsdateien des Knotens über die nodeshell anzeigen und löschen:
++
+.. Alle Dateien im Root-Volume des Nodes anzeigen:
++
+`*ls /etc*`
+
+.. Wenn Paketverfolgungsdateien vorhanden sind (`*.trc`) Befinden sich im Root-Volume des Knotens, löschen Sie sie einzeln:
++
+`*rm /etc/log/packet_traces/_file_name.trc_*`
+
+
+
+. Root-Volume-Snapshot-Kopien des Node über den Knotenpunkt ermitteln und löschen:
++
+.. Geben Sie den Namen des Root-Volumes an:
++
+`*vol status*`
+
++
+Das Root-Volume wird durch das Wort „`root`“ in der Spalte „`Optionen`“ des angezeigt `vol status` Befehlsausgabe.
+
++
+Im folgenden Beispiel lautet das Root-Volume `vol0`:
+
++
+[listing]
+----
+node1*> vol status
+
+         Volume State           Status            Options
+           vol0 online          raid_dp, flex     root, nvfail=on
+                                64-bit
+----
+.. Anzeige von Root-Volume Snapshot Kopien:
++
+`*snap list root_vol_name*`
+
+.. Löschen unerwünschter Root-Volume Snapshot Kopien:
++
+`*snap delete root_vol_namesnapshot_name*`
+
+
+
+. Verlassen Sie die nodeshell und kehren Sie zur Clustershell zurück:
++
+`*exit*`
+
+
+
+
+
+== Verschieben von Root-Volumes in neue Aggregate
+
+Beim Root-Austauschverfahren wird das aktuelle Root-Aggregat ohne Unterbrechung zu einem anderen Festplattensatz migriert.
+
+.Über diese Aufgabe
+Storage-Failover muss aktiviert sein, um Root-Volumes zu verschieben. Sie können das verwenden `storage failover modify -node _nodename_ -enable true` Befehl zum Aktivieren des Failovers.
+
+Sie können den Speicherort des Root-Volumes in ein neues Aggregat in den folgenden Szenarien ändern:
+
+* Wenn sich die Wurzelaggregate nicht auf der Festplatte befinden, die Sie bevorzugen
+* Wenn Sie die mit dem Node verbundenen Festplatten neu anordnen möchten
+* Wenn Sie einen Shelf-Austausch der EOS Platten-Shelves durchführen
+
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+`*set privilege advanced*`
+
+. Verschieben des Root-Aggregats:
++
+`*system node migrate-root -node _nodename_ -disklist _disklist_ -raid-type _raid-type_*`
+
++
+** *-Node*
++
+Gibt den Knoten an, der das Root-Aggregat besitzt, das Sie migrieren möchten.
+
+** *-disklist*
++
+Gibt die Liste der Festplatten an, auf denen das neue Root-Aggregat erstellt wird. Alle Festplatten müssen Ersatzteile und Eigentum des gleichen Knotens sein. Die Mindestanzahl der benötigten Festplatten hängt vom RAID-Typ ab.
+
+** *-RAID-Typ*
++
+Gibt den RAID-Typ des Root-Aggregats an. Der Standardwert ist `raid-dp`.
+
+
+
+. Überwachen des Fortschritts des Jobs:
++
+`*job show -id _jobid_ -instance*`
+
+
+
+.Ergebnisse
+Wenn alle Vorprüfungen erfolgreich sind, startet der Befehl einen Ersatzauftrag für das Root-Volume und wird beendet. Erwarten Sie, dass der Node neu gestartet wird.
