@@ -4,21 +4,58 @@ sidebar: sidebar
 keywords: ontap, upgrade, snapmirror, operations, quisce 
 summary: Es wird empfohlen, den SnapMirror Betrieb stillzulegen, bevor ein unterbrechungsfreies Upgrade der ONTAP durchgeführt wird. 
 ---
-= SnapMirror Beziehungen für ein unterbrechungsfreies Upgrade vorbereiten
+= Vorbereiten von SnapMirror Beziehungen für ein ONTAP Upgrade
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Es wird empfohlen, den SnapMirror Betrieb stillzulegen, bevor ein unterbrechungsfreies Upgrade der ONTAP durchgeführt wird.
+Bevor Sie ONTAP auf einem Cluster aktualisieren, auf dem SnapMirror ausgeführt wird, müssen SnapMirror Vorgänge für jeden Node, der Ziel-Volumes enthält, stillgelegt werden. Jede Peering-SVM muss über die Cluster hinweg einen eindeutigen Namen haben. Es empfiehlt sich, für jede SVM einen eindeutigen vollständig qualifizierten Domänennamen (FQDN) zu verwenden, z. B. „`dataVerser.HQ`“ oder „`mirrorVserver.offsite`“.
 
+Beachten Sie außerdem, dass Sie beim Upgrade von Clustern mit DP SnapMirror Beziehungen die Ziel-Nodes vor dem Upgrade der Quell-Nodes aktualisieren müssen.
+
+
+
+== Halten Sie die SnapMirror Vorgänge vor dem Upgrade von ONTAP still
+
+Um zu verhindern, dass SnapMirror Transfers fehlschlagen, müssen Sie die SnapMirror Vorgänge stilllegen. Alternativ können Sie die SnapMirror Transfers auf einem bestimmten Ziel-Volume stilllegen und den Eigentümer-Ziel-Node vor dem Upgrade der Quell-Nodes aktualisieren, damit die SnapMirror Transfers für alle anderen Ziel-Volumes fortgesetzt werden können. In der folgenden Tabelle werden die beiden Optionen zum Suspendieren von SnapMirror Vorgängen beschrieben.
+
+[cols="3*"]
+|===
+| Option | Beschreibung | Ziel-Nodes vor Quell-Nodes aktualisieren? 
+
+
+ a| 
+Unterbrechen Sie den SnapMirror Betrieb für die Dauer des NDU (unterbrechungsfreies Upgrade).
+ a| 
+Die einfachste Methode für Upgrades in einer SnapMirror-Umgebung besteht darin, alle SnapMirror-Vorgänge auszusetzen, das Upgrade durchzuführen und dann die SnapMirror-Vorgänge fortzusetzen. Während der gesamten NDU werden jedoch keine SnapMirror-Transfers stattfinden. Sie müssen diese Methode verwenden, wenn Ihr Cluster Nodes enthält, die Volumes spiegeln.
+ a| 
+Nein, die Nodes können in beliebiger Reihenfolge aktualisiert werden.
+
+
+
+ a| 
+Unterbrechen Sie den SnapMirror Betrieb jeweils einem Ziel-Volume.
+ a| 
+Sie können SnapMirror Transfers für ein bestimmtes Ziel-Volume unterbrechen, den Node (oder HA-Paar) mit dem Ziel-Volume aktualisieren, den Node (oder ein HA-Paar), der den Quell-Volume enthält, aktualisieren und dann die SnapMirror Transfers für das Ziel-Volume fortsetzen. Über diese Methode können die SnapMirror Transfers für alle anderen Ziel-Volumes fortgesetzt werden, während die Nodes, die die ursprünglichen Ziel- und Quell-Volumes enthalten, aktualisiert werden.
+ a| 
+Ja.
+
+|===
 .Schritte
-. Verwenden Sie die `snapmirror show` Befehl zum Bestimmen des Zielpfads für jede SnapMirror Beziehung.
+. Bestimmen Sie den Zielpfad für jede SnapMirror Beziehung:
++
+[source, cli]
+----
+snapmirror show
+----
 . Unterbrechen Sie für jedes Ziel-Volume zukünftige SnapMirror Übertragungen:
 +
-`snapmirror quiesce -destination-path destination`
-
+[source, cli]
+----
+snapmirror quiesce -destination-path destination
+----
 +
 Wenn es keine aktiven Transfers für die SnapMirror-Beziehung gibt, setzt dieser Befehl seinen Status auf „stillgelegt“. Wenn die Beziehung aktive Transfers hat, wird der Status auf „Beenden“ gesetzt, bis die Übertragung abgeschlossen ist, und dann wird der Status „stillgelegt“.
 
@@ -65,12 +102,9 @@ Stoppen Sie die Transfers:
 
 `snapmirror abort -destination-path destination -h`
 
-*Hinweis:* Sie müssen das benutzen `-foreground true` Parameter, wenn Sie die Übertragung von Load-Sharing-Spiegeln abbrechen.
+*Hinweis:* Sie müssen das benutzen `-foreground true` Parameter, wenn Sie die Übertragung von Load-Sharing-Spiegelungen beenden.
  a| 
 Dieser Befehl stoppt die SnapMirror Übertragung und stellt das Ziel-Volume auf die letzte Snapshot Kopie wieder her, die erfolgreich übertragen wurde. Die Beziehung wird auf den Status „stillgelegt“ gesetzt.
 
 |===
 
-
-.Verwandte Informationen
-xref:concept_upgrade_requirements_for_snapmirror.adoc[Upgrade-Anforderungen für SnapMirror]

@@ -4,24 +4,20 @@ sidebar: sidebar
 keywords: ontap, upgrade, upgrade, verify, status, health, post, after 
 summary: Nach dem Upgrade von sollten Sie das Cluster überprüfen. 
 ---
-= Überprüfung des Clusters nach dem Upgrade
+= Überprüfen Sie den Cluster nach dem ONTAP Upgrade
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Nach dem Upgrade von sollten Sie die Cluster-Version, den Cluster-Zustand und den Storage-Zustand überprüfen.
-
-.Bevor Sie beginnen
-
-NOTE: Bei Nutzung einer MetroCluster FC-Konfiguration müssen Sie auch sicherstellen, dass das Cluster für die automatische ungeplante Umschaltung aktiviert ist.
+Nach dem Upgrade von ONTAP sollten Sie Ihre Cluster-Version, den Cluster-Zustand und den Storage-Zustand überprüfen.  Wenn sich Ihr Cluster in einer MetroCluster FC-Konfiguration befindet, müssen Sie außerdem überprüfen, ob das Cluster für die automatische ungeplante Umschaltung aktiviert ist.
 
 
 
 == Überprüfen der Cluster-Version
 
-Nachdem alle HA-Paare aktualisiert wurden, müssen Sie den Versionsbefehl verwenden, um zu überprüfen, ob auf allen Nodes der Zielversion ausgeführt wird.
+Nachdem alle HA-Paare aktualisiert wurden, müssen Sie mit dem Befehl Version überprüfen, ob auf allen Nodes das Ziel-Release ausgeführt wird.
 
 Die Cluster-Version ist die niedrigste Version von ONTAP, die auf einem beliebigen Node im Cluster ausgeführt wird. Wenn die Cluster-Version nicht die ONTAP-Zielversion ist, können Sie ein Cluster-Upgrade durchführen.
 
@@ -29,7 +25,7 @@ Die Cluster-Version ist die niedrigste Version von ONTAP, die auf einem beliebig
 +
 `version`
 
-. Wenn die Cluster-Version nicht die ONTAP-Zielversion ist, können Sie den Upgrade-Status aller Nodes überprüfen:
+. Wenn die Cluster-Version nicht das Ziel-ONTAP-Release ist, sollten Sie den Upgrade-Status aller Nodes überprüfen:
 +
 `system node upgrade-revert show`
 
@@ -60,9 +56,6 @@ Wenn ein Knoten fehlerhaft oder nicht geeignet ist, überprüfen Sie die EMS-Pro
 . Legen Sie die Berechtigungsebene auf erweitert fest:
 +
 `set -privilege advanced`
-
-+
-Geben Sie „`y`“ ein, um fortzufahren.
 
 . Überprüfen Sie die Konfigurationsdetails für jeden RDB-Prozess.
 +
@@ -122,18 +115,17 @@ node2     vldb     154      154      14847    node0     secondary
 node3     vldb     154      154      14847    node0     secondary
 4 entries were displayed.
 ----
-. Wenn Sie in einer SAN-Umgebung arbeiten, vergewissern Sie sich, dass sich jeder Knoten in einem SAN-Quorum befindet: `event log show  -severity informational -message-name scsiblade.*`
-+
-Die letzte scsiblade-Ereignismeldung für jeden Knoten sollte darauf hinweisen, dass sich das scsi-Blade im Quorum befindet.
-
+. Wenn Sie in einer SAN-Umgebung arbeiten, vergewissern Sie sich, dass sich jeder Knoten in einem SAN-Quorum befindet: `cluster kernel-service show`
 +
 [listing]
 ----
-cluster1::*> event log show  -severity informational -message-name scsiblade.*
-Time             Node       Severity       Event
----------------  ---------- -------------- ---------------------------
-MM/DD/YYYY TIME  node0      INFORMATIONAL  scsiblade.in.quorum: The scsi-blade ...
-MM/DD/YYYY TIME  node1      INFORMATIONAL  scsiblade.in.quorum: The scsi-blade ...
+cluster1::*> cluster kernel-service show
+Master            Cluster           Quorum        Availability  Operational
+Node              Node              Status        Status        Status
+----------------- ----------------- ------------- ------------- -------------
+cluster1-01       cluster1-01       in-quorum     true          operational
+                  cluster1-02       in-quorum     true          operational
+2 entries were displayed.
 ----
 
 
@@ -142,9 +134,9 @@ link:../system-admin/index.html["Systemadministration"]
 
 
 
-== Vergewissern Sie sich, dass die automatische ungeplante Umschaltung aktiviert ist
+== Überprüfen, ob die automatische ungeplante Umschaltung aktiviert ist (nur MetroCluster FC-Konfigurationen)
 
-Nach einem Cluster-Upgrade sollten Sie überprüfen, ob die automatische ungeplante Umschaltung aktiviert ist.
+Wenn sich Ihr Cluster in einer MetroCluster FC-Konfiguration befindet, sollten Sie nach dem Upgrade von ONTAP überprüfen, ob die automatische ungeplante Umschaltung aktiviert ist.
 
 .Über diese Aufgabe
 
@@ -168,78 +160,6 @@ AUSO Failure Domain  auso-on-cluster-disaster
 `metrocluster modify -auto-switchover-failure-domain auso-on-cluster-disaster`
 
 . Überprüfen Sie, ob eine automatische ungeplante Umschaltung durch Wiederholung von Schritt 1 aktiviert wurde.
-
-
-
-
-== Überprüfung des Storage-Zustands
-
-Nach dem Upgrade eines Clusters sollten Sie den Status Ihrer Festplatten, Aggregate und Volumes überprüfen.
-
-. Überprüfen des Festplattenstatus:
-+
-|===
-
-
-| Um zu prüfen, ob... | Tun Sie das... 
-
-
- a| 
-Fehlerhafte Festplatten
- a| 
-.. Fehlerhafte Festplatten anzeigen:
-+
-`storage disk show -state broken`
-
-.. Entfernen oder ersetzen Sie alle defekten Festplatten.
-
-
-
-
- a| 
-Festplatten werden gewartet oder rekonstruiert
- a| 
-.. Anzeigen aller Datenträger in Wartungs-, Ausstehend- oder Rekonstruktionstatus:
-+
-`storage disk show -state maintenance|pending|reconstructing`
-
-.. Warten Sie, bis die Wartung oder Rekonstruktion abgeschlossen ist, bevor Sie fortfahren.
-
-
-|===
-. Überprüfen Sie, ob alle Aggregate online sind, indem Sie den Status des physischen und logischen Storage anzeigen, einschließlich Storage-Aggregate:
-+
-`storage aggregate show -state !online`
-
-+
-Mit diesem Befehl werden die Aggregate angezeigt, die _Not_ online sind. Alle Aggregate müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
-
-+
-[listing]
-----
-cluster1::> storage aggregate show -state !online
-There are no entries matching your query.
-----
-. Überprüfen Sie, ob alle Volumes online sind, indem Sie alle Volumes anzeigen, die _Not_ online sind:
-+
-`volume show -state !online`
-
-+
-Alle Volumes müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
-
-+
-[listing]
-----
-cluster1::> volume show -state !online
-There are no entries matching your query.
-----
-. Vergewissern Sie sich, dass es keine inkonsistenten Volumes gibt:
-+
-`volume show -is-inconsistent true`
-
-+
-Weitere Informationen finden Sie im Knowledge Base-Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Volume_Showing_WAFL_Inconsistent["Volume zeigt WAFL inkonsistent an"] Die Vorgehensweise für inkonsistente Volumes
-
 
 
 .Verwandte Informationen
