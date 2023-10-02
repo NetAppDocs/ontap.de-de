@@ -4,106 +4,66 @@ sidebar: sidebar
 keywords: upgrade, methods, andu, ndu, automated, automatic, system manager, cli, nondisruptive, disruptive 
 summary: 'Die Methode, die Sie zum Upgrade verwenden, hängt von Ihrer Konfiguration ab. Falls verfügbar, ist das automatisierte unterbrechungsfreie Upgrade (ANDU) mit System Manager die bevorzugte Methode.' 
 ---
-= ONTAP-Upgrade-Methoden
+= Methoden für ONTAP Software-Upgrades
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Die Methode, die Sie für ein Upgrade verwenden – unterbrechungsfrei oder störend, automatisiert oder manuell – hängt von Ihrer Konfiguration ab.  Automatisiertes, unterbrechungsfreies Upgrade (ANDU) mit System Manager ist die bevorzugte Methode und unterstützt die meisten Konfigurationen.
+Sie können ein automatisiertes Upgrade Ihrer ONTAP Software mit System Manage durchführen. Alternativ können Sie ein automatisiertes oder manuelles Upgrade über die ONTAP Befehlszeilenschnittstelle (CLI) durchführen. Welche Methode Sie zum Upgrade von ONTAP verwenden, hängt von Ihrer Konfiguration, Ihrer aktuellen ONTAP-Version und der Anzahl der Knoten im Cluster ab. NetApp empfiehlt die Verwendung von System Manager zur Durchführung automatischer Upgrades, es sei denn, Ihre Konfiguration erfordert einen anderen Ansatz. Wenn Sie beispielsweise eine MetroCluster Konfiguration mit 4 Nodes mit ONTAP 9.3 oder höher haben, sollten Sie mit System Manager ein automatisiertes Upgrade durchführen (manchmal auch als automatisiertes unterbrechungsfreies Upgrade oder ANDU bezeichnet). Wenn bei einer MetroCluster-Konfiguration mit 8 Nodes ONTAP 9.2 oder eine frühere Version ausgeführt wird, sollten Sie ein manuelles Upgrade über die CLI durchführen.
 
-*Unterbrechungsfreie Upgrades* + unterbrechungsfreie Upgrades nutzen die Hochverfügbarkeits-(HA-)Failover-Technologie von ONTAP, um sicherzustellen, dass Cluster während des Upgrades weiterhin Daten bereitstellen. Es gibt zwei Arten von unterbrechungsfreien Upgrade-Prozessen.
+Ein Upgrade kann mit dem Rolling Upgrade-Prozess oder dem Batch Upgrade-Prozess ausgeführt werden. Beide Vorgänge erfolgen unterbrechungsfrei.
 
-* _Batch_ Updates + bei einem Batch-Update wird der Cluster in mehrere Batches aufgeteilt, die jeweils mehrere HA-Paare enthalten. In der ersten Charge werden die Hälfte der Nodes aktualisiert und anschließend von ihren HA-Partnern. Der Vorgang wird dann nacheinander für die verbleibenden Batches wiederholt.
-* _Rolling_ Updates + bei einem Rolling Update wird ein Knoten offline geschaltet und aktualisiert, während der Partner den Speicher übernimmt. Nach Abschluss des Node-Upgrades gibt der Partner-Node die Kontrolle zurück auf den ursprünglichen Node, der den Node besitzt, und der Prozess wird wiederholt, diesmal auf dem Partner-Node. Auf jedem weiteren HA-Paar wird nacheinander das Upgrade ausgeführt, bis alle HA-Paare den Ziel-Release ausführen. + *Hinweis:* der Begriff _Rolling Upgrade_ wird in der Softwarebranche häufig für Software-Upgrades verwendet, die keine Serviceunterbrechungen verursachen und daher oft gleichbedeutend mit einem „unterbrechungsfreien Upgrade“ sind. Bei Upgrades von ONTAP 9 ist ein „_Rolling Update_“ einer der Prozesse, die für unterbrechungsfreie Upgrades verwendet werden können.
+.ONTAP Rolling Upgrades
+Bei dem Rolling Upgrade wird ein Node offline geschaltet und aktualisiert, während der Partner den Storage übernimmt. Wenn das Upgrade des Node abgeschlossen ist, gibt der Partner-Node die Kontrolle zurück an den ursprünglichen Eigentümer-Node. Der Prozess wird auf dem Partner-Node wiederholt. Auf jedem weiteren HA-Paar wird nacheinander das Upgrade ausgeführt, bis alle HA-Paare den Ziel-Release ausführen. Cluster mit weniger als 8 Nodes werden standardmäßig von Rolling-Upgrade-Prozess verwendet.
 
+.Batch-Upgrades bei ONTAP
+Beim Batch Upgrade-Prozess wird das Cluster in mehrere Batches aufgeteilt, von denen jedes mehrere HA-Paare enthält. In der ersten Charge werden die Hälfte der Nodes aktualisiert und anschließend von ihren HA-Partnern. Der Vorgang wird dann nacheinander für die verbleibenden Batches wiederholt. Bei Clustern mit mindestens 8 Nodes ist der Batch-Upgrade-Prozess Standard.
 
-Unterbrechungsfreie Upgrades können mit einer _automatisierten_ oder _manuellen_ Methode durchgeführt werden.
-
-* *Automatisiertes unterbrechungsfreies Upgrade (ANDU)*
-+
-** Wenn ein Administrator eine ANDU initiiert, installiert ONTAP automatisch das Ziel-ONTAP-Image auf jedem Node, validiert die Clusterkomponenten, um sicherzustellen, dass der Cluster unterbrechungsfrei aktualisiert werden kann und führt dann einen Batch-Vorgang oder ein Rolling Update im Hintergrund aus.
-+
-*** Batch-Updates sind bei Clustern mit mindestens 8 Nodes Standard.
-*** Rolling Updates sind die Standardwerte für Cluster mit weniger als 8 Nodes. Rolling Updates können auch explizit für Cluster mit mindestens 8 Nodes ausgewählt werden.
-
-
-** Eine ANDU kann mit System Manager oder der ONTAP Befehlszeilenschnittstelle (CLI) ausgeführt werden. Falls für Ihre Konfiguration verfügbar, ist ANDU mit System Manager die empfohlene Upgrade-Methode.
-
-
-* *Manuelles unterbrechungsfreies Upgrade*
-+
-** Ein Administrator muss die Upgrade-Bereitschaft der Cluster-Komponenten auf jedem Node manuell bestätigen und dann die Schritte des Rolling Update im Vordergrund manuell durchführen.
-** Manuelle unterbrechungsfreie Upgrades werden über die ONTAP CLI ausgeführt.
-** Sie sollten nur eine manuelle Methode verwenden, wenn ANDU für Ihre Konfiguration nicht unterstützt wird.
+Bei automatisierten Upgrades installiert ONTAP automatisch das Ziel-ONTAP-Image auf jedem Node, validiert die Cluster-Komponenten, um sicherzustellen, dass ein unterbrechungsfreies Upgrade des Clusters durchgeführt werden kann und führt dann basierend auf der Anzahl der Nodes im Hintergrund ein Batch- oder Rolling-Upgrade aus. Bei manuellen Upgrades bestätigt der Administrator manuell, dass jeder Node im Cluster für ein Upgrade bereit ist, und führt dann die Schritte zur Ausführung eines rollierenden Upgrades aus.
 
 
 
+== Empfohlene ONTAP Upgrade-Methoden basierend auf der Konfiguration
 
-*Unterbrechungen bei Upgrades* + bei einem störenden Upgrade wird der Storage-Failover für jedes HA-Paar deaktiviert und jeder Node wird einzeln neu gestartet. Upgrades, die mit Unterbrechungen verbunden sind, können schneller durchgeführt werden als unterbrechungsfreie Upgrades und der Abschluss ist mit weniger Schritten möglich. Sie sollten jedoch kein unterbrechungsfreies Upgrade ausführen, es sei denn, Sie können das Cluster während des Upgrades offline schalten. Wenn Sie in einer SAN-Umgebung arbeiten, sollten Sie darauf vorbereitet sein, alle SAN-Clients herunterzufahren oder auszusetzen, bevor Sie ein unterbrechungsfreies Upgrade durchführen. Upgrades, die mit Unterbrechungen verbunden sind, werden über die ONTAP-CLI durchgeführt.
+Die von Ihrer Konfiguration unterstützten Upgrade-Methoden werden in der Reihenfolge der empfohlenen Verwendung aufgeführt.
+
+[cols="4"]
+|===
+| Konfiguration | ONTAP-Version | Anzahl der Nodes | Empfohlene Upgrade-Methode 
 
 
-
-== Methoden für Konfigurationen anderer Anbieter
-
-Cluster mit zwei oder mehr Nodes können eine der folgenden Upgrade-Methoden verwenden, die in der Reihenfolge der empfohlenen Verwendung aufgeführt sind.
-
+| Standard | 9.0 oder höher | 2 oder mehr  a| 
 * xref:task_upgrade_andu_sm.html[Unterbrechungsfrei durch System Manager]
 * xref:task_upgrade_andu_cli.html[Automatische Unterbrechungsfreiheit über die CLI]
-* xref:task_upgrade_nondisruptive_manual_cli.html[Manuell unterbrechungsfrei]
-* xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Unterbrechungen]
-
-
-Cluster mit einzelnen Nodes müssen eine der störenden Methoden verwenden, obwohl die automatisierte Methode empfohlen wird.
-
-* xref:task_upgrade_disruptive_automated_cli.html[Automatisierung für unterbrechungsfreien Betrieb]
-* xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Unterbrechungen]
 
 
 
 
-== Methoden für MetroCluster-Konfigurationen
-
-Die für jede Konfiguration verfügbaren Upgrade-Methoden werden in der Reihenfolge der empfohlenen Verwendung aufgeführt.
-
-[cols="3*"]
-|===
-| ONTAP-Version | Anzahl der Nodes | Upgrade-Methode 
+| Standard | 9.0 oder höher | Einzel | xref:task_upgrade_disruptive_automated_cli.html[Automatisierung für unterbrechungsfreien Betrieb] 
 
 
-| 9.3 oder höher | 2,4  a| 
+| MetroCluster | 9.3 oder höher | 8  a| 
+* xref:task_upgrade_andu_cli.html[Automatische Unterbrechungsfreiheit über die CLI]
+* xref:task_updating_a_four_or_eight_node_mcc.html[Manuell unterbrechungsfrei für 4- oder 8-Node-MetroCluster über die CLI]
+
+
+
+
+| MetroCluster | 9.3 oder höher | 2,4  a| 
 * xref:task_upgrade_andu_sm.html[Unterbrechungsfrei durch System Manager]
 * xref:task_upgrade_andu_cli.html[Automatische Unterbrechungsfreiheit über die CLI]
-* xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Unterbrechungen]
 
 
 
 
-| 9.3 oder höher | 8  a| 
-* xref:task_upgrade_andu_cli.html[Automatische Unterbrechungsfreiheit über die CLI]
-* xref:task_updating_a_four_or_eight_node_mcc.html[Manuell unterbrechungsfrei]
-* xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Unterbrechungen]
+| MetroCluster | 9.2 oder früher | 4, 8 | xref:task_updating_a_four_or_eight_node_mcc.html[Manuell unterbrechungsfrei für 4- oder 8-Node-MetroCluster über die CLI] 
 
 
-
-
-| 9.2 oder früher | 2  a| 
-* xref:task_updating_a_two_node_metrocluster_configuration_in_ontap_9_2_and_earlier.html[Manuell unterbrechungsfrei (für Cluster mit 2 Nodes)]
-* xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Unterbrechung mit der CLI]
-
-
-
-
-| 9.2 oder früher | 4, 8  a| 
-* xref:task_updating_a_four_or_eight_node_mcc.html[Manuell unterbrechungsfrei]
-* xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Unterbrechungen]
-
-
-
-
-| 9.0 oder höher | 4, 8 (nur Patch) | xref:task_upgrade_andu_sm.html[Unterbrechungsfrei durch System Manager] 
-
-
-| 9.2 oder früher | 2, 4, 8 (nur Patch) | xref:task_upgrade_andu_sm.html[Unterbrechungsfrei durch System Manager] 
+| MetroCluster | 9.2 oder früher | 2 | xref:task_updating_a_two_node_metrocluster_configuration_in_ontap_9_2_and_earlier.html[Manuell unterbrechungsfrei für 2-Node-MetroCluster über die CLI] 
 |===
+ANDU mit System Manager ist die empfohlene Upgrade-Methode für alle Patch-Upgrades unabhängig von der Konfiguration.
+
+
+NOTE: A xref:task_updating_an_ontap_cluster_disruptively.html[Manuelle Upgrades mit Betriebsunterbrechungen] Kann für jede Konfiguration durchgeführt werden.  Sie sollten jedoch kein unterbrechungsfreies Upgrade ausführen, es sei denn, Sie können das Cluster während des Upgrades offline schalten. Wenn Sie in einer SAN-Umgebung arbeiten, sollten Sie darauf vorbereitet sein, alle SAN-Clients herunterzufahren oder auszusetzen, bevor Sie ein unterbrechungsfreies Upgrade durchführen. Upgrades, die mit Unterbrechungen verbunden sind, werden über die ONTAP-CLI durchgeführt.
