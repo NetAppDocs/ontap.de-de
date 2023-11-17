@@ -1,0 +1,185 @@
+---
+sidebar: sidebar 
+permalink: upgrade/automated-pre-checks.html 
+keywords: netapp, ontap, automate, automatic, automated, upgrade, nondisruptive, nondisruptively, non-disruptive update, nondisruptive upgrade, upgrade a cluster, shift workload between clusters, hardware platform, configuration, software image, update, update ONTAP, update software, ndu 
+summary: Sie können die ONTAP Version auf Ihrem Cluster unterbrechungsfrei aktualisieren. 
+---
+= Automatische Überprüfungen vor Upgrades von ONTAP vor geplanten Upgrades
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+Sie müssen nicht mit dem Upgrade Ihrer ONTAP Software arbeiten, um die automatischen Upgrade-Vorabprüfungen von ONTAP auszuführen.  Durch die unabhängig vom automatisierten Upgrade-Prozess von ONTAP durchgeführte Überprüfung aller Cluster-Vorgänge wird eine Liste mit Fehlern und Warnungen angezeigt, die vor Beginn des eigentlichen Upgrades korrigiert werden sollten.  Angenommen, Sie erwarten ein Upgrade Ihrer ONTAP-Software während eines Wartungsfensters, das in zwei Wochen geplant ist.  Während Sie auf das geplante Datum warten, können Sie die automatischen Upgrade-Vorabprüfungen durchführen und vor dem Wartungsfenster alle erforderlichen Korrekturmaßnahmen ergreifen.  Dadurch wird das Risiko unerwarteter Konfigurationsfehler nach dem Start des Upgrades verringert.
+
+Wenn Sie bereit sind, mit dem ONTAP-Softwareupgrade zu beginnen, müssen Sie dieses Verfahren nicht durchführen.  Folgen Sie der link:automated-upgrade-task.html["Automatisierter Upgrade-Prozess"], Die die Ausführung der automatischen Upgrade-Vorabprüfungen beinhaltet.
+
+
+NOTE: Bei MetroCluster-Konfigurationen sollten Sie zuerst diese Schritte auf Cluster A ausführen und dann die gleichen Schritte auf Cluster B ausführen
+
+.Bevor Sie beginnen
+Sollten Sie link:download-software-image.html["Laden Sie das Ziel-ONTAP-Software-Image herunter"].
+
+So führen Sie die automatischen Upgrade-Vorabprüfungen für einen aus link:https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths["Direktes Multi-Hop-Upgrade"], Sie müssen nur das Softwarepaket für Ihre ONTAP-Zielversion herunterladen.  Sie müssen die mittlere ONTAP-Version nicht laden, bis Sie mit dem eigentlichen Upgrade beginnen.  Wenn Sie z. B. automatisierte Prüfungen vor dem Upgrade für ein Upgrade von 9.8 auf 9.13.1 ausführen, müssen Sie das Softwarepaket für ONTAP 9.13.1 herunterladen.  Sie müssen das Softwarepaket für ONTAP 9.12.1 nicht herunterladen.
+
+.Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Validieren Sie das ONTAP Ziel-Image:
++
+
+NOTE: Wenn Sie eine MetroCluster-Konfiguration aktualisieren, sollten Sie Cluster A validieren und dann den Validierungsprozess für Cluster B wiederholen
+
++
+.. Führen Sie je nach der verwendeten ONTAP-Version einen der folgenden Schritte aus:
++
+|===
+
+
+| Wenn Sie laufen... | Tun Sie das... 
+
+
+| ONTAP 9.8 oder höher  a| 
+Klicken Sie Auf *Cluster > Übersicht*.
+
+
+
+| ONTAP 9.5, 9.6 und 9.7  a| 
+Klicken Sie Auf *Konfiguration* > *Cluster* > *Update*.
+
+
+
+| ONTAP 9.4 oder früher  a| 
+Klicken Sie Auf *Konfiguration* > *Cluster Update*.
+
+|===
+.. Klicken Sie in der rechten Ecke des Fensters *Übersicht* auf image:icon_kabob.gif["Menüsymbol"].
+.. Klicken Sie auf *ONTAP-Aktualisierung*.
+.. Fügen Sie auf der Registerkarte *Cluster Update* ein neues Image hinzu oder wählen Sie ein verfügbares Image aus.
++
+|===
+
+
+| Ihr Ziel ist | Dann... 
+
+
+ a| 
+Fügen Sie ein neues Software-Image aus einem lokalen Ordner hinzu
+
+Sie sollten bereits haben link:download-software-image.html["Bild heruntergeladen"] An den lokalen Client.
+ a| 
+... Klicken Sie unter *Available Software Images* auf *Add from Local*.
+... Navigieren Sie zu dem Speicherort, an dem Sie das Softwarebild gespeichert haben, wählen Sie das Bild aus und klicken Sie dann auf *Öffnen*.
+
+
+
+
+ a| 
+Fügen Sie ein neues Software-Image von einem HTTP- oder FTP-Server hinzu
+ a| 
+... Klicken Sie auf *vom Server hinzufügen*.
+... Geben Sie im Dialogfeld *Add a New Software Image* die URL des HTTP- oder FTP-Servers ein, auf den Sie das ONTAP-Software-Image von der NetApp-Support-Website heruntergeladen haben.
++
+Für anonymes FTP müssen Sie die URL im angeben ftp://anonymous@ftpserver[] Formatieren.
+
+... Klicken Sie Auf *Hinzufügen*.
+
+
+
+
+ a| 
+Wählen Sie ein verfügbares Bild aus
+ a| 
+Wählen Sie eines der aufgeführten Bilder aus.
+
+|===
+.. Klicken Sie auf *Validieren*, um die Validierungsprüfungen vor dem Upgrade auszuführen.
++
+Wenn während der Validierung Fehler oder Warnungen gefunden werden, werden diese zusammen mit einer Liste von Korrekturmaßnahmen angezeigt. Sie müssen alle Fehler beheben, bevor Sie mit dem Upgrade fortfahren.  Es empfiehlt sich, auch Warnungen zu lösen.
+
+
+
+
+
+--
+.CLI
+--
+. Laden Sie das ONTAP Ziel-Software-Image in das Cluster-Paket-Repository:
++
+[source, cli]
+----
+cluster image package get -url location
+----
++
+[listing]
+----
+cluster1::> cluster image package get -url http://www.example.com/software/9.13.1/image.tgz
+
+Package download completed.
+Package processing completed.
+----
+. Vergewissern Sie sich, dass das Softwarepaket im Repository für Cluster-Pakete verfügbar ist:
++
+[source, cli]
+----
+cluster image package show-repository
+----
++
+[listing]
+----
+cluster1::> cluster image package show-repository
+Package Version  Package Build Time
+---------------- ------------------
+9.13.1              MM/DD/YYYY 10:32:15
+----
+. Führen Sie die automatischen Prüfungen vor dem Upgrade durch:
++
+[source, cli]
+----
+cluster image validate -version package_version_number -show-validation-details true
+----
++
+
+NOTE: Wenn Sie eine ausführen link:https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths["Direktes Multi-Hop-Upgrade"]Verwenden Sie das Ziel-ONTAP-Paket zur Überprüfung.  Sie müssen das Zwischenprodukt-Upgrade-Image nicht separat validieren.  Wenn Sie beispielsweise ein Upgrade von 9.8 auf 9.13.1 durchführen, sollten Sie das Paket 9.13.1 zur Überprüfung verwenden. Sie müssen das 9.12.1-Paket nicht separat validieren.
+
++
+[listing]
+----
+cluster1::> cluster image validate -version 9.13.1 -show-validation-details true
+
+It can take several minutes to complete validation...
+Pre-update Check       Status      Error-Action
+---------------------  ---------   -------------------------------------------
+CIFS status            OK
+Cluster health status  OK
+Clsuter quorum status  OK
+Disk status            OK
+High Availability      OK
+status
+LIF status             OK
+LIFs on home node      OK
+MetroCluster           OK
+configuration status
+SnapMirror status      OK
+Overall Status         OK
+10 entries were displayed.
+
+----
++
+Eine Liste vollständiger automatischer Upgrade-Vorabprüfungen wird zusammen mit allen Fehlern oder Warnungen angezeigt, die vor Beginn des Upgrade-Prozesses behoben werden sollten.
+
+
+
+--
+====

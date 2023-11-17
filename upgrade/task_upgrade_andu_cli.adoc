@@ -19,20 +19,16 @@ summary: Sie können die ONTAP Version auf Ihrem Cluster unterbrechungsfrei aktu
 
 
 [role="lead"]
+Bei automatisierten Upgrades installiert ONTAP automatisch das Ziel-ONTAP-Image auf jedem Node, validiert die Cluster-Komponenten, um sicherzustellen, dass das Cluster unterbrechungsfrei aktualisiert werden kann und führt anschließend eine aus xref:concept_upgrade_methods.html[Batch- oder Rolling-Upgrade] Im Hintergrund basierend auf der Anzahl der Nodes.
+
 Über die Befehlszeilenschnittstelle (CLI) können Sie überprüfen, ob ein unterbrechungsfreies Upgrade des Clusters durchgeführt werden kann, das Ziel-ONTAP Image auf jedem Node installieren und anschließend im Hintergrund ein Upgrade ausführen.
 
 
 NOTE: Wenn Sie den Fortschritt des Upgrade-Prozesses nicht überwachen möchten, empfehlen wir Ihnen, es in dieser Übung zu verwenden link:task_requesting_notification_of_issues_encountered_in_nondisruptive_upgrades.html["Anforderung von EMS-Benachrichtigungen über Fehler, die möglicherweise manuelles Eingreifen erfordern"].
 
 .Bevor Sie beginnen
-* Sie sollten Active IQ Digital Advisor starten.
-+
-Die Komponente Upgrade Advisor von Active IQ Digital Advisor hilft Ihnen bei der Planung eines erfolgreichen Upgrades.
-
-+
-NetApp Kunden erhalten Daten-fokussierte Einblicke und Empfehlungen von Active IQ Digital Advisor mit einem aktiven *SupportEdge*-Vertrag (die Funktionen variieren nach Produkt- und Support-Tier).
-
-* Sie müssen die Anforderungen für die Upgrade-Vorbereitung erfüllt haben.
+* Sollten Sie link:prepare.html["Bereiten Sie sich auf das Upgrade vor"].
+* Sollten Sie link:download-software-image.html["Laden Sie das ONTAP Software Image herunter"] Für die ONTAP-Version, die Sie als Ziel haben.
 * Bei jedem HA-Paar sollte jeder Node einen oder mehrere Ports auf derselben Broadcast-Domäne nutzen.
 +
 Bei 8 oder mehr Nodes wird die Batch-Upgrade-Methode bei dem automatischen unterbrechungsfreien Upgrade verwendet. Wenn in ONTAP 9.7 und älteren Versionen die Batch-Methode verwendet wird, werden LIFs zum HA-Partner des Node migriert, der aktualisiert wird. Falls die Partner keine Ports in derselben Broadcast-Domäne haben, schlägt die LIF-Migration fehl.
@@ -44,19 +40,23 @@ Wenn in ONTAP 9.8 und höher die Batch-Methode verwendet wird, werden LIFs zur a
 * Wenn Sie ein Upgrade von ONTAP in einer MetroCluster FC-Konfiguration durchführen, sollte das Cluster für die automatische ungeplante Umschaltung aktiviert sein.
 
 
-.Über diese Aufgabe
-Der `cluster image validate` Befehl überprüft die Cluster-Komponenten, um zu überprüfen, ob das Upgrade unterbrechungsfrei abgeschlossen werden kann, und stellt anschließend den Status jeder Prüfung und alle erforderlichen Maßnahmen vor dem Software-Upgrade bereit.
-
 
 NOTE: Ändern der Einstellung des `storage failover modify-auto-giveback` Befehlsoption vor Beginn eines automatischen unterbrechungsfreien Upgrades (ANDU) hat keine Auswirkung auf den Upgrade-Prozess. Der ANDU Prozess ignoriert während der für das Update erforderlichen Übernahme/Rückgabe jeden voreingestellten Wert für diese Option. Beispiel: Einstellung `-autogiveback` Auf false vor ANDU wird das automatische Upgrade vor dem Giveback nicht unterbrochen.
 
+
+
+== Schritt: Laden Sie das ONTAP Ziel-Software-Image in das Cluster-Paket-Repository
+
+Um das ONTAP Software-Upgrade zu starten, müssen Sie das ONTAP Ziel-Software-Image im Cluster-Paket-Repository zur Verfügung stellen.
+
+.Schritte
 . Löschen Sie das frühere ONTAP-Softwarepaket:
 +
 [source, cli]
 ----
 cluster image package delete -version previous_ONTAP_Version
 ----
-. Laden Sie das ONTAP-Zielsoftwarepaket herunter:
+. Laden Sie das ONTAP Ziel-Software-Image in das Cluster-Paket-Repository:
 +
 [source, cli]
 ----
@@ -71,7 +71,7 @@ Package download completed.
 Package processing completed.
 ----
 +
-Wenn Sie eine ausführen link:https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths["Direktes Multi-Hop-Upgrade"]Sie müssen auch das Softwarepaket für die Zwischenversion von ONTAP herunterladen, die für Ihr Upgrade benötigt wird. Wenn Sie beispielsweise ein Upgrade von 9.8 auf 9.13.1 durchführen, müssen Sie das Softwarepaket für ONTAP 9.12.1 herunterladen und dann denselben Befehl verwenden, um das Softwarepaket für 9.13.1 herunterzuladen.
+Wenn Sie eine ausführen link:https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths["Direktes Multi-Hop-Upgrade"]Sie müssen auch das Softwarepaket für die Zwischenversion von ONTAP laden, die für Ihr Upgrade erforderlich ist. Wenn Sie beispielsweise ein Upgrade von 9.8 auf 9.13.1 durchführen, müssen Sie das Softwarepaket für ONTAP 9.12.1 laden und dann denselben Befehl verwenden, um das Softwarepaket für 9.13.1 zu laden.
 
 . Vergewissern Sie sich, dass das Softwarepaket im Repository für Cluster-Pakete verfügbar ist:
 +
@@ -87,7 +87,15 @@ Package Version  Package Build Time
 ---------------- ------------------
 9.13.1              MM/DD/YYYY 10:32:15
 ----
-. Überprüfen Sie, ob das Cluster unterbrechungsfrei aktualisiert werden kann:
+
+
+
+
+== Schritt 2: Automatische Prüfungen vor dem Upgrade
+
+Optional können Sie die verwenden, bevor Sie ein automatisiertes Upgrade der ONTAP-Software durchführen `cluster image validate` Befehl, um zu überprüfen, ob ein Upgrade des Clusters erfolgreich durchgeführt werden kann.  Der `cluster image validate` Der Befehl führt eine Reihe von Überprüfungen für Ihre Clusterkomponenten aus, bietet dann eine Liste der durchgeführten spezifischen Validierungen sowie eine Liste aller Korrekturmaßnahmen, die vor dem Upgrade durchgeführt werden müssen.
+
+. Führen Sie die automatischen Prüfungen vor dem Upgrade durch:
 +
 [source, cli]
 ----
@@ -112,6 +120,12 @@ WARNING: There are additional manual upgrade validation checks that must be perf
 cluster image show-update-progress
 ----
 . Führen Sie alle erforderlichen Aktionen durch, die durch die Validierung identifiziert wurden.
+
+
+
+
+== Schritt 3: Aktualisieren Sie die ONTAP-Software
+
 . Kostenvoranschlag für Software-Upgrades erstellen:
 +
 [source, cli]
@@ -232,34 +246,6 @@ metrocluster show
 
 
 
-
-
-
-== Wiederaufnahme eines Upgrades (mithilfe der CLI) nach einem Fehler beim automatisierten Upgrade-Prozess
-
-Wenn ein automatisiertes Upgrade aufgrund eines Fehlers angehalten wird, können Sie den Fehler beheben und das automatisierte Upgrade fortsetzen. Alternativ können Sie das automatisierte Upgrade abbrechen und den Vorgang manuell abschließen. Wenn Sie das automatisierte Upgrade fortsetzen möchten, führen Sie keine der Aktualisierungsschritte manuell aus.
-
-.Über diese Aufgabe
-Wenn Sie die Aktualisierung manuell abschließen möchten, verwenden Sie den `cluster image cancel-update` Befehl zum Abbrechen des automatisierten Prozesses und manuelles Fortfahren. Wenn Sie das automatisierte Upgrade fortsetzen möchten, führen Sie die folgenden Schritte aus.
-
-.Schritte
-. Aktualisierungsfehler anzeigen:
-+
-[source, cli]
-----
-cluster image show-update-progress
-----
-. Beheben Sie den Fehler.
-. Nehmen Sie die Aktualisierung wieder auf:
-+
-[source, cli]
-----
-cluster image resume-update
-----
-
-
-.Nachdem Sie fertig sind
-link:task_what_to_do_after_upgrade.html["Prüfungen nach dem Upgrade durchführen"].
 
 .Verwandte Informationen
 * https://aiq.netapp.com/["Starten Sie Active IQ"]
