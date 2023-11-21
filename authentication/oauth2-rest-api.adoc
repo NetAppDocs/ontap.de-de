@@ -1,0 +1,82 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-rest-api.html 
+keywords: acquire token, curl, rest api call, keycloak 
+summary: Die OAuth 2.0-Implementierung in ONTAP unterstützt REST-API-Client-Applikationen. Sie können einen einfachen REST API-Aufruf mit Curl ausgeben, um mit OAuth 2.0 zu beginnen. 
+---
+= Geben Sie einen REST-API-Aufruf mit OAuth 2.0 aus
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Die OAuth 2.0-Implementierung in ONTAP unterstützt REST-API-Client-Applikationen. Sie können einen einfachen REST API-Aufruf mit Curl ausgeben, um mit OAuth 2.0 zu beginnen. Im folgenden Beispiel wird die ONTAP Cluster-Version abgerufen.
+
+
+
+== Bevor Sie beginnen
+
+Sie müssen die Funktion OAuth 2.0 für Ihren ONTAP-Cluster konfigurieren und aktivieren. Dazu gehört auch die Definition eines Autorisierungsservers.
+
+
+
+== Schritt 1: Erwerben Sie ein Zugriffstoken
+
+Sie müssen ein Zugriffstoken erwerben, um es mit dem REST-API-Aufruf zu verwenden. Die Token-Anforderung wird außerhalb von ONTAP ausgeführt, und die genaue Vorgehensweise hängt vom Autorisierungsserver und seiner Konfiguration ab. Sie können das Token über einen Webbrowser, mit einem Curl-Befehl oder mit einer Programmiersprache anfordern.
+
+Zur Veranschaulichung wird unten ein Beispiel gezeigt, wie ein Zugriffstoken von Keycloak mit Curl angefordert werden kann.
+
+.Keycloak Beispiel
+[source, curl]
+----
+curl --request POST \
+--location 'https://superzap.dev.netapp.com:8443/realms/peterson/protocol/openid-connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id=dp-client-1' \
+--data-urlencode 'grant_type=client_credentials' \
+--data-urlencode 'client_secret=5iTUf9QKLGxAoYa1iR33vlD5A2xq09V7'
+----
+Sie sollten das zurückgegebene Token kopieren und speichern.
+
+
+
+== Schritt 2: Geben Sie den REST API-Aufruf aus
+
+Nachdem Sie über ein gültiges Zugriffstoken verfügen, können Sie einen Curl-Befehl mit dem Zugriffstoken verwenden, um einen REST-API-Aufruf auszustellen.
+
+.Parameter und Variablen
+Die beiden Variablen im Beispiel Curl sind in der folgenden Tabelle beschrieben.
+
+[cols="25,75"]
+|===
+| Variabel | Beschreibung 
+
+
+| FQDN_IP-DOLLAR | Der vollständig qualifizierte Domain-Name oder die IP-Adresse der ONTAP Management LIF. 
+
+
+| ACCESS_TOKEN IN HÖHE VON USD | Das vom Autorisierungsserver ausgegebene Zugriffstoken OAuth 2.0. 
+|===
+Sie sollten diese Variablen zuerst in der Bash Shell-Umgebung festlegen, bevor Sie das Curl-Beispiel ausgeben. Geben Sie beispielsweise in der Linux CLI den folgenden Befehl ein, um die FQDN-Variable festzulegen und anzuzeigen:
+
+[listing]
+----
+FQDN_IP=172.14.31.224
+echo $FQDN_IP
+172.14.31.224
+----
+Nachdem beide Variablen in Ihrer lokalen Bash Shell definiert wurden, können Sie den Curl-Befehl kopieren und in die CLI einfügen. Drücken Sie *Enter*, um die Variablen zu ersetzen und den Befehl auszugeben.
+
+.Beispiel für die Wellung
+[source, curl]
+----
+curl --request GET \
+--location "https://$FQDN_IP/api/cluster?fields=version" \
+--include \
+--header "Accept: */*" \
+--header "Authorization: Bearer $ACCESS_TOKEN"
+----

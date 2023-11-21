@@ -1,0 +1,104 @@
+---
+permalink: fabricpool/enable-disable-volume-cloud-write-task.html 
+sidebar: sidebar 
+keywords: creating, volume, fabricpool, cloud write, enable, disable 
+summary: Ab ONTAP 9.14.1 können Sie den Cloud-Schreibmodus auf einem neuen oder vorhandenen Volume in einer FabricPool aktivieren und deaktivieren, damit NFS-Clients Daten direkt in die Cloud schreiben können. 
+---
+= Aktivieren und deaktivieren Sie Volumes für einen direkten Schreibvorgang in die Cloud
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.14.1 können Sie den Cloud-Schreibmodus auf einem neuen oder bestehenden Volume in einer FabricPool aktivieren und deaktivieren, damit NFS-Clients Daten direkt in die Cloud schreiben können, ohne auf Tiering-Scans warten zu müssen. SMB-Clients schreiben weiterhin auf die Performance-Tier in einem Cloud-schreibfähigen Volume. Der Cloud-Schreibmodus ist standardmäßig deaktiviert.
+
+Der Cloud-Schreibmodus ist beispielsweise bei Migrationen hilfreich, bei denen große Datenmengen an einen Cluster übertragen werden, als der Cluster auf der lokalen Tier unterstützen kann. Ohne Schreibmodus in die Cloud werden während einer Migration kleinere Datenmengen übertragen, dann in ein Tiering übertragen und dann wieder in ein Tiering übertragen, bis die Migration abgeschlossen ist. Beim Schreibmodus in der Cloud ist diese Art von Management nicht mehr erforderlich, da die Daten niemals in die lokale Tier übertragen werden.
+
+.Bevor Sie beginnen
+* Sie sollten ein Cluster- oder SVM-Administrator sein.
+* Sie müssen sich auf der erweiterten Berechtigungsebene befinden.
+* Das Volume muss ein Datenträger mit Lese-/Schreibzugriff sein.
+* Das Volume muss über die GESAMTE Tiering-Richtlinie verfügen.
+
+
+
+
+== Cloud-Schreibvorgänge während der Volume-Erstellung
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Volume erstellen und Cloud-Schreibmodus aktivieren:
++
+[source, cli]
+----
+volume create -volume <volume name> -is-cloud-write-enabled <true|false> -aggregate <local tier name>
+----
++
+Im folgenden Beispiel wird ein Volume mit dem Namen vol1 mit aktiviertem Cloud-Schreibzugriff auf der lokalen FabricPool-Ebene (aggr1) erstellt:
+
++
+[listing]
+----
+volume create -volume vol1 -is-cloud-write-enabled true -aggregate aggr1
+----
+
+
+
+
+== Aktivieren Sie den Cloud-Schreibvorgang auf einem vorhandenen Volume
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Ändern Sie ein Volume, um den Cloud-Schreibmodus zu aktivieren:
++
+[source, cli]
+----
+volume modify -volume <volume name> -is-cloud-write-enabled <true|false> -aggregate <local tier name>
+----
++
+Im folgenden Beispiel wird ein Volume mit dem Namen vol1 mit aktiviertem Cloud-Schreibzugriff auf der lokalen FabricPool-Ebene (aggr1) geändert:
+
++
+[listing]
+----
+volume modify -volume vol1 -is-cloud-write-enabled true -aggregate aggr1
+----
+
+
+
+
+== Deaktivieren Sie Cloud-Schreibvorgänge auf einem Volume
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Cloud-Schreibmodus deaktivieren:
++
+[source, cli]
+----
+volume modify -volume <volume name> -is-cloud-write-enabled <true|false> -aggregate <aggregate name>
+----
++
+Im folgenden Beispiel wird ein Volume mit dem Namen vol1 mit aktiviertem Cloud-Schreibvorgang erstellt:
+
++
+[listing]
+----
+volume modify -volume vol1 -is-cloud-write-enabled false -aggregate aggr1
+----
+

@@ -11,7 +11,7 @@ summary: Sie können eine Konsistenzgruppe ändern, indem Sie Volumes hinzufüge
 
 
 [role="lead"]
-Ab ONTAP 9.12.1 können Sie eine Konsistenzgruppe ändern, indem Sie Volumes entfernen oder vorhandene Volumes hinzufügen (erweitern der Konsistenzgruppe). Ab ONTAP 9.13.1 können Sie Volumes zwischen untergeordneten Konsistenzgruppen verschieben, wenn sie ein gemeinsames übergeordnetes Objekt verwenden.
+Ab ONTAP 9.12.1 können Sie eine Konsistenzgruppe ändern, indem Sie Volumes entfernen oder hinzufügen (erweitern der Konsistenzgruppe). Ab ONTAP 9.13.1 können Sie Volumes zwischen untergeordneten Konsistenzgruppen verschieben, wenn sie ein gemeinsames übergeordnetes Objekt verwenden.
 
 
 
@@ -19,22 +19,30 @@ Ab ONTAP 9.12.1 können Sie eine Konsistenzgruppe ändern, indem Sie Volumes ent
 
 Ab ONTAP 9.12.1 können Sie unterbrechungsfrei Volumes zu einer Konsistenzgruppe hinzufügen.
 
-.Bevor Sie beginnen
+.Über diese Aufgabe
 * Sie können keinen Volumes hinzufügen, die einer anderen Konsistenzgruppe zugeordnet sind.
 * Konsistenzgruppen unterstützen NAS-, SAN- und NVMe-Protokolle.
 * Sie können einer Konsistenzgruppe bis zu 16 Volumes gleichzeitig hinzufügen, wenn sich die Anpassungen insgesamt befinden xref:limits.html[Einschränkungen für Konsistenzgruppen].
 * Ab ONTAP 9.13.1 können Sie einer Konsistenzgruppe mit einer aktiven SnapMirror Business Continuity (SM-BC) oder einer asynchronen SnapMirror Sicherungsrichtlinie Volumes unterbrechungsfrei hinzufügen.
 * Wenn Sie Volumes zu einer durch SM-BC geschützten Konsistenzgruppe hinzufügen, ändert sich der Status der SM-BC-Beziehung in „erweitern“, bis Spiegelung und Schutz für das neue Volume konfiguriert sind. Wenn auf dem primären Cluster ein Ausfall auftritt, bevor dieser Prozess abgeschlossen ist, wird die Konsistenzgruppe im Rahmen des Failover-Vorgangs zurück auf ihre ursprüngliche Zusammensetzung zurückgesetzt.
-* In ONTAP 9.12.1 können Sie Volumes nicht zu einer Konsistenzgruppe in einer SM-BC-Beziehung hinzufügen. Sie müssen zuerst die SM-BC-Beziehung unterbrechen, die Konsistenzgruppe ändern und dann den Schutz mit SM-BC wiederherstellen.
+* In ONTAP 9.12.1 und früheren Versionen können Sie Volumes nicht zu einer Konsistenzgruppe in einer SM-BC-Beziehung hinzufügen. Sie müssen zuerst die SM-BC-Beziehung unterbrechen, die Konsistenzgruppe ändern und dann den Schutz mit SM-BC wiederherstellen.
 * Ab ONTAP 9.12.1 unterstützt die ONTAP-REST-API das Hinzufügen von _New_ oder vorhandenen Volumes zu einer Konsistenzgruppe. Weitere Informationen zur ONTAP REST API finden Sie unter link:https://docs.netapp.com/us-en/ontap-automation/reference/api_reference.html#access-a-copy-of-the-ontap-rest-api-reference-documentation["Referenzdokumentation zur ONTAP REST-API"^].
 +
 Ab ONTAP 9.13.1 wird diese Funktionalität in System Manager unterstützt.
 
 * Wenn Sie eine Konsistenzgruppe erweitern, werden Snapshot Kopien der vor der Änderung erfassten Konsistenzgruppe als Teil betrachtet. Bei jedem auf dieser Snapshot Kopie basierenden Wiederherstellungsvorgang wird die Konsistenzgruppe zum Zeitpunkt des Snapshots wiedergegeben.
 * Wenn Sie ONTAP 9.10.1 bis 9.11.1 verwenden, können Sie eine Konsistenzgruppe nicht ändern. Zum Ändern der Konfiguration einer Konsistenzgruppe in ONTAP 9.10.1 oder 9.11.1 müssen Sie die Konsistenzgruppe löschen und dann eine neue Konsistenzgruppe mit den Volumes erstellen, die Sie aufnehmen möchten.
+* Ab ONTAP 9.14.1 können Sie Snapshots mit granularem Volume unter Verwendung von asynchronem SnapMirror in das Ziel-Cluster replizieren. Bei der Erweiterung einer Konsistenzgruppe mit Asynchronous SnapMirror werden Volume-granulare Snapshots erst nach Erweiterung der Konsistenzgruppe repliziert, wenn die SnapMirror-Richtlinie MirrorAll oder MirrorAndVault lautet. Es werden nur Snapshots mit Volume-Granularität repliziert, die neuer sind als der Snapshot der BasisKonsistenzgruppe.
+* Wenn Sie Volumes zu einer Konsistenzgruppe in einer SVM-Disaster-Recovery-Beziehung hinzufügen (unterstützt ab ONTAP 9.14.1), müssen Sie nach dem erweitern der Konsistenzgruppe die SVM-Disaster-Recovery-Beziehung vom Ziel-Cluster aktualisieren. Weitere Informationen finden Sie unter xref:../data-protection/update-replication-relationship-manual-task.html[Aktualisieren Sie eine Replikationsbeziehung manuell].
 
 
 .Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+Ab ONTAP 9.12.1 können Sie diesen Vorgang mit System Manager ausführen.
+
 . Wählen Sie *Storage > Consistency Groups* aus.
 . Wählen Sie die Konsistenzgruppe aus, die Sie ändern möchten.
 . Wenn Sie eine einzelne Consistency Group ändern, wählen Sie oben im Menü *Volumes* die Option *Mehr* und dann *Expand*, um ein Volume hinzuzufügen.
@@ -45,20 +53,68 @@ Wenn Sie eine untergeordnete Konsistenzgruppe ändern, geben Sie die übergeordn
 . Wählen Sie *Speichern*. Wenn der Vorgang abgeschlossen ist, zeigen Sie die neu hinzugefügten Volumes im Menü *Volumes* der Konsistenzgruppe an.
 
 
+--
+.CLI
+--
+Ab ONTAP 9.14.1 können Sie mithilfe der ONTAP-CLI Volumes zu einer Konsistenzgruppe hinzufügen.
+
+.Fügen Sie vorhandene Volumes hinzu
+. Geben Sie den folgenden Befehl ein. Der `-volumes` Der Parameter akzeptiert eine durch Kommas getrennte Liste von Volumes.
++
+
+NOTE: Schließen Sie nur die ein `-parent-consistency-group` Parameter, wenn die Konsistenzgruppe sich in einer hierarchischen Beziehung befindet.
+
++
+`consistency-group volume add -vserver _svm_name_ -consistency-group _consistency_group_name_ -parent-consistency-group _parent_consistency_group_ -volume _volumes_`
+
+
+
+.Hinzufügen neuer Volumes
+Das Verfahren zum Hinzufügen neuer Volumes hängt von dem verwendeten Protokoll ab.
+
+
+NOTE: Schließen Sie nur die ein `-parent-consistency-group` Parameter, wenn die Konsistenzgruppe sich in einer hierarchischen Beziehung befindet.
+
+* So fügen Sie neue Volumes hinzu, ohne sie zu exportieren:
++
+`consistency-group volume create -vserver _SVM_name_ -consistency-group _child_consistency_group_ -parent-consistency-group existingParentCg -volume _volume_name_ -size _size_`
+
+* So fügen Sie neue NFS-Volumes hinzu:
++
+`consistency-group volume create -vserver _SVM_name_ -consistency-group _consistency-group-name_ -volume _volume-prefix_ -volume-count _number_ -size _size_ -export-policy _policy_name_`
+
+* So fügen Sie neue SAN-Volumes hinzu:
++
+`consistency-group volume create -vserver _SVM_name_ -consistency-group _consistency-group-name_ -lun _lun_name_ -size _size_ -lun-count _number_ -igroup _igroup_name_`
+
+* So fügen Sie neue NVMe-Namespaces hinzu:
++
+`consistency-group volume create -vserver _SVM_name_ -consistency-group _consistency_group_name_ -namespace _namespace_name_ -volume-count _number_ -namespace-count _number_ -size _size_ -subsystem _subsystem_name_`
+
+
+
+--
+====
 
 
 == Entfernen von Volumes aus einer Konsistenzgruppe
 
 Volumes, die aus einer Konsistenzgruppe entfernt wurden, werden nicht gelöscht. Sie bleiben im Cluster aktiv.
 
-.Bevor Sie beginnen
-* Sie können Volumes nicht aus einer Konsistenzgruppe in einer SnapMirror Business Continuity (SM-BC) Beziehung entfernen. Sie müssen zuerst die SM-BC-Beziehung unterbrechen, um die Konsistenzgruppe zu ändern und dann die Beziehung wiederherzustellen.
+.Über diese Aufgabe
+* Sie können Volumes nicht aus einer Konsistenzgruppe in einer SM-BC- oder SVM-Disaster-Recovery-Beziehung entfernen. Sie müssen zuerst die SM-BC-Beziehung unterbrechen, um die Konsistenzgruppe zu ändern und dann die Beziehung wiederherzustellen.
 * Wenn eine Konsistenzgruppe nach dem Entfernen keine Volumes enthält, wird die Konsistenzgruppe gelöscht.
 * Wenn ein Volume aus einer Konsistenzgruppe entfernt wird, bleiben die vorhandenen Snapshots der Konsistenzgruppe erhalten, gelten jedoch als ungültig. Die vorhandenen Snapshots können nicht verwendet werden, um den Inhalt der Konsistenzgruppe wiederherzustellen. Volume-granulare Snapshots bleiben gültig.
 * Wenn Sie ein Volume aus dem Cluster löschen, wird es automatisch aus der Konsistenzgruppe entfernt.
 * Zum Ändern der Konfiguration einer Konsistenzgruppe in ONTAP 9.10.1 oder 9.11.1 müssen Sie die Konsistenzgruppe löschen und dann eine neue Konsistenzgruppe mit den gewünschten Mitglied-Volumes erstellen.
 * Wenn Sie ein Volume aus dem Cluster löschen, wird es automatisch zur Konsistenzgruppe entfernt.
 
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Ab ONTAP 9.12.1 können Sie diesen Vorgang mit System Manager ausführen.
 
 .Schritte
 . Wählen Sie *Storage > Consistency Groups* aus.
@@ -68,19 +124,42 @@ Volumes, die aus einer Konsistenzgruppe entfernt wurden, werden nicht gelöscht.
 . Bestätigen Sie, dass Sie verstehen, dass das Entfernen der Volumes dazu führt, dass alle Snapshot-Kopien der Konsistenzgruppe ungültig werden und wählen Sie *Entfernen* aus.
 
 
+--
+.CLI
+--
+Ab ONTAP 9.14.1 können Sie Volumes mithilfe der CLI aus einer Konsistenzgruppe entfernen.
+
+.Schritt
+. Entfernen Sie die Volumes. Der `-volumes` Der Parameter akzeptiert eine durch Kommas getrennte Liste von Volumes.
++
+Schließen Sie nur die ein `-parent-consistency-group` Parameter, wenn die Konsistenzgruppe sich in einer hierarchischen Beziehung befindet.
+
++
+`consistency-group volume remove -vserver _SVM_name_ -consistency-group _consistency_group_name_ -parent-consistency-group _parent_consistency_group_name_ -volume _volumes_`
+
+
+
+--
+====
 
 
 == Verschieben von Volumes zwischen Konsistenzgruppen
 
 Ab ONTAP 9.13.1 können Sie Volumes zwischen untergeordneten Konsistenzgruppen verschieben, die ein übergeordnetes Objekt verwenden.
 
-.Bevor Sie beginnen
+.Über diese Aufgabe
 * Sie können Volumes nur zwischen Konsistenzgruppen verschieben, die unter derselben übergeordneten Konsistenzgruppe geschachtelt sind.
 * Vorhandene Snapshots von Konsistenzgruppen sind ungültig und können als Snapshots von Konsistenzgruppen nicht mehr aufgerufen werden. Einzelne Volume Snapshots bleiben gültig.
 * Snapshot Kopien der übergeordneten Konsistenzgruppe bleiben gültig.
 * Wenn Sie alle Volumes aus einer untergeordneten Konsistenzgruppe verschieben, wird diese Konsistenzgruppe gelöscht.
 * Änderungen an einer Konsistenzgruppe müssen eingehalten werden xref:limits.html[Einschränkungen für Konsistenzgruppen].
 
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Ab ONTAP 9.12.1 können Sie diesen Vorgang mit System Manager ausführen.
 
 .Schritte
 . Wählen Sie *Storage > Consistency Groups* aus.
@@ -95,6 +174,30 @@ Ab ONTAP 9.13.1 können Sie Volumes zwischen untergeordneten Konsistenzgruppen v
 . Wählen Sie **Verschieben**.
 
 
+--
+.CLI
+--
+Ab ONTAP 9.14.1 können Sie Volumes mithilfe der ONTAP CLI zwischen Konsistenzgruppen verschieben.
+
+.Verschieben Sie Volumes in eine neue untergeordnete Konsistenzgruppe
+. Mit dem folgenden Befehl wird eine neue untergeordnete Konsistenzgruppe erstellt, die die zugewiesenen Volumes enthält.
++
+Wenn Sie die neue Konsistenzgruppe erstellen, können Sie neue Snapshot-, QoS- und Tiering-Richtlinien zuweisen.
+
++
+`consistency-group volume reassign -vserver _SVM_name_ -consistency-group _source_child_consistency_group_ -parent-consistency-group _parent_consistency_group_ -volume _volumes_ -new-consistency-group _consistency_group_name_ [-snapshot-policy _policy_ -qos-policy _policy_ -tiering-policy _policy_]`
+
+
+
+.Verschieben Sie Volumes in eine vorhandene untergeordnete Konsistenzgruppe
+. Weisen Sie die Volumes neu zu. Der `-volumes` Der Parameter akzeptiert eine kommagetrennte Liste von Volume-Namen.
++
+`consistency-group volume reassign -vserver _SVM_name_ -consistency-group _source_child_consistency_group_ -parent-consistency-group _parent_consistency_group_ -volume _volumes_ -to-consistency-group _target_consistency_group_`
+
+
+
+--
+====
 .Verwandte Informationen
 * xref:limits.html[Einschränkungen für Konsistenzgruppen]
 * xref:clone-task.html[Klonen einer Konsistenzgruppe]

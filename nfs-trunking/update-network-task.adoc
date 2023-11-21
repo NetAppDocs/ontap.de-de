@@ -1,0 +1,105 @@
+---
+permalink: nfs-trunking/update-network-task.html 
+sidebar: sidebar 
+keywords: NFS, servers, network, prepare, NFS trunking, LIF, trunking group, NIC 
+summary: Um das NFS-Trunking zu nutzen, müssen sich mehrere LIFs für jede Trunking-Verbindung auf zwei oder mehr NICs befinden. 
+---
+= Aktualisieren Sie Ihr Netzwerk für Trunking
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Für NFSv4.1 Trunking müssen sich die LIFs in einer Trunking-Gruppe auf demselben Node befinden und Home Ports auf demselben Node aufweisen. Alle LIFs sollten in einer Failover-Gruppe auf demselben Node konfiguriert werden.
+
+.Über diese Aufgabe
+Eine 1:1-Zuordnung von LIFs und NICs bietet den größten Performance-Zuwachs, ist jedoch nicht zum Aktivieren des Trunking erforderlich.
+
+Sie können mehrere Failover-Gruppen aufweisen, aber die Failover-Gruppe für das Trunking muss nur die LIFS in der Trunking-Gruppe enthalten.
+
+Sie sollten die Trunking Failover-Gruppe jedes Mal anpassen, wenn Sie Verbindungen (und zugrunde liegende NICs) zu einer Failover-Gruppe hinzufügen oder entfernen.
+
+.Bevor Sie beginnen
+* Sie müssen die mit den NICs verknüpften Portnamen kennen, um eine Failover-Gruppe zu erstellen.
+* Die Ports müssen sich alle auf demselben Node befinden.
+
+
+.Schritte
+. Überprüfen Sie die Namen und den Status der Netzwerkports, die Sie verwenden möchten:
++
+`network port show`
+
+. Erstellen einer Failover-Trunking-Gruppe oder Ändern einer vorhandenen für Trunking:
++
+`network interface failover-groups create -vserver _svm_name_ -failover-group _failover_group_name_ -targets _ports_list_`
+
++
+`network interface failover-groups modify -vserver _svm_name_ -failover-group _failover_group_name_ -targets _ports_list_`
+
++
+
+NOTE: Eine Failover-Gruppe ist nicht erforderlich, wird jedoch dringend empfohlen.
+
++
+** `_svm_name_` Ist der Name der SVM, die den NFS-Server enthält.
+** `_ports_list_` Ist die Liste der Ports, die der Failover-Gruppe hinzugefügt werden.
++
+Ports werden im Format hinzugefügt `_node_name:port_number_`, Zum Beispiel, `node1:e0c`.
+
++
+Mit dem folgenden Befehl wird eine Failover-Gruppe erstellt `fg3` Für SVM vs1 und fügt drei Ports hinzu:
+
++
+`network interface failover-groups create -vserver vs1 -failover-group fg3 -targets cluster1-01:e0c,cluster1-01:e0d,cluster1-01:e0e`
+
++
+Weitere Informationen zu link:../networking/configure_failover_groups_and_policies_for_lifs_overview.html["Failover-Gruppen."]
+
+
+
+. Erstellung zusätzlicher LIFs für Mitglieder der Trunking-Gruppe, je nach Bedarf:
++
+`network interface create -vserver _svm_name_ -lif _lif_name_ -home-node _node_name_ -home-port _port_name_ -address _IP_address_ -netmask _IP_address_ [-service-policy _policy_] [-auto-revert {true|false}]`
+
++
+** `-home-node` - Der Knoten, zu dem die LIF zurückgibt, wenn der Befehl Network Interface revert auf der LIF ausgeführt wird.
++
+Sie können angeben, ob die LIF automatisch mit dem zum Home Node und Home Port zurückgesetzt wird `-auto-revert` Option.
+
+** `-home-port` Ist der physische oder logische Port, zu dem die LIF zurückgibt, wenn der Befehl zum Zurücksetzen der Netzwerkschnittstelle auf der LIF ausgeführt wird.
+** Sie können eine IP-Adresse mit dem angeben `-address` Und `-netmask` Optionen:
+** Wenn Sie IP-Adressen manuell zuweisen (ohne ein Subnetz zu verwenden), müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, wenn Clients oder Domänencontroller in einem anderen IP-Subnetz vorhanden sind. Die man-Seite „Network Route create“ enthält Informationen zum Erstellen einer statischen Route innerhalb einer SVM.
+** `-service-policy` - Die Service Policy für die LIF. Wenn keine Richtlinie angegeben wird, wird automatisch eine Standardrichtlinie zugewiesen. Verwenden Sie die `network interface service-policy show` Befehl zum Überprüfen der verfügbaren Service-Richtlinien.
+** `-auto-revert` - Geben Sie an, ob eine Daten-LIF automatisch auf ihren Heimatknoten zurückgesetzt wird, unter Umständen wie Start, Änderungen des Status der Management-Datenbank oder wenn die Netzwerkverbindung hergestellt wird. *Die Standardeinstellung ist FALSE*, aber Sie können sie abhängig von den Netzwerkverwaltungsrichtlinien in Ihrer Umgebung auf TRUE setzen.
++
+Wiederholen Sie diesen Schritt für jede zusätzliche LIF, die in der Trunking-Gruppe benötigt wird.
+
++
+Mit dem folgenden Befehl wird LIF-A für SVM vs1 auf Port e0c des Node cluster1_01 erstellt:
+
++
+`network interface create -vserver vs1 -lif lif-A -service-policy default-intercluster -home-node cluster1_01 -home-port e0c -address 192.0.2.0`
+
++
+Weitere Informationen zu link:../networking/create_lifs.html["LIF-Erstellung:"]
+
+
+
+. Vergewissern Sie sich, dass die LIFs erstellt wurden:
++
+`network interface show`
+
+. Vergewissern Sie sich, dass die konfigurierte IP-Adresse erreichbar ist:
++
+[cols="25,75"]
+|===
+| Überprüfen einer... | Verwenden... 
+
+
+| IPv4-Adresse | `network ping` 
+
+
+| IPv6-Adresse | `network ping6` 
+|===
+

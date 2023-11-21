@@ -1,0 +1,144 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-deployment-scenarios.html 
+keywords: oauth 2.0, deployment, configuration, parameters, local validation, remote introspection 
+summary: Beim Definieren eines Autorisierungsservers für ONTAP stehen verschiedene Konfigurationsoptionen zur Verfügung. Basierend auf diesen Optionen können Sie einen Autorisierungsserver erstellen, der für Ihre Bereitstellungsumgebung geeignet ist. 
+---
+= OAuth 2.0-Bereitstellungsszenarien
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Beim Definieren eines Autorisierungsservers für ONTAP stehen verschiedene Konfigurationsoptionen zur Verfügung. Basierend auf diesen Optionen können Sie einen Autorisierungsserver erstellen, der für Ihre Bereitstellungsumgebung geeignet ist.
+
+
+
+== Zusammenfassung der Konfigurationsparameter
+
+Beim Definieren eines Autorisierungsservers für ONTAP stehen mehrere Konfigurationsparameter zur Verfügung. Diese Parameter werden in der Regel in allen administrativen Schnittstellen unterstützt.
+
+Die Parameternamen können je nach ONTAP-Administratorschnittstelle leicht variieren. Bei der Konfiguration der Remote-Introspektion wird der Endpunkt beispielsweise mit dem CLI-Befehlsparameter identifiziert `-introspection-endpoint`. Aber mit dem System Manager ist das äquivalente Feld _Authorization Server Token Introspection URI_. Um alle ONTAP-Verwaltungsschnittstellen aufzunehmen, wird eine allgemeine Beschreibung der Parameter bereitgestellt. Der genaue Parameter oder das Feld sollte je nach Kontext offensichtlich sein.
+
+[cols="25,75"]
+|===
+| Parameter | Beschreibung 
+
+
+| Name | Der Name des Autorisierungsservers, der ONTAP bekannt ist. 
+
+
+| Applikation | Die ONTAP-interne Anwendung, für die die Definition gilt. Dies muss *http* sein. 
+
+
+| Aussteller-URI | Der FQDN mit Pfad, der den Standort oder die Organisation identifiziert, der die Token ausgibt. 
+
+
+| Provider-JWKS-URI | Der FQDN mit Pfad und Dateiname, bei dem ONTAP die JSON-Webschlüsselsätze erhält, die zur Validierung der Zugriffstoken verwendet werden. 
+
+
+| JWKS-Aktualisierungsintervall | Das Zeitintervall, in dem festgelegt wird, wie oft ONTAP Zertifikatsinformationen vom Provider JWKS URI aktualisiert. Der Wert wird im ISO-8601-Format angegeben. 
+
+
+| Introspektion Endpunkt | Der FQDN mit Pfad, den ONTAP zur Remote-Token-Validierung durch Introspektion verwendet. 
+
+
+| Client-ID | Der Name des Clients, wie er auf dem Autorisierungsserver definiert ist. Wenn dieser Wert enthalten ist, müssen Sie auch den zugehörigen Client-Schlüssel basierend auf der Schnittstelle angeben. 
+
+
+| Ausgehender Proxy | Damit wird der Zugriff auf den Autorisierungsserver ermöglicht, wenn sich ONTAP hinter einer Firewall befindet. Der URI muss im Curl-Format vorliegen. 
+
+
+| Verwenden Sie ggf. lokale Rollen | Ein boolesches Flag, das bestimmt, ob die lokalen ONTAP-Definitionen verwendet werden, einschließlich einer benannten REST-Rolle und lokalen Benutzern. 
+
+
+| Benutzeranspruch entfernen | Ein alternativer Name, den ONTAP für lokale Benutzer verwendet. Verwenden Sie die `sub` Feld im Zugriffstoken, das mit dem lokalen Benutzernamen übereinstimmt. 
+|===
+
+
+== Bereitstellungsszenarien
+
+Im Folgenden werden verschiedene gängige Bereitstellungsszenarien vorgestellt. Sie sind abhängig davon organisiert, ob die Token-Validierung lokal durch ONTAP oder Remote durch den Autorisierungsserver durchgeführt wird. Jedes Szenario enthält eine Liste der erforderlichen Konfigurationsoptionen. Siehe link:../authentication/oauth2-deploy-ontap.html["Implementieren Sie OAuth 2.0 in ONTAP"] Beispiele für Konfigurationsbefehle.
+
+
+TIP: Nachdem Sie einen Autorisierungsserver definiert haben, können Sie seine Konfiguration über die ONTAP-Verwaltungsschnittstelle anzeigen. Verwenden Sie beispielsweise den Befehl `security oauth2 client show` Mit der ONTAP CLI.
+
+
+
+=== Lokale Validierung
+
+Die folgenden Bereitstellungsszenarien basieren auf der lokalen Tokenvalidierung durch ONTAP.
+
+.Verwenden Sie eigenständige Bereiche ohne Proxy
+Dies ist die einfachste Bereitstellung, bei der nur OAuth 2.0 eigenständige Bereiche verwendet werden. Keine der lokalen ONTAP-Identitätsdefinitionen werden verwendet. Sie müssen die folgenden Parameter angeben:
+
+* Name
+* Anwendung (http)
+* Provider-JWKS-URI
+* Aussteller-URI
+
+
+Sie müssen die Gültigkeitsbereiche auch auf dem Autorisierungsserver hinzufügen.
+
+.Verwenden Sie eigenständige Bereiche mit einem Proxy
+In diesem Bereitstellungsszenario werden die eigenständigen Oszilloskope von OAuth 2.0 verwendet. Keine der lokalen ONTAP-Identitätsdefinitionen werden verwendet. Aber der Autorisierungsserver befindet sich hinter einer Firewall und Sie müssen daher einen Proxy konfigurieren. Sie müssen die folgenden Parameter angeben:
+
+* Name
+* Anwendung (http)
+* Provider-JWKS-URI
+* Ausgehender Proxy
+* Aussteller-URI
+* Zielgruppe
+
+
+Sie müssen die Gültigkeitsbereiche auch auf dem Autorisierungsserver hinzufügen.
+
+.Verwenden Sie lokale Benutzerrollen und die standardmäßige Zuweisung von Benutzernamen mit einem Proxy
+Dieses Bereitstellungsszenario verwendet lokale Benutzerrollen mit Standardnamenszuordnung. Der Anspruch des Remotebenutzers verwendet den Standardwert `sub` Daher wird dieses Feld im Zugriffstoken verwendet, um mit dem lokalen Benutzernamen zu übereinstimmen. Der Benutzername darf maximal 40 Zeichen lang sein. Der Autorisierungsserver befindet sich hinter einer Firewall, Sie müssen also auch einen Proxy konfigurieren. Sie müssen die folgenden Parameter angeben:
+
+* Name
+* Anwendung (http)
+* Provider-JWKS-URI
+* Verwenden Sie ggf. lokale Rollen (`true`)
+* Ausgehender Proxy
+* Aussteller
+
+
+Sie müssen sicherstellen, dass der lokale Benutzer für ONTAP definiert ist.
+
+.Verwenden Sie lokale Benutzerrollen und alternative Benutzernamen-Zuordnungen mit einem Proxy
+Dieses Bereitstellungsszenario verwendet lokale Benutzerrollen mit einem alternativen Benutzernamen, der für einen lokalen ONTAP-Benutzer verwendet wird. Der Autorisierungsserver befindet sich hinter einer Firewall, Sie müssen also einen Proxy konfigurieren. Sie müssen die folgenden Parameter angeben:
+
+* Name
+* Anwendung (http)
+* Provider-JWKS-URI
+* Verwenden Sie ggf. lokale Rollen (`true`)
+* Anspruch des Remote-Benutzers
+* Ausgehender Proxy
+* Aussteller-URI
+* Zielgruppe
+
+
+Sie müssen sicherstellen, dass der lokale Benutzer für ONTAP definiert ist.
+
+
+
+=== Fernintrospektion
+
+Die folgenden Bereitstellungskonfigurationen basieren auf ONTAP, die Token per Remote-Prüfung durch Introspektion validieren.
+
+.Verwenden Sie eigenständige Bereiche ohne Proxy
+Dies ist eine einfache Bereitstellung, die auf der Verwendung der eigenständigen Oszilloskope von OAuth 2.0 basiert. Keine der ONTAP-Identitätsdefinitionen wird verwendet. Sie müssen die folgenden Parameter einschließen:
+
+* Name
+* Anwendung (http)
+* Introspektion Endpunkt
+* Client-ID
+* Aussteller-URI
+
+
+Sie müssen die Bereiche sowie den Client- und Client-Schlüssel auf dem Autorisierungsserver definieren.

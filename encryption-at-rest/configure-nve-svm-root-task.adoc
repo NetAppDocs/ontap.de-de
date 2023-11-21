@@ -1,0 +1,73 @@
+---
+permalink: encryption-at-rest/configure-nve-svm-root-task.html 
+keywords: volume encryption, nve, svm root, encrypt 
+summary: 'NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie, mit der Daten im Ruhezustand um ein Volume gleichzeitig verschlüsselt werden. Ab ONTAP 9.14.1 können Sie NVE auf einem SVM-Root konfigurieren.' 
+---
+= Konfiguration der NetApp-Volume-Verschlüsselung auf einem SVM-Root-Volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.14.1 können Sie die NetApp Volume Encryption (NVE) auf einem Storage VM (SVM) Root-Volume aktivieren. Mit NVE wird das Root-Volume mit einem eindeutigen Schlüssel verschlüsselt, was für mehr Sicherheit auf der SVM sorgt.
+
+.Über diese Aufgabe
+NVE auf einem SVM-Root-Volume kann nur aktiviert werden, nachdem die SVM erstellt wurde.
+
+.Bevor Sie beginnen
+* Das SVM-Root-Volume darf sich nicht auf einem mit der NetApp-Aggregatverschlüsselung (NAE) verschlüsselten Aggregat befinden.
+* Sie müssen die Verschlüsselung mit dem Onboard Key Manager oder einem externen Schlüsselmanager aktiviert haben.
+* Sie müssen ONTAP 9.14.1 oder höher ausführen.
+* Um eine SVM, die ein mit NVE verschlüsseltes Root-Volume enthält, zu migrieren, müssen Sie das SVM-Root-Volume nach Abschluss der Migration in ein Klartextvolume konvertieren und anschließend das SVM-Root-Volume neu verschlüsseln.
++
+** Wenn das Zielaggregat der SVM Migration NAE verwendet, übernimmt das Root-Volume standardmäßig NAE.
+
+
+* Wenn sich die SVM in einer SVM-Disaster-Recovery-Beziehung befindet:
++
+** Verschlüsselungseinstellungen auf einer gespiegelten SVM werden nicht an das Ziel kopiert. Wenn Sie NVE auf dem Quell- oder Zielsystem aktivieren, müssen Sie NVE auf dem gespiegelten SVM Root-Volume separat aktivieren.
+** Wenn alle Aggregate im Ziel-Cluster NAE verwenden, verwendet das SVM Root-Volume NAE.
+
+
+
+
+.Schritte
+Sie können NVE auf einem SVM Root-Volume mit der ONTAP CLI oder mit System Manager aktivieren.
+
+[role="tabbed-block"]
+====
+.CLI
+--
+Sie können NVE auf dem Root-Volume der SVM aktivieren oder das Volume zwischen den Aggregaten verschieben.
+
+.Verschlüsseln Sie das Root-Volume
+. Konvertieren Sie das Root-Volume in ein verschlüsseltes Volume:
++
+`volume encryption conversion start -vserver _svm_name_ -volume _volume_`
+
+. Bestätigen Sie, dass die Verschlüsselung erfolgreich war. Der `volume show -encryption-type volume` Zeigt eine Liste aller Volumes mit NVE an.
+
+
+.Verschlüsseln Sie das SVM-Root-Volume durch Verschieben
+. Volume-Verschiebung initiieren:
++
+`volume move start -vserver _svm_name_ -volume _volume_ -destination-aggregate _aggregate_ -encrypt-with-aggr-key false -encrypt-destination true`
+
++
+Finden Sie weitere Informationen zu `volume move`, Siehe xref:../volumes/move-volume-task.html[Verschieben Sie ein Volume].
+
+. Bestätigen Sie das `volume move` Vorgang erfolgreich mit dem ausgeführt `volume move show` Befehl. Der `volume show -encryption-type volume` Zeigt eine Liste aller Volumes mit NVE an.
+
+
+--
+.System Manager
+--
+. Navigieren Sie zu **Storage** > **Volumes**.
+. Wählen Sie neben dem Namen des SVM-Root-Volumes, das Sie verschlüsseln möchten, die Option aus image:icon_kabob.gif["Drei vertikale Punkte"] Dann **Bearbeiten**.
+. Wählen Sie unter der Überschrift **Speicherung und Optimierung** die Option **Verschlüsselung aktivieren**.
+. Wählen Sie **Speichern**.
+
+
+--
+====

@@ -1,0 +1,53 @@
+---
+permalink: nfs-trunking/modify-exports-task.html 
+sidebar: sidebar 
+keywords: NFS, servers, network, NFS trunking, NIC, export, policies, rule, Linux, VMware, datastores, client 
+summary: Damit Clients von dem Trunking für vorhandene Data Shares profitieren können, müssen Sie möglicherweise Richtlinien und Regeln für den Export und die Volumes, mit denen sie verbunden sind, ändern. 
+---
+= Datenexport für Clientzugriff ändern
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Damit Clients von dem Trunking für vorhandene Data Shares profitieren können, müssen Sie möglicherweise Richtlinien und Regeln für den Export und die Volumes, mit denen sie verbunden sind, ändern. Es gibt unterschiedliche Exportanforderungen für Linux-Clients und VMware-Datastores.
+
+Exportanforderungen des Kunden:
+
+* Linux-Clients müssen über einen separaten Mount- und einen separaten Mount-Punkt für jede Trunking-Verbindung (d. h. für jede LIF) verfügen.
++
+Falls Sie ein Upgrade auf ONTAP 9.14.1 durchführen und ein Volume bereits exportiert haben, können Sie dieses Volume weiterhin in einer Trunking-Gruppe verwenden.
+
+* VMware Clients benötigen nur einen einzelnen Bereitstellungspunkt für ein exportiertes Volume, wobei mehrere LIFs angegeben sind.
++
+VMware-Clients benötigen Root-Zugriff in der Exportrichtlinie.
+
+
+
+.Schritte
+. Überprüfen Sie, ob eine vorhandene Exportrichtlinie vorhanden ist:
++
+`vserver export-policy show`
+
+. Überprüfen Sie, ob die bestehenden Regeln für die Exportrichtlinie für die Trunking-Konfiguration geeignet sind:
++
+`vserver export-policy rule show -policyname _policy_name_`
+
++
+Überprüfen Sie insbesondere, ob die `-clientmatch` Parameter identifiziert korrekt die Trunking-fähigen Linux- oder VMware-Clients, die den Export mounten.
+
++
+Wenn Anpassungen erforderlich sind, ändern Sie die Regel mithilfe der `vserver export-policy rule modify` Befehl oder erstellen Sie eine neue Regel:
+
++
+`vserver export-policy rule create -vserver _svm_name_ -policyname _policy_name_ -ruleindex integer -protocol nfs4 -clientmatch { text | "text,text,…" } -rorule _security_type_ -rwrule _security_type_ -superuser _security_type_ -anon _user_ID_`
+
++
+Weitere Informationen zu link:../nfs-config/add-rule-export-policy-task.html["Erstellen von Exportregeln."]
+
+. Überprüfen Sie, ob vorhandene exportierte Volumes online sind:
++
+`volume show -vserver _svm_name_`
+
+

@@ -15,6 +15,8 @@ Ab ONTAP 9.12.1 können Sie eine Snapshot-Kopie auf einem nicht-SnapLock-Volume 
 
 Mithilfe der SnapLock-Funktion für Compliance-Uhren können Sie Snapshot-Kopien für einen bestimmten Zeitraum sperren, damit sie bis zum Erreichen der Verfallszeit nicht gelöscht werden können. Durch das Sperren von Snapshot-Kopien sind sie vor Ransomware-Bedrohungen geschützt. Mit gesperrten Snapshot-Kopien können Daten wiederhergestellt werden, falls ein Volume durch einen Ransomware-Angriff kompromittiert wird.
 
+Ab ONTAP 9.14.1 unterstützt die Sperrung von Snapshot Kopien zur langfristigen Aufbewahrung von Snapshot Kopien auf SnapLock Vault-Zielen und auf nicht-SnapLock SnapMirror Ziel-Volumes. Die Sperrung von Snapshot Kopien wird aktiviert, indem die Aufbewahrungsfrist mithilfe von SnapMirror Richtlinien festgelegt wird, die mit einem verknüpft sind xref:Modify an existing policy to apply long-term retention[Vorhandene Richtlinienbezeichnung]. Die Regel überschreibt den auf dem Volume festgelegten Standardaufbewahrungszeitraum. Wenn dem SnapMirror-Label keine Aufbewahrungsfrist zugeordnet ist, wird die Standardaufbewahrungsdauer des Volume verwendet.
+
 .Überlegungen und Überlegungen zu Snapshot Kopien vor Manipulationen
 * Wenn Sie die ONTAP-CLI verwenden, muss auf allen Nodes im Cluster ONTAP 9.12.1 oder höher ausgeführt werden. Wenn Sie System Manager verwenden, muss auf allen Nodes ONTAP 9.13.1 oder höher ausgeführt werden.
 * link:https://docs.netapp.com/us-en/ontap/snaplock/install-license-task.html["Die SnapLock-Lizenz muss auf dem Cluster installiert sein"].
@@ -284,3 +286,22 @@ cluster1> volume snapshot modify-snaplock-expiry-time -volume vol1 -snapshot sna
 
 --
 ====
+
+
+=== Ändern Sie eine vorhandene Richtlinie, um die langfristige Aufbewahrung anzuwenden
+
+Ab ONTAP 9.14.1 können Sie eine vorhandene SnapMirror Richtlinie ändern, indem Sie eine Regel hinzufügen, um die langfristige Aufbewahrung von Snapshot-Kopien festzulegen. Die Regel wird verwendet, um den Standardaufbewahrungszeitraum des Volumes auf SnapLock Vault-Zielen und auf nicht-SnapLock SnapMirror Ziel-Volumes außer Kraft zu setzen.
+
+. Fügen Sie einer vorhandenen SnapMirror-Richtlinie eine Regel hinzu:
++
+`snapmirror policy add-rule -vserver <SVM name> -policy <policy name> -snapmirror-label <label name> -keep <number of Snapshot copies> -retention-period [<integer> days|months|years]`
+
++
+Im folgenden Beispiel wird eine Regel erstellt, die eine Aufbewahrungsfrist von 6 Monaten auf die vorhandene Richtlinie namens „lockvault“ anwendet:
+
++
+[listing]
+----
+snapmirror policy add-rule -vserver vs1 -policy lockvault -snapmirror-label test1 -keep 10 -retention-period "6 months"
+----
+

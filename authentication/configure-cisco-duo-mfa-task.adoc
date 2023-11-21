@@ -1,0 +1,243 @@
+---
+permalink: authentication/configure-cisco-duo-mfa-task.html 
+sidebar: sidebar 
+keywords: enable, ssh, multifactor authentication, mfa, 2fa, hardware authentication device, Cisco, Duo 
+summary: 'Um die erhöhte Kontosicherheit durch zwei-Faktor-Authentifizierung (2FA) mit Cisco Duo für SSH zu nutzen, müssen Sie SSH für die Verwendung mit Cisco Duo konfigurieren.' 
+---
+= Konfigurieren Sie Cisco Duo 2FA für SSH-Anmeldungen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.14.1 können Sie ONTAP während der SSH-Anmeldung für die zwei-Faktor-Authentifizierung (2FA) konfigurieren. Sie konfigurieren Duo auf Cluster-Ebene und dies gilt standardmäßig für alle Benutzerkonten. Alternativ können Sie Duo auf der Ebene der Storage-VM (früher als vServer bezeichnet) konfigurieren. In diesem Fall gilt dies nur für Benutzer dieser Storage-VM. Wenn Sie Duo aktivieren und konfigurieren, dient es als zusätzliche Authentifizierungsmethode, die die bestehenden Methoden für alle Benutzer ergänzt.
+
+Wenn Sie die Duo-Authentifizierung für SSH-Anmeldungen aktivieren, müssen Benutzer ein Gerät registrieren, wenn sie sich das nächste Mal über SSH anmelden. Informationen zur Registrierung finden Sie im Cisco Duo https://guide.duo.com/add-device["Dokumentation der Anmeldung"^].
+
+Über die ONTAP-Befehlszeilenschnittstelle können Sie mit Cisco Duo die folgenden Aufgaben ausführen:
+
+* <<Konfigurieren Sie Cisco Duo>>
+* <<Ändern Sie die Cisco Duo-Konfiguration>>
+* <<Entfernen Sie die Cisco Duo-Konfiguration>>
+* <<Cisco Duo-Konfiguration anzeigen>>
+* <<Entfernen Sie eine Duo-Gruppe>>
+* <<Zeigen Sie Duo-Gruppen an>>
+* <<Umgehen Sie die Duo-Authentifizierung für Benutzer>>
+
+
+
+
+== Konfigurieren Sie Cisco Duo
+
+Sie können eine Cisco Duo-Konfiguration für den gesamten Cluster oder für eine bestimmte Storage-VM (in der ONTAP-CLI als vServer bezeichnet) erstellen. Verwenden Sie dazu das `security login duo create` Befehl. Wenn Sie dies tun, ist Cisco Duo für SSH-Anmeldungen für dieses Cluster oder diese Storage-VM aktiviert.
+
+.Schritte
+. Melden Sie sich beim Cisco Duo-Administratorbereich an.
+. Gehen Sie zu *Anwendungen > UNIX-Anwendung*.
+. Notieren Sie den Integrationsschlüssel, den geheimen Schlüssel und den API-Hostnamen.
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Aktivieren Sie die Cisco Duo-Authentifizierung für diese Storage-VM und ersetzen Sie die Informationen aus Ihrer Umgebung durch die Werte in Klammern:
++
+[source, cli]
+----
+security login duo create \
+-vserver <STORAGE_VM_NAME> \
+-integration-key <INTEGRATION_KEY> \
+-secret-key <SECRET_KEY> \
+-apihost <API_HOSTNAME>
+----
++
+Weitere Informationen zu den erforderlichen und optionalen Parametern für diesen Befehl finden Sie unter link:config-worksheets-reference.html["Arbeitsblätter für die Administratorauthentifizierung und die RBAC-Konfiguration"^].
+
+
+
+
+
+== Ändern Sie die Cisco Duo-Konfiguration
+
+Sie können die Art und Weise ändern, wie Cisco Duo Benutzer authentifiziert (z. B. wie viele Authentifizierungsaufforderungen angegeben werden oder welcher HTTP-Proxy verwendet wird). Wenn Sie die Cisco Duo-Konfiguration für eine Speicher-VM (in der ONTAP-CLI als vServer bezeichnet) ändern müssen, können Sie die verwenden `security login duo modify` Befehl.
+
+.Schritte
+. Melden Sie sich beim Cisco Duo-Administratorbereich an.
+. Gehen Sie zu *Anwendungen > UNIX-Anwendung*.
+. Notieren Sie den Integrationsschlüssel, den geheimen Schlüssel und den API-Hostnamen.
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Ändern Sie die Cisco Duo-Konfiguration für diese Speicher-VM, indem Sie aktualisierte Informationen aus Ihrer Umgebung durch die Werte in Klammern ersetzen:
++
+[source, cli]
+----
+security login duo modify \
+-vserver <STORAGE_VM_NAME> \
+-integration-key <INTEGRATION_KEY> \
+-secret-key <SECRET_KEY> \
+-apihost <API_HOSTNAME> \
+-pushinfo true|false \
+-http-proxy <HTTP_PROXY_URL> \
+-autopush true|false \
+-prompts 1|2|3 \
+-max-unenrolled-logins <NUM_LOGINS> \
+-is-enabled true|false \
+-fail-mode safe|secure
+----
+
+
+
+
+== Entfernen Sie die Cisco Duo-Konfiguration
+
+Sie können die Cisco Duo-Konfiguration entfernen, sodass SSH-Benutzer sich bei der Anmeldung nicht mehr mit Duo authentifizieren müssen. Um die Cisco Duo-Konfiguration für eine Speicher-VM zu entfernen (in der ONTAP-CLI als vServer bezeichnet), können Sie die verwenden `security login duo delete` Befehl.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Entfernen Sie die Cisco Duo-Konfiguration für diese Speicher-VM, und ersetzen Sie Ihren Speicher-VM-Namen für `<STORAGE_VM_NAME>`:
++
+[source, cli]
+----
+security login duo delete  -vserver <STORAGE_VM_NAME>
+----
++
+Dadurch wird die Cisco Duo-Konfiguration für diese Speicher-VM endgültig gelöscht.
+
+
+
+
+
+== Cisco Duo-Konfiguration anzeigen
+
+Sie können die bestehende Cisco Duo-Konfiguration für eine Storage-VM (in der ONTAP-CLI als vServer bezeichnet) mit dem anzeigen `security login duo show` Befehl.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Zeigen Sie die Cisco Duo-Konfiguration für diese Storage-VM. Optional können Sie den verwenden `vserver` Parameter zum Angeben einer Storage-VM, durch den der Name der Storage-VM ersetzt wird `<STORAGE_VM_NAME>`:
++
+[source, cli]
+----
+security login duo show -vserver <STORAGE_VM_NAME>
+----
++
+Sie sollten eine Ausgabe wie die folgende sehen:
+
++
+[source, cli]
+----
+Vserver: testcluster
+Enabled: true
+
+Status: ok
+INTEGRATION-KEY: DI89811J9JWMJCCO7IOH
+SKEY SHA Fingerprint:
+b79ffa4b1c50b1c747fbacdb34g671d4814
+API Host: api-host.duosecurity.com
+Autopush: true
+Push info: true
+Failmode: safe
+Http-proxy: 192.168.0.1:3128
+Prompts: 1
+Comments: -
+----
+
+
+
+
+== Erstellen Sie eine Duo-Gruppe
+
+Sie können Cisco Duo anweisen, nur die Benutzer in einem bestimmten Active Directory, LDAP oder einer lokalen Benutzergruppe in den Duo-Authentifizierungsprozess einzubeziehen. Wenn Sie eine Duo-Gruppe erstellen, werden nur die Benutzer dieser Gruppe zur Duo-Authentifizierung aufgefordert. Sie können eine Duo-Gruppe mit dem erstellen `security login duo group create` Befehl. Wenn Sie eine Gruppe erstellen, können Sie optional bestimmte Benutzer dieser Gruppe aus dem Duo-Authentifizierungsprozess ausschließen.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Erstellen Sie die Duo-Gruppe, indem Sie Informationen aus Ihrer Umgebung durch die Werte in Klammern ersetzen. Wenn Sie den nicht angeben `-vserver` Parameter, wird die Gruppe auf Cluster-Ebene erstellt:
++
+[source, cli]
+----
+security login duo group create -vserver <STORAGE_VM_NAME> -group-name <GROUP_NAME> -exclude-users <USER1, USER2>
+----
++
+Der Name der Duo-Gruppe muss mit einer Active Directory-, LDAP- oder lokalen Gruppe übereinstimmen. Benutzer, die Sie mit der Option angeben `-exclude-users` Parameter werden nicht in den Duo-Authentifizierungsprozess einbezogen.
+
+
+
+
+
+== Zeigen Sie Duo-Gruppen an
+
+Sie können vorhandene Cisco Duo-Gruppeneinträge mit der anzeigen `security login duo group show` Befehl.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Zeigen Sie die Gruppeneinträge der Duo-Gruppe an und ersetzen Sie die Informationen aus Ihrer Umgebung durch die Werte in Klammern. Wenn Sie den nicht angeben `-vserver` Parameter, wird die Gruppe auf Cluster-Ebene angezeigt:
++
+[source, cli]
+----
+security login duo group show -vserver <STORAGE_VM_NAME> -group-name <GROUP_NAME> -exclude-users <USER1, USER2>
+----
++
+Der Name der Duo-Gruppe muss mit einer Active Directory-, LDAP- oder lokalen Gruppe übereinstimmen. Benutzer, die Sie mit der Option angeben `-exclude-users` Parameter wird nicht angezeigt.
+
+
+
+
+
+== Entfernen Sie eine Duo-Gruppe
+
+Sie können einen Duo-Gruppeneintrag mit dem entfernen `security login duo group delete` Befehl. Wenn Sie eine Gruppe entfernen, werden die Benutzer dieser Gruppe nicht mehr in den Duo-Authentifizierungsprozess einbezogen.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Entfernen Sie den Gruppeneintrag Duo, und ersetzen Sie die Informationen aus Ihrer Umgebung durch die Werte in Klammern. Wenn Sie den nicht angeben `-vserver` Parameter, wird die Gruppe auf Cluster-Ebene entfernt:
++
+[source, cli]
+----
+security login duo group delete -vserver <STORAGE_VM_NAME> -group-name <GROUP_NAME>
+----
++
+Der Name der Duo-Gruppe muss mit einer Active Directory-, LDAP- oder lokalen Gruppe übereinstimmen.
+
+
+
+
+
+== Umgehen Sie die Duo-Authentifizierung für Benutzer
+
+Sie können alle Benutzer oder bestimmte Benutzer von der Duo SSH-Authentifizierung ausschließen.
+
+
+
+=== Alle Duo-Benutzer ausschließen
+
+Sie können die Cisco Duo SSH-Authentifizierung für alle Benutzer deaktivieren.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Deaktivieren Sie die Cisco Duo-Authentifizierung für SSH-Benutzer, indem Sie den vServer-Namen durch ersetzen `<STORAGE_VM_NAME>`:
++
+[source, cli]
+----
+security login duo -vserver <STORAGE_VM_NAME> -is-duo-enabled-false
+----
+
+
+
+
+=== Benutzer der Duo-Gruppe ausschließen
+
+Sie können bestimmte Benutzer, die Teil einer Duo-Gruppe sind, aus dem Duo SSH-Authentifizierungsprozess ausschließen.
+
+.Schritte
+. Melden Sie sich über SSH bei Ihrem ONTAP-Konto an.
+. Deaktivieren Sie die Cisco Duo-Authentifizierung für bestimmte Benutzer in einer Gruppe. Ersetzen Sie den Gruppennamen und die Liste der auszuschließenden Benutzer durch die Werte in Klammern:
++
+[source, cli]
+----
+security login group modify -group-name <GROUP_NAME> -exclude-users <USER1, USER2>
+----
++
+Der Name der Duo-Gruppe muss mit einer Active Directory-, LDAP- oder lokalen Gruppe übereinstimmen. Benutzer, die Sie mit angeben `-exclude-users` Parameter werden nicht in den Duo-Authentifizierungsprozess einbezogen.
+
+
+
+
+
+=== Lokale Duo-Benutzer ausschließen
+
+Sie können bestimmte lokale Benutzer von der Duo-Authentifizierung ausschließen, indem Sie das Cisco Duo-Administratorfenster verwenden. Anweisungen hierzu finden Sie im https://duo.com/docs/administration-users#changing-user-status["Cisco Duo-Dokumentation"^].

@@ -1,0 +1,139 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-as-servers.html 
+keywords: oauth 2.0, oauth2, access token, grant type, jwt 
+summary: Autorisierungsserver führen als zentrale Komponente im OAuth 2.0-Autorisierungs-Framework mehrere wichtige Funktionen aus. 
+---
+= Autorisierungsserver und Zugriffstoken
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Autorisierungsserver führen als zentrale Komponente im OAuth 2.0-Autorisierungs-Framework mehrere wichtige Funktionen aus.
+
+
+
+== OAuth 2.0-Autorisierungsserver
+
+Autorisierungsserver sind in erster Linie für das Erstellen und Signieren von Zugriffstoken verantwortlich. Diese Token enthalten Identitäts- und Autorisationsinformationen, die es einer Clientanwendung ermöglichen, selektiv auf geschützte Ressourcen zuzugreifen. Die Server sind in der Regel voneinander isoliert und können auf verschiedene Weise implementiert werden, beispielsweise als eigenständiger dedizierter Server oder als Teil eines größeren Identitäts- und Zugriffsverwaltungsprodukts.
+
+
+NOTE: Für einen Autorisierungsserver kann manchmal eine andere Terminologie verwendet werden, insbesondere wenn die OAuth 2.0-Funktionalität in einem größeren Produkt oder einer größeren Lösung zur Identitäts- und Zugriffsverwaltung enthalten ist. Der Begriff *Identity Provider (IdP)* wird beispielsweise häufig mit *Authorization Server* synonym verwendet.
+
+
+
+=== Administration
+
+Zusätzlich zur Ausgabe von Zugriffstoken bieten Autorisierungsserver auch zugehörige Verwaltungsdienste, in der Regel über eine Web-Benutzeroberfläche. Sie können beispielsweise Folgendes definieren und verwalten:
+
+* Benutzer- und Benutzerauthentifizierung
+* Bereich
+* Administrative Trennung durch Mandanten und Bereiche
+* Richtlinienumsetzung
+* Anbindung an verschiedene externe Dienste
+* Unterstützung für andere Identitätsprotokolle (z. B. SAML)
+
+
+ONTAP ist mit Autorisierungsservern kompatibel, die dem OAuth 2.0-Standard entsprechen.
+
+
+
+=== Definieren auf ONTAP
+
+Sie müssen einen oder mehrere Autorisierungsserver für ONTAP definieren. ONTAP kommuniziert sicher mit jedem Server, um Token zu überprüfen und andere damit verbundene Aufgaben zur Unterstützung der Client-Anwendungen auszuführen.
+
+Die wichtigsten Aspekte der ONTAP-Konfiguration sind im Folgenden aufgeführt. Siehe auch link:../authentication/oauth2-deployment-scenarios.html["OAuth 2.0-Bereitstellungsszenarien"] Finden Sie weitere Informationen.
+
+.Wie und wo die Zugriffstoken validiert werden
+Es gibt zwei Optionen für die Validierung von Zugriffstoken.
+
+* Lokale Validierung
++
+ONTAP kann Zugriffstoken lokal anhand der Informationen validieren, die vom Autorisierungsserver bereitgestellt werden, der das Token ausgestellt hat. Die vom Autorisierungsserver abgerufenen Informationen werden von ONTAP zwischengespeichert und in regelmäßigen Abständen aktualisiert.
+
+* Fernintrospektion
++
+Sie können auch Remote-Introspektion verwenden, um Token auf dem Autorisierungsserver zu validieren. Introspektion ist ein Protokoll, das es autorisierten Parteien ermöglicht, einen Autorisierungsserver nach einem Zugriffstoken abzufragen. Es bietet ONTAP eine Möglichkeit, bestimmte Metadaten aus einem Zugriffstoken zu extrahieren und das Token zu validieren. ONTAP speichert einige Daten aus Gründen der Performance im Cache.
+
+
+
+.Netzwerkspeicherort
+ONTAP befindet sich möglicherweise hinter einer Firewall. In diesem Fall müssen Sie einen Proxy als Teil der Konfiguration identifizieren.
+
+.Wie die Autorisierungsserver definiert werden
+Sie können einen Autorisierungsserver für ONTAP über eine der Administrationsschnittstellen definieren, einschließlich CLI, System Manager oder REST-API. Beispielsweise verwenden Sie in der CLI den Befehl `security oauth2 client create`.
+
+.Anzahl der Autorisierungsserver
+Sie können bis zu acht Autorisierungsserver für einen einzelnen ONTAP-Cluster definieren. Der gleiche Autorisierungsserver kann für denselben ONTAP-Cluster mehr als einmal definiert werden, solange die Ansprüche des Emittenten oder des Emittenten/der Zielgruppe eindeutig sind. Zum Beispiel, mit Keycloak wird dies immer der Fall sein, wenn verschiedene Bereiche.
+
+
+
+== Verwenden von OAuth 2.0-Zugriffstoken
+
+Die von den Autorisierungsservern ausgegebenen OAuth 2.0-Zugriffstoken werden von ONTAP überprüft und für rollenbasierte Zugriffsentscheidungen für die REST-API-Clientanforderungen verwendet.
+
+
+
+=== Abrufen eines Zugriffstoken
+
+Sie müssen ein Zugriffstoken von einem Autorisierungsserver erwerben, der für das ONTAP-Cluster definiert ist, wo Sie die REST-API verwenden. Um ein Token zu erwerben, müssen Sie sich direkt an den Autorisierungsserver wenden.
+
+
+CAUTION: ONTAP gibt keine Zugriffstoken aus und leitet Anforderungen von Clients nicht an die Autorisierungsserver weiter.
+
+Wie Sie ein Token anfordern, hängt von mehreren Faktoren ab, darunter:
+
+* Autorisierungsserver und seine Konfigurationsoptionen
+* OAuth 2.0 Zuschussart
+* Client oder Softwaretool zur Ausgabe der Anforderung
+
+
+
+
+=== Grant-Typen
+
+Ein _Grant_ ist ein gut definierter Prozess, einschließlich einer Reihe von Netzwerkflüssen, die zum anfordern und Empfangen eines OAuth 2.0-Zugriffstoken verwendet werden. Je nach Client-, Umgebungs- und Sicherheitsanforderungen können verschiedene Zuteilungsarten verwendet werden. Eine Liste der gängigen Fördertypen finden Sie in der folgenden Tabelle.
+
+[cols="25,75"]
+|===
+| Zuteilungsart | Beschreibung 
+
+
+| Client-Anmeldedaten | Ein beliebter Zuschusstyp, der nur auf der Verwendung von Anmeldeinformationen basiert (z. B. eine ID und ein gemeinsam genutzter Schlüssel). Es wird davon ausgegangen, dass der Client eine enge Vertrauensbeziehung zum Ressourcenbesitzer hat. 
+
+
+| Passwort | Der Zuteilungstyp für die Kennwortanmeldeinformationen des Ressourceneigentümers kann in Fällen verwendet werden, in denen der Ressourceneigentümer über eine Vertrauensbeziehung zum Client verfügt. Sie kann auch bei der Migration älterer HTTP-Clients zu OAuth 2.0 nützlich sein. 
+
+
+| Autorisierungscode | Dies ist eine ideale Zuteilungsart für vertrauliche Clients und basiert auf einem auf Umleitung basierenden Fluss. Es kann verwendet werden, um sowohl ein Zugriffstoken als auch ein Aktualisierungs-Token zu erhalten. 
+|===
+
+
+=== JWT-Inhalt
+
+Ein OAuth 2.0-Zugriffstoken ist als JWT formatiert. Der Inhalt wird basierend auf Ihrer Konfiguration vom Autorisierungsserver erstellt. Die Token sind jedoch für die Client-Anwendungen undurchsichtig. Ein Kunde hat keinen Grund, ein Token zu prüfen oder sich des Inhalts bewusst zu sein.
+
+Jedes JWT-Zugriffstoken enthält eine Reihe von Ansprüchen. Die Ansprüche beschreiben die Merkmale des Emittenten und die Autorisierung basierend auf administrativen Definitionen am Autorisierungsserver. Einige der mit dem Standard registrierten Ansprüche sind in der folgenden Tabelle beschrieben. Bei allen Strings wird zwischen Groß- und Kleinschreibung unterschieden.
+
+[cols="20,15,65"]
+|===
+| Forderung | Stichwort | Beschreibung 
+
+
+| Aussteller | ISS | Identifiziert den Prinzipal, der das Token ausgegeben hat. Die Antragsbearbeitung ist anwendungsspezifisch. 
+
+
+| Betreff | Unterbereich | Der Betreff oder Benutzer des Tokens. Der Name ist global oder lokal eindeutig. 
+
+
+| Zielgruppe | AUD | Die Empfänger, für die das Token bestimmt ist. Als Array von Strings implementiert. 
+
+
+| Ablauf | exsp | Die Zeit, nach der das Token abläuft und zurückgewiesen werden muss. 
+|===
+Siehe https://www.rfc-editor.org/info/rfc7519["RFC 7519: JSON Web Tokens"^] Finden Sie weitere Informationen.

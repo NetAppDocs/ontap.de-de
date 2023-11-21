@@ -14,7 +14,7 @@ summary: Zugriffsregeln können zur Standard-Bucket-Richtlinie hinzugefügt werd
 Zugriffsregeln können zur Standard-Bucket-Richtlinie hinzugefügt werden. Der Umfang seiner Zugriffssteuerung umfasst den Bucket, der im EinzelBucket enthalten ist, daher ist er am besten geeignet.
 
 .Bevor Sie beginnen
-Eine S3-fähige SVM mit einem S3-Server und einem Bucket muss bereits vorhanden sein.
+Eine S3-fähige Storage-VM muss bereits vorhanden sein, die einen S3-Server und einen Bucket enthält.
 
 Sie müssen bereits Benutzer oder Gruppen erstellt haben, bevor Sie Berechtigungen erteilen.
 
@@ -23,7 +23,7 @@ Sie können neue Anweisungen für neue Benutzer und Gruppen hinzufügen oder die
 
 Benutzer- und Gruppenberechtigungen können bei Erstellung des Buckets oder nach Bedarf später zugewiesen werden. Sie können auch die Bucket-Kapazität und die QoS-Richtliniengruppenzuweisung ändern.
 
-Wenn Sie ab ONTAP 9.9.1 und neueren Versionen die Funktionalität des AWS Client-Objekt-Tagging mit dem ONTAP S3 Server unterstützen möchten, führt Aktionen durch `GetObjectTagging`, `PutObjectTagging`, und `DeleteObjectTagging` Es müssen die Bucket- oder Gruppenrichtlinien verwendet werden.
+Ab ONTAP 9.9 unterstützen Sie die Objekt-Tagging-Funktionen von AWS für Clients mit dem ONTAP S3-Server `GetObjectTagging`, `PutObjectTagging`, und `DeleteObjectTagging` Es müssen die Bucket- oder Gruppenrichtlinien verwendet werden.
 
 Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
 
@@ -45,6 +45,9 @@ Die Standardeinstellungen *_bucketname_* und *_bucketname/*_* gewähren Zugriff 
 
 
 
+
+
+NOTE: Ab ONTAP 9.14.1 können Sie Variablen für die Bucket-Richtlinie im Feld *Ressourcen* angeben. Diese Variablen sind Platzhalter, die bei der Bewertung der Richtlinie durch kontextbezogene Werte ersetzt werden. Beispiel: Wenn `${aws:username}` Wird als Variable für eine Richtlinie angegeben, dann wird diese Variable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden.
 
 --
 .CLI
@@ -84,7 +87,7 @@ Eine Liste mit einem oder mehreren S3-Benutzern oder -Gruppen.
 ** Es können maximal 10 Benutzer oder Gruppen angegeben werden.
 ** Wenn eine S3-Gruppe angegeben wird, muss sie sich im Formular befinden `group/group_name.`
 ** `*` Kann als öffentlicher Zugriff angegeben werden, d. h. ohne Zugriffsschlüssel und Geheimschlüssel.
-** Wird kein Principal angegeben, erhalten alle S3-Benutzer in der SVM Zugriff.
+** Wenn kein Principal angegeben wird, werden allen S3-Benutzern in der Storage-VM Zugriff gewährt.
 
 
 
@@ -92,7 +95,7 @@ Eine Liste mit einem oder mehreren S3-Benutzern oder -Gruppen.
  a| 
 `-resource`
  a| 
-Den Bucket und jedes darin enthaltene Objekt. Die Platzhalterzeichen `*` Und `?` Kann verwendet werden, um einen regulären Ausdruck zum Angeben einer Ressource zu bilden.
+Den Bucket und jedes darin enthaltene Objekt. Die Platzhalterzeichen `*` Und `?` Kann verwendet werden, um einen regulären Ausdruck zum Angeben einer Ressource zu bilden. Für eine Ressource können Sie Variablen in einer Richtlinie angeben. Bei diesen Richtlinienvariablen handelt es sich um Platzhalter, die bei der Bewertung der Richtlinie durch die Kontextwerte ersetzt werden.
 
 |===
 +
@@ -101,17 +104,23 @@ Sie können optional einen Textstring als Kommentar mit dem angeben `-sid` Optio
 
 
 .Beispiele
-Im folgenden Beispiel wird eine Objektspeicherserver-Bucket-Policy-Anweisung für die SVM svm1.example.com und bucket1 erstellt, die den Zugriff auf einen Readme-Ordner für Objektspeicher-Server-Benutzer Benutzer1 festlegt.
+Im folgenden Beispiel wird eine Bucket-Policy-Anweisung für den Objektspeicher-Server für die Storage-VM svm1.example.com und bucket1 erstellt, die den zulässigen Zugriff auf einen Readme-Ordner für den Objektspeicher-Server-Benutzer Benutzer1 angibt.
 
 [listing]
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal user1 -resource bucket1/readme/* -sid "fullAccessToReadmeForUser1"
 ----
-Im folgenden Beispiel wird eine Objektspeicherserver-Bucket-Policy für die SVM svm1.example.com und bucket1 erstellt, die den Zugriff auf alle Objekte für Objektspeicher-Servergruppen group1 festlegt.
+Im folgenden Beispiel wird eine Bucket-Policy-Anweisung für den Objektspeicher-Server für die Storage-VM svm1.example.com und bucket1 erstellt, die den erlaubten Zugriff auf alle Objekte für die Objektspeicher-Servergruppe1 angibt.
 
 [listing]
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
+----
+Ab ONTAP 9.14.1 können Sie Variablen für die Bucket-Richtlinie angeben. Im folgenden Beispiel wird eine Bucket-Richtlinienanweisung für den Objektspeicher-Server für die Storage-VM erstellt `svm1` Und `bucket1`, Und gibt an `${aws:username}` Als Variable für eine Policy-Ressource. Wenn die Richtlinie ausgewertet wird, wird die Richtlinienvariable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden. Wenn beispielsweise die folgende Richtlinienanweisung bewertet wird, `${aws:username}` Wird durch den Benutzer ersetzt, der den S3-Vorgang durchführt. Wenn ein Benutzer `user1` Führt den Vorgang durch, auf den der Benutzer Zugriff hat `bucket1` Als `bucket1/user1/*`.
+
+[listing]
+----
+cluster1::> object-store-server bucket policy statement create -vserver svm1 -bucket bucket1 -effect allow -action * -principal - -resource bucket1,bucket1/${aws:username}/*##
 ----
 --
 ====

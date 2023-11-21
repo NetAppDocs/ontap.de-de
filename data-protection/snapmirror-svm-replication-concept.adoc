@@ -1,7 +1,7 @@
 ---
 permalink: data-protection/snapmirror-svm-replication-concept.html 
 sidebar: sidebar 
-keywords: understand, snapmirror, svm, replication, SVM DR storage limits 
+keywords: understand, snapmirror, svm, replication, SVM disaster recovery storage limits 
 summary: Mit SnapMirror können Sie eine Datensicherungsbeziehung zwischen SVM erstellen. Bei dieser Art der Datensicherungsbeziehung wird die gesamte oder Teile der Konfiguration der SVM, von NFS-Exporten und SMB-Shares zu RBAC, sowie die Daten in den Volumes repliziert, die die SVM besitzt. 
 ---
 = Allgemeines zur SnapMirror SVM-Replizierung
@@ -26,7 +26,8 @@ Ab ONTAP 9.9 ändert sich dieses Verhalten, wenn Sie die Mirror-Vault-Richtlinie
 +
 ** Sie werden während normaler geplanter Vorgänge, Updates und Neusynchronisierung nicht vom Quell- zum Ziel überschrieben
 ** Sie werden während der Pausen nicht gelöscht.
-** Sie werden während der Flip-Resynchronisierung nicht gelöscht. Wenn Sie eine SVM-DR-Beziehung mithilfe der Mirror-Vault-Richtlinie über ONTAP 9.9.1 und höher konfigurieren, verhält sich die Richtlinie wie folgt:
+** Sie werden während der Flip-Resynchronisierung nicht gelöscht.
+Wenn Sie eine SVM-Disaster-Beziehung mithilfe der Mirror-Vault-Richtlinie über ONTAP 9.9.1 und höher konfigurieren, verhält sich die Richtlinie wie folgt:
 ** Benutzerdefinierte Richtlinien für Snapshot Kopien an der Quelle werden nicht auf das Ziel kopiert.
 ** Systemdefinierte Snapshot Kopien werden nicht auf das Ziel kopiert.
 ** Eine Volume-Zuordnung mit Benutzer- und systemdefinierten Snapshot-Richtlinien wird nicht auf das Ziel kopiert. + SVM.
@@ -104,7 +105,7 @@ Details zu den Änderungen im Standard finden Sie hier: link:version-flexible-sn
 
 [NOTE]
 ====
-Die Versionsunabhängigkeit wird bei der SVM-Replizierung nicht unterstützt. In einer SVM-DR-Konfiguration muss sich die Ziel-SVM auf einem Cluster befinden, auf dem dieselbe ONTAP-Version wie das Quell-SVM-Cluster ausgeführt wird, um Failover- und Failback-Vorgänge zu unterstützen.
+Die Versionsunabhängigkeit wird bei der SVM-Replizierung nicht unterstützt. Bei einer SVM-Konfiguration für Disaster Recovery muss sich die Ziel-SVM auf einem Cluster befinden, auf dem dieselbe ONTAP-Version wie das SVM-Quell-Cluster ausgeführt wird, um Failover- und Failback-Vorgänge zu unterstützen.
 
 ====
 link:compatible-ontap-versions-snapmirror-concept.html["Kompatible ONTAP Versionen für SnapMirror Beziehungen"]
@@ -117,7 +118,7 @@ Der Inhalt einer SVM-Replizierungsbeziehung wird durch die Interaktion der folge
 
 * Der `-identity-preserve true` Option des `snapmirror create` Befehl repliziert die gesamte SVM-Konfiguration.
 +
-Der `-identity-preserve false` Die Option repliziert nur die Volumes und die Authentifizierungs- und Autorisierungskonfigurationen der SVM sowie die in aufgeführten Protokoll- und Namensdiensteinstellungen link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-dr-relationships["Konfigurationen in SVM-DR-Beziehungen repliziert"].
+Der `-identity-preserve false` Die Option repliziert nur die Volumes und die Authentifizierungs- und Autorisierungskonfigurationen der SVM sowie die in aufgeführten Protokoll- und Namensdiensteinstellungen link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-dr-relationships["Konfigurationen, die in SVM-Disaster-Recovery-Beziehungen repliziert werden"].
 
 * Der `-discard-configs network` Option des `snapmirror policy create` Der Befehl schließt LIFs und zugehörige Netzwerkeinstellungen aus der SVM-Replizierung aus und kann dort verwendet werden, wo sich die Quell- und Ziel-SVMs in unterschiedlichen Subnetzen befinden.
 * Der `-vserver-dr-protection unprotected` Option des `volume modify` Der Befehl schließt das angegebene Volume von der SVM-Replizierung aus.
@@ -139,9 +140,21 @@ Die folgende Tabelle enthält Support-Details zur SnapMirror SVM-Replizierung.
 
 
  a| 
+Bereitstellungstypen
+ a| 
+* Von einer einzelnen Quelle zu einem einzigen Ziel
+* Ab ONTAP 9.4 Fan-out: Sie können nur an zwei Zielorten Fan-out.
++
+Standardmäßig ist pro Quell-SVM nur eine -Identity-Preserve True Relationship zulässig.
+
+
+
+
+
+ a| 
 Beziehungstypen
  a| 
-* SnapMirror DR
+* SnapMirror Disaster Recovery
 * Ab ONTAP 9.2 ist die einheitliche Replizierung mit SnapMirror möglich
 
 
@@ -155,25 +168,6 @@ Nur Intercluster. Sie können SVMs nicht in demselben Cluster replizieren.
 
 
  a| 
-Versionsunabhängigkeit
- a| 
-Nicht unterstützt.
-
-
-
- a| 
-Bereitstellungstypen
- a| 
-* Von einer einzelnen Quelle zu einem einzigen Ziel
-* Ab ONTAP 9.4 Fan-out: Sie können nur an zwei Zielorten Fan-out.
-+
-Standardmäßig ist pro Quell-SVM nur eine -Identity-Preserve True Relationship zulässig.
-
-
-
-
-
- a| 
 Autonomer Schutz Durch Ransomware
  a| 
 * Unterstützt ab ONTAP 9.12.1. Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html["Autonomer Schutz Durch Ransomware"]
@@ -182,13 +176,9 @@ Autonomer Schutz Durch Ransomware
 
 
  a| 
-Volume-Verschlüsselung
+Asynchrone Unterstützung von Konsistenzgruppen
  a| 
-* Verschlüsselte Volumes auf der Quelle werden auf dem Ziel verschlüsselt.
-* Onboard Key Manager oder KMIP-Server müssen auf dem Ziel konfiguriert sein.
-* Neue Verschlüsselungsschlüssel werden am Zielspeicherort generiert.
-* Wenn das Ziel keinen Knoten enthält, der Volume .Encryption unterstützt, ist die Replikation erfolgreich, aber die Ziel-Volumes sind nicht verschlüsselt.
-
+Ab ONTAP 9.14.1 werden maximal 32 Disaster-Recovery-Beziehungen für SVMs unterstützt, wenn Konsistenzgruppen vorhanden sind. Siehe link:https://docs.netapp.com/us-en/ontap/consistency-groups/protect-task.html["Sichern einer Konsistenzgruppe"] Und link:https://docs.netapp.com/us-en/ontap/consistency-groups/limits.html["Einschränkungen für Konsistenzgruppen"] Finden Sie weitere Informationen.
 
 
 
@@ -202,41 +192,66 @@ Ab ONTAP 9.6 wird die SnapMirror SVM-Replizierung mit FabricPool unterstützt.
  a| 
 MetroCluster
  a| 
-Ab ONTAP 9.11.1 können beide Seiten einer SVM DR-Beziehung innerhalb einer MetroCluster Konfiguration als Quelle für zusätzliche SVM DR-Konfigurationen fungieren.
+Ab ONTAP 9.11.1 können beide Seiten der Disaster-Recovery-Beziehung einer SVM innerhalb einer MetroCluster Konfiguration als Quelle für zusätzliche SVM-Disaster-Recovery-Konfigurationen fungieren.
 
 Ab ONTAP 9.5 wird die SnapMirror SVM-Replizierung auf MetroCluster Konfigurationen unterstützt.
 
-* Eine MetroCluster Konfiguration kann kein Ziel einer SVM DR-Beziehung sein.
-* Nur eine aktive SVM innerhalb einer MetroCluster-Konfiguration kann als Quelle einer SVM-DR-Beziehung verwendet werden.
+* Eine MetroCluster-Konfiguration kann nicht Ziel einer SVM-Disaster-Recovery-Beziehung sein.
+* Nur eine aktive SVM innerhalb einer MetroCluster-Konfiguration kann als Quelle einer SVM Disaster-Recovery-Beziehung verwendet werden.
 +
 Eine Quelle kann eine synchrone Quell-SVM vor der Umschaltung oder eine synchrone Ziel-SVM nach der Umschaltung sein.
 
-* Wenn eine MetroCluster-Konfiguration sich in einem stabilen Zustand befindet, kann die MetroCluster SVM, die synchrone Ziel-SVM, nicht als Quelle für eine SVM-DR-Beziehung dienen, da die Volumes nicht online sind.
-* Wenn die synchrone SVM-Quelle die Quelle einer SVM-DR-Beziehung ist, werden die Quell-SVM-DR-Beziehungsinformationen zum MetroCluster Partner repliziert.
-* Während der Switchover- und Switchover-Prozesse kann die Replizierung zur SVM-DR-Ziel fehlschlagen.
+* Wenn eine MetroCluster-Konfiguration sich in einem stabilen Zustand befindet, kann die MetroCluster SVM, die synchrone Ziel-SVM, nicht als Quelle für eine SVM Disaster-Recovery-Beziehung dienen, da die Volumes nicht online sind.
+* Wenn die SVM für die synchrone Quelle die Quelle der SVM für die Disaster-Recovery-Beziehung ist, werden die SVM für die Quell-Disaster-Recovery-Beziehung zum MetroCluster-Partner repliziert.
+* Während der Umschaltungs- und Switchback-Prozesse schlägt die Replizierung auf das Disaster-Recovery-Ziel der SVM möglicherweise fehl.
 +
-Nach Abschluss des Switchover- oder Switch-Prozesses werden jedoch die nächsten geplanten SVM-DR-Updates erfolgreich durchgeführt.
+Nach Abschluss des Switchover- oder Switchback-Prozesses werden jedoch die nächsten geplanten Aktualisierungen für die SVM-Disaster Recovery erfolgreich durchgeführt.
 
 
+
+
+
+ a| 
+Konsistenzgruppe
+ a| 
+Unterstützt ab ONTAP 9.14.1. Weitere Informationen finden Sie unter xref:../consistency-groups/protect.html[Sichern einer Konsistenzgruppe].
 
 
 
  a| 
 ONTAP S3
  a| 
-Nicht unterstützt durch SVM DR.
+Nicht unterstützt durch SVM Disaster Recovery.
 
 
 
  a| 
 SnapMirror Synchronous
  a| 
-Nicht unterstützt durch SVM DR.
+Nicht unterstützt durch SVM Disaster Recovery.
+
+
+
+ a| 
+Versionsunabhängigkeit
+ a| 
+Nicht unterstützt.
+
+
+
+ a| 
+Volume-Verschlüsselung
+ a| 
+* Verschlüsselte Volumes auf der Quelle werden auf dem Ziel verschlüsselt.
+* Onboard Key Manager oder KMIP-Server müssen auf dem Ziel konfiguriert sein.
+* Neue Verschlüsselungsschlüssel werden am Zielspeicherort generiert.
+* Wenn das Ziel keinen Knoten enthält, der Volume .Encryption unterstützt, ist die Replikation erfolgreich, aber die Ziel-Volumes sind nicht verschlüsselt.
+
 
 |===
 
 
-== Konfigurationen in SVM-DR-Beziehungen repliziert
+== Konfigurationen, die in SVM-Disaster-Recovery-Beziehungen repliziert werden
 
 Die folgende Tabelle zeigt die Interaktion des `snapmirror create -identity-preserve` Option und das `snapmirror policy create -discard-configs network` Option:
 
@@ -854,9 +869,9 @@ Nein
 |===
 
 
-== DR-Storage-Einschränkungen für SVM
+== Grenzen des SVM Disaster Recovery Storage
 
-In der folgenden Tabelle ist die empfohlene maximale Anzahl an Volumes und unterstützten SVM-DR-Beziehungen pro Storage-Objekt aufgeführt. Grenzen sollten häufig plattformabhängig sein. Siehe link:https://hwu.netapp.com/["Hardware Universe"^] Lernen Sie die Grenzen für Ihre spezifische Konfiguration kennen.
+Die folgende Tabelle zeigt die empfohlene maximale Anzahl an Volumes und SVM-Disaster-Recovery-Beziehungen, die pro Storage-Objekt unterstützt werden. Grenzen sollten häufig plattformabhängig sein. Siehe link:https://hwu.netapp.com/["Hardware Universe"^] Lernen Sie die Grenzen für Ihre spezifische Konfiguration kennen.
 
 [cols="2*"]
 |===
@@ -882,6 +897,6 @@ HA-Paar
  a| 
 Cluster
  a| 
-128 DR-Beziehungen zu SVM
+128 SVM-Disaster-Beziehungen
 
 |===

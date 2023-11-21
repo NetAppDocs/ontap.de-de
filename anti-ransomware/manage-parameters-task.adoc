@@ -4,7 +4,7 @@ permalink: anti-ransomware/manage-parameters-task.html
 keywords: anti-ransomware overview, ransomware, security, modify, security anti-ransomware attack, parameters 
 summary: Ab ONTAP 9.11.1 können die Erkennungsparameter für den autonomen Ransomware-Schutz je nach Workload geändert werden. 
 ---
-= Verwalten von ARP-Angriffserkennungsparametern
+= Managen Sie die Parameter für die Erkennung von Angriffen gegen autonomen Ransomware-Schutz
 :toc: macro
 :hardbreaks:
 :toclevels: 1
@@ -14,7 +14,7 @@ summary: Ab ONTAP 9.11.1 können die Erkennungsparameter für den autonomen Rans
 :nofooter: 
 :icons: font
 :linkattrs: 
-:imagesdir: ./media/
+:imagesdir: ../media/
 :toc-position: content
 
 
@@ -34,6 +34,8 @@ In ONTAP 9.10.1 gibt ARP eine Warnung aus, wenn beide der folgenden Bedingungen 
 
 
 Ab ONTAP 9.11.1 gibt ARP eine Bedrohungswarnung aus, wenn _only_ eine Bedingung erfüllt ist. Wenn beispielsweise mehr als 20 Dateien mit Dateierweiterungen, die zuvor nicht im Volume beobachtet wurden, innerhalb eines Zeitraums von 24 Stunden beobachtet werden, kategorisiert ARP diese Datei als Bedrohung _unabhängig_ der beobachteten Entropie. (Die Dateiwerte 24 Stunden und 20 Stunden sind Standardwerte, die geändert werden können.)
+
+Ab ONTAP 9.14.1 können Sie Alarme konfigurieren, wenn ARP eine neue Dateierweiterung beobachtet, und wenn ARP einen Snapshot erstellt. Weitere Informationen finden Sie unter <<modify-alerts>>
 
 Bestimmte Volumes und Workloads erfordern unterschiedliche Erkennungsparameter. Zum Beispiel kann Ihr ARP-fähiges Volume zahlreiche Arten von Dateierweiterungen hosten. In diesem Fall möchten Sie die Schwellenwertanzahl für nie zuvor gesehene Dateierweiterungen auf eine Zahl ändern, die größer ist als die Standardeinstellung von 20 oder Warnungen deaktivieren, die auf nie zuvor gesehenen Dateierweiterungen basieren. Ab ONTAP 9.11.1 können Sie die Parameter zur Angriffserkennung anpassen, um sie besser auf Ihre spezifischen Workloads anzupassen.
 
@@ -78,7 +80,7 @@ Eine vollständige Liste der Parameter finden Sie unter link:https://docs.netapp
 
 ARP ändert auch im aktiven Modus weiterhin Basiswerte für Erkennungsparameter. Wenn Sie von Überspannungen in Ihrer Volumenaktivität wissen - entweder einmal Überspannungen oder eine Überspannung, die für eine neue Normalität charakteristisch ist - sollten Sie sie als sicher melden. Die manuelle Meldung dieser Überspannungen als sicher hilft, die Genauigkeit der ARP-Bedrohungsbewertungen zu verbessern.
 
-.Einmalige Überspannungen
+.Melden Sie eine einmalige Überspannung
 . Wenn ein einmaliger Anstieg unter bekannten Umständen auftritt und Sie möchten, dass ARP in Zukunft einen ähnlichen Anstieg meldet, beheben Sie den Anstieg des Workload-Verhaltens:
 +
 `security anti-ransomware volume workload-behavior clear-surge -vserver _svm_name_ -volume _volume_name_`
@@ -92,6 +94,67 @@ ARP ändert auch im aktiven Modus weiterhin Basiswerte für Erkennungsparameter.
 
 
 
+
+
+== Konfigurieren von ARP-Warnungen
+
+Ab ONTAP 9.14.1 ermöglicht ARP die Angabe von Warnungen für zwei ARP-Ereignisse:
+
+* Beobachtung der neuen Dateierweiterung auf einem Volume
+* Erstellung eines ARP-Snapshots
+
+
+Warnmeldungen für diese beiden Ereignisse können für einzelne Volumes oder für die gesamte SVM festgelegt werden. Wenn Sie Alarme für die SVM aktivieren, werden die Meldungseinstellungen nur von Volumes übernommen, die nach dem Aktivieren der Warnmeldung erstellt wurden. Standardmäßig sind Warnmeldungen auf keinem Volume aktiviert.
+
+Ereigniswarnungen können durch Verifizierung durch mehrere Administratoren gesteuert werden. Weitere Informationen finden Sie unter xref:use-cases-restrictions-concept.html#multi-admin-verification-with-volumes-protected-with-ARP[Verifizierung mehrerer Administratoren mit Volumes, die mit ARP gesichert sind].
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Festlegen von Warnmeldungen für ein Volume
+. Navigieren Sie zu **Volumen**. Wählen Sie das einzelne Volume aus, für das Sie die Einstellungen ändern möchten.
+. Wählen Sie die Registerkarte **Sicherheit** und dann **Ereignissicherheitseinstellungen**.
+. Um Warnungen für **Neue Dateierweiterung entdeckt** und **Ransomware Snapshot erstellt** zu erhalten, wählen Sie das Dropdown-Menü unter der Überschrift **Schweregrad**. Ändern Sie die Einstellung von **Ereignis nicht generieren** in **Hinweis**.
+. Wählen Sie **Speichern**.
+
+
+.Festlegen von Warnmeldungen für eine SVM
+. Navigieren Sie zu **Storage VM**, und wählen Sie dann die SVM aus, für die Sie Einstellungen aktivieren möchten.
+. Suchen Sie unter der Überschrift **Sicherheit** die **Anti-Ransomware**-Karte. Wählen Sie image:../media/icon_kabob.gif["Drei Punkte"] Dann **Ransomware-Ereignis-Schweregrad bearbeiten**.
+. Um Warnungen für **Neue Dateierweiterung entdeckt** und **Ransomware Snapshot erstellt** zu erhalten, wählen Sie das Dropdown-Menü unter der Überschrift **Schweregrad**. Ändern Sie die Einstellung von **Ereignis nicht generieren** in **Hinweis**.
+. Wählen Sie **Speichern**.
+
+
+--
+.CLI
+--
+.Festlegen von Warnmeldungen für ein Volume
+* So legen Sie Warnungen für eine neue Dateierweiterung fest:
++
+`security anti-ransomware volume event-log modify -vserver _svm_name_ -is-enabled-on-new-file-extension-seen true`
+
+* So legen Sie Warnungen für die Erstellung eines ARP-Snapshots fest:
++
+`security anti-ransomware volume event-log modify -vserver _svm_name_ -is-enabled-on-snapshot-copy-creation true`
+
+* Bestätigen Sie Ihre Einstellungen mit dem `anti-ransomware volume event-log show` Befehl.
+
+
+.Festlegen von Warnmeldungen für eine SVM
+* So legen Sie Warnungen für eine neue Dateierweiterung fest:
++
+`security anti-ransomware vserver event-log modify -vserver _svm_name_ -is-enabled-on-new-file-extension-seen true`
+
+* So legen Sie Warnungen für die Erstellung eines ARP-Snapshots fest:
++
+`security anti-ransomware vserver event-log modify -vserver _svm_name_ -is-enabled-on-snapshot-copy-creation true`
+
+* Bestätigen Sie Ihre Einstellungen mit dem `security anti-ransomware vserver event-log show` Befehl.
+
+
+--
+====
 .Weitere Informationen
 * link:https://kb.netapp.com/onprem/ontap/da/NAS/Understanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot["Autonome Ransomware-Schutzangriffe und den Überblick über den autonomen Ransomware-Schutz"^]
 

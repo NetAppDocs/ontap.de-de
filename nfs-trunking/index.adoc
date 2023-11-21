@@ -1,0 +1,59 @@
+---
+permalink: nfs-trunking/index.html 
+sidebar: sidebar 
+keywords: NFSv4.1, trunking, Linux, VMware, FlexGroup, volumes, multipathing, AI/ML, rdma, data lake 
+summary: Ab ONTAP 9.14.1 können NFS-Clients, auf denen Version 4.1 oder höher ausgeführt wird, von der Session Trunking-Funktion profitieren, um mehrere Verbindungen zum NFS-Server zu öffnen, wodurch die Geschwindigkeit der Datenübertragung erhöht und Ausfallsicherheit durch Multipathing gegeben wird 
+---
+= Übersicht über NFS Trunking
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.14.1 können NFSv4.1-Clients das Session-Trunking nutzen, um mehrere Verbindungen zu verschiedenen LIFs auf dem NFS-Server zu öffnen. Dadurch wird die Geschwindigkeit der Datenübertragung erhöht und Ausfallsicherheit durch Multipathing gegeben.
+
+Trunking ist vorteilhaft für den Export von FlexVol Volumes an Trunking-fähige Clients, insbesondere VMware und Linux Clients oder für NFS over RDMA, TCP oder pNFS.
+
+In ONTAP 9.14.1 ist das Trunking auf LIFs auf einem einzelnen Node beschränkt. Das Trunking kann keine LIFs über mehrere Nodes hinweg umfassen.
+
+FlexGroup Volumes werden für Trunking unterstützt. Der dadurch bessere Performance ist möglich, allerdings kann der Multipath-Zugriff auf ein FlexGroup Volume nur auf einem einzelnen Node konfiguriert werden.
+
+In diesem Release wird für Multipathing nur das Session-Trunking unterstützt.
+
+
+
+== Verwendung von Trunking
+
+Um die vom Trunking angebotenen Multipathing-Vorteile nutzen zu können, benötigen Sie einen Satz LIFs, die damit verbunden sind, die einen NFS-Server mit Trunking-Funktion enthalten. Diese werden auch als _Trunking Group_ bezeichnet. Die LIFs in einer Trunking-Gruppe müssen über Home Ports auf demselben Node des Clusters verfügen, und sie müssen sich auf diesen Home Ports befinden. Als Best Practice wird empfohlen, dass alle LIFs in einer Trunking-Gruppe Mitglieder derselben Failover-Gruppe sind.
+
+ONTAP unterstützt bis zu 16 Trunk-Verbindungen pro Node von einem bestimmten Client.
+
+Wenn ein Client Exporte von einem Trunking-fähigen Server mountet, geben sie eine Reihe von IP-Adressen für LIFs in einer Trunking-Gruppe an. Nachdem der Client eine Verbindung zur ersten LIF hergestellt hat, werden der NFSv4.1-Sitzung nur zusätzliche LIFs hinzugefügt und für das Trunking verwendet, wenn sie den Anforderungen der Trunking-Gruppe entsprechen. Der Client verteilt dann NFS-Vorgänge basierend auf seinem eigenen Algorithmus (wie Round Robin) über die verschiedenen Verbindungen.
+
+Um eine optimale Performance zu erzielen, sollten Sie das Trunking in einer SVM konfigurieren, die für die Bereitstellung von Multipath-Exporten und nicht für Single-Path-Exporte dediziert ist. Das heißt, Sie sollten das Trunking nur auf einem NFS-Server in einer SVM aktivieren, deren Exporte nur für Trunking-fähige Clients bereitgestellt werden.
+
+
+
+== Unterstützte Clients
+
+Der ONTAP NFSv4.1 Server unterstützt Trunking mit jedem Client, der NFSv4.1 Session-Trunking ausführen kann.
+
+Die folgenden Clients wurden mit ONTAP 9.14.1 getestet:
+
+* VMware - ESXi 7.0U3F und höher
+* Linux – Red hat Enterprise Linux (RHEL) 8.8 und 9.3
+
+
+
+NOTE: Wenn das Trunking auf einem NFS-Server aktiviert ist, können Benutzer, die auf exportierte Freigaben auf NFS-Clients zugreifen, die kein Trunking unterstützen, einen Performance-Abfall sehen. Das liegt daran, dass nur eine einzelne TCP-Verbindung für mehrere Mounts zu den SVM-Daten-LIFs verwendet wird.
+
+
+
+== Unterschied zwischen NFS Trunking und nconnect
+
+Ab ONTAP 9.8 ist nconnect standardmäßig verfügbar, wenn NFSv4.1 aktiviert ist. Auf nconnect-fähigen Clients kann ein einzelner NFS-Mount mehrere TCP-Verbindungen (bis zu 16) über eine einzelne LIF verfügen.
+
+Im Gegensatz dazu ist Trunking die _Multipathing_ Funktionalität, die mehrere TCP-Verbindungen über mehrere LIFs bereitstellt. Wenn Sie in Ihrer Umgebung zusätzliche NICs einsetzen können, bietet Trunking eine höhere Parallelität und Performance, die über die Möglichkeiten von nconnect hinausgeht.
+
+Weitere Informationen zu link:../nfs-admin/ontap-support-nfsv41-concept.html["Nconnect:"]

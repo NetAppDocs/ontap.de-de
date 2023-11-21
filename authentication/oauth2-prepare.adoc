@@ -1,0 +1,101 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-prepare.html 
+keywords: oauth 2.0, oauth2, prepare, plan, deployment plan 
+summary: Bevor Sie OAuth 2.0 in einer ONTAP-Umgebung konfigurieren, sollten Sie die Bereitstellung vorbereiten. 
+---
+= Bereiten Sie die Bereitstellung von OAuth 2.0 mit ONTAP vor
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Bevor Sie OAuth 2.0 in einer ONTAP-Umgebung konfigurieren, sollten Sie die Bereitstellung vorbereiten. Im Folgenden finden Sie eine Zusammenfassung der wichtigsten Aufgaben und Entscheidungen. Die Anordnung der Abschnitte ist im Allgemeinen auf die Reihenfolge ausgerichtet, die Sie befolgen sollten. Dies gilt zwar für die meisten Implementierungen, Sie sollten es jedoch bei Bedarf an Ihre Umgebung anpassen. Sie sollten auch die Erstellung eines formellen Bereitstellungsplans in Betracht ziehen.
+
+
+TIP: Je nach Umgebung können Sie die Konfiguration für die Autorisierungsserver auswählen, die für ONTAP definiert sind. Dazu gehören auch die Parameterwerte, die Sie für jeden Bereitstellungstyp spezifisch benötigen. Siehe link:../authentication/oauth2-deployment-scenarios.html["OAuth 2.0-Bereitstellungsszenarien"] Finden Sie weitere Informationen.
+
+
+
+== Geschützte Ressourcen und Client-Applikationen
+
+OAuth 2.0 ist ein Autorisierungs-Framework zur Kontrolle des Zugriffs auf geschützte Ressourcen. Aus diesem Grund besteht ein wichtiger erster Schritt bei jeder Bereitstellung darin zu bestimmen, welche Ressourcen verfügbar sind und welche Clients Zugriff darauf benötigen.
+
+.Identifizierung von Client-Applikationen
+Sie müssen entscheiden, welche Clients OAuth 2.0 bei der Ausgabe von REST-API-Aufrufen verwenden und auf welche API-Endpunkte Zugriff benötigt wird.
+
+.Bestehende ONTAP REST-Rollen und lokale Benutzer prüfen
+Sie sollten die vorhandenen ONTAP-Identitätsdefinitionen sowie die REST-Rollen und lokalen Benutzer überprüfen. Je nachdem, wie Sie OAuth 2.0 konfigurieren, können diese Definitionen für Zugriffsentscheidungen verwendet werden.
+
+.Globaler Übergang zu OAuth 2.0
+Obwohl Sie die OAuth 2.0-Autorisierung schrittweise implementieren können, können Sie auch alle REST-API-Clients sofort nach OAuth 2.0 verschieben, indem Sie für jeden Autorisierungsserver ein globales Flag festlegen. Auf diese Weise können Sie basierend auf Ihrer bestehenden ONTAP-Konfiguration Zugriffsentscheidungen treffen, ohne dass Sie in sich geschlossene Bereiche erstellen müssen.
+
+
+
+== Autorisierungsserver
+
+Die Autorisierungsserver spielen eine wichtige Rolle in Ihrer OAuth 2.0-Bereitstellung, indem sie Zugriffstoken ausgeben und die Verwaltungsrichtlinie durchsetzen.
+
+.Wählen Sie den Autorisierungsserver aus, und installieren Sie ihn
+Sie müssen einen oder mehrere Autorisierungsserver auswählen und installieren. Es ist wichtig, sich mit den Konfigurationsoptionen und -Verfahren Ihrer Identitätsanbieter vertraut zu machen, einschließlich der Definition von Geltungsbereichen.
+
+.Stellen Sie fest, ob das Zertifikat der Autorisierungsstammzertifizierungsstelle installiert werden muss
+ONTAP verwendet das Zertifikat des Autorisierungsservers, um die von den Clients präsentierten signierten Zugriffstoken zu validieren. Dazu benötigt ONTAP das Stammzertifizierungsstellenzertifikat und alle Zwischenzertifikate. Diese sind möglicherweise mit ONTAP vorinstalliert. Wenn nicht, müssen Sie sie installieren.
+
+.Bewerten Sie den Netzwerkstandort und die -Konfiguration
+Wenn sich der Autorisierungsserver hinter einer Firewall befindet, muss ONTAP für die Verwendung eines Proxy-Servers konfiguriert werden.
+
+
+
+== Client-Authentifizierung und -Autorisierung
+
+Es gibt mehrere Aspekte der Client-Authentifizierung und -Autorisierung, die Sie berücksichtigen müssen.
+
+.Eigenständige Bereiche oder lokale ONTAP-Identitätsdefinitionen
+Sie können entweder eigenständige Bereiche definieren, die auf dem Autorisierungsserver definiert sind, oder auf die vorhandenen lokalen ONTAP-Identitätsdefinitionen, einschließlich Rollen und Benutzer, zurückgreifen.
+
+.Optionen mit lokaler ONTAP-Verarbeitung
+Wenn Sie die ONTAP-Identitätsdefinitionen verwenden, müssen Sie entscheiden, welche Anwendung zutrifft. Dazu gehören:
+
+* Benannte REST-Rolle
+* Ordnen Sie lokale Benutzer zu
+* Active Directory oder LDAP-Gruppen
+
+
+.Lokale Validierung oder Remote-Introspektion
+Sie müssen entscheiden, ob die Zugriffstoken lokal durch ONTAP oder auf dem Autorisierungsserver durch Introspektion validiert werden. Es gibt auch mehrere verwandte Werte zu berücksichtigen, wie zum Beispiel das Aktualisierungsintervall.
+
+.Zugriffstoken, die durch den Absender eingeschränkt sind
+Für Umgebungen, die ein hohes Maß an Sicherheit erfordern, können Sie auf Basis von MTLS sendende Zugriffstoken verwenden. Dies erfordert ein Zertifikat für jeden Client.
+
+.Administrationsschnittstelle
+Sie können die Verwaltung von OAuth 2.0 über eine der ONTAP-Schnittstellen durchführen, einschließlich:
+
+* Befehlszeilenschnittstelle
+* System Manager
+* REST API
+
+
+.Wie Clients Zugriffstoken anfordern
+Die Client-Anwendungen müssen Zugriffstoken direkt vom Autorisierungsserver anfordern. Sie müssen entscheiden, wie dies geschehen wird, einschließlich der Zuschussart.
+
+
+
+== Konfigurieren Sie ONTAP
+
+Es gibt mehrere ONTAP-Konfigurationsaufgaben, die Sie durchführen müssen.
+
+.Definieren Sie REST-Rollen und lokale Benutzer
+Basierend auf Ihrer Autorisierungskonfiguration kann die lokale ONTAP-Identifizieren-Verarbeitung verwendet werden. In diesem Fall müssen Sie die REST-Rollen und Benutzerdefinitionen überprüfen und definieren.
+
+.Kernkonfiguration
+Zur Durchführung der zentralen ONTAP-Konfiguration sind drei wichtige Schritte erforderlich:
+
+* Installieren Sie optional das Stammzertifikat (und alle Zwischenzertifikate) für die Zertifizierungsstelle, die das Zertifikat des Autorisierungsservers signiert hat.
+* Definieren Sie den Autorisierungsserver.
+* Aktivieren Sie die OAuth 2.0-Verarbeitung für den Cluster.
+

@@ -11,7 +11,7 @@ summary: Mit SnapLock für SnapVault können Snapshot Kopien IM Sekundärspeiche
 
 
 [role="lead"]
-Mit SnapLock für SnapVault können Snapshot Kopien IM Sekundärspeicher GESICHERT WERDEN. Sie führen alle grundlegenden SnapLock-Aufgaben auf dem SnapVault Ziel aus. Das Ziel-Volume wird automatisch schreibgeschützt gemountet, sodass die Snapshot Kopien nicht explizit in WORM festgeschrieben werden müssen. Somit werden geplante Snapshot Kopien auf dem Ziel-Volume mithilfe von SnapMirror Richtlinien nicht unterstützt.
+Mit SnapLock für SnapVault können Snapshot Kopien IM Sekundärspeicher GESICHERT WERDEN. Sie führen alle grundlegenden SnapLock-Aufgaben auf dem Vault-Ziel aus. Das Ziel-Volume wird automatisch schreibgeschützt gemountet, sodass die Snapshot Kopien nicht explizit in WORM festgeschrieben werden müssen. Somit werden geplante Snapshot Kopien auf dem Ziel-Volume mithilfe von SnapMirror Richtlinien nicht unterstützt.
 
 .Bevor Sie beginnen
 * Der Quell-Cluster muss ONTAP 8.2.2 oder höher ausführen.
@@ -35,7 +35,9 @@ Sie können SnapLock Volumes klonen, aber Sie können keine Dateien auf einem Sn
 
 NOTE: LUNs werden in SnapLock Volumes nicht unterstützt. LUNs werden in SnapLock Volumes nur in Szenarien unterstützt, in denen auf einem nicht-SnapLock Volume erstellte Snapshot Kopien zur Sicherung im Rahmen der SnapLock Vault-Beziehung auf ein SnapLock Volume übertragen werden. LUNs werden in SnapLock-Volumes mit Lese-/Schreibzugriff nicht unterstützt. Manipulationssichere Snapshot Kopien werden jedoch auf SnapMirror Quell-Volumes und Ziel-Volumes unterstützt, die LUNs enthalten.
 
-Ab ONTAP 9.13.1 können Sie sofort eine gesperrte Snapshot Kopie auf dem Ziel-SnapLock Volume einer SnapLock für SnapVault Beziehung wiederherstellen, indem Sie dazu einen FlexClone mit dem erstellen `snaplock-type` Option auf „nicht-snaplock“ gesetzt und die Snapshot Kopie als „Parent-Snapshot“ bei der Ausführung des Volume-Klonerstellungsvorgangs angegeben. Weitere Informationen zu link:https://docs.netapp.com/us-en/ontap/volumes/create-flexclone-task.html?q=volume+clone["Erstellung eines FlexClone Volume mit einem SnapLock-Typ"].
+Ab ONTAP 9.14.1 können Sie Aufbewahrungszeiträume für bestimmte SnapMirror Labels in der SnapMirror Richtlinie der SnapMirror Beziehung festlegen, sodass die replizierten Snapshot Kopien vom Quell- zum Ziel-Volume für den in der Regel angegebenen Aufbewahrungszeitraum beibehalten werden. Wenn kein Aufbewahrungszeitraum angegeben wird, wird die Standardaufbewahrungsfrist des Ziel-Volume verwendet.
+
+Ab ONTAP 9.13.1 können Sie sofort eine gesperrte Snapshot Kopie auf dem Ziel-SnapLock Volume einer SnapLock Vault-Beziehung wiederherstellen, indem Sie einen FlexClone mit dem erstellen `snaplock-type` Option auf „nicht-snaplock“ gesetzt und die Snapshot Kopie als „Parent-Snapshot“ bei der Ausführung des Volume-Klonerstellungsvorgangs angegeben. Weitere Informationen zu link:https://docs.netapp.com/us-en/ontap/volumes/create-flexclone-task.html?q=volume+clone["Erstellung eines FlexClone Volume mit einem SnapLock-Typ"].
 
 Bei MetroCluster Konfigurationen sollten Sie die folgenden Aspekte beachten:
 
@@ -44,13 +46,13 @@ Bei MetroCluster Konfigurationen sollten Sie die folgenden Aspekte beachten:
 * Es ist möglich, eine SnapVault-Beziehung zwischen einem Volume auf einer Datenservice-SVM und einem DP-Volume auf einer SVM mit synchronem Quell-Volume zu erstellen.
 
 
-Die folgende Abbildung zeigt das Verfahren zur Initialisierung einer SnapVault Beziehung:
+In der folgenden Abbildung wird das Verfahren zum Initialisieren einer SnapLock Vault-Beziehung gezeigt:
 
-image::../media/snapvault-steps-clustered.gif[Diese Abbildung zeigt das Verfahren zum Initialisieren einer SnapVault Beziehung: Identifizieren des Ziel-Clusters,creating a destination volume,creating a policy]
+image::../media/snapvault-steps-clustered.gif[Diese Abbildung zeigt das Verfahren zur Initialisierung einer SnapLock Vault Beziehung: Das Identifizieren des Ziel-Clusters,creating a destination volume,creating a policy]
 
 .Schritte
 . Ermitteln des Ziel-Clusters
-. Installieren Sie auf dem Ziel-Cluster die SnapLock Lizenz, initialisieren Sie die ComplianceClock und erstellen Sie, wenn Sie eine ONTAP Version vor 9.10.1 verwenden, ein SnapLock-Aggregat, wie in beschrieben xref:workflow-concept.html[SnapLock-Workflow].
+. Installieren Sie auf dem Ziel-Cluster die SnapLock-Lizenz, initialisieren Sie die Compliance-Uhr und erstellen Sie, wenn Sie eine ONTAP-Version vor 9.10.1 verwenden, ein SnapLock-Aggregat, wie in beschrieben xref:workflow-concept.html[SnapLock-Workflow].
 . Erstellen Sie auf dem Ziel-Cluster ein SnapLock Ziel-Volume des Typs `DP` Das ist entweder die gleiche oder größer als das Quellvolumen:
 +
 `*volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_ -snaplock-type compliance|enterprise -type DP -size _size_*`

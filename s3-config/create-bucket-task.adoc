@@ -14,14 +14,14 @@ summary: S3-Objekte werden in _Buckets aufbewahrt_--sie werden nicht als Dateien
 S3-Objekte werden in _Buckets aufbewahrt_--sie werden nicht als Dateien in einem Verzeichnis innerhalb anderer Verzeichnisse verschachtelt.
 
 .Bevor Sie beginnen
-Eine SVM, die einen S3-Server enthält, muss bereits vorhanden sein.
+Eine Storage-VM mit einem S3-Server muss bereits vorhanden sein.
 
 .Über diese Aufgabe
 Wenn Sie für die CLI einen Bucket erstellen, haben Sie zwei Bereitstellungsoptionen:
 
 * Lassen Sie ONTAP Select die zugrunde liegenden Aggregate und FlexGroup Komponenten (Standard)
 +
-** ONTAP erstellt und konfiguriert ein FlexGroup-Volume für den ersten Bucket durch die automatische Auswahl der Aggregate. Er wählt automatisch das höchste Service-Level aus, das für Ihre Plattform verfügbar ist, oder Sie können das Storage-Service-Level angeben. Alle zusätzlichen Buckets, die Sie später in der SVM hinzufügen, verfügen über dasselbe zugrunde liegende FlexGroup Volume.
+** ONTAP erstellt und konfiguriert ein FlexGroup-Volume für den ersten Bucket durch die automatische Auswahl der Aggregate. Er wählt automatisch das höchste Service-Level aus, das für Ihre Plattform verfügbar ist, oder Sie können das Storage-Service-Level angeben. Alle zusätzlichen Buckets, die Sie später in der Storage-VM hinzufügen, verfügen über dasselbe zugrunde liegende FlexGroup Volume.
 ** Alternativ können Sie angeben, ob der Bucket für das Tiering verwendet wird. In diesem Fall versucht ONTAP, kostengünstige Medien mit optimaler Performance für die Tiered-Daten auszuwählen.
 
 
@@ -40,74 +40,35 @@ Wenn bei der Erstellung eines Buckets Aggregate und Komponenten angegeben werden
 
 
 
+Ab ONTAP 9.14.1 ist dies möglich link:create-bucket-mcc-task.html["Erstellung eines Buckets auf einem gespiegelten oder nicht gespiegelten Aggregat in einer MetroCluster Konfiguration"].
+
 *Hinweis:* Wenn Sie Eimer von Cloud Volumes ONTAP bedienen, sollten Sie das CLI-Verfahren verwenden. Es wird dringend empfohlen, die zugrunde liegenden Aggregate manuell auszuwählen, um sicherzustellen, dass sie nur einen Node verwenden. Die Verwendung von Aggregaten beider Nodes kann sich auf die Performance auswirken, da die Nodes sich in geografisch getrennten Verfügbarkeitszonen befinden und daher anfällig für Latenzprobleme sind.
 
 Storage-Service-Level sind vordefinierte Richtliniengruppen mit adaptiver Quality of Service (QoS) mit Standardeinstellungen wie _Value_, Performance_ und _extreme_. Anstelle eines der standardmäßigen Storage-Service-Level können Sie auch eine individuelle QoS-Richtliniengruppe definieren und auf einen Bucket anwenden.
 
 Ab ONTAP 9.8 ist bei der Bereitstellung von Storage QoS standardmäßig aktiviert. Sie können die QoS deaktivieren oder während des Bereitstellungsprozesses oder zu einem späteren Zeitpunkt eine individuelle QoS-Richtlinie auswählen.
 
-link:storage-service-definitions-reference.html["Definitionen von Storage-Services"]
+Weitere Informationen zu Speicherservicedefinitionen finden Sie unter link:storage-service-definitions-reference.html["Definitionen von Storage-Services"]
 
-Wenn Sie lokales Kapazitäts-Tiering konfigurieren, erstellen Sie Buckets und Benutzer in einer Daten-SVM, nicht in der System-SVM, wo sich der S3-Server befindet.
+Wenn Sie lokales Kapazitäts-Tiering konfigurieren, erstellen Sie Buckets und Benutzer in einer Daten-Storage-VM und nicht in der System-Storage-VM, auf der sich der S3 Server befindet.
 
 Für den Remote-Client-Zugriff müssen Sie Buckets in einer S3-fähigen Storage-VM konfigurieren. Wenn Sie einen Bucket in einer Storage-VM erstellen, die nicht S3-aktiviert ist, ist dieser nur für lokales Tiering verfügbar.
 
-link:../performance-admin/index.html["Performance Management"]
+Weitere Informationen zum Leistungsmanagement finden Sie unter link:../performance-admin/index.html["Performance Management"]
 
 Siehe `vserver object-store-server bucket` Man-Pages für zusätzliche Konfigurations- und Anzeigeoptionen.
 
 
 
-== Erstellung von Buckets wird verarbeitet
+== Erstellen von S3 Buckets mit der ONTAP-CLI
 
-[role="tabbed-block"]
-====
-.System Manager
---
-. Fügen Sie auf einer S3-fähigen Storage-VM einen neuen Bucket hinzu.
-+
-.. Klicken Sie auf *Storage > Buckets* und dann auf *Hinzufügen*.
-.. Geben Sie einen Namen ein, wählen Sie die Storage-VM aus und geben Sie eine Größe ein.
-+
-*** Wenn Sie an dieser Stelle auf *Speichern* klicken, wird ein Bucket mit den folgenden Standardeinstellungen erstellt:
-+
-**** Benutzern wird kein Zugriff auf den Bucket gewährt, es sei denn, bereits Gruppenrichtlinien sind gültig.
-+
-
-NOTE: Sie sollten den S3-Root-Benutzer nicht zum Managen von ONTAP-Objekt-Storage und zur gemeinsamen Nutzung seiner Berechtigungen verwenden, da er unbegrenzten Zugriff auf den Objektspeicher hat. Erstellen Sie stattdessen einen Benutzer oder eine Gruppe mit Administratorrechten, die Sie zuweisen.
-
-**** Das Niveau der Servicequalität (Performance) ist das höchste für Ihr System verfügbare Niveau.
-
-
-*** Sie können auf *Weitere Optionen* klicken, um Benutzerberechtigungen und Leistungslevel zu konfigurieren, wenn Sie den Bucket konfigurieren, oder Sie können diese Einstellungen später ändern.
-+
-**** Sie müssen bereits Benutzer und Gruppen erstellt haben, bevor Sie *Weitere Optionen* verwenden, um ihre Berechtigungen zu konfigurieren.
-**** Wenn Sie beabsichtigen, den S3-Objektspeicher für FabricPool Tiering zu nutzen, sollten Sie die Wahl erwägen *für Tiering* zu verwenden (kostengünstige Medien mit optimaler Performance für die Tiered Data verwenden) anstatt ein Performance-Service-Level.
-
-
-
-
-
-
-. Überprüfen Sie bei S3-Client-Applikationen – einem anderen ONTAP System oder einer externen App von Drittanbietern – den Zugriff auf den neuen Bucket, indem Sie Folgendes eingeben:
-+
-** Das S3-Server-CA-Zertifikat.
-** Der Zugriffsschlüssel und der Geheimschlüssel des Benutzers.
-** Der FQDN-Name des S3-Servers und der Bucket-Name.
-
-
-
-
---
-.CLI
---
 . Wenn Sie Aggregate und FlexGroup Komponenten selbst auswählen möchten, setzen Sie die Berechtigungsebene auf „Advanced“ (ansonsten reicht die Admin-Berechtigungsebene aus): `set -privilege advanced`
 . Erstellen eines Buckets:
 +
 `vserver object-store-server bucket create -vserver _svm_name_ -bucket _bucket_name_ [-size integer[KB|MB|GB|TB|PB]] [-comment text] [additional_options]`
 
 +
-Der SVM-Name kann entweder eine Daten-SVM oder sein `Cluster` (Der Name der System-SVM), wenn Sie lokales Tiering konfigurieren.
+Der Name der Storage VM kann entweder eine Daten-Storage-VM oder sein `Cluster` (Der Name der System-Storage-VM), wenn Sie lokales Tiering konfigurieren.
 
 +
 Wenn Sie keine Optionen angeben, erstellt ONTAP einen 5GB-Bucket mit der Service-Ebene auf die höchste für Ihr System verfügbare Ebene.
@@ -154,11 +115,74 @@ Der Standardwert des `-aggr-list-multiplier` Der Parameter ist 4.
 
 
 .Beispiel
-Im folgenden Beispiel wird ein Bucket für SVM vs1 mit der Größe 1 TB erstellt und das Aggregat angegeben:
+Im folgenden Beispiel wird ein Bucket für Storage-VM vs1 mit der Größe 1 TB erstellt und das Aggregat angegeben:
 
 [listing]
 ----
 cluster-1::*> vserver object-store-server bucket create -vserver svm1.example.com -bucket testbucket -aggr-list aggr1 -size 1TB
 ----
---
-====
+
+
+== Erstellung von S3 Buckets mit System Manager
+
+. Fügen Sie auf einer S3-fähigen Storage-VM einen neuen Bucket hinzu.
++
+.. Klicken Sie auf *Storage > Buckets* und dann auf *Hinzufügen*.
+.. Geben Sie einen Namen ein, wählen Sie die Storage-VM aus und geben Sie eine Größe ein.
++
+*** Wenn Sie an dieser Stelle auf *Speichern* klicken, wird ein Bucket mit den folgenden Standardeinstellungen erstellt:
++
+**** Benutzern wird kein Zugriff auf den Bucket gewährt, es sei denn, bereits Gruppenrichtlinien sind gültig.
++
+
+NOTE: Sie sollten den S3-Root-Benutzer nicht zum Managen von ONTAP-Objekt-Storage und zur gemeinsamen Nutzung seiner Berechtigungen verwenden, da er unbegrenzten Zugriff auf den Objektspeicher hat. Erstellen Sie stattdessen einen Benutzer oder eine Gruppe mit Administratorrechten, die Sie zuweisen.
+
+**** Das Niveau der Servicequalität (Performance) ist das höchste für Ihr System verfügbare Niveau.
+
+
+*** Klicken Sie auf *Speichern*, um einen Bucket mit diesen Standardwerten zu erstellen.
+
+
+
+
+
+
+
+
+=== Konfigurieren Sie zusätzliche Berechtigungen und Einschränkungen
+
+Sie können auf *Weitere Optionen* klicken, um Einstellungen für Objektsperrung, Benutzerberechtigungen und Leistungslevel zu konfigurieren, wenn Sie den Bucket konfigurieren, oder Sie können diese Einstellungen später ändern.
+
+Wenn Sie beabsichtigen, den S3-Objektspeicher für FabricPool Tiering zu nutzen, sollten Sie die Wahl erwägen *für Tiering* zu verwenden (kostengünstige Medien mit optimaler Performance für die Tiered Data verwenden) anstatt ein Performance-Service-Level.
+
+Wenn Sie die Versionierung für Ihre Objekte für eine spätere Wiederherstellung aktivieren möchten, wählen Sie *Versionierung aktivieren*. Die Versionierung ist standardmäßig aktiviert, wenn Sie die Objektsperrung auf dem Bucket aktivieren. Informationen zur Objektversionierung finden Sie im https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html["Verwenden von Versionierung in S3 Buckets für Amazon"].
+
+Ab Version 9.14.1 wird die Objektsperrung in S3 Buckets unterstützt. Wenn Sie Objekte in Ihrem Bucket vor dem Löschen oder Überschreiben schützen möchten, wählen Sie *Objektsperrung aktivieren*. Die Sperrung kann entweder für alle oder für bestimmte Objektversionen aktiviert werden und nur dann, wenn die SnapLock-Compliance-Uhr für die Cluster-Nodes initialisiert wird. Führen Sie hierzu folgende Schritte aus:
+
+. Wenn die SnapLock-Compliance-Uhr auf keinem Knoten des Clusters initialisiert wird, wird die Schaltfläche *SnapLock-Compliance-Uhr initialisieren* angezeigt. Klicken Sie auf *SnapLock-Compliance-Uhr initialisieren*, um die SnapLock-Compliance-Uhr auf den Clusterknoten zu initialisieren.
+. Wählen Sie den Modus *Governance*, um eine zeitbasierte Sperre zu aktivieren, die _Write Once, Read Many (WORM)_ Berechtigungen für die Objekte erlaubt. Selbst im _Governance_-Modus können die Objekte von Administratorbenutzern mit bestimmten Berechtigungen gelöscht werden.
+. Wählen Sie *Compliance*-Modus, wenn Sie strengere Regeln für die Löschung und Aktualisierung der Objekte zuweisen möchten. In diesem Modus der Objektsperrung können die Objekte nur nach Abschluss der angegebenen Aufbewahrungsfrist abgelaufen sein. Sofern keine Aufbewahrungsfrist festgelegt ist, bleiben die Objekte unbegrenzt gesperrt.
+. Geben Sie die Aufbewahrungsfrist für die Sperre in Tagen oder Jahren an, wenn die Verriegelung für einen bestimmten Zeitraum wirksam sein soll.
++
+
+NOTE: Das Sperren gilt für S3-Buckets mit Versionsangabe und ohne Versionsangabe. Objektsperrung gilt nicht für NAS-Objekte.
+
+
+
+Sie können Sicherungs- und Berechtigungseinstellungen sowie Performance Service Level für den Bucket konfigurieren.
+
+
+NOTE: Sie müssen bereits Benutzer und Gruppen erstellt haben, bevor Sie die Berechtigungen konfigurieren.
+
+Weitere Informationen finden Sie unter link:../s3-snapmirror/create-remote-mirror-new-bucket-task.html#system-manager-procedure["Spiegelung für neuen Bucket erstellen"].
+
+
+
+=== Überprüfen Sie den Zugriff auf den Bucket
+
+Für S3-Client-Applikationen (ob ONTAP S3 oder eine externe 3^Rd^-Party Applikation) können Sie Ihren Zugriff auf den neu erstellten Bucket überprüfen, indem Sie Folgendes eingeben:
+
+* Das S3-Server-CA-Zertifikat.
+* Der Zugriffsschlüssel und der geheime Schlüssel des Benutzers.
+* Der FQDN-Name des S3-Servers und der Bucket-Name.
+

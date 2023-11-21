@@ -1,10 +1,10 @@
 ---
 sidebar: sidebar 
 permalink: s3-snapmirror/restore-local-destination-task.html 
-keywords: restore a bucket from the destination storage VM remote cluster 
-summary: Wenn Daten in einem Quell-Bucket verloren gehen oder beschädigt werden, füllen Sie die Daten durch die Wiederherstellung aus einem Ziel-Bucket neu aus. 
+keywords: restore a bucket from the destination storage VM local cluster 
+summary: Wenn Daten in einem Quell-Bucket verloren gehen oder beschädigt sind, können Sie Ihre Daten neu befüllen, indem Sie sie von einem Ziel-Bucket wiederherstellen. 
 ---
-= Wiederherstellen eines Buckets aus dem Ziel (lokales Cluster)
+= Wiederherstellen eines Buckets aus der Ziel-Storage-VM (lokales Cluster)
 :toc: macro
 :hardbreaks:
 :toclevels: 1
@@ -19,14 +19,14 @@ summary: Wenn Daten in einem Quell-Bucket verloren gehen oder beschädigt werden
 
 
 [role="lead"]
-Wenn Daten in einem Quell-Bucket verloren gehen oder beschädigt werden, füllen Sie die Daten durch die Wiederherstellung aus einem Ziel-Bucket neu aus.
+Wenn Daten in einem Quell-Bucket verloren gehen oder beschädigt sind, können Sie Ihre Daten neu befüllen, indem Sie Objekte aus einem Ziel-Bucket wiederherstellen.
 
 .Über diese Aufgabe
-Sie können den Ziel-Bucket auf einem vorhandenen oder einem neuen Bucket wiederherstellen. Der Ziel-Bucket für den Wiederherstellungsvorgang muss größer sein als der logische verwendete Speicherplatz des Ziels.
+Sie können den Ziel-Bucket auf einem vorhandenen oder einem neuen Bucket wiederherstellen. Der Ziel-Bucket für den Wiederherstellungsvorgang muss größer sein als der logische genutzte Zielspeicherplatz.
 
 Wenn Sie einen vorhandenen Bucket verwenden, muss er beim Starten eines Wiederherstellungsvorgangs leer sein. Beim Restore wird ein Bucket nicht rechtzeitig „zurück“, sondern es füllt einen leeren Bucket mit den vorherigen Inhalten aus.
 
-Der Wiederherstellungsvorgang muss vom Remote-Cluster initiiert werden.
+Der Wiederherstellungsvorgang muss vom lokalen Cluster aus gestartet werden.
 
 [role="tabbed-block"]
 ====
@@ -51,7 +51,8 @@ Wiederherstellen der Backup-Daten:
 ** Um einen *neuen Bucket* wiederherzustellen, geben Sie die folgenden Werte ein:
 +
 *** Der Cluster und die Storage-VM zum Hosten des neuen Buckets.
-*** Der Name, die Kapazität und das Performance-Service-Level des neuen Buckets. Siehe link:../s3-config/storage-service-definitions-reference.html["Storage Service Level"] Finden Sie weitere Informationen.
+*** Name, Kapazität und Performance des neuen Bucket
+Siehe link:../s3-config/storage-service-definitions-reference.html["Storage Service Level"] Finden Sie weitere Informationen.
 *** Der Inhalt des CA-Zertifikats des Ziel-S3-Servers.
 
 
@@ -61,10 +62,20 @@ Wiederherstellen der Backup-Daten:
 . Klicken Sie auf *Schutz* > Beziehungen, um den Wiederherstellungsfortschritt zu überwachen.
 
 
+.Gesperrte Buckets wiederherstellen
+Ab ONTAP 9.14.1 können Sie gesperrte Buckets sichern und nach Bedarf wiederherstellen.
+
+Sie können einen objektgesperrten Bucket in einem neuen oder bestehenden Bucket wiederherstellen. In den folgenden Szenarien können Sie einen objektgesperrten Bucket als Ziel auswählen:
+
+* *Wiederherstellung auf einen neuen Bucket*: Wenn die Objektsperrung aktiviert ist, kann ein Bucket wiederhergestellt werden, indem ein Bucket erstellt wird, für den auch die Objektsperrung aktiviert ist. Wenn Sie einen gesperrten Bucket wiederherstellen, werden der Objektsperrmodus und der Aufbewahrungszeitraum des ursprünglichen Buckets repliziert. Sie können auch eine andere Sperrfrist für den neuen Bucket definieren. Diese Aufbewahrungsfrist wird auf nicht gesperrte Objekte aus anderen Quellen angewendet.
+* *Wiederherstellung auf einen vorhandenen Bucket*: Ein Object-Locked Bucket kann in einen bestehenden Bucket wiederhergestellt werden, sofern auf dem bestehenden Bucket Versionierung und ein ähnlicher Object-Locking-Modus aktiviert sind. Die Aufbewahrungsdauer des ursprünglichen Eimers wird beibehalten.
+* *Nicht gesperrte Buckets wiederherstellen*: Selbst wenn die Objektsperrung auf einem Bucket nicht aktiviert ist, können Sie sie in einem Bucket wiederherstellen, der die Objektsperrung aktiviert hat und sich auf dem Quellcluster befindet. Wenn Sie den Bucket wiederherstellen, werden alle nicht gesperrten Objekte gesperrt, und der Aufbewahrungszeitraum und die Dauer des Ziel-Buckets werden für sie anwendbar.
+
+
 --
 .CLI
 --
-. Wenn Sie Daten in einen neuen Bucket wiederherstellen, erstellen Sie den neuen Bucket. Weitere Informationen finden Sie unter link:create-local-mirror-new-bucket-task.html["Erstellen einer Spiegelbeziehung für einen neuen Bucket (lokales Cluster)"].
+. Wenn Sie Objekte in einem neuen Bucket wiederherstellen, erstellen Sie den neuen Bucket. Weitere Informationen finden Sie unter link:create-cloud-backup-new-bucket-task.html["Backup-Beziehung für einen neuen Bucket erstellen (Cloud-Ziel)"].
 . Initiieren eines Restore-Vorgangs für den Ziel-Bucket:
 `snapmirror restore -source-path _svm_name_:/bucket/_bucket_name_ -destination-path _svm_name_:/bucket/_bucket_name_`
 

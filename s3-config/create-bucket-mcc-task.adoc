@@ -1,0 +1,149 @@
+---
+permalink: s3-config/create-bucket-mcc-task.html 
+sidebar: sidebar 
+keywords: s3, bucket, system manager, metrocluster, unmirrored, mirrored, aggregate 
+summary: Ab ONTAP 9.14.1 können Sie einen Bucket auf einem gespiegelten oder nicht gespiegelten Aggregat in MetroCluster FC- und IP-Konfigurationen bereitstellen. 
+---
+= Erstellung eines Buckets auf einem gespiegelten oder nicht gespiegelten Aggregat in einer MetroCluster Konfiguration
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.14.1 können Sie einen Bucket auf einem gespiegelten oder nicht gespiegelten Aggregat in MetroCluster FC- und IP-Konfigurationen bereitstellen.
+
+.Über diese Aufgabe
+* Standardmäßig werden Buckets für gespiegelte Aggregate bereitgestellt.
+* Dieselben Bereitstellungsrichtlinien wie in beschrieben link:create-bucket-task.html["Erstellen eines Buckets"] Anwenden bei der Erstellung eines Buckets in einer MetroCluster-Umgebung.
+* Die folgenden S3-Objekt-Storage-Funktionen werden in MetroCluster Umgebungen *nicht* unterstützt:
++
+** S3 SnapMirror
+** S3 Bucket-Lifecycle-Management
+** S3-Objektsperre im *Compliance*-Modus
++
+
+NOTE: S3-Objektsperre im *Governance*-Modus wird unterstützt.
+
+** Lokales FabricPool Tiering
+
+
+
+
+.Bevor Sie beginnen
+Eine SVM, die einen S3-Server enthält, muss bereits vorhanden sein.
+
+
+
+== Erstellung von Buckets wird verarbeitet
+
+[role="tabbed-block"]
+====
+.CLI
+--
+. Wenn Sie Aggregate und FlexGroup Komponenten selbst auswählen möchten, setzen Sie die Berechtigungsebene auf „Advanced“ (ansonsten reicht die Admin-Berechtigungsebene aus): `set -privilege advanced`
+. Erstellen eines Buckets:
++
+`vserver object-store-server bucket create -vserver <svm_name> -bucket <bucket_name> [-size integer[KB|MB|GB|TB|PB]] [-use-mirrored-aggregates true/false]`
+
++
+Stellen Sie die ein `-use-mirrored-aggregates` Option auf `true` Oder `false` Je nachdem, ob Sie ein gespiegeltes oder nicht gespiegeltes Aggregat verwenden möchten.
+
++
+
+NOTE: Standardmäßig wird der verwendet `-use-mirrored-aggregates` Die Option ist auf festgelegt `true`.
+
++
+** Der SVM-Name muss eine Daten-SVM sein.
+** Wenn Sie keine Optionen angeben, erstellt ONTAP einen 5GB-Bucket mit der Service-Ebene auf die höchste für Ihr System verfügbare Ebene.
+** Wenn ONTAP einen Bucket auf Basis der Performance oder Auslastung erstellen soll, verwenden Sie eine der folgenden Optionen:
++
+*** Service-Level
++
+Nehmen Sie die auf `-storage-service-level` Option mit einem der folgenden Werte: `value`, `performance`, Oder `extreme`.
+
+*** tiering
++
+Nehmen Sie die auf `-used-as-capacity-tier true` Option.
+
+
+
+** Wenn Sie die Aggregate angeben möchten, auf denen das zugrunde liegende FlexGroup Volume erstellt werden soll, verwenden Sie die folgenden Optionen:
++
+*** Der `-aggr-list` Der Parameter gibt die Liste der Aggregate an, die für FlexGroup Volume-Komponenten verwendet werden sollen.
++
+Jeder Eintrag in der Liste erstellt eine Komponente im angegebenen Aggregat. Sie können ein Aggregat mehrmals angeben, damit mehrere Komponenten auf dem Aggregat erstellt werden.
+
++
+Für eine konsistente Performance im FlexGroup Volume müssen alle Aggregate denselben Festplattentyp und dieselbe Konfiguration der RAID-Gruppen verwenden.
+
+*** Der `-aggr-list-multiplier` Parameter gibt die Anzahl der Wiederholungen über die Aggregate an, die mit dem aufgeführt sind `-aggr-list` Parameter beim Erstellen eines FlexGroup-Volumes.
++
+Der Standardwert des `-aggr-list-multiplier` Der Parameter ist 4.
+
+
+
+
+
+. Fügen Sie bei Bedarf eine QoS-Richtliniengruppe hinzu:
++
+`vserver object-store-server bucket modify -bucket _bucket_name_ -qos-policy-group _qos_policy_group_`
+
+. Überprüfen der Bucket-Erstellung:
++
+`vserver object-store-server bucket show [-instance]`
+
+
+
+.Beispiel
+Im folgenden Beispiel wird ein Bucket für SVM vs1 mit der Größe 1 TB auf einem gespiegelten Aggregat erstellt:
+
+[listing]
+----
+cluster-1::*> vserver object-store-server bucket create -vserver svm1.example.com -bucket testbucket  -size 1TB -use-mirrored-aggregates true
+----
+--
+.System Manager
+--
+. Fügen Sie auf einer S3-fähigen Storage-VM einen neuen Bucket hinzu.
++
+.. Klicken Sie auf *Storage > Buckets* und dann auf *Hinzufügen*.
+.. Geben Sie einen Namen ein, wählen Sie die Storage-VM aus und geben Sie eine Größe ein.
++
+Standardmäßig wird der Bucket auf einem gespiegelten Aggregat bereitgestellt. Wenn Sie einen Bucket auf einem nicht gespiegelten Aggregat erstellen möchten, wählen Sie *Weitere Optionen* und deaktivieren Sie das Kontrollkästchen *Use the SyncMirror Tier* unter *Schutz* wie im folgenden Bild gezeigt:
+
++
+image:../media/SM_create_bucket_MCC.png["Erstellung von System Manager MetroCluster Buckets"]
+
++
+*** Wenn Sie an dieser Stelle auf *Speichern* klicken, wird ein Bucket mit den folgenden Standardeinstellungen erstellt:
++
+**** Benutzern wird kein Zugriff auf den Bucket gewährt, es sei denn, bereits Gruppenrichtlinien sind gültig.
++
+
+NOTE: Sie sollten den S3-Root-Benutzer nicht zum Managen von ONTAP-Objekt-Storage und zur gemeinsamen Nutzung seiner Berechtigungen verwenden, da er unbegrenzten Zugriff auf den Objektspeicher hat. Erstellen Sie stattdessen einen Benutzer oder eine Gruppe mit Administratorrechten, die Sie zuweisen.
+
+**** Das Niveau der Servicequalität (Performance) ist das höchste für Ihr System verfügbare Niveau.
+
+
+*** Sie können auf *Weitere Optionen* klicken, um Benutzerberechtigungen und Leistungslevel zu konfigurieren, wenn Sie den Bucket konfigurieren, oder Sie können diese Einstellungen später ändern.
++
+**** Sie müssen bereits Benutzer und Gruppen erstellt haben, bevor Sie *Weitere Optionen* verwenden, um ihre Berechtigungen zu konfigurieren.
+**** Wenn Sie beabsichtigen, den S3-Objektspeicher für FabricPool Tiering zu nutzen, sollten Sie die Wahl erwägen *für Tiering* zu verwenden (kostengünstige Medien mit optimaler Performance für die Tiered Data verwenden) anstatt ein Performance-Service-Level.
+
+
+
+
+
+
+. Überprüfen Sie bei S3-Client-Applikationen – einem anderen ONTAP System oder einer externen App von Drittanbietern – den Zugriff auf den neuen Bucket, indem Sie Folgendes eingeben:
++
+** Das S3-Server-CA-Zertifikat.
+** Der Zugriffsschlüssel und der Geheimschlüssel des Benutzers.
+** Der FQDN-Name des S3-Servers und der Bucket-Name.
+
+
+
+
+--
+====

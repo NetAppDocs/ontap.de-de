@@ -15,36 +15,50 @@ summary: Für alle ONTAP-Objektspeicher ist eine Benutzerautorisierung erforderl
 Für alle ONTAP-Objektspeicher ist eine Benutzerautorisierung erforderlich, um die Verbindung zu autorisierten Clients einzuschränken.
 
 .Bevor Sie beginnen.
-Eine S3-fähige SVM muss bereits vorhanden sein.
+Eine S3-fähige Storage-VM muss bereits vorhanden sein.
 
 .Über diese Aufgabe
-Einem S3-Benutzer kann Zugriff auf jeden Bucket in einer SVM, aber nicht auf mehrere SVMs gewährt werden.
-
-Wenn Sie einen S3-Benutzer erstellen, werden ein Zugriffsschlüssel und ein Geheimschlüssel generiert. Sie müssen zusammen mit dem FQDN und dem Bucket-Namen des Objektspeichers mit dem Benutzer freigegeben werden. Die Schlüssel von S3-Benutzern können mit dem angezeigt werden `vserver object-store-server user show` Befehl.
+Ein S3-Benutzer kann Zugriff auf jeden Bucket in einer Storage-VM erhalten. Wenn Sie einen S3-Benutzer erstellen, werden auch ein Zugriffsschlüssel und ein geheimer Schlüssel für den Benutzer generiert. Sie sollten zusammen mit dem FQDN des Objektspeichers und dem Bucket-Namen für den Benutzer freigegeben werden. Die Schlüssel eines S3-Benutzers können mit dem angezeigt werden `vserver object-store-server user show` Befehl.
 
 Sie können S3 Benutzern in einer Bucket-Richtlinie oder einer Objekt-Server-Richtlinie spezifische Zugriffsberechtigungen zuweisen.
 
 [NOTE]
 ====
-Wenn ein Objektspeicher-Server erstellt wird, wird ein Root-Benutzer (UID 0) erstellt, ein privilegierter Benutzer mit Zugriff auf alle Buckets. Anstatt ONTAP S3 als Root-Benutzer zu verwalten, empfiehlt es sich, eine Administratorbenutzerrolle mit bestimmten Berechtigungen zu erstellen.
+Wenn Sie einen neuen Objektspeicher-Server erstellen, erstellt ONTAP einen Root-Benutzer (UID 0), ein privilegierter Benutzer mit Zugriff auf alle Buckets. Anstatt ONTAP S3 als Root-Benutzer zu verwalten, empfiehlt NetApp, eine Admin-Benutzerrolle mit bestimmten Berechtigungen zu erstellen.
 
 ====
 [role="tabbed-block"]
 ====
-.System Manager
---
-. Bearbeiten Sie den Speicher-VM: Klicken Sie auf *Storage > Storage VMs*, klicken Sie auf die Speicher-VM, klicken Sie auf *Einstellungen* und klicken Sie dann auf image:icon_pencil.gif["Bleistiftsymbol"] Unter S3.
-. Benutzer hinzufügen: Klicken Sie auf *Benutzer* und dann auf *Hinzufügen*.
-. Geben Sie einen Namen ein und klicken Sie auf *Speichern*.
-. Speichern Sie unbedingt den Zugriffsschlüssel und den geheimen Schlüssel, sind sie für den Zugriff von S3-Clients erforderlich.
-
-
---
 .CLI
 --
 . S3-Benutzer erstellen:
-`vserver object-store-server user create -vserver _svm_name_ -user _user_name_ [-comment _text_]`
-. Speichern Sie unbedingt den Zugriffsschlüssel und den geheimen Schlüssel, sind sie für den Zugriff von S3-Clients erforderlich.
+`vserver object-store-server user create -vserver svm_name -user user_name -comment [-comment text] -key-time-to-live time`
++
+** Das Hinzufügen eines Kommentars ist optional.
+** Ab ONTAP 9.14.1 können Sie den Zeitraum festlegen, für den der Schlüssel in gültig sein wird `-key-time-to-live` Parameter. Sie können den Aufbewahrungszeitraum in diesem Format hinzufügen, um den Zeitraum anzugeben, nach dem der Zugriffsschlüssel abläuft: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W`
+Wenn Sie beispielsweise eine Aufbewahrungsfrist von einem Tag, zwei Stunden, drei Minuten und vier Sekunden eingeben möchten, geben Sie den Wert als ein `P1DT2H3M4S`. Sofern nicht angegeben, ist der Schlüssel für einen unbestimmten Zeitraum gültig.
++
+Im folgenden Beispiel wird ein Benutzer mit dem Namen erstellt `sm_user1` Auf Storage-VM `vs0`, Mit einer Schlüsselaufbewahrungsfrist von einer Woche.
+
++
+[listing]
+----
+vserver object-store-server user create -vserver vs0 -user sm_user1 -key-time-to-live P1W
+----
+
+
+. Achten Sie darauf, den Zugriffsschlüssel und den geheimen Schlüssel zu speichern. Sie werden für den Zugriff von S3-Clients benötigt.
+
+
+--
+.System Manager
+--
+. Klicken Sie auf *Storage > Storage VMs*. Wählen Sie die Speicher-VM aus, zu der Sie einen Benutzer hinzufügen möchten, wählen Sie *Einstellungen* und klicken Sie dann auf image:icon_pencil.gif["Bleistiftsymbol"] Unter S3.
+. Um einen Benutzer hinzuzufügen, klicken Sie auf *Benutzer > Hinzufügen*.
+. Geben Sie einen Namen für den Benutzer ein.
+. Ab ONTAP 9.14.1 können Sie den Aufbewahrungszeitraum der Zugriffsschlüssel festlegen, die für den Benutzer erstellt werden. Sie können den Aufbewahrungszeitraum in Tagen, Stunden, Minuten oder Sekunden angeben, nach denen die Schlüssel automatisch ablaufen. Standardmäßig ist der Wert auf festgelegt `0` Das bedeutet, dass der Schlüssel unbegrenzt gültig ist.
+. Klicken Sie Auf *Speichern*. Der Benutzer wird erstellt, und ein Zugriffsschlüssel und ein geheimer Schlüssel werden für den Benutzer generiert.
+. Laden Sie den Zugriffsschlüssel und den geheimen Schlüssel herunter, oder speichern Sie ihn. Sie werden für den Zugriff von S3-Clients benötigt.
 
 
 --
