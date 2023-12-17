@@ -2,7 +2,7 @@
 permalink: upgrade/task_updating_an_ontap_cluster_disruptively.html 
 sidebar: sidebar 
 keywords: ontap, upgrade, disruptively 
-summary: 'Wenn Sie das Cluster in den Offline-Modus versetzen können, um ein Upgrade auf eine neue ONTAP Version durchzuführen, können Sie die Methode zum unterbrechungsfreien Upgrade verwenden. Diese Methode umfasst mehrere Schritte: Deaktivieren Sie das Storage Failover für jedes HA-Paar, Neustarten jeder Node im Cluster und Reaktivieren Sie dann das Storage-Failover.' 
+summary: Wenn Sie das Cluster in den Offline-Modus versetzen können, um ein Upgrade auf eine neue ONTAP Version durchzuführen, können Sie die Methode zum unterbrechungsfreien Upgrade verwenden. 
 ---
 = Manuelles ONTAP Upgrade für einen unterbrechungsfreien Betrieb über die CLI
 :allow-uri-read: 
@@ -22,15 +22,31 @@ Wenn SAN-Clients vor einem störenden Upgrade nicht heruntergefahren oder ausges
 
 Bei einem unterbrechungsfreien Upgrade ist eine Ausfallzeit erforderlich, da bei jedem HA-Paar der Storage-Failover deaktiviert ist und jeder Node aktualisiert wird. Wenn der Storage Failover deaktiviert ist, verhält sich jeder Node wie ein Single-Node-Cluster. Das heißt, die mit dem Node verbundenen Systemservices werden so lange unterbrochen, wie das System neu gebootet werden muss.
 
-. Legen Sie die Berechtigungsebene von admin auf Erweitert fest. Geben Sie bei der Aufforderung * y* ein, um fortzufahren: `set -privilege advanced`
+.Schritte
+. Legen Sie die Berechtigungsebene von admin auf Erweitert fest. Geben Sie bei der Aufforderung * y* ein, um fortzufahren:
++
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Die erweiterte Eingabeaufforderung (`*>`Erscheint.
 
-. Legen Sie das neue ONTAP Software-Image als Standard-Image fest: `system image modify {-node * -iscurrent false} -isdefault true`
+. Legen Sie das neue ONTAP Software-Image als Standard-Image fest:
++
+[source, cli]
+----
+system image modify {-node * -iscurrent false} -isdefault true
+----
 +
 Dieser Befehl verwendet eine erweiterte Abfrage, um das ONTAP Ziel-Software-Image (das als alternatives Image installiert wird) als Standard-Image für jeden Node zu ändern.
 
-. Vergewissern Sie sich, dass das neue ONTAP Software-Image als Standard-Image festgelegt ist: `system image show`
+. Vergewissern Sie sich, dass das neue ONTAP Software-Image als Standard-Image festgelegt ist:
++
+[source, cli]
+----
+system image show
+----
 +
 Im folgenden Beispiel ist Image 2 die neue ONTAP-Version und wird auf beiden Knoten als Standard-Image festgelegt:
 
@@ -81,7 +97,12 @@ Mehr als zwei Nodes
 Deaktivieren Sie Storage-Failover für jedes HA-Paar im Cluster: `storage failover modify -node * -enabled false`
 
 |===
-. Starten Sie einen Node im Cluster neu: `system node reboot -node nodename -ignore-quorum-warnings`
+. Starten Sie einen Node im Cluster neu:
++
+[source, cli]
+----
+system node reboot -node nodename -ignore-quorum-warnings
+----
 +
 
 IMPORTANT: Starten Sie nicht mehr als einen Node gleichzeitig neu.
@@ -89,11 +110,21 @@ IMPORTANT: Starten Sie nicht mehr als einen Node gleichzeitig neu.
 +
 Der Node bootet das neue ONTAP Image. Die Eingabeaufforderung für die Anmeldung bei ONTAP wird angezeigt und gibt an, dass der Neustart abgeschlossen ist.
 
-. Nachdem der Node oder Node-Satz mit dem neuen ONTAP-Image neu gebootet wurde, legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`
+. Nachdem der Node oder Node-Satz mit dem neuen ONTAP-Image neu gebootet wurde, legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Geben Sie *y* ein, wenn Sie zum Fortfahren aufgefordert werden
 
-. Vergewissern Sie sich, dass die neue Software ausgeführt wird: `system node image show`
+. Vergewissern Sie sich, dass die neue Software ausgeführt wird:
++
+[source, cli]
+----
+system node image show
+----
 +
 Im folgenden Beispiel ist image1 die neue ONTAP-Version und wird als aktuelle Version auf node0 gesetzt:
 
@@ -114,18 +145,43 @@ node1
 ----
 . Vergewissern Sie sich, dass das Upgrade erfolgreich abgeschlossen wurde:
 +
-.. Legen Sie die Berechtigungsebene auf erweitert fest: `set -privilege advanced`
-.. Vergewissern Sie sich, dass der Upgrade-Status für jeden Node abgeschlossen ist: `system node upgrade-revert show -node nodename`
+.. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+.. Vergewissern Sie sich, dass der Upgrade-Status für jeden Node abgeschlossen ist:
++
+[source, cli]
+----
+system node upgrade-revert show -node nodename
+----
 +
 Der Status sollte als „vollständig“ aufgeführt sein.
 
 +
 Wenn der Status nicht abgeschlossen ist, link:http://mysupport.netapp.com/["Kontaktaufnahme mit dem NetApp Support"] Sofort.
 
-.. Zurück zur Administratorberechtigungsebene: `set -privilege admin`
+.. Zurück zur Administratorberechtigungsebene:
++
+[source, cli]
+----
+set -privilege admin
+----
 
 
-. Wiederholen Sie für jeden weiteren Node die Schritte 2 bis 7.
-. Wenn das Cluster aus zwei oder mehr Nodes besteht, aktivieren Sie Storage Failover für jedes HA-Paar im Cluster: `storage failover modify -node * -enabled true`
-. Wenn das Cluster nur aus zwei Nodes besteht, ermöglichen Sie Cluster Hochverfügbarkeit: `cluster ha modify -configured true`
+. Wiederholen Sie die Schritte 2 bis 8 für jeden weiteren Node.
+. Wenn das Cluster aus zwei oder mehr Nodes besteht, aktivieren Sie Storage Failover für jedes HA-Paar im Cluster:
++
+[source, cli]
+----
+storage failover modify -node * -enabled true
+----
+. Wenn das Cluster nur aus zwei Nodes besteht, ermöglichen Sie Cluster Hochverfügbarkeit:
++
+[source, cli]
+----
+cluster ha modify -configured true
+----
 
