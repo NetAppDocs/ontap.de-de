@@ -1,0 +1,53 @@
+---
+permalink: concepts/mirrored-unmirrored-aggregates-concept.html 
+sidebar: sidebar 
+keywords: mirrored, unmirrored, aggregate, local tier, plex, syncmirror, dparity, raid group 
+summary: 'ONTAP verfügt über eine optionale Funktion namens _SyncMirror_, mit der Sie Daten der lokalen Tier (Aggregat) synchron in Kopien spiegeln oder _plexes_, die in verschiedenen RAID-Gruppen gespeichert sind. Plexe stellen gegen Datenverlust sicher, wenn mehr Festplatten ausfallen als der RAID-Typ schützt oder wenn die Verbindung zu den Festplatten der RAID-Gruppe ausfällt.' 
+---
+= Gespiegelte und nicht gespiegelte lokale Tiers (Aggregate)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP verfügt über eine optionale Funktion namens _SyncMirror_, mit der Sie Daten der lokalen Tier (Aggregat) synchron in Kopien spiegeln oder _plexes_, die in verschiedenen RAID-Gruppen gespeichert sind. Plexe stellen gegen Datenverlust sicher, wenn mehr Festplatten ausfallen als der RAID-Typ schützt oder wenn die Verbindung zu den Festplatten der RAID-Gruppe ausfällt.
+
+Wenn Sie eine lokale Tier mit System Manager oder über die CLI erstellen, können Sie angeben, dass die lokale Ebene gespiegelt oder nicht gespiegelt wird.
+
+
+
+== Funktionsweise von nicht gespiegelten lokalen Tiers (Aggregate
+
+Wenn Sie nicht angeben, dass die lokalen Tiers gespiegelt werden, werden sie als nicht gespiegelte lokale Tiers (Aggregate) erstellt. Nicht gespiegelte lokale Tiers haben nur eine _Plex_ (Kopie ihrer Daten), die alle RAID Gruppen enthält, die zu dem lokalen Tier gehören.
+
+Das folgende Diagramm zeigt eine nicht gespiegelte lokale Ebene bestehend aus Festplatten, mit einem Plex. Die lokale Ebene besteht aus vier RAID-Gruppen: Rg0, rg1, rg2 und rg3. Jede RAID-Gruppe verfügt über sechs Datenfestplatten, eine Paritätsfestplatte und eine Double-Parity-Festplatte. Alle Festplatten, die von der lokalen Ebene verwendet werden, stammen aus demselben Pool, „`pool0`“.
+
+image::../media/drw-plexum-scrn-en-noscale.gif[Das Diagramm wird durch den vorhergehenden Text beschrieben.]
+
+Das folgende Diagramm zeigt eine nicht gespiegelte lokale Tier mit Array LUNs, mit einem Plex. Es verfügt über zwei RAID-Gruppen, rg0 und rg1. Alle Array-LUNs, die von der lokalen Ebene verwendet werden, stammen aus demselben Pool: „`pool0`“.
+
+image::../media/unmirrored-aggregate-with-array-luns.gif[Das Diagramm wird durch den vorhergehenden Text beschrieben.]
+
+
+
+== Funktionsweise gespiegelter lokaler Tiers (Aggregate
+
+Gespiegelte Aggregate verfügen über zwei _Plexe_ (Kopien ihrer Daten), die die SyncMirror-Funktion nutzen, um die Daten zu duplizieren und somit Redundanz zu gewährleisten.
+
+Wenn Sie eine lokale Ebene erstellen, können Sie angeben, dass es sich um eine gespiegelte lokale Ebene handelt. Sie können auch einem vorhandenen, nicht gespiegelten lokalen Tier einen zweiten Plex hinzufügen. Unter Verwendung der SyncMirror Funktion kopiert ONTAP die Daten im ursprünglichen Plex (Plex0) auf den neuen Plex (Plex1). Die Plexe sind physisch getrennt (jeder Plex hat seine eigenen RAID-Gruppen und einen eigenen Pool) und die Plexe werden gleichzeitig aktualisiert.
+
+Diese Konfiguration bietet zusätzlichen Schutz vor Datenverlust, wenn mehr Festplatten ausfallen als der RAID-Level des Aggregats schützt vor oder bei einem Konnektivitätsverlust auftritt, da der nicht betroffene Plex weiterhin Daten bereitstellt, während Sie die Ursache des Ausfalls beheben. Nachdem die Plex, die ein Problem hatte, behoben ist, werden die beiden Plexe neu synchronisiert und stellen die Spiegelbeziehung wieder her.
+
+Die Festplatten und Array LUNs auf dem System sind in zwei Pools unterteilt: „`pool0`“ und „`pool1`“. Plex0 bekommt seinen Speicher vom Pool0 und Plex1 bekommt seinen Speicher vom Pool1.
+
+Das folgende Diagramm zeigt eine lokale Tier mit Festplatten, deren SyncMirror-Funktion aktiviert und implementiert ist. Für die lokale Ebene „`plex1`“ wurde ein zweiter Plex erstellt. Die Daten in Plex1 sind eine Kopie der Daten in Plex0, und die RAID-Gruppen sind ebenfalls identisch. Die 32 freien Disks werden Pool0 oder Pool1 mit 16 Disks für jeden Pool zugewiesen.
+
+image::../media/drw-plexm-scrn-en-noscale.gif[Das Diagramm wird durch den vorhergehenden Text beschrieben.]
+
+Das folgende Diagramm zeigt eine lokale Ebene aus Array-LUNs, deren SyncMirror-Funktion aktiviert und implementiert ist. Für die lokale Ebene „`plex1`“ wurde ein zweiter Plex erstellt. Plex1 ist eine Kopie von Plex0, und die RAID-Gruppen sind ebenfalls identisch.
+
+image::../media/mirrored-aggregate-with-array-luns.gif[Dieses Diagramm wird durch den vorhergehenden Text beschrieben.]
+
+
+NOTE: Es wird empfohlen, dass Sie für gespiegelte Aggregate mindestens 20 % freien Speicherplatz freihalten, um so optimale Storage Performance und Verfügbarkeit zu erzielen. Obwohl die Empfehlung 10 % für nicht gespiegelte Aggregate ist, können die zusätzlichen 10 % des Speicherplatzes vom Dateisystem verwendet werden, um inkrementelle Änderungen aufzunehmen. Inkrementelle Änderungen erhöhen die Speicherplatzauslastung für gespiegelte Aggregate aufgrund der Snapshot-basierten Architektur von ONTAP, die auf dem Copy-on-Write basiert. Die Nichteinhaltung dieser Best Practices kann sich negativ auf die Performance auswirken.
