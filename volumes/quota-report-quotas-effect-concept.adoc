@@ -18,27 +18,30 @@ Die folgenden Beispiele zeigen Quotenberichte für verschiedene Arten von Kontin
 .Beispiel ohne Angabe von Benutzerkontingenten für den qtree
 In diesem Beispiel gibt es einen qtree, q1, der durch das Volume vol1 enthält. Der Administrator hat drei Quoten erstellt:
 
-* Ein Standard-Baumkontingenlimit auf vol1 von 400 MB
-* Ein Standard-Benutzer-Quota-Limit bei vol1 von 100 MB
-* Eine explizite User Quota Limit auf vol1 von 200 MB für den Benutzer jsmith
+* Ein Standard-Tree-Quota-Limit von 400 MB auf vol1
+* Eine standardmäßige Benutzerkontingentbeschränkung auf vol1 von 100 MB
+* Ein explizites User Quota Limit auf vol1 von 200 MB für den Benutzer jsmith
 
 
-Die Quotendatei sieht für diese Kontingente wie im folgenden Auszug aus:
-
-[listing]
-----
-
-#Quota target type            disk files  thold sdisk  sfile
-#-----------  ----            ---  -----  ----  -----  -----
-*             tree@/vol/vol1  400M
-*             user@/vol/vol1  100M
-jsmith        user@/vol/vol1  200M
-----
-Der Quotenbericht für diese Quoten ähnelt dem folgenden Auszug:
+Die Quotenregeln für diese Quotas sehen wie im folgenden Beispiel aus:
 
 [listing]
 ----
+cluster1::*> volume quota policy rule show -vserver vs1 -volume vol1
 
+Vserver: vs1               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+tree   ""        ""      -           400MB        -       -        -          -
+user   ""        ""      off         100MB        -       -        -          -
+user   jsmith    ""      off         200MB        -       -        -          -
+----
+Der Quotenbericht für diese Quoten sieht wie im folgenden Beispiel aus:
+
+[listing]
+----
 cluster1::> volume quota report
 Vserver: vs1
                                     ----Disk----  ----Files-----   Quota
@@ -46,13 +49,12 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 -------  --------  ------  -------  -----  -----  ------  ------   ---------
 vol1     -          tree   *           0B  400MB       0       -   *
 vol1     -          user   *           0B  100MB       0       -   *
-vol1     -          user   corp/jsmith
-                                     150B  200MB       7       -   corp/jsmith
+vol1     -          user   jsmith    150B  200MB       7       -   jsmith
 vol1     q1         tree   1           0B  400MB       6       -   q1
 vol1     q1         user   *           0B  100MB       0       -
-vol1     q1         user   corp/jsmith 0B  100MB       5       -
-vol1     -          user   root        0B   0MB        1       -
-vol1     q1         user   root        0B   0MB        8       -
+vol1     q1         user   jsmith      0B  100MB       5       -
+vol1     -          user   root        0B    0MB       1       -
+vol1     q1         user   root        0B    0MB       8       -
 ----
 Die ersten drei Zeilen des Quotenberichts zeigen die drei vom Administrator festgelegten Quoten an. Da es sich bei zwei dieser Kontingente um Standardkontingente handelt, erstellt ONTAP automatisch abgeleitete Kontingente.
 
@@ -60,7 +62,7 @@ Die vierte Zeile zeigt das Baumkontingent an, das sich aus dem Standard-Tree-Kon
 
 Die fünfte Zeile zeigt das Standard-Benutzerkontingent an, das für den qtree erstellt wird, aufgrund des Vorliegens des Benutzerkontingens auf dem Volume und der qtree-Quote.
 
-Die sechste Zeile zeigt das abgeleitete Benutzerkontingent an, das für jsmith auf dem qtree erstellt wird, weil es ein Standard-Benutzerkontingent für den qtree (Zeile 5) gibt und der Benutzer jsmith die Dateien auf diesem qtree besitzt. Beachten Sie, dass das Limit, das auf den User jsmith im qtree q1 angewendet wird, nicht durch das explizite User Quota Limit (200 MB) bestimmt wird. Das liegt daran, dass sich das explizite Kontingent für Benutzer auf dem Volume befindet, sodass keine Auswirkungen auf die Grenzen für den qtree hat. Stattdessen wird die abgeleitete Benutzerkontingente für den qtree durch das Standard-Benutzerkontingent für den qtree festgelegt (100 MB).
+Die sechste Zeile zeigt das abgeleitete Benutzerkontingent an, das für jsmith auf dem qtree erstellt wird, weil es ein Standard-Benutzerkontingent für den qtree (Zeile 5) gibt und der Benutzer jsmith die Dateien auf diesem qtree besitzt. Beachten Sie, dass das Limit für den Benutzer-Jsmith im qtree q1 nicht durch das explizite Benutzer-Kontingent-Limit (200 MB) bestimmt wird. Das liegt daran, dass sich das explizite Kontingent für Benutzer auf dem Volume befindet, sodass keine Auswirkungen auf die Grenzen für den qtree hat. Stattdessen wird die abgeleitete Benutzer-Quota-Grenze für den qtree durch die Standard-Benutzerquote für den qtree (100MB) festgelegt.
 
 In den letzten beiden Zeilen werden mehr Benutzerquoten angezeigt, die aus den Standardbenutzerquoten auf dem Volume und dem qtree abgeleitet werden. Ein abgeleitetes Benutzerkontingent wurde für den Root-Benutzer sowohl auf dem Volume als auch auf dem qtree erstellt, da der Root-Benutzer Dateien sowohl auf dem Volume als auch auf dem qtree besitzt. Da der Root-Benutzer eine spezielle Behandlung in Bezug auf Kontingente erhält, werden in seinen abgeleiteten Quoten nur Quoten verfolgt.
 
@@ -69,25 +71,29 @@ Dieses Beispiel ähnelt dem vorherigen, außer dass der Administrator zwei Quote
 
 Es gibt immer noch ein Volume, vol1 und einen qtree, q1. Der Administrator hat die folgenden Quoten erstellt:
 
-* Ein Standard-Baumkontingenlimit auf vol1 von 400 MB
-* Ein Standard-Benutzer-Quota-Limit bei vol1 von 100 MB
-* Eine explizite User Quota Limit auf vol1 für den Benutzer jsmith von 200 MB
-* Ein Standard-Benutzerkontingente auf qtree q1 von 50 MB
-* Eine explizite User Quota Limit auf qtree q1 für den Benutzer jsmith von 75 MB
+* Ein Standard-Tree-Quota-Limit von 400 MB auf vol1
+* Eine standardmäßige Benutzerkontingentbeschränkung auf vol1 von 100 MB
+* Ein explizites User Quota Limit auf vol1 für den Benutzer jsmith von 200MB
+* Ein Standard-Kontingent für Benutzer auf qtree q1 von 50 MB begrenzt
+* Ein explizites User Quota Limit für qtree q1 für den User jsmith von 75MB
 
 
-Die Quotendatei für diese Kontingente sieht wie folgt aus:
+Die Quotenregeln für diese Quoten sehen wie folgt aus:
 
 [listing]
 ----
+cluster1::> volume quota policy rule show -vserver vs1 -volume vol1
 
-#Quota target type             disk files  thold sdisk  sfile
-#-----------  ----             ---  -----  ----  -----  -----
-*             tree@/vol/vol1   400M
-*             user@/vol/vol1   100M
-jsmith        user@/vol/vol1   200M
-*             user@/vol/vol1/q1 50M
-jsmith        user@/vol/vol1/q1 75M
+Vserver: vs1               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+tree   ""        ""      -           400MB        -       -        -          -
+user   ""        ""      off         100MB        -       -        -          -
+user   ""        q1      off          50MB        -       -        -          -
+user   jsmith    ""      off         200MB        -       -        -          -
+user   jsmith    q1      off          75MB        -       -        -          -
 ----
 Der Quotenbericht für diese Quoten sieht wie folgt aus:
 
@@ -101,13 +107,12 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 -------  --------  ------  -------  -----  -----  ------  ------   ---------
 vol1     -          tree   *           0B  400MB       0       -   *
 vol1     -          user   *           0B  100MB       0       -   *
-vol1     -          user   corp/jsmith
-                                    2000B  200MB       7       -   corp/jsmith
+vol1     -          user   jsmith   2000B  200MB       7       -   jsmith
 vol1     q1         user   *           0B   50MB       0       -   *
-vol1     q1         user   corp/jsmith 0B  75MB        5       -   corp/jsmith
-vol1     q1         tree   1           0B 400MB        6       -   q1
-vol1     -          user   root        0B   0MB        2       -
-vol1     q1         user   root        0B   0MB        1       -
+vol1     q1         user   jsmith      0B   75MB       5       -   jsmith
+vol1     q1         tree   1           0B  400MB       6       -   q1
+vol1     -          user   root        0B    0MB       2       -
+vol1     q1         user   root        0B    0MB       1       -
 ----
 Die ersten fünf Zeilen des Quotenberichts zeigen die fünf vom Administrator erstellten Quoten an. Da es sich bei einigen dieser Kontingente um Standardkontingente handelt, erstellt ONTAP automatisch abgeleitete Kontingente.
 

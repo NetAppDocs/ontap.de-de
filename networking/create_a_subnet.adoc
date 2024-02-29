@@ -1,8 +1,8 @@
 ---
 sidebar: sidebar 
 permalink: networking/create_a_subnet.html 
-keywords: move, moving, broadcast, domain, ipspace, create a subnet, network subnet create, network subnet show -ipspace 
-summary: Erstellen Sie ein Subnetz 
+keywords: move, moving, broadcast, domain, ipspace, create a subnet, network subnet create, network subnet show -ipspace, force-update-lif-associations, network subnet rename 
+summary: Ein Subnetz erstellen, um bestimmte Blöcke der IP-Adressen für die ONTAP-Netzwerkkonfiguration zuzuweisen oder zu reservieren 
 ---
 = Erstellen Sie ein Subnetz
 :hardbreaks:
@@ -20,6 +20,14 @@ Damit können Sie LIFs einfacher erstellen, indem Sie einen Subnetznamen angeben
 
 .Bevor Sie beginnen
 Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+
+Die Broadcast-Domäne und der IPspace, in dem Sie das Subnetz hinzufügen möchten, müssen bereits vorhanden sein.
+
+.Über diese Aufgabe
+* Alle Subnetznamen müssen innerhalb eines IPspaces eindeutig sein.
+* Wenn Sie einem Subnetz IP-Adressbereiche hinzufügen, müssen Sie sicherstellen, dass sich im Netzwerk keine überlappenden IP-Adressen befinden, so dass unterschiedliche Subnetze oder Hosts nicht versuchen, dieselbe IP-Adresse zu verwenden.
+* Wenn Sie beim Definieren eines Subnetzes ein Gateway angeben, wird der SVM automatisch eine Standardroute hinzugefügt, wenn anhand dieses Subnetzes eine LIF erstellt wird. Wenn Sie Subnetze nicht verwenden oder kein Gateway beim Definieren eines Subnetzes angeben, müssen Sie das verwenden `route create` Befehl, um manuell eine Route zur SVM hinzuzufügen.
+
 
 .Verfahren
 Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
@@ -53,22 +61,44 @@ Ab ONTAP 9.12.0 können Sie mit System Manager ein Subnetz erstellen.
 --
 Verwenden Sie die CLI zum Erstellen eines Subnetzes.
 
-.Schritte
-. Erstellen Sie ein Subnetz.
+....
+network subnet create -subnet-name subnet_name -broadcast-domain <broadcast_domain_name> [- ipspace <ipspace_name>] -subnet <subnet_address> [-gateway <gateway_address>] [-ip-ranges <ip_address_list>] [-force-update-lif-associations <true>]
+....
+* `subnet_name` Ist der Name des Layer 3 Subnetz, das Sie erstellen möchten.
 +
-`network subnet create -broadcast-domain _ipspace1_ -ipspace _ipspace1_ -subnet-name _ipspace1_ -subnet _10.0.0.0/24_ -gateway _10.0.0.1_ -ip-ranges _"10.0.0.128-10.0.0.130,10.0.0.132"_`
+Der Name kann eine Textfolge wie „Mgmt“ sein oder ein bestimmter Subnetz-IP-Wert wie 192.0.2.0/24.
 
+* `broadcast_domain_name` Ist der Name der Broadcast-Domäne, in der sich das Subnetz befindet.
+* `ipspace_name` Ist der Name des IPspaces, zu dem die Broadcast-Domäne gehört.
 +
-Der Subnetz-Name kann entweder ein Subnetz-IP-Wert sein, z. B. `192.0.2.0/24` Oder eine Zeichenfolge wie `ipspace1` Wie bei dem, der in diesem Beispiel verwendet wird.
+Der IPspace „Standard“ wird verwendet, es sei denn, Sie geben einen Wert für diese Option an.
 
-. Vergewissern Sie sich, dass die Subnetz-Konfiguration korrekt ist.
+* `subnet_address` Ist die IP-Adresse und Maske des Subnetzes, z. B. 192.0.2.0/24.
+* `gateway_address` Ist das Gateway für die Standardroute des Subnetzes, z. B. 192.0.2.1.
+* `ip_address_list` Ist die Liste oder der Bereich der IP-Adressen, die dem Subnetz zugewiesen werden.
 +
-Die Ausgabe dieses Beispiels zeigt Informationen über das Subnetz ipspac1 im IP-Bereich ipspac1 an. Das Subnetz gehört zum Broadcast-Domänennamen ipspac1. Sie können die IP-Adressen in diesem Subnetz Daten-LIFs für SVMs zuweisen, die im IPspace von ipspac1 erstellt wurden.
+Die IP-Adressen können einzelne Adressen, eine Reihe von IP-Adressen oder eine Kombination in einer durch Kommas getrennten Liste sein.
 
+* Der Wert `true` Kann für das festgelegt werden `-force-update-lif-associations` Option.
 +
-`network subnet show -ipspace _ipspace1_`
+Dieser Befehl schlägt fehl, wenn der Service-Prozessor oder die Netzwerkschnittstellen derzeit die IP-Adressen im angegebenen Bereich verwenden. Wenn Sie diesen Wert auf TRUE setzen, werden alle manuell adressierten Schnittstellen mit dem aktuellen Subnetz verknüpft, und der Befehl kann erfolgreich ausgeführt werden.
 
 
+
+Mit dem folgenden Befehl wird Sub1 in Broadcast-Domäne erzeugt Standard-1 im Standard-IPspace. Es fügt eine IPv4-Subnetz-IP-Adresse und -Maske, das Gateway und eine Reihe von IP-Adressen hinzu:
+
+....
+network subnet create -subnet-name sub1 -broadcast-domain Default-1 -subnet 192.0.2.0/24 - gateway 192.0.2.1 -ip-ranges 192.0.2.1-192.0.2.100, 192.0.2.122
+....
+Mit dem folgenden Befehl wird Sub2 in Broadcast-Domain im IPspace „Standard“ erzeugt. Es fügt einen Bereich von IPv6-Adressen hinzu:
+
+....
+network subnet create -subnet-name sub2 -broadcast-domain Default -subnet 3FFE::/64 - gateway 3FFE::1 -ip-ranges "3FFE::10-3FFE::20"
+....
+.Nachdem Sie fertig sind
+Sie können SVMs und Schnittstellen einem IPspace mithilfe der Adressen im Subnetz zuweisen.
+
+Wenn Sie den Namen eines vorhandenen Subnetzes ändern müssen, verwenden Sie das `network subnet rename` Befehl.
 
 --
 ====
