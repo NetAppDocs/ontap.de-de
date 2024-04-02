@@ -1,0 +1,172 @@
+---
+permalink: system-admin/single-node-clusters.html 
+sidebar: sidebar 
+keywords: ways, configure, iscsi, san, hosts, single, nodes 
+summary: Ein Single-Node Cluster ist eine spezielle Implementierung eines Clusters, das auf einem Standalone Node ausgeführt wird.  Single-Node-Cluster sind nicht empfehlenswert, da sie keine Redundanz bieten.  Bei einem Ausfall des Node geht der Datenzugriff verloren. 
+---
+= Management von Single-Node-Clustern
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ein Single-Node Cluster ist eine spezielle Implementierung eines Clusters, das auf einem Standalone Node ausgeführt wird.  Single-Node-Cluster sind nicht empfehlenswert, da sie keine Redundanz bieten.  Bei einem Ausfall des Node geht der Datenzugriff verloren.
+
+[NOTE]
+====
+Für Fehlertoleranz und unterbrechungsfreien Betrieb wird dringend empfohlen, das Cluster mit zu konfigurieren link:../concepts/high-availability-pairs-concept.html["Hochverfügbarkeit (HA-Paare)"].
+
+====
+Wenn Sie ein Single-Node-Cluster konfigurieren oder aktualisieren, sollten Sie die folgenden Punkte beachten:
+
+* Die Root-Volume-Verschlüsselung wird auf Single-Node-Clustern nicht unterstützt.
+* Wenn Sie Nodes entfernen, um ein Single-Node-Cluster zu besitzen, sollten Sie die Cluster-Ports für den Datenverkehr ändern. Dazu ändern Sie die Cluster-Ports als Daten-Ports und erstellen anschließend Daten-LIFs an den Daten-Ports.
+* Für Single-Node-Cluster können Sie das Konfigurations-Backup-Ziel während der Software-Einrichtung angeben. Nach dem Setup können diese Einstellungen mit ONTAP Befehlen geändert werden.
+* Wenn mehrere Hosts mit dem Knoten verbunden sind, kann jeder Host mit einem anderen Betriebssystem wie Windows oder Linux konfiguriert werden. Wenn mehrere Pfade vom Host zum Controller vorhanden sind, muss ALUA auf dem Host aktiviert sein.
+
+
+
+
+== Möglichkeiten zur Konfiguration von iSCSI-SAN-Hosts mit einzelnen Nodes
+
+Sie können iSCSI-SAN-Hosts so konfigurieren, dass sie eine direkte Verbindung zu einem einzelnen Knoten herstellen oder eine Verbindung über einen oder mehrere IP-Switches herstellen. Der Knoten kann mehrere iSCSI-Verbindungen zum Switch haben.
+
+.Direct-Attached Single Node-Konfigurationen
+In Direct-Attached-Single-Node-Konfigurationen werden ein oder mehrere Hosts direkt mit dem Node verbunden.
+
+image::../media/scrn_en_drw_fc-302020-direct-sing-on.png[Abbildung von direkt verbundenen Controllern mit einem oder mehreren direkt mit dem Node verbundenen Hosts]
+
+.Single-Network-Konfiguration mit Single Node-Konfiguration
+In Single-Network-Konfigurationen mit einem oder mehreren Hosts wird über einen Switch ein Node mit einem oder mehreren Hosts verbunden. Da es einen einzelnen Switch gibt, ist diese Konfiguration nicht vollständig redundant.
+
+image::../media/r-oc-set-iscsi-singlenetwork-singlenode.gif[Direct-Attached Single Network Single Node-Konfiguration]
+
+.Single Node-Konfigurationen in mehreren Netzwerken
+Bei Konfigurationen mit einem einzigen Netzwerk mit mehreren Nodes werden mindestens zwei Switches einen einzelnen Node mit einem oder mehreren Hosts verbunden. Da es mehrere Switches gibt, ist diese Konfiguration vollständig redundant.
+
+image::../media/scrn-en-drw-iscsi-multinw-singlen.gif[Multi-Network-Single-Node-Konfiguration]
+
+
+
+== Möglichkeiten zur Konfiguration von FC- und FC-NVMe-SAN-Hosts mit einzelnen Nodes
+
+Sie können FC- und FC-NVMe-SAN-Hosts mit einzelnen Nodes über eine oder mehrere Fabrics konfigurieren. N-Port ID Virtualization (NPIV) ist erforderlich und muss auf allen FC Switches in der Fabric aktiviert sein. Sie können ohne Verwendung eines FC-Switch keine FC- oder FC-NMVE SAN-Hosts direkt an einzelne Nodes anschließen.
+
+.Single-Fabric-Single-Node-Konfigurationen
+Bei Single-Fabric-Konfigurationen mit einem Node kann ein Switch einen einzelnen Node mit einem oder mehreren Hosts verbinden. Da es einen einzelnen Switch gibt, ist diese Konfiguration nicht vollständig redundant.
+
+In Einzel-Fabric-Konfigurationen mit einem Node ist keine Multipathing-Software erforderlich, wenn Sie nur einen einzelnen Pfad vom Host zum Node haben.
+
+.Single Node-Konfigurationen in MultiFabric-Architektur
+Bei Single-Node-Konfigurationen mit mehreren Fabrics müssen mindestens zwei Switches einen einzelnen Node mit einem oder mehreren Hosts verbinden. Die folgende Abbildung zeigt eine Single-Node-Konfiguration mit mehreren Fabrics und nur zwei Fabrics, wobei in jeder Konfiguration mit mehreren Fabric jedoch zwei oder mehr Fabrics möglich sind. In dieser Abbildung ist der Speicher-Controller im oberen Gehäuse montiert und das untere Gehäuse kann leer sein oder ein IOMX-Modul besitzen, wie in diesem Beispiel.
+
+Die FC-Ziel-Ports (0a, 0c, 0b, 0d) in den Abbildungen sind Beispiele. Die tatsächlichen Port-Nummern variieren je nach Modell des Storage-Node und ob Sie Erweiterungsadapter verwenden.
+
+image::../media/scrn_en_drw_fc-62xx-multi-singlecontroller.png[Abbildung einer Single Node-Konfiguration mit mehreren Fabrics]
+
+.Verwandte Informationen
+http://www.netapp.com/us/media/tr-4684.pdf["Technischer Bericht 4684 von NetApp: Implementing and Configuring Modern SANs with NVMe-of"^]
+
+
+
+== ONTAP Upgrade für Single-Node-Cluster
+
+Ab ONTAP 9.2 können Sie die ONTAP CLI verwenden, um eine automatische Aktualisierung eines Single-Node-Clusters durchzuführen. Da Single-Node-Cluster keine Redundanz aufweisen, sind Updates immer mit Unterbrechungen verbunden. Mit System Manager können nicht störende Upgrades durchgeführt werden.
+
+.Bevor Sie beginnen
+Sie müssen das Upgrade abschließen link:../upgrade/prepare.html["Vorbereitung"] Schritte.
+
+.Schritte
+. Löschen Sie das frühere ONTAP-Softwarepaket:
++
+[source, cli]
+----
+cluster image package delete -version previous_package_version
+----
+. Laden Sie das ONTAP-Zielsoftwarepaket herunter:
++
+[source, cli]
+----
+cluster image package get -url location
+----
++
+[listing]
+----
+cluster1::> cluster image package get -url http://www.example.com/software/9.7/image.tgz
+
+Package download completed.
+Package processing completed.
+----
+. Vergewissern Sie sich, dass das Softwarepaket im Repository für Cluster-Pakete verfügbar ist:
++
+[source, cli]
+----
+cluster image package show-repository
+----
++
+[listing]
+----
+cluster1::> cluster image package show-repository
+Package Version  Package Build Time
+---------------- ------------------
+9.7              M/DD/YYYY 10:32:15
+----
+. Vergewissern Sie sich, dass das Cluster bereit für ein Upgrade ist:
++
+[source, cli]
+----
+cluster image validate -version package_version_number
+----
++
+[listing]
+----
+cluster1::> cluster image validate -version 9.7
+
+WARNING: There are additional manual upgrade validation checks that must be performed after these automated validation checks have completed...
+----
+. Überwachen Sie den Fortschritt der Validierung:
++
+[source, cli]
+----
+cluster image show-update-progress
+----
+. Führen Sie alle erforderlichen Aktionen durch, die durch die Validierung identifiziert wurden.
+. Optional können Sie eine Schätzung für das Software-Upgrade erstellen:
++
+[source, cli]
+----
+cluster image update -version package_version_number -estimate-only
+----
++
+Die Schätzung für das Software-Upgrade zeigt Details zu jeder zu aktualisienden Komponente sowie die geschätzte Dauer des Upgrades an.
+
+. Durchführen des Software-Upgrades:
++
+[source, cli]
+----
+cluster image update -version package_version_number
+----
++
+
+NOTE: Wenn ein Problem auftritt, wird das Update angehalten und Sie werden aufgefordert, Korrekturmaßnahmen zu ergreifen. Mit dem Befehl „Cluster image show-Update-progress“ können Sie Details zu Problemen und den Fortschritt des Updates anzeigen. Nach der Behebung des Problems können Sie das Update mithilfe des Befehls „Resume-Update“ für das Cluster Image fortsetzen.
+
+. Zeigt den Status des Cluster-Updates an:
++
+[source, cli]
+----
+cluster image show-update-progress
+----
++
+Der Node wird im Rahmen des Updates neu gebootet und kann nicht beim Neubooten aufgerufen werden.
+
+. Auslösen einer Benachrichtigung:
++
+[source, cli]
+----
+autosupport invoke -node * -type all -message "Finishing_Upgrade"
+----
++
+Wenn Ihr Cluster nicht für das Senden von Meldungen konfiguriert ist, wird eine Kopie der Benachrichtigung lokal gespeichert.
+
+
