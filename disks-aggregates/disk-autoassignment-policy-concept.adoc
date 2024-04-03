@@ -2,7 +2,7 @@
 permalink: disks-aggregates/disk-autoassignment-policy-concept.html 
 sidebar: sidebar 
 keywords: disk, auto-assign, spare, policy, automatic, assignment, disk ownership 
-summary: Standardmäßig ist die automatische Zuweisung nicht eigener Festplatten aktiviert. Die automatischen Festplattenzuordnungen werden 10 Minuten nach der Systeminitialisierung und alle fünf Minuten während des normalen Systembetriebs ausgeführt. 
+summary: Standardmäßig ist die automatische Zuweisung nicht eigener Festplatten aktiviert. Die automatische Festplattenzuordnung erfolgt 10 Minuten nach der Initialisierung des HA-Paars und alle fünf Minuten im normalen Systembetrieb. 
 ---
 = Allgemeines zur automatischen Zuweisung der Festplatteneigentümer
 :allow-uri-read: 
@@ -11,16 +11,16 @@ summary: Standardmäßig ist die automatische Zuweisung nicht eigener Festplatte
 
 
 [role="lead"]
-Standardmäßig ist die automatische Zuweisung nicht eigener Festplatten aktiviert. Die automatischen Festplattenzuordnungen werden 10 Minuten nach der Systeminitialisierung und alle fünf Minuten während des normalen Systembetriebs ausgeführt.
+Standardmäßig ist die automatische Zuweisung nicht eigener Festplatten aktiviert. Die automatische Festplattenzuordnung erfolgt 10 Minuten nach der Initialisierung des HA-Paars und alle fünf Minuten im normalen Systembetrieb.
 
-Wenn Sie einem System neue Festplatten hinzufügen – zum Beispiel beim Austausch ausgefallener Festplatten, beim Antworten auf eine Meldung mit niedrigen Ersatzteilen oder beim Hinzufügen von Kapazität – weist die standardmäßige Richtlinie zur automatischen Zuweisung einem Node die Eigentumsrechte an der Festplatte zu. Sie können die automatische Zuweisung deaktivieren oder eine andere Richtlinie für die automatische Zuweisung mit der auswählen `storage disk option modify` Befehl.
+Wenn Sie einem HA-Paar eine neue Festplatte hinzufügen, zum Beispiel wenn Sie eine ausgefallene Festplatte ersetzen, auf eine Meldung „geringe Ersatzteile“ reagieren oder Kapazität hinzufügen, weist die standardmäßige Richtlinie für die automatische Zuweisung einem Node die Eigentumsrechte an der Festplatte als Ersatz zu.
 
-Die standardmäßige Richtlinie für eine automatische Zuweisung basiert auf plattformspezifischen Merkmalen. Sie verwendet jedoch eine der folgenden Methoden, um den Festplattenbesitzer zuzuweisen:
+Die standardmäßige Richtlinie für die automatische Zuweisung basiert auf plattformspezifischen Merkmalen oder auf dem DS460C Shelf, wenn Ihr HA-Paar nur diese Shelfs umfasst. Sie verwendet eine der folgenden Methoden (Richtlinien), um Festplatteneigentümer zuzuweisen:
 
 |===
 
 
-| Zuweisungsmethode | Auswirkung auf Knotenzuweisungen | Plattformen 
+| Zuweisungsmethode | Auswirkung auf Knotenzuweisungen | Plattformkonfigurationen, die standardmäßig auf die Zuweisungsmethode gesetzt sind 
 
 
  a| 
@@ -28,7 +28,7 @@ bucht
  a| 
 Gerade nummerierte Schächte werden Node A und ungerade nummerierte Schächte Node B. zugewiesen
  a| 
-Einstiegssysteme in einer HA-Konfiguration mit einem einzelnen gemeinsam genutzten Shelf
+Systeme der Einstiegsklasse in einer HA-Paar-Konfiguration mit einem einzelnen, gemeinsam genutzten Shelf.
 
 
 
@@ -37,16 +37,18 @@ Shelf
  a| 
 Alle Festplatten im Shelf sind Node A zugewiesen
  a| 
-Einstiegssysteme in einer HA-Konfiguration mit einem Stack aus zwei oder mehr Shelfs und MetroCluster Konfigurationen mit einem Stack pro Node, zwei oder mehr Shelfs.
+Systeme der Einstiegsklasse in einer HA-Paar-Konfiguration mit einem Stack aus zwei oder mehr Shelfs und MetroCluster-Konfigurationen mit einem Stack pro Node, zwei oder mehr Shelfs.
 
 
 
  a| 
 Geteiltes Shelf
+
+Diese Richtlinie fällt unter den Wert „`default`“ für den `-autoassign-policy` Parameter von `storage disk option` Befehl für entsprechende Plattform- und Shelf-Konfigurationen
  a| 
-Die Festplatten auf der linken Seite des Shelf sind dem Node A und auf der rechten Seite dem Node B. zugewiesen Neue Systeme werden teilweise mit Festplatten ausgeliefert, die von der Shelf-Kante in Richtung Mitte aufgefüllt werden.
+Die Festplatten auf der linken Seite des Shelf sind dem Node A und auf der rechten Seite dem Node B. zugewiesen Teilweise Shelfs auf HA-Paaren werden ab Werk mit Festplatten geliefert, die von der Shelf-Kante in Richtung Mitte befüllt werden.
  a| 
-AFF C190 Systeme und einige MetroCluster Konfigurationen.
+Die meisten AFF Plattformen und einige MetroCluster Konfigurationen.
 
 
 
@@ -57,20 +59,61 @@ Alle Festplatten im Stack sind Node A zugewiesen
  a| 
 Eigenständige Systeme der Einstiegsklasse und alle anderen Konfigurationen.
 
+
+
+ a| 
+Halbe Schublade
+
+Diese Richtlinie fällt unter den Wert „`default`“ für den `-autoassign-policy` Parameter von `storage disk option` Befehl für entsprechende Plattform- und Shelf-Konfigurationen
+ a| 
+Alle Laufwerke in der linken Hälfte eines DS460C-Einschubs (Laufwerksschächte 0 bis 5) werden Node A zugewiesen. Alle Laufwerke in der rechten Hälfte eines Einschubs (Laufwerkschächte 6 bis 11) sind Node B zugewiesen
+
+Bei der Initialisierung eines HA-Paars mit nur DS460C Shelfs wird die automatische Zuweisung der Festplatteneigentümer nicht unterstützt. Sie müssen die Eigentumsrechte für Laufwerke mit Root-/Container-Laufwerken, die über die Root-Partition verfügen, manuell zuweisen, indem Sie die Richtlinie für halbe Fächer erfüllen.
+ a| 
+HA-Paare mit nur DS460C Shelfs nach HA-Paar-Initialisierung (Boot Up).
+
+Nach dem Booten eines HA-Paars wird die automatische Zuweisung der Festplatteneigentümer automatisch aktiviert. Anhand der Richtlinie mit halben Schubladen weisen Sie den verbleibenden Laufwerken (mit Ausnahme der Root-Laufwerke/Container-Laufwerke mit der Root-Partition) sowie zukünftigen Laufwerken Eigentümer zu.
+
+Wenn Ihr HA-Paar neben anderen Shelf-Modellen über DS460C Shelfs verfügt, wird die Richtlinie für halbe Schublade nicht verwendet. Die verwendete Standardrichtlinie wird durch plattformspezifische Merkmale bestimmt.
+
 |===
-Wenn die Standardzuordnungsmethode in Ihrer Umgebung nicht wünschenswert ist, können Sie über die die Methode für Schacht, Shelf oder Stack-Zuweisung angeben `-autoassign-policy` Parameter für das `storage disk option modify` Befehl. Beachten Sie folgende Regeln:
+Einstellungen und Änderungen für die automatische Zuweisung:
 
-* Wenn Sie versuchen, den zu verwenden `bay autoassign-policy` Bei einer Plattform ohne Einstiegssegment schlägt es fehl.
-* Es gibt keine entsprechende, nicht standardmäßige Richtlinie für die Angabe der Split-Shelf-Methode.
+* Sie können die aktuellen Einstellungen für die automatische Zuweisung (ein/aus) mit dem anzeigen `storage disk option show` Befehl.
+* Sie können die automatische Zuweisung mithilfe von deaktivieren `storage disk option modify` Befehl.
+* Wenn die standardmäßige Richtlinie für die automatische Zuweisung in Ihrer Umgebung nicht wünschenswert ist, können Sie die Zuweisungsmethode für Schacht, Shelf oder Stapel mithilfe von angeben (ändern) `-autoassign-policy` Parameter in `storage disk option modify` Befehl.
++
+Erfahren Sie, wie Sie link:configure-auto-assignment-disk-ownership-task.html["Ändern Sie die Einstellungen für die automatische Zuweisung des Festplattenbesitzes"].
+
++
+[NOTE]
+====
+Die standardmäßigen automatischen Zuweisungsrichtlinien für halbe Fächer und getrennte Shelfs sind eindeutig, da sie nicht von Benutzern festgelegt werden können, wie dies bei den Richtlinien für Schacht, Regal und Stapel der Fall ist.
+
+====
 
 
-Sie können die Festplattenzuordnung auch manuell über verwalten `storage disk assign` Befehl.
+Um bei ADP-Systemen (Advanced Drive Partitioning) die automatische Zuweisung für halb befüllte Shelfs vornehmen zu können, müssen die Laufwerke je nach Art des Shelfs in den richtigen Shelf-Einschüben installiert werden:
 
-* Wenn Sie die automatische Zuweisung deaktivieren, stehen neue Festplatten erst als Spares zur Verfügung, wenn sie einem Node mit dem zugewiesen sind `storage disk assign` Befehl.
+* Wenn es sich nicht um ein DS460C Shelf handelt, installieren Sie die Laufwerke ganz links und ganz rechts in Richtung Mitte. Zum Beispiel sechs Laufwerke in Schächten 0-5 und sechs Laufwerke in Schächten 18-23 eines DS224C Shelf.
+* Wenn es sich bei Ihrem Shelf um ein DS460C Shelf handelt, installieren Sie die Laufwerke in der ersten Reihe (Laufwerksschächte 0, 3, 6 und 9) jeder Schublade. Verteilen Sie die restlichen Laufwerke gleichmäßig über die einzelnen Schubladen, indem Sie die Schubfachreihen von vorne nach hinten füllen. Wenn Sie nicht über genügend Laufwerke, um Zeilen zu füllen, dann installieren Sie sie in Paaren, so dass Laufwerke nehmen die linke und rechte Seite einer Schublade gleichmäßig.
++
+Durch den Einbau von Laufwerken in der vorderen Reihe jeder Schublade wird ein ordnungsgemäßer Luftstrom gewährleistet und eine Überhitzung verhindert.
+
+
+
+[NOTE]
+====
+Wenn Laufwerke nicht in den richtigen Shelf-Schächten auf halb befüllten Shelfs installiert sind, weist ONTAP beim Ausfall eines Container-Laufwerks und beim Austausch nicht automatisch die Eigentumsrechte zu. In diesem Fall muss die Zuweisung des neuen Containerlaufwerks manuell erfolgen. Nachdem Sie die Eigentumsrechte für das Container-Laufwerk zugewiesen haben, verarbeitet ONTAP automatisch alle erforderlichen Laufwerkpartitionierung und Partitionierungszuweisungen.
+
+====
+In manchen Situationen, in denen die automatische Zuweisung nicht funktioniert, müssen Sie die Festplatteneigentümer manuell über das zuweisen `storage disk assign` Befehl:
+
+* Wenn Sie die automatische Zuweisung deaktivieren, sind neue Festplatten erst dann als Ersatzteile verfügbar, wenn sie einem Node manuell zugewiesen werden.
 * Wenn Festplatten automatisch zugewiesen werden sollen und Sie über mehrere Stacks oder Shelfs verfügen müssen, die unterschiedliche Eigentumsrechte verfügen müssen, muss jeweils eine Festplatte manuell jedem Stack oder Shelf zugewiesen werden. Damit die automatische Eigentumszuweisung auf jedem Stack oder Shelf funktioniert.
 * Wenn die automatische Zuweisung aktiviert ist und Sie einem Knoten, der in der aktiven Richtlinie nicht angegeben ist, manuell ein einzelnes Laufwerk zuweisen, wird die automatische Zuweisung nicht mehr ausgeführt und es wird eine EMS-Meldung angezeigt.
 
 
-Weitere Informationen zu link:manual-assign-ownership-partitioned-disks-task.html["Manuelles Zuweisen der Festplatteneigentümer"].
+Erfahren Sie, wie Sie link:manual-assign-disks-ownership-manage-task.html["Weisen Sie Festplatten-Eigentumsrechte für nicht partitionierte Laufwerke manuell zu"].
 
-Mit dem können Sie die aktuellen Einstellungen für die automatische Zuweisung anzeigen `storage disk option show` Befehl.
+Erfahren Sie, wie Sie link:manual-assign-ownership-partitioned-disks-task.html["Manuelles Zuweisen der Festplatteneigentümerschaft für partitionierte Festplatten"].

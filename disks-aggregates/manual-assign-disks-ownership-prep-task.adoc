@@ -13,12 +13,28 @@ summary: 'Die Festplatten müssen einem Node gehören, bevor sie in einer lokale
 [role="lead"]
 Die Festplatten müssen einem Node gehören, bevor sie in einer lokalen Tier (Aggregat) verwendet werden können.
 
-Wenn Ihr Cluster nicht für die Verwendung der automatischen Festplattenzuordnungszuweisung konfiguriert ist, müssen Sie die Eigentümerschaft manuell zuweisen.
+.Über diese Aufgabe
+* Wenn Sie einem HA-Paar, das nicht initialisiert wird und nicht nur über DS460C Shelfs verfügt, manuell Eigentumsrechte zuweisen, verwenden Sie Option 1.
+* Wenn Sie ein HA-Paar initialisieren, das nur DS460C Shelfs enthält, weisen Sie die Eigentümerschaft für die Root-Laufwerke mithilfe von Option 2 manuell zu.
 
-Sie können die Eigentumsrechte einer Festplatte, die in einer lokalen Ebene verwendet wird, nicht neu zuweisen.
+
+.Option 1: Die meisten HA-Paare
+[%collapsible]
+====
+Verwenden Sie für ein HA-Paar, das nicht initialisiert wird und nicht nur über DS460C Shelfs verfügt, dieses Verfahren, um die Eigentümerschaft manuell zuzuweisen.
+
+.Über diese Aufgabe
+* Die Laufwerke, für die Sie die Eigentumsrechte zuweisen, müssen sich in einem Shelf befinden, das physisch mit dem Node verbunden ist, dem Sie Eigentumsrechte zuweisen.
+* Wenn Sie Festplatten in einer lokalen Ebene (Aggregat) verwenden:
++
+** Die Festplatten müssen einem Node gehören, bevor sie in einer lokalen Tier (Aggregat) verwendet werden können.
+** Sie können die Eigentumsrechte einer Festplatte, die in einer lokalen Ebene (Aggregat) verwendet wird, nicht neu zuweisen.
+
+
+
 
 .Schritte
-. Zeigen Sie über die CLI alle Festplatten ohne Besitzer an:
+. Verwenden Sie die CLI, um alle Laufwerke ohne Besitzer anzuzeigen:
 +
 `storage disk show -container-type unassigned`
 
@@ -30,3 +46,58 @@ Sie können die Eigentumsrechte einer Festplatte, die in einer lokalen Ebene ver
 Sie können das Platzhalterzeichen verwenden, um mehr als eine Festplatte gleichzeitig zuzuweisen. Wenn Sie eine Ersatzfestplatte neu zuweisen, die bereits einem anderen Node gehört, müssen Sie die Option „`-Force`“ verwenden.
 
 
+
+====
+.Option 2: Ein HA-Paar mit ausschließlich DS460C Shelfs
+[%collapsible]
+====
+Verwenden Sie bei einem HA-Paar, das Sie initialisieren und das nur DS460C Shelfs enthält, dieses Verfahren, um die Root-Laufwerke manuell zuzuweisen.
+
+.Über diese Aufgabe
+* Wenn Sie ein HA-Paar initialisieren, das nur DS460C Shelfs enthält, müssen Sie die Root-Laufwerke manuell zuweisen, um den Richtlinien für halbe Fächer zu entsprechen.
++
+Nach der HA-Paar-Initialisierung (Boot up) wird die automatische Zuweisung der Festplatteneigentümer automatisch aktiviert und verwendet die Richtlinie mit halben Schubladen, um den verbleibenden Laufwerken (mit Ausnahme der Root-Laufwerke) sowie allen zukünftigen Laufwerken Eigentümer zuzuweisen, wie z. B. den Austausch ausgefallener Festplatten und die Meldung „niedrige Ersatzteile“, oder Kapazitätserweiterung.
+
++
+Erfahren Sie mehr über die Richtlinie für halbe Fächer in diesem Thema link:disk-autoassignment-policy-concept.html["Allgemeines zur automatischen Zuweisung der Festplatteneigentümer"].
+
+* Für RAID sind mindestens 10 Laufwerke pro HA-Paar (5 pro Node) für beliebige mehr als 8-TB-NL-SAS-Laufwerke in einem DS460C Shelf erforderlich.
+
+
+.Schritte
+. Wenn Ihre DS460C Shelfs nicht vollständig bestückt sind, führen Sie die folgenden Teilschritte aus, wenn nicht, mit dem nächsten Schritt fortzufahren.
++
+.. Installieren Sie zunächst Laufwerke in der vorderen Reihe (Laufwerkschächte 0, 3, 6 und 9) jeder Schublade.
++
+Durch den Einbau von Laufwerken in der vorderen Reihe jeder Schublade wird ein ordnungsgemäßer Luftstrom gewährleistet und eine Überhitzung verhindert.
+
+.. Verteilen Sie bei den verbleibenden Laufwerken gleichmäßig auf alle Fächer.
++
+Schubladen von vorne nach hinten füllen. Wenn Sie nicht über genügend Laufwerke, um Zeilen zu füllen, dann installieren Sie sie in Paaren, so dass Laufwerke nehmen die linke und rechte Seite einer Schublade gleichmäßig.
+
++
+Die folgende Abbildung zeigt die Nummerierung des Laufwerkschachts und die Positionen in einem DS460C-Einschub.
+
++
+image::../media/dwg_trafford_drawer_with_hdds_callouts.gif[Dwg trafford Schublade mit hdds-Callouts]
+
+
+
+. Melden Sie sich über die Node-Management-LIF oder die Cluster-Management-LIF bei der Clustershell an.
+. Weisen Sie die Stammlaufwerke in jedem Fach manuell zu, um die Richtlinie für halbe Fächer zu erfüllen. Verwenden Sie dazu die folgenden Teilschritte:
++
+Gemäß der Richtlinie für halbe Fächer weisen Sie die linke Hälfte der Laufwerke eines Fachs (Schächte 0 bis 5) Node A und die rechte Hälfte der Laufwerke eines Fachs (Schächte 6 bis 11) Node B zu
+
++
+.. Alle nicht im Besitz befindlichen Festplatten anzeigen:
+`storage disk show -container-type unassigned``
+.. Weisen Sie die Root-Festplatten zu:
+`storage disk assign -disk disk_name -owner owner_name`
++
+Sie können das Platzhalterzeichen verwenden, um mehrere Festplatten gleichzeitig zuzuweisen.
+
+
+
+
+
+====

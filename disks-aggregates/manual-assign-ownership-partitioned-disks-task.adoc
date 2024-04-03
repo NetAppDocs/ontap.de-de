@@ -2,30 +2,36 @@
 permalink: disks-aggregates/manual-assign-ownership-partitioned-disks-task.html 
 sidebar: sidebar 
 keywords: manual, assign, disk, ownership, partition, disks 
-summary: Sie können das Eigentum der Container-Festplatte oder der Partitionen manuell oder durch die automatische Zuweisung einstellen – genau wie bei nicht partitionierten Festplatten. 
+summary: 'Auf ADP-Systemen (Advanced Drive Partitioning) können Sie die Eigentumsrechte für den Container-Datenträger oder die Partitionen manuell zuweisen. Wenn Sie ein HA-Paar initialisieren, das nur über DS460C Shelfs verfügt, müssen Sie die Eigentümerschaft für die Container-Laufwerke, die Root-Partitionen enthalten, manuell zuweisen.' 
 ---
-= Manuelle Zuweisung der Eigentumsrechte an partitionierten Festplatten – Übersicht
+= Manuelles Zuweisen der Eigentumsrechte für partitionierte Festplatten
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Über die CLI können Sie die Eigentümerschaft der Container-Festplatte oder der Partitionen manuell oder unter Verwendung der automatischen Zuweisung – genau wie bei nicht partitionierten Festplatten – festlegen.
+Auf ADP-Systemen (Advanced Drive Partitioning) können Sie die Eigentumsrechte für den Container-Datenträger oder die Partitionen manuell zuweisen. Wenn Sie ein HA-Paar initialisieren, das nur über DS460C Shelfs verfügt, müssen Sie die Eigentümerschaft für die Container-Laufwerke, die Root-Partitionen enthalten, manuell zuweisen.
 
-[NOTE]
-====
-Wenn eine Container-Festplatte in einem halb bestückten Shelf ausfällt und ersetzt wird, weist ONTAP die Eigentumsrechte nicht automatisch zu. In diesem Fall muss jede Zuordnung neuer Festplatten manuell vorgenommen werden. Um die automatische Zuweisung auf halb bestückten Shelfs zu ermöglichen, legen Sie Festplatten gleich auf die untere Hälfte und 6 in die rechte Seite der Einschübe ein, um damit zu beginnen. Das heißt, 6 Festplatten aus den Schächten 0-5 und 6 Festplatten aus den Schächten 18-23. Nachdem die Container-Festplatte in einem ADP-konfigurierten System zugewiesen wurde, übernimmt die ONTAP Software alle erforderlichen Partitions- und Partitionszuweisungen, ohne den Benutzer zu involvieren.
+.Über diese Aufgabe
+* Die Art des Speichersystems, das Sie haben, bestimmt, welche Methode von ADP unterstützt wird, Root-Daten (RD) oder Root-Daten-Daten (RD2).
++
+FAS-Speichersysteme verwenden RD- und AFF-Speichersysteme verwenden RD2.
 
-====
-Sie können in der CLI die folgenden Aufgaben ausführen:
+* Wenn Sie in einem HA-Paar, das nicht initialisiert wird und nicht nur über DS460C-Shelfs verfügt, manuell Eigentumsrechte zuweisen, verwenden Sie Option 1, um Festplatten mit Root-Data-Partitionierung (RD) zuzuweisen oder Option 2, um Festplatten mit Root-Data-Data-Partitionierung (RD2) manuell zuzuweisen.
+* Wenn Sie ein HA-Paar initialisieren, das nur DS460C Shelfs enthält, weisen Sie die Eigentümerschaft für die Container-Laufwerke, die über die Root-Partition verfügen, mithilfe von Option 3 manuell zu.
 
-.Weisen Sie Festplatten manuell mit Root-Daten-Partitionierung zu
+
+.Option 1: Manuelles Zuweisen von Datenträgern mit Root-Data (RD)-Partitionierung
 [%collapsible]
 ====
 Für die Root-Daten-Partitionierung gibt es drei eigene Einheiten (die Container-Festplatte und die beiden Partitionen), die gemeinsam dem HA-Paar gehören.
 
-Die Container-Festplatte und die beiden Partitionen müssen nicht alle im HA-Paar in den Besitz desselben Nodes sein, solange sie sich alle im Besitz eines der Nodes im HA-Paar befinden. Wenn Sie jedoch eine Partition in einer lokalen Ebene (Aggregat) verwenden, muss sie dem gleichen Node gehören, der die lokale Ebene besitzt.
+.Über diese Aufgabe
+* Die Container-Festplatte und die beiden Partitionen müssen nicht alle im HA-Paar in den Besitz desselben Nodes sein, solange sie sich alle im Besitz eines der Nodes im HA-Paar befinden. Wenn Sie jedoch eine Partition in einer lokalen Ebene (Aggregat) verwenden, muss sie dem gleichen Node gehören, der die lokale Ebene besitzt.
+* Wenn eine Container-Festplatte in einem halb befüllten Shelf ausfällt und ersetzt wird, muss möglicherweise eine manuelle Zuweisung der Festplatteneigentümer vorgenommen werden, da ONTAP in diesem Fall die Eigentumsrechte nicht immer automatisch zuweist.
+* Nach der Zuweisung der Container-Festplatte verarbeitet die ONTAP Software automatisch alle erforderlichen Partitionierungs- und Partitionszuweisungen.
+
 
 .Schritte
 . Verwenden Sie die CLI, um das aktuelle Eigentumsrecht für die partitionierte Festplatte anzuzeigen:
@@ -37,6 +43,9 @@ Die Container-Festplatte und die beiden Partitionen müssen nicht alle im HA-Paa
 `set -privilege advanced`
 
 . Geben Sie den entsprechenden Befehl ein, je nachdem, für welche Eigentümereinheit Sie das Eigentum zuweisen möchten:
++
+Wenn eine der Eigentumsrechte bereits Eigentümer ist, müssen Sie die Option „`-Force`“ angeben.
+
 +
 [cols="25,75"]
 |===
@@ -65,24 +74,23 @@ Root-Partition
 `storage disk assign -disk _disk_name_ -owner _owner_name_ -root true`
 
 |===
-+
-Wenn eine der Eigentumsrechte bereits Eigentümer ist, müssen Sie die Option „`-Force`“ angeben.
-
 
 
 ====
-.Weisen Sie Festplatten manuell mit Root-Data-Data-Partitionierung zu
+.Option 2: Manuelles Zuweisen von Datenträgern mit Root-Data-Data-Partitionierung (RD2)
 [%collapsible]
 ====
-Für die Root-Daten-Partitionierung gibt es vier eigene Einheiten (die Container-Festplatte und die drei Partitionen), die gemeinsam dem HA-Paar gehören.
-
-Root-Daten-Daten-Partitionierung erstellt eine kleine Partition als Root-Partition und zwei größere, gleich große Partitionen für Daten.
+Für die Root-Daten-Partitionierung gibt es vier eigene Einheiten (die Container-Festplatte und die drei Partitionen), die gemeinsam dem HA-Paar gehören. Root-Daten-Daten-Partitionierung erstellt eine kleine Partition als Root-Partition und zwei größere, gleich große Partitionen für Daten.
 
 .Über diese Aufgabe
-Parameter müssen mit dem verwendet werden `disk assign` Befehl, um die richtige Partition eines Root-Daten-partitionierten Laufwerks zuzuweisen. Sie können diese Parameter nicht mit Festplatten verwenden, die Teil eines Speicherpools sind. Der Standardwert ist „`false`“.
+* Parameter müssen mit dem verwendet werden `disk assign` Befehl, um die richtige Partition eines Root-Daten-partitionierten Laufwerks zuzuweisen. Sie können diese Parameter nicht mit Festplatten verwenden, die Teil eines Speicherpools sind. Der Standardwert ist „`false`“.
++
+** Der `-data1 true` Parameter weist die Partition „`data1`“ einer Root-data1-data2 partitionierten Festplatte zu.
+** Der `-data2 true` Parameter weist die Partition „`data2`“ eines Root-data1-data2 partitionierten Laufwerks zu.
 
-* Der `-data1 true` Parameter weist die Partition „`data1`“ einer Root-data1-data2 partitionierten Festplatte zu.
-* Der `-data2 true` Parameter weist die Partition „`data2`“ eines Root-data1-data2 partitionierten Laufwerks zu.
+
+* Wenn eine Container-Festplatte in einem halb befüllten Shelf ausfällt und ersetzt wird, muss möglicherweise eine manuelle Zuweisung der Festplatteneigentümer vorgenommen werden, da ONTAP in diesem Fall die Eigentumsrechte nicht immer automatisch zuweist.
+* Nach der Zuweisung der Container-Festplatte verarbeitet die ONTAP Software automatisch alle erforderlichen Partitionierungs- und Partitionszuweisungen.
 
 
 .Schritte
@@ -95,6 +103,9 @@ Parameter müssen mit dem verwendet werden `disk assign` Befehl, um die richtige
 `set -privilege advanced`
 
 . Geben Sie den entsprechenden Befehl ein, je nachdem, für welche Eigentümereinheit Sie das Eigentum zuweisen möchten:
++
+Wenn eine der Eigentumsrechte bereits Eigentümer ist, müssen Sie die Option „`-Force`“ angeben.
+
 +
 [cols="25,75"]
 |===
@@ -132,6 +143,54 @@ Root-Partition
 |===
 
 
-Wenn eine der Eigentumsrechte bereits Eigentümer ist, müssen Sie die Option „`-Force`“ angeben.
+====
+.Option 3: Weisen Sie DS460C Container-Laufwerke mit der Root-Partition manuell zu
+[%collapsible]
+====
+Wenn Sie ein HA-Paar initialisieren, das nur DS460C Shelfs enthält, müssen Sie gemäß den Richtlinien für halbe Fächer die Eigentümerschaft für die Container-Laufwerke zuweisen, die über die Root-Partition verfügen.
+
+.Über diese Aufgabe
+* Wenn Sie ein HA-Paar initialisieren, das nur DS460C Shelfs enthält, unterstützen die Optionen 9a und 9b für das ADP-Boot-Menü (verfügbar für ONTAP 9.2 und höher) keine automatische Laufwerkszuordnung. Sie müssen die Containerlaufwerke, die über die Root-Partition verfügen, manuell zuweisen, indem Sie die Richtlinie für halbe Fächer erfüllen.
++
+Nach der HA-Paar-Initialisierung (Boot up) wird die automatische Zuweisung der Festplatteneigentümer automatisch aktiviert. Anhand der Richtlinie für halbe Fächer weisen Sie den verbleibenden Laufwerken (mit Ausnahme der Container-Laufwerke mit der Root-Partition) sowie allen zukünftigen Laufwerken zu, wie z. B. dem Ersetzen ausgefallener Laufwerke, Reaktion auf eine Meldung „Low Spares“ oder Kapazitätserweiterung
+
+* Erfahren Sie mehr über die Richtlinie für halbe Fächer in diesem Thema link:disk-autoassignment-policy-concept.html["Allgemeines zur automatischen Zuweisung der Festplatteneigentümer"].
+
+
+.Schritte
+. Wenn Ihre DS460C Shelfs nicht vollständig bestückt sind, führen Sie die folgenden Teilschritte aus, wenn nicht, mit dem nächsten Schritt fortzufahren.
++
+.. Installieren Sie zunächst Laufwerke in der vorderen Reihe (Laufwerkschächte 0, 3, 6 und 9) jeder Schublade.
++
+Durch den Einbau von Laufwerken in der vorderen Reihe jeder Schublade wird ein ordnungsgemäßer Luftstrom gewährleistet und eine Überhitzung verhindert.
+
+.. Verteilen Sie bei den verbleibenden Laufwerken gleichmäßig auf alle Fächer.
++
+Schubladen von vorne nach hinten füllen. Wenn Sie nicht über genügend Laufwerke, um Zeilen zu füllen, dann installieren Sie sie in Paaren, so dass Laufwerke nehmen die linke und rechte Seite einer Schublade gleichmäßig.
+
++
+Die folgende Abbildung zeigt die Nummerierung des Laufwerkschachts und die Positionen in einem DS460C-Einschub.
+
++
+image::../media/dwg_trafford_drawer_with_hdds_callouts.gif[Dwg trafford Schublade mit hdds-Callouts]
+
+
+
+. Melden Sie sich über die Node-Management-LIF oder die Cluster-Management-LIF bei der Clustershell an.
+. Weisen Sie für jedes Fach die Containerlaufwerke, die über die Root-Partition verfügen, manuell zu, indem Sie die Richtlinie für halbe Fächer mit den folgenden Teilschritten beachten:
++
+Gemäß der Richtlinie für halbe Fächer weisen Sie die linke Hälfte der Laufwerke eines Fachs (Schächte 0 bis 5) Node A und die rechte Hälfte der Laufwerke eines Fachs (Schächte 6 bis 11) Node B zu
+
++
+.. Alle nicht im Besitz befindlichen Festplatten anzeigen:
+`storage disk show -container-type unassigned`
+.. Weisen Sie die Container-Laufwerke zu, die die Root-Partition haben:
+`storage disk assign -disk disk_name -owner owner_name`
++
+Sie können das Platzhalterzeichen verwenden, um mehrere Laufwerke gleichzeitig zuzuweisen.
+
+
+
+
 
 ====
