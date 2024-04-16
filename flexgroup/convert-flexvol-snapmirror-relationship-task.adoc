@@ -13,7 +13,20 @@ summary: Um eine FlexVol Volume SnapMirror Beziehung in eine FlexGroup Volume Sn
 [role="lead"]
 Um eine FlexVol Volume SnapMirror Beziehung in eine FlexGroup Volume SnapMirror Beziehung in ONTAP zu konvertieren, müssen Sie zuerst das Ziel-FlexVol Volume, gefolgt vom Quell-FlexVol Volume, konvertieren.
 
-.Was Sie benötigen
+.Über diese Aufgabe
+* FlexGroup-Konvertierung wird nur für asynchrone SnapMirror Beziehungen unterstützt.
+* Die Konversionszeit hängt von mehreren Variablen ab. Einige der Variablen sind:
++
+** CPU des Controllers
+** CPU-Auslastung durch andere Applikationen
+** Datenmenge in der ersten Snapshot Kopie
+** Netzwerkbandbreite
+** Von anderen Applikationen verwendete Bandbreite
+
+
+
+
+.Bevor Sie beginnen
 * Das zu konvertierenden FlexVol Volume muss online sein.
 * Das Quell-FlexVol-Volume in der SnapMirror-Beziehung darf nicht das Quell-Volume für mehrere SnapMirror Beziehungen sein.
 +
@@ -25,13 +38,18 @@ Es wird eine Fehlermeldung erzeugt, wenn das FlexVol Volume nicht kompatibel ist
 
 
 
-.Über diese Aufgabe
-FlexGroup-Konvertierung wird nur für asynchrone SnapMirror Beziehungen unterstützt.
-
 .Schritte
-. Vergewissern Sie sich, dass die SnapMirror-Beziehung ordnungsgemäß ist: `snapmirror show`
+. Vergewissern Sie sich, dass die SnapMirror-Beziehung ordnungsgemäß ist:
++
+[source, cli]
+----
+snapmirror show
+----
 +
 Es können nur Spiegelbeziehungen vom Typ XDP konvertiert werden.
+
++
+Beispiel:
 
 +
 [listing]
@@ -48,8 +66,26 @@ vs0:src_xdp XDP  vs2:dst_xdp  Snapmirrored
 ----
 . Prüfen Sie, ob das Quell-Volume für die Konvertierung kompatibel ist:
 +
-.. Melden Sie sich im erweiterten Berechtigungsmodus an: `set -privilege advanced`
-.. Überprüfen Sie den Konvertierungsprozess: `volume conversion start -vserver vs1 -volume src_vol -check-only true`
+.. Melden Sie sich im erweiterten Berechtigungsmodus an:
++
+[source, cli]
+----
+set -privilege advanced
+----
+.. Überprüfen Sie den Konvertierungsprozess:
++
+[source, cli]
+----
+volume conversion start -vserver <src_svm_name> -volume <src_vol> -check-only true
+----
++
+Beispiel:
+
++
+[listing]
+----
+volume conversion start -vserver vs1 -volume src_vol -check-only true
+----
 +
 Vor dem Konvertieren des Volumens müssen Sie alle Fehler beheben.
 
@@ -57,13 +93,29 @@ Vor dem Konvertieren des Volumens müssen Sie alle Fehler beheben.
 
 . Konvertieren des Zieldatenträgers FlexVol nach FlexGroup Volume.
 +
-.. Stilllegen der FlexVol SnapMirror Beziehung: `snapmirror quiesce -destination-path dest_svm:dest_volume`
+.. Stilllegen der FlexVol SnapMirror Beziehung:
++
+[source, cli]
+----
+snapmirror quiesce -destination-path <dest_svm:dest_volume>
+----
++
+Beispiel:
+
 +
 [listing]
 ----
 cluster2::> snapmirror quiesce -destination-path vs2:dst_xdp
 ----
-.. Konvertierung starten: `volume conversion start -vserver dest_svm -volume dest_volume`
+.. Konvertierung starten:
++
+[source, cli]
+----
+volume conversion start -vserver <dest_svm> -volume <dest_volume>
+----
++
+Beispiel:
+
 +
 [listing]
 ----
@@ -79,7 +131,15 @@ Then, re-establish the SnapMirror relationship using the "snapmirror resync" com
 ----
 
 
-. Konvertieren des Quell-FlexVol Volumes nach FlexGroup Volume: `volume conversion start -vserver src_svm_name -volume src_vol_name`
+. Konvertieren Sie das Quell-FlexVol-Volume in FlexGroup-Volume: `
++
+[source, cli]
+----
+volume conversion start -vserver <src_svm_name> -volume <src_vol_name>
+----
++
+Beispiel:
+
 +
 [listing]
 ----
@@ -92,7 +152,15 @@ Warning: Converting flexible volume "src_xdp" in Vserver "vs0" to a FlexGroup
 Do you want to continue? {y|n}: y
 [Job 57] Job succeeded: success
 ----
-. Beziehung neu synchronisieren: `snapmirror resync -destination-path dest_svm_name:dest_volume`
+. Beziehung neu synchronisieren:
++
+[source, cli]
+----
+snapmirror resync -destination-path dest_svm_name:dest_volume
+----
++
+Beispiel:
+
 +
 [listing]
 ----
