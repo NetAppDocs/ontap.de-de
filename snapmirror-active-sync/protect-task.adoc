@@ -1,0 +1,196 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/protect-task.html 
+keywords: SM-BC, snapmirror business continuity, consistency group, remote protection, destination 
+summary: Zum Konfigurieren von Schutz für Business Continuity müssen im ONTAP Quell-Cluster LUNs ausgewählt und einer Konsistenzgruppe hinzugefügt werden. 
+---
+= Sicherung mit aktiver SnapMirror Synchronisierung
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+SnapMirror Active Sync bietet asymmetrischen Schutz und ab ONTAP 9.15.1 symmetrischen aktiv/aktiv-Schutz.
+
+
+
+== Konfigurieren Sie den asymmetrischen Schutz
+
+Bei der Konfiguration von asymmetrischem Schutz mithilfe von SnapMirror Active Sync müssen LUNs auf dem ONTAP Quell-Cluster ausgewählt und einer Konsistenzgruppe hinzugefügt werden.
+
+.Bevor Sie beginnen
+* Sie müssen über eine synchrone SnapMirror Lizenz verfügen.
+* Sie müssen ein Cluster- oder Storage-VM-Administrator sein.
+* Alle zusammengehörigen Volumes einer Konsistenzgruppe müssen sich in einer einzelnen Storage VM (SVM) befinden.
++
+** LUNs können auf verschiedenen Volumes residieren.
+
+
+* Das Quell- und Ziel-Cluster kann nicht identisch sein.
+* Sie können keine Beziehungen zu SnapMirror aktiven synchronen Konsistenzgruppen über ASA-Cluster und nicht-ASA-Cluster hinweg aufbauen.
+* Der standardmäßige IPspace wird von der aktiven SnapMirror Synchronisierung für Cluster-Peer-Beziehungen benötigt. Benutzerdefinierter IPspace wird nicht unterstützt.
+* Der Name der Konsistenzgruppe muss eindeutig sein.
+* Die Volumes auf dem sekundären (Ziel-) Cluster müssen den Typ DP aufweisen.
+* Die primären und sekundären SVMs müssen in einer Peering-Beziehung vorliegen.
+
+
+.Schritte
+Sie können eine Konsistenzgruppe mithilfe der ONTAP CLI oder von System Manager konfigurieren.
+
+Ab ONTAP 9.10.1 bietet ONTAP einen Endpunkt und ein Menü für Konsistenzgruppen in System Manager, das zusätzliche Management Utilities bietet. Wenn Sie ONTAP 9.10.1 oder höher verwenden, finden Sie weitere Informationen unter link:../consistency-groups/configure-task.html["Konfigurieren einer Konsistenzgruppe"] Dann link:../consistency-groups/protect-task.html["Schutz konfigurieren"] Um eine SnapMirror Active Sync Beziehung zu erstellen.
+
+
+IMPORTANT: Von ONTAP 9.8 bis 9.14.1 wird die aktive SnapMirror Synchronisierung als SnapMirror Business Continuity (SM-BC) bezeichnet.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie im primären Cluster zu *Schutz > Übersicht > Schutz für Business Continuity > LUNs schützen*.
+. Wählen Sie die zu schützenden LUNs aus, und fügen Sie sie einer Schutzgruppe hinzu.
+. Wählen Sie das Ziel-Cluster und die SVM aus.
+. *Initialize Relationship* ist standardmäßig ausgewählt. Klicken Sie auf *Speichern*, um den Schutz zu starten.
+. Gehen Sie zu *Dashboard > Performance*, um die IOPS-Aktivität für die LUNs zu überprüfen.
+. Verwenden Sie auf dem Ziel-Cluster System Manager, um zu überprüfen, ob der Schutz für die Business Continuity-Beziehung synchron ist: *Schutz > Beziehungen*.
+
+
+--
+.CLI
+--
+. Erstellen einer Konsistenzgruppenbeziehung vom Ziel-Cluster
+`destination::> snapmirror create -source-path _source-path_ -destination-path _destination-path_ -cg-item-mappings _volume-paths_ -policy _policy-name_`
++
+Mit dem können Sie bis zu 12 zusammengehörige Volumes zuordnen `cg-item-mappings` Parameter auf dem `snapmirror create` Befehl.
+
++
+Im folgenden Beispiel werden zwei Konsistenzgruppen erstellt: `cg_src_ on the source with `vol1` Und `vol2` Und einer gespiegelten Ziel-Konsistenzgruppe, `cg_dst`.
+
++
+`destination::> snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol_src1:@vol_dst1,vol_src2:@vol_dst2 -policy AutomatedFailOver`
+
+. Initialisieren Sie vom Ziel-Cluster die Konsistenzgruppe.
++
+`destination::>snapmirror initialize -destination-path _destination-consistency-group_`
+
+. Bestätigen Sie, dass der Initialisierungsvorgang erfolgreich abgeschlossen wurde. Der Status sollte sein `InSync`.
++
+`snapmirror show`
+
+. Erstellen Sie auf jedem Cluster eine Initiatorgruppe, damit Sie dem Initiator auf dem Applikations-Host LUNs zuordnen können.
+`lun igroup create -igroup _name_ -protocol _fcp|iscsi_ -ostype _os_ -initiator _initiator_name_`
+. Ordnen Sie auf jedem Cluster LUNs der Initiatorgruppe zu:
++
+`lun map -path _path_name_ -igroup _igroup_name_`
+
+. Überprüfen Sie, ob die LUN-Zuordnung mit dem erfolgreich abgeschlossen wurde `lun map` Befehl. Anschließend können Sie die neuen LUNs auf dem Anwendungshost ermitteln.
+
+
+--
+====
+
+
+== Symmetrischer aktiv/aktiv-Schutz konfigurieren
+
+Sie können symmetrischen Schutz mit System Manager oder der ONTAP CLI einrichten. In beiden Schnittstellen gibt es verschiedene Schritte für xref:index.html#key-concepts[Einheitliche und nicht einheitliche Konfigurationen].
+
+.Bevor Sie beginnen
+* Auf beiden Clustern muss ONTAP 9.15.1 oder höher ausgeführt werden.
+* Symmetrische aktiv/aktiv-Konfigurationen erfordern den `AutomatedFailoverDuplex` Datensicherungsstrategie. Alternativ können Sie xref:../data-protection/create-custom-replication-policy-concept.html[Individuelle SnapMirror-Richtlinie erstellen] Vorausgesetzt, dass `-type` Ist `automated-failover-duplex`.
+
+
+.Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Schritte für eine einheitliche Konfiguration
+. Am primären Standort link:../consistency-groups/configure-task.html#create-a-consistency-group-with-new-luns-or-volumes["Erstellen Sie mithilfe der neuen LUNs eine Konsistenzgruppe."^]
++
+.. Geben Sie beim Erstellen der Konsistenzgruppe Host-Initiatoren an, um Initiatorgruppen zu erstellen.
+.. Aktivieren Sie das Kontrollkästchen zu **SnapMirror aktivieren**, und wählen Sie dann die `AutomatedFailoverDuplex` Richtlinie:
+.. Aktivieren Sie im daraufhin angezeigten Dialogfeld das Kontrollkästchen **Initiatorgruppen replizieren**, um Initiatorgruppen zu replizieren. Legen Sie in **proximale Einstellungen bearbeiten** proximale SVMs für Ihre Hosts fest.
+.. Wählen Sie **Speichern**.
+
+
+
+
+.Schritte für eine nicht einheitliche Konfiguration
+. Am primären Standort link:../consistency-groups/configure-task.html#create-a-consistency-group-with-new-luns-or-volumes["Erstellen Sie mithilfe der neuen LUNs eine Konsistenzgruppe."^]
++
+.. Geben Sie beim Erstellen der Konsistenzgruppe Host-Initiatoren an, um Initiatorgruppen zu erstellen.
+.. Aktivieren Sie das Kontrollkästchen zu **SnapMirror aktivieren**, und wählen Sie dann die `AutomatedFailoverDuplex` Richtlinie:
+.. Wählen Sie **Speichern**, um die LUNs, Konsistenzgruppe, Initiatorgruppe, SnapMirror Beziehung und igroup-Zuordnung zu erstellen.
+
+
+. Erstellen Sie am sekundären Standort eine Initiatorgruppe und ordnen Sie die LUNs zu.
++
+.. Navigieren Sie zu **Hosts** > **SAN-Initiatorgruppen**.
+.. Wählen Sie **+Add**, um eine neue Initiatorgruppe zu erstellen.
+.. Geben Sie einen **Namen** ein, wählen Sie das **Host-Betriebssystem** und dann **Initiator Group Members**.
+.. Wählen Sie **Speichern**.
+
+
+. Ordnen Sie die neue Initiatorgruppe den Ziel-LUNs zu.
++
+.. Navigieren Sie zu **Storage** > **LUNs**.
+.. Wählen Sie alle LUNs aus, die der Initiatorgruppe zugeordnet werden sollen.
+.. Wählen Sie **Mehr** und dann **Initiatorgruppen zuordnen**.
+
+
+
+
+--
+.CLI
+--
+.Schritte für eine einheitliche Konfiguration
+. Erstellen einer neuen SnapMirror Beziehung, bei der alle Volumes in der Applikation gruppiert werden. Stellen Sie sicher, dass Sie den festlegen `AutomatedFailOverDuplex` Richtlinie zur bidirektionalen synchronen Replizierung.
++
+`snapmirror create -source-path _source_path_ -destination-path _destination_path_ -cg-item-mappings _source_volume:@destination_volume_ -policy AutomatedFailOverDuplex`
+
+. Bestätigen Sie, dass der Vorgang erfolgreich war, indem Sie auf warten `Mirrored State` Um als anzuzeigen `SnapMirrored` Und das `Relationship Status` Als `Insync`.
++
+`snapmirror show -destination-path _destination_path_`
+
+. Konfigurieren Sie auf Ihrem Host die Host-Konnektivität mit Zugriff auf die einzelnen Cluster entsprechend Ihren Anforderungen.
+. Richten Sie die igroup-Konfiguration ein. Legen Sie die bevorzugten Pfade für Initiatoren auf dem lokalen Cluster fest. Geben Sie die Option zum Replizieren der Konfiguration auf die inverse Affinität des Peer-Clusters an.
++
+`SiteA::> igroup create -vserver _svm_name_ -igroup _igroup_name_ -replication-peer _peer_svm_name_ -initiators _host_ -proximal-vserver local`
+
++
+`SiteA::> igroup add -vserver _svm_name_ -igroup _igroup_name_ -initiators _host_ -proximal-vserver _peer_svm_`
+
+. Ermitteln Sie vom Host aus die Pfade und überprüfen Sie, ob die Hosts über einen aktiven/optimierten Pfad zur Storage-LUN vom bevorzugten Cluster verfügen.
+. Implementieren Sie die Applikation und verteilen Sie die VM Workloads über Cluster, um den erforderlichen Lastausgleich zu erreichen.
+
+
+.Schritte für eine nicht einheitliche Konfiguration
+. Erstellen einer neuen SnapMirror Beziehung, bei der alle Volumes in der Applikation gruppiert werden. Stellen Sie sicher, dass Sie die `AutomatedFailOverDuplex`“-Richtlinie festlegen, um eine bidirektionale synchrone Replikation einzurichten.
++
+`snapmirror create -source-path _source_path_ -destination-path _destination_path_ -cg-item-mappings _source_volume:@destination_volume_ -policy AutomatedFailOverDuplex`
+
+. Bestätigen Sie, dass der Vorgang erfolgreich war, indem Sie auf warten `Mirrored State` Um als anzuzeigen `SnapMirrored` Und das `Relationship Status` Als `Insync`.
++
+`snapmirror show -destination-path _destination_path_`
+
+. Konfigurieren Sie auf Ihrem Host die Host-Konnektivität mit Zugriff auf die einzelnen Cluster entsprechend Ihren Anforderungen.
+. Legen Sie die igroup-Konfigurationen auf den Quell- und Ziel-Clustern fest.
++
+`# primary site
+SiteA::> igroup create -vserver _svm_name_ -igroup _igroup_name_ -initiators _host_1_name_`
+
++
+`# secondary site
+SiteB::> igroup create -vserver _svm_name_ -igroup _igroup_name_ -initiators _host_2_name_`
+
+. Ermitteln Sie vom Host aus die Pfade und überprüfen Sie, ob die Hosts über einen aktiven/optimierten Pfad zur Storage-LUN vom bevorzugten Cluster verfügen.
+. Implementieren Sie die Applikation und verteilen Sie die VM Workloads über Cluster, um den erforderlichen Lastausgleich zu erreichen.
+
+
+--
+====

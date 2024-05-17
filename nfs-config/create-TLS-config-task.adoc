@@ -1,0 +1,155 @@
+---
+permalink: nfs-config/create-tls-config-task.html 
+sidebar: sidebar 
+keywords: enable, tls, data, lif 
+summary: 'Sie können das verwenden `vserver nfs tls interface enable` Befehl zum Aktivieren von TLS auf einer Daten-LIF für NFS-Clients. Dadurch kann die SVM TLS-Sicherheitsdienste für NFS verwenden.' 
+---
+= Aktivieren oder deaktivieren Sie TLS für NFS-Clients
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können TLS auf einer Daten-LIF für NFS-Clients aktivieren oder deaktivieren. Wenn Sie NFS über TLS aktivieren, verwendet die SVM TLS zur Verschlüsselung aller Daten, die zwischen dem NFS-Client und ONTAP über das Netzwerk gesendet werden. Dies erhöht die Sicherheit von NFS-Verbindungen.
+
+
+NOTE: NFS über TLS ist in ONTAP 9.15.1 als öffentliche Vorschau verfügbar. NFS über TLS wird in ONTAP 9.15.1 als Vorschauangebot für Produktions-Workloads nicht unterstützt.
+
+
+
+== Aktivieren Sie TLS
+
+Sie können die TLS-Verschlüsselung für NFS-Clients aktivieren, um die Sicherheit von Daten bei der Übertragung zu erhöhen.
+
+.Bevor Sie beginnen
+* Siehe link:tls-nfs-strong-security-concept.html["Anforderungen"^] Für NFS über TLS, bevor Sie beginnen.
+* Siehe https://docs.netapp.com/us-en/ontap-cli-9151/vserver-nfs-tls-interface-enable.html["vserver nfs tls Schnittstelle aktivieren"^] Manuelle Seite, um weitere Informationen über den Befehl in diesem Verfahren zu erhalten.
+
+
+.Schritte
+. Wählen Sie eine Storage-VM und eine logische Schnittstelle (LIF) zur Aktivierung von TLS aus.
+. Aktivieren Sie TLS für NFS-Verbindungen auf dieser Storage-VM und Schnittstelle. Ersetzen Sie Werte in Klammern <> durch Informationen aus Ihrer Umgebung:
++
+[source, console]
+----
+vserver nfs tls interface enable -vserver <STORAGE_VM> -lif <LIF_NAME> -certificate-name <CERTIFICATE_NAME>
+----
+. Verwenden Sie die `vserver nfs tls interface show` Befehl zum Anzeigen der Ergebnisse:
++
+[source, console]
+----
+vserver nfs tls interface show
+----
+
+
+.Beispiel
+Mit dem folgenden Befehl wird NFS über TLS auf dem aktiviert `data1` LIF von `vs1` Storage-VM:
+
+[source, console]
+----
+vserver nfs tls interface enable -vserver vs1 -lif data1 -certificate-name cert_vs1
+----
+[source, console]
+----
+vserver nfs tls interface show
+----
+....
+               Logical
+Vserver        Interface     Address         TLS Status TLS Certificate Name
+-------------- ------------- --------------- ---------- -----------------------
+vs1            data1         10.0.1.1        enabled    cert_vs1
+vs2            data2         10.0.1.2        disabled   -
+2 entries were displayed.
+....
+
+
+== TLS deaktivieren
+
+Sie können TLS für NFS-Clients deaktivieren, wenn Sie die erhöhte Sicherheit für die während der Übertragung verwendeten Daten nicht mehr benötigen.
+
+
+NOTE: Wenn Sie NFS über TLS deaktivieren, wird das für die NFS-Verbindung verwendete TLS-Zertifikat entfernt. Wenn Sie in Zukunft NFS über TLS aktivieren müssen, müssen Sie während der Aktivierung erneut einen Zertifikatnamen angeben.
+
+.Bevor Sie beginnen
+Siehe https://docs.netapp.com/us-en/ontap-cli-9151/vserver-nfs-tls-interface-disable.html["vserver nfs tls Schnittstelle deaktiviert"^] Manuelle Seite, um weitere Informationen über den Befehl in diesem Verfahren zu erhalten.
+
+.Schritte
+. Wählen Sie eine Storage-VM und eine logische Schnittstelle (LIF) zum Deaktivieren von TLS aus.
+. Deaktivieren Sie TLS für NFS-Verbindungen auf dieser Storage-VM und Schnittstelle. Ersetzen Sie Werte in Klammern <> durch Informationen aus Ihrer Umgebung:
++
+[source, console]
+----
+vserver nfs tls interface disable -vserver <STORAGE_VM> -lif <LIF_NAME>
+----
+. Verwenden Sie die `vserver nfs tls interface show` Befehl zum Anzeigen der Ergebnisse:
++
+[source, console]
+----
+vserver nfs tls interface show
+----
+
+
+.Beispiel
+Mit dem folgenden Befehl wird NFS über TLS auf dem deaktiviert `data1` LIF von `vs1` Storage-VM:
+
+[source, console]
+----
+vserver nfs tls interface disable -vserver vs1 -lif data1
+----
+[source, console]
+----
+vserver nfs tls interface show
+----
+....
+               Logical
+Vserver        Interface     Address         TLS Status TLS Certificate Name
+-------------- ------------- --------------- ---------- -----------------------
+vs1            data1         10.0.1.1        disabled   -
+vs2            data2         10.0.1.2        disabled   -
+2 entries were displayed.
+....
+
+
+== Bearbeiten einer TLS-Konfiguration
+
+Sie können die Einstellungen einer vorhandenen NFS-over-TLS-Konfiguration ändern. Mit diesem Verfahren können Sie beispielsweise das TLS-Zertifikat aktualisieren.
+
+.Bevor Sie beginnen
+Siehe https://docs.netapp.com/us-en/ontap-cli-9151/vserver-nfs-tls-interface-modify.html["Änderung der vserver nfs tls Schnittstelle"^] Manuelle Seite, um weitere Informationen über den Befehl in diesem Verfahren zu erhalten.
+
+.Schritte
+. Wählen Sie eine Storage-VM und eine logische Schnittstelle (Logical Interface, LIF) aus, auf der die TLS-Konfiguration für NFS-Clients geändert werden soll.
+. Ändern Sie die Konfiguration. Wenn Sie ein angeben `status` Von `enable`Sie müssen auch die angeben `certificate-name` Parameter. Ersetzen Sie Werte in Klammern <> durch Informationen aus Ihrer Umgebung:
++
+[source, console]
+----
+vserver nfs tls interface modify -vserver <STORAGE_VM> -lif <LIF_NAME> -status <STATUS> -certificate-name <CERTIFICATE_NAME>
+----
+. Verwenden Sie die `vserver nfs tls interface show` Befehl zum Anzeigen der Ergebnisse:
++
+[source, console]
+----
+vserver nfs tls interface show
+----
+
+
+.Beispiel
+Mit dem folgenden Befehl wird die Konfiguration von NFS über TLS auf dem geändert `data2` LIF von `vs2` Storage-VM:
+
+[source, console]
+----
+vserver nfs tls interface modify -vserver vs2 -lif data2 -status enable -certificate-name new_cert
+----
+[source, console]
+----
+vserver nfs tls interface show
+----
+....
+               Logical
+Vserver        Interface     Address         TLS Status TLS Certificate Name
+-------------- ------------- --------------- ---------- -----------------------
+vs1            data1         10.0.1.1        disabled   -
+vs2            data2         10.0.1.2        enabled    new_cert
+2 entries were displayed.
+....

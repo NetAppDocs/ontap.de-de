@@ -1,8 +1,8 @@
 ---
-permalink: system-admin/setup-autosupport-task.html 
 sidebar: sidebar 
-keywords: set, up, autosupport, technical, support, organization, internal, configuration, test 
-summary: Sie haben die Möglichkeit, zu steuern, ob und wie AutoSupport Informationen an den technischen Support und Ihre interne Support-Abteilung gesendet werden, und können anschließend testen, ob die Konfiguration richtig ist. 
+permalink: system-admin/setup-autosupport-task.html 
+keywords: autosupport, set up autosupport, technical support 
+summary: Konfigurieren Sie einen ONTAP Cluster, damit AutoSupport-Nachrichten an den technischen Support von NetApp gesendet werden, und senden Sie E-Mail-Kopien an den internen Support. 
 ---
 = AutoSupport einrichten
 :allow-uri-read: 
@@ -11,21 +11,18 @@ summary: Sie haben die Möglichkeit, zu steuern, ob und wie AutoSupport Informat
 
 
 [role="lead"]
-Sie haben die Möglichkeit, zu steuern, ob und wie AutoSupport Informationen an den technischen Support und Ihre interne Support-Abteilung gesendet werden, und können anschließend testen, ob die Konfiguration richtig ist.
+Sie können einen ONTAP Cluster so konfigurieren, dass AutoSupport-Nachrichten an den technischen Support von NetApp gesendet werden, und E-Mail-Kopien an den internen Support senden. Im Rahmen dieser Funktion können Sie die Konfiguration auch testen, bevor Sie sie in einer Produktionsumgebung verwenden.
 
 .Über diese Aufgabe
-In ONTAP 9.5 und höher können Sie AutoSupport aktivieren und seine Konfiguration auf allen Nodes des Clusters gleichzeitig ändern. Wenn ein neuer Node dem Cluster hinzugefügt wird, übernimmt der Node die AutoSupport-Cluster-Konfiguration automatisch. Sie müssen die Konfiguration auf jedem Knoten nicht separat aktualisieren.
+Ab ONTAP 9.5 können Sie AutoSupport für alle Nodes eines Clusters gleichzeitig aktivieren und konfigurieren. Wenn ein neuer Node dem Cluster Beitritt, übernimmt der Node automatisch die gleiche AutoSupport-Konfiguration. Dies wird vom Umfang des CLI-Befehls unterstützt `system node autosupport modify` Cluster-Ebene. Der `-node` Die Befehlsoption wird aus Gründen der Abwärtskompatibilität beibehalten, wird jedoch ignoriert.
 
-[NOTE]
-====
-Ab ONTAP 9.5 wird der Umfang von `system node autosupport modify` Befehl gilt für das gesamte Cluster. Die AutoSupport-Konfiguration wird auf allen Nodes im Cluster geändert, auch wenn der `-node` Option ist angegeben. Die Option wird ignoriert, wurde aber für die Rückwärtskompatibilität mit CLI beibehalten.
 
-In ONTAP 9.4 und älteren Versionen ist der Umfang des s `system node autosupport modify` Der Befehl ist für den Node spezifisch. Die AutoSupport-Konfiguration sollte auf jedem Node im Cluster geändert werden.
+NOTE: In ONTAP 9.4 und älteren Versionen ist der Befehl `system node autosupport modify` Ist für jeden Knoten spezifisch. Wenn auf dem Cluster ONTAP 9.4 oder eine frühere Version ausgeführt wird, müssen Sie auf jedem Node im Cluster AutoSupport aktivieren und konfigurieren.
 
-====
-Standardmäßig ist AutoSupport auf jedem Node aktiviert, um Meldungen mithilfe des HTTPS-Transportprotokolls an den technischen Support zu senden.
+.Bevor Sie beginnen
+Die empfohlene Transportkonfiguration für die Übertragung von AutoSupport Meldungen an NetApp ist HTTPS (HTTP mit TLS). Diese Option bietet die robustesten Funktionen und die beste Sicherheit.
 
-Sie müssen HTTPS mit TLSv1.2 oder sicheren SMTP für die Bereitstellung von AutoSupport-Nachrichten verwenden, um die beste Sicherheit zu gewährleisten und alle neuesten AutoSupport-Funktionen zu unterstützen.
+Prüfen link:requirements-autosupport-reference.html["Bereiten Sie die Verwendung von AutoSupport vor"] Weitere Informationen finden Sie vor dem Konfigurieren des ONTAP-Clusters.
 
 .Schritte
 . Vergewissern Sie sich, dass AutoSupport aktiviert ist:
@@ -34,7 +31,7 @@ Sie müssen HTTPS mit TLSv1.2 oder sicheren SMTP für die Bereitstellung von Aut
 ----
 system node autosupport modify -state enable
 ----
-. Wenn Sie technischen Support AutoSupport Meldungen erhalten möchten, verwenden Sie den folgenden Befehl:
+. Wenn der technische Support von NetApp AutoSupport Meldungen erhalten soll, verwenden Sie den folgenden Befehl:
 +
 [listing]
 ----
@@ -43,7 +40,7 @@ system node autosupport modify -support enable
 +
 Sie müssen diese Option aktivieren, wenn Sie AutoSupport aktivieren möchten, um mit AutoSupport OnDemand zu arbeiten, oder wenn Sie große Dateien wie Core Dump- und Performance-Archivdateien auf technischen Support oder eine angegebene URL hochladen möchten.
 
-. Wenn der technische Support für den Empfang von AutoSupport Meldungen aktiviert ist, geben Sie an, welches Transportprotokoll für die Meldungen verwendet werden soll.
+. Wenn der technische Support von NetApp den Empfang von AutoSupport Meldungen ermöglicht, geben Sie das für die Meldungen zu verwendende Transportprotokoll an.
 +
 Sie können aus folgenden Optionen wählen:
 
@@ -138,6 +135,28 @@ Beenden Sie das Senden von Performance-Daten in regelmäßigen AutoSupport Meldu
 Einstellen `-perf` Bis `false`.
 
 |===
+. Wenn Sie SMTP verwenden, um AutoSupport-Nachrichten an NetApp zu senden, können Sie TLS optional aktivieren, um die Sicherheit zu verbessern.
++
+.. Zeigt die für den neuen Parameter verfügbaren Werte an:
++
+[listing]
+----
+cluster1::> system node autosupport modify -smtp-encryption ?
+----
+.. TLS für SMTP-Nachrichtenversand aktivieren:
++
+[listing]
+----
+cluster1::> system node autosupport modify -smtp-encryption start_tls
+----
+.. Aktuelle Konfiguration anzeigen:
++
+[listing]
+----
+cluster1::> system node autosupport show -fields smtp-encryption
+----
+
+
 . Überprüfen Sie die Gesamtkonfiguration mithilfe von `system node autosupport show` Befehl mit dem `-node` Parameter.
 . Überprüfen Sie den AutoSupport-Vorgang mit `system node autosupport check show` Befehl.
 +
@@ -145,7 +164,7 @@ Wenn Probleme gemeldet werden, verwenden Sie das `system node autosupport check 
 
 . Testen, ob AutoSupport Meldungen gesendet und empfangen werden:
 +
-.. Verwenden Sie die `system node autosupport invoke` Befehl mit dem `-type` Parameter auf gesetzt `test`.
+.. Verwenden Sie die `system node autosupport invoke` Befehl mit dem `-type` Parameter auf gesetzt `test`:
 +
 [listing]
 ----
@@ -153,12 +172,14 @@ cluster1::> system node autosupport invoke -type test -node node1
 ----
 .. Bestätigen Sie, dass NetApp Ihre AutoSupport Mitteilungen erhält:
 +
-AutoSupport-Verlauf des System-Node wird -Node lokal angezeigt
-
+[listing]
+----
+system node autosupport history show -node local
+----
 +
 Der Status der letzten ausgehenden AutoSupport-Meldung sollte schließlich in geändert werden `sent-successful` Für alle geeigneten Protokollziele.
 
-.. Optional können Sie überprüfen, ob die AutoSupport-Nachricht an Ihre interne Support-Organisation oder an Ihren Support-Partner gesendet wird, indem Sie die E-Mail-Adresse überprüfen, die Sie für das konfiguriert haben `-to`, `-noteto`, Oder `-partner-address`  Parameter des `system node autosupport modify` Befehl.
+.. Sie können optional überprüfen, ob AutoSupport Meldungen an Ihre interne Support-Organisation oder Ihren Support-Partner gesendet werden, indem Sie die E-Mail-Adresse einer beliebigen Adresse prüfen, die Sie für das konfiguriert haben `-to`, `-noteto`, Oder `-partner-address`  Parameter des `system node autosupport modify` Befehl.
 
 
 

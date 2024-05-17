@@ -2,7 +2,7 @@
 permalink: nas-audit/requirements-best-practices-fpolicy-concept.html 
 sidebar: sidebar 
 keywords: requirements, considerations, best practices, configure, fpolicy 
-summary: 'Bevor Sie FPolicy Konfigurationen auf Ihren Storage Virtual Machines (SVMs) erstellen und konfigurieren, müssen Sie bestimmte Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy kennen.' 
+summary: Bevor Sie FPolicy Konfigurationen auf Ihren SVMs erstellen und konfigurieren, müssen Sie bestimmte Anforderungen, Überlegungen und Best Practices kennen. 
 ---
 = Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: 'Bevor Sie FPolicy Konfigurationen auf Ihren Storage Virtual Machines (
 
 
 [role="lead"]
-Bevor Sie FPolicy Konfigurationen auf Ihren SVMs erstellen und konfigurieren, müssen Sie bestimmte Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy kennen.
+Bevor Sie FPolicy Konfigurationen auf Ihren Storage Virtual Machines (SVMs) erstellen und konfigurieren, müssen Sie bestimmte Anforderungen, Überlegungen und Best Practices für die Konfiguration von FPolicy kennen.
 
 FPolicy-Funktionen werden entweder über die Befehlszeilenschnittstelle (CLI) oder über REST-APIs konfiguriert.
 
@@ -43,7 +43,6 @@ Dies schließt die LIFs ein, die für Passthrough-Read-Verbindungen verwendet we
 
 
 
-* Ab ONTAP 9.14.1 können Sie mit FPolicy einen persistenten Speicher einrichten, um Dateizugriffsereignisse für asynchrone, nicht obligatorische Richtlinien auf der SVM zu erfassen. Persistente Speicher können die Client-I/O-Verarbeitung von der FPolicy-Benachrichtigungsverarbeitung entkoppeln, um die Client-Latenz zu verringern. Synchrone (obligatorische oder nicht obligatorische) und asynchrone obligatorische Konfigurationen werden nicht unterstützt.
 
 
 
@@ -53,6 +52,64 @@ Dies schließt die LIFs ein, die für Passthrough-Read-Verbindungen verwendet we
 Wenn Sie FPolicy auf Storage Virtual Machines (SVMs) einrichten, lernen Sie die allgemeinen Best Practices und Empfehlungen der Konfiguration kennen. So können Sie sicherstellen, dass Ihre FPolicy-Konfiguration eine robuste Monitoring-Performance sowie Ergebnisse liefert, die Ihre Anforderungen erfüllen.
 
 Arbeiten Sie mit Ihrer FPolicy-Partnerapplikation zusammen, um spezifische Richtlinien in Bezug auf Performance, Größenbestimmung und Konfiguration zu erhalten.
+
+
+
+=== Persistente Speicher
+
+Ab ONTAP 9.14.1 können Sie mit FPolicy einen persistenten Speicher einrichten, um Dateizugriffsereignisse für asynchrone, nicht obligatorische Richtlinien auf der SVM zu erfassen. Persistente Speicher können die Client-I/O-Verarbeitung von der FPolicy-Benachrichtigungsverarbeitung entkoppeln, um die Client-Latenz zu verringern. Synchrone (obligatorische oder nicht obligatorische) und asynchrone obligatorische Konfigurationen werden nicht unterstützt.
+
+* Bevor Sie die Funktion „persistenter Speicher“ verwenden, stellen Sie sicher, dass Ihre Partneranwendungen diese Konfiguration unterstützen.
+* Sie benötigen einen persistenten Speicher für jede SVM, auf der FPolicy aktiviert ist.
++
+** Auf jeder SVM kann nur ein persistenter Speicher eingerichtet werden. Dieser einzelne persistente Speicher muss für alle FPolicy Konfigurationen auf dieser SVM verwendet werden, selbst wenn die Richtlinien von verschiedenen Partnern stammen.
+
+
+* ONTAP 9.15.1 oder höher:
++
+** Der persistente Speicher, das zugehörige Volume und die zugehörige Volume-Konfiguration werden bei der Erstellung des persistenten Speichers automatisch übernommen.
+
+
+* ONTAP 9.14.1:
++
+** Der persistente Speicher, das zugehörige Volume und die Volume-Konfiguration werden manuell übernommen.
+
+
+* Erstellen Sie das persistente Speicher-Volume auf dem Node mit LIFs, die davon ausgehen, dass der maximale Datenverkehr durch FPolicy überwacht wird.
++
+** ONTAP 9.15.1 oder höher: Volumes werden während der Erstellung des persistenten Speichers automatisch erstellt und konfiguriert.
+** ONTAP 9.14.1: Cluster-Administratoren müssen ein Volume für den persistenten Speicher jeder SVM erstellen und konfigurieren, auf der FPolicy aktiviert ist.
+
+
+* Wenn die im persistenten Speicher angesammelten Benachrichtigungen die Größe des bereitgestellten Volumes überschreiten, beginnt FPolicy die eingehende Benachrichtigung mit den entsprechenden EMS-Nachrichten zu löschen.
++
+** ONTAP 9.15.1 oder höher: Zusätzlich zum `size` Parameter, das `autosize-mode` Parameter können dem Volume als Antwort auf die Menge des genutzten Speicherplatzes helfen.
+** ONTAP 9.14.1: Die `size` Der Parameter wird während der Volume-Erstellung für ein maximales Limit konfiguriert.
+
+
+* Setzen Sie die Snapshot-Richtlinie auf `none` Für das persistente Speicher-Volume anstelle von `default`. Dadurch wird sichergestellt, dass keine versehentliche Wiederherstellung des Snapshots zum Verlust aktueller Ereignisse führt und eine mögliche doppelte Ereignisverarbeitung verhindert wird.
++
+** ONTAP 9.15.1 oder höher: Der `snapshot-policy` Der Parameter wird während der Erstellung eines persistenten Speichers automatisch auf „none“ konfiguriert.
+** ONTAP 9.14.1: Die `snapshot-policy` Parameter ist auf konfiguriert `none` Während der Volume-Erstellung:
+
+
+* Machen Sie das persistente Speicher-Volume für den externen Zugriff auf das Benutzerprotokoll (CIFS/NFS) unzugänglich, um versehentliche Beschädigungen oder das Löschen von permanenten Ereignisdatensätzen zu vermeiden.
++
+** ONTAP 9.15.1 oder höher: ONTAP blockiert das Volume während der Erstellung des persistenten Speichers automatisch aus externem Benutzerprotokollzugriff (CIFS/NFS).
+** ONTAP 9.14.1: Heben Sie nach der Aktivierung von FPolicy die Bereitstellung des Volumes in ONTAP auf, um den Verbindungspfad zu entfernen. Dies macht es für externen Benutzer-Protokoll-Zugriff (CIFS/NFS) unzugänglich.
+
+
+
+
+Weitere Informationen finden Sie unter link:persistent-stores.html["FPolicy persistente Speicher"] Und link:create-persistent-stores.html["Erstellen persistenter Speicher"].
+
+
+
+==== Persistentes Failover und Giveback von Speichern
+
+Der persistente Speicher bleibt so, wie er zu dem Zeitpunkt empfangen wurde, wenn ein unerwartetes Neubooten angezeigt wird oder FPolicy wird deaktiviert und erneut aktiviert. Nach einem Übernahmevorgang werden neue Ereignisse gespeichert und vom Partner-Node verarbeitet. Nach einem Giveback-Vorgang setzt der persistente Speicher die Verarbeitung aller nicht verarbeiteten Ereignisse fort, die möglicherweise vom Zeitpunkt der Node-Übernahme entfernt bleiben. Live-Events würden Vorrang vor nicht verarbeiteten Ereignissen erhalten.
+
+Wenn das persistente Speicher-Volume von einem Node zu einem anderen in derselben SVM verschoben wird, werden die noch zu verarbeitenden Benachrichtigungen auch in den neuen Node verschoben. Sie müssen das erneut ausführen `fpolicy persistent-store create` Befehl auf einem der Knoten nach dem Verschieben des Volumes, um sicherzustellen, dass die ausstehenden Benachrichtigungen an den externen Server gesendet werden.
 
 
 

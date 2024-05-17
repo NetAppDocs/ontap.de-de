@@ -2,7 +2,7 @@
 permalink: volumes/determine-space-usage-volume-aggregate-concept.html 
 sidebar: sidebar 
 keywords: determine, space usage, volume, aggregate 
-summary: 'Wenn Sie eine Funktion in ONTAP aktivieren, verbraucht sie möglicherweise Speicherplatz, der Ihnen nicht bekannt ist oder mehr als erwartet entspricht. ONTAP hilft Ihnen zu ermitteln, wie Speicherplatz verbraucht wird, indem Sie drei Perspektiven zur Ansicht von Raum zur Verfügung stellen: Das Volume, der Platzbedarf eines Volumes innerhalb des Aggregats und das Aggregat.' 
+summary: Mit ONTAP können Sie den Speicherplatzverbrauch basierend auf dem Volume, dem Platzbedarf eines Volumes innerhalb des Aggregats und dem Aggregat ermitteln. 
 ---
 = Bestimmen Sie die Speicherplatznutzung in einem Volume oder Aggregat
 :allow-uri-read: 
@@ -11,7 +11,11 @@ summary: 'Wenn Sie eine Funktion in ONTAP aktivieren, verbraucht sie möglicherw
 
 
 [role="lead"]
-Die Aktivierung einer Funktion in ONTAP kann mehr Speicherplatz beanspruchen, als erwartet. ONTAP hilft Ihnen bei der Ermittlung des verbrauchten Speicherplatzes, indem es drei Perspektiven bietet, von denen aus Speicherplatz angezeigt werden kann: Das Volume, der Platzbedarf eines Volumes im Aggregat und das Aggregat.
+In manchen Fällen nimmt die Aktivierung einer Funktion in ONTAP möglicherweise mehr Speicherplatz in Anspruch, als Sie erwartet haben. ONTAP hilft Ihnen bei der Ermittlung des verbrauchten Speicherplatzes, indem es drei Perspektiven bietet, von denen aus Speicherplatz angezeigt werden kann: Das Volume, der Platzbedarf eines Volumes im Aggregat und das Aggregat.
+
+
+
+== Zeigen Sie die Speicherplatzzuweisung an
 
 Auf einem Volume kann aufgrund des Speicherplatzverbrauchs oder des unzureichenden Speicherplatzes im Volume, Aggregat oder einer Kombination aus beidem nicht genügend Platz vorhanden sein. Wenn Sie eine funktionsorientierte Aufschlüsselung der Speicherplatznutzung aus verschiedenen Perspektiven sehen, können Sie beurteilen, welche Funktionen Sie möglicherweise anpassen oder deaktivieren möchten oder ob Sie weitere Maßnahmen ergreifen sollten (z. B. die Größe des Aggregats oder des Volumes erhöhen).
 
@@ -36,13 +40,13 @@ Verwenden Sie die `volume show-footprint` Befehl zum Anzeigen des Platzbedarfs e
 
 * Der Speicherplatznutzung des Aggregats
 +
-Diese Perspektive umfasst die Gesamtmenge des Volume-Platzbedarfs aller Volumes im Aggregat, den für aggregierte Snapshot Kopien reservierten Speicherplatz und andere Aggregat-Metadaten.
+Diese Perspektive beinhaltet Gesamtplatzbedarf aller Volume-Volumes im Aggregat, Platz reserviert für Snapshot Kopien des Aggregats und andere Metadaten von Aggregaten.
 
 +
 WAFL reserviert 10 % des gesamten Speicherplatzes für Metadaten auf Aggregatebene und für eine höhere Performance. Der Platz, der zur Erhaltung der Volumes im Aggregat verwendet wird, stammt aus der WAFL Reserve und kann nicht geändert werden.
 
 +
-Ab ONTAP 9.12.1 wurde die WAFL Reserve für Aggregate mit mehr als 30 TB für AFF Plattformen und FAS500f Plattformen von 10 % auf 5 % reduziert.  Ab ONTAP 9.14.1 gilt diese Reduzierung auch für Aggregate auf allen FAS Plattformen. Das Ergebnis: 5 % mehr nutzbarer Speicherplatz in den Aggregaten.
+Ab ONTAP 9.12.1 wurde die WAFL Reserve für Aggregate von mehr als 30 TB für AFF Plattformen und für die FAS500f Plattformen von 10 % auf 5 % reduziert.  Ab ONTAP 9.14.1 gilt diese Reduzierung auch für Aggregate auf allen FAS Plattformen. Das Ergebnis: 5 % mehr nutzbarer Speicherplatz in den Aggregaten.
 
 +
 Verwenden Sie die `storage aggregate show-space` Befehl, um die Speicherplatznutzung des Aggregats anzuzeigen.
@@ -55,3 +59,27 @@ Bestimmte Funktionen wie Tape-Backup und -Deduplizierung nutzen Speicherplatz f�
 * link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Space_Usage["Knowledge Base-Artikel: Raumnutzung"^]
 * link:https://www.netapp.com/blog/free-up-storage-capacity-upgrade-ontap/["Setzen Sie beim Upgrade auf ONTAP 9.12.1 auf bis zu 5 % Storage-Kapazität frei"^]
 
+
+
+
+== Berichterstellung zu Volume-Metadaten und Datenkennzahlen
+
+In der Vergangenheit berichteten mehrere der Volume-Speicherplatzmetriken über die insgesamt verbrauchte Daten als Kombination aus zwei Metriken: Metadaten und Benutzerdaten. Ab ONTAP 9.15.1 werden die Metadaten- und Benutzerdaten-Kennzahlen separat gemeldet. Zwei neue Metadaten-Zähler wurden eingeführt, um dies zu unterstützen:
+
+* Metadaten insgesamt
++
+Dieser Zähler bietet die gesamte Metadatengröße innerhalb des Volume. Die darin enthaltenen Metadaten des Aggregate-residierenden Volume werden nicht berücksichtigt. Die separate Berichterstellung hilft, die vom Benutzer zugewiesenen logischen Daten zu bestimmen.
+
+* Metadaten-Platzbedarf insgesamt
++
+Dieser Zähler ist die Summe der Volume-residierenden Metadaten und Aggregat-residenter Volume-Metadaten. Der Gesamt-Metadaten-Footprint des Volume innerhalb des Aggregats wird somit erreicht. Durch die separate Berichterstellung kann die vom Benutzer zugewiesene physische Datenmenge bestimmt werden.
+
+
+
+Darüber hinaus wurden mehrere vorhandene Zähler aktualisiert, um die Metadatenkomponente zu entfernen und nur die Benutzerdaten anzuzeigen:
+
+* Benutzerdaten
+* Speicherplatzbedarf von Volumes
+
+
+Diese Änderungen ermöglichen eine genauere Ansicht der vom Benutzer verbrauchten Daten. Dies bietet verschiedene Vorteile, zum Beispiel die Möglichkeit, genauere Chargeback-Entscheidungen zu treffen.

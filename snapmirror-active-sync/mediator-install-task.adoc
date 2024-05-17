@@ -1,0 +1,144 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/mediator-install-task.html 
+keywords: SM-BC, SMBC, cluster, peering, ONTAP Mediator, initialize, snapmirror active sync 
+summary: Für die aktive Synchronisierung von SnapMirror müssen Sie den ONTAP Mediator installieren und initialisieren und ordnungsgemäße Cluster-Peering gewährleisten. 
+---
+= Konfigurieren Sie den ONTAP Mediator und die Cluster für SnapMirror Active Sync
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+SnapMirror Active Sync nutzt Peering-Cluster, damit Daten im Fall eines Failover-Szenarios verfügbar sind. Der ONTAP Mediator ist eine wichtige Ressource, die Business Continuity gewährleistet und den Zustand jedes Clusters überwacht. Um SnapMirror Active Sync zu konfigurieren, müssen Sie zuerst den ONTAP Mediator installieren und sicherstellen, dass Ihr primärer und sekundärer Cluster ordnungsgemäß konfiguriert sind.
+
+Nachdem Sie den ONTAP Mediator installiert und die Cluster konfiguriert haben, müssen Sie dies tun <<initialize-the-ontap-mediator>> Der ONTAP Mediator für die Verwendung mit SnapMirror Active Sync. Dann müssen Sie xref:../protect-task.html[Erstellen, Initialisieren und Zuordnen der Konsistenzgruppe für die aktive SnapMirror Synchronisierung].
+
+
+
+== ONTAP Mediator
+
+Der ONTAP Mediator ermittelt ein Quorum für die ONTAP Cluster in einer aktiven SnapMirror Sync Beziehung. Es koordiniert das automatische Failover bei einem erkannten Ausfall, ermittelt, welches Cluster als primäres Cluster fungiert und stellt sicher, dass die Daten zum und vom korrekten Ziel bereitgestellt werden.
+
+.Voraussetzungen für den ONTAP Mediator
+* Der ONTAP Mediator enthält eigene Voraussetzungen. Sie müssen diese Voraussetzungen erfüllen, bevor Sie den Mediator installieren.
++
+Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap-metrocluster/install-ip/task_configuring_the_ontap_mediator_service_from_a_metrocluster_ip_configuration.html["Bereiten Sie die Installation des ONTAP Mediator-Dienstes vor"^].
+
+* Standardmäßig stellt der ONTAP Mediator den Dienst über TCP-Port 31784 bereit. Sie sollten sicherstellen, dass Port 31784 zwischen den ONTAP-Clustern und dem Mediator geöffnet und verfügbar ist.
+
+
+
+
+== Installieren Sie den ONTAP Mediator und bestätigen Sie die Clusterkonfiguration
+
+Gehen Sie die folgenden Schritte durch. Bei jedem Schritt sollten Sie bestätigen, dass die spezifische Konfiguration durchgeführt wurde. Nutzen Sie den Link nach jedem Schritt, um weitere Informationen zu erhalten.
+
+.Schritte
+. Installieren Sie den ONTAP Mediator-Dienst, bevor Sie sicherstellen, dass Ihre Quell- und Zielcluster ordnungsgemäß konfiguriert sind.
++
+xref:../mediator/index.html[Bereiten Sie die Installation oder das Upgrade des ONTAP Mediatordienstes vor]
+
+. Bestätigen Sie, dass zwischen den Clustern eine Cluster-Peering-Beziehung besteht.
++
+
+NOTE: Der standardmäßige IPspace wird von der aktiven SnapMirror Synchronisierung für Cluster-Peer-Beziehungen benötigt. Ein benutzerdefinierter IP-Bereich wird nicht unterstützt.
+
++
+xref:../task_dp_prepare_mirror.html[Konfiguration von Peer-Beziehungen]
+
+. Vergewissern Sie sich, dass die Storage VMs auf jedem Cluster erstellt werden.
++
+xref:../smb-config/create-svms-data-access-task.html[Erstellen einer SVM]
+
+. Vergewissern Sie sich, dass zwischen den Storage-VMs auf jedem Cluster eine Peer-Beziehung besteht.
++
+xref:../peering/create-intercluster-svm-peer-relationship-93-later-task.html[Erstellen einer SVM-Peering-Beziehung]
+
+. Vergewissern Sie sich, dass die Volumes für Ihre LUNs vorhanden sind.
++
+xref:../smb-config/create-volume-task.html[Erstellen eines Volumes]
+
+. Vergewissern Sie sich, dass auf jedem Node im Cluster mindestens eine SAN-LIF erstellt wurde.
++
+link:../san-admin/lifs-cluster-concept.html["Überlegungen zu LIFs in einer Cluster-SAN-Umgebung"]
+
++
+link:https://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-sanag/GUID-4B666C44-694A-48A3-B0A9-517FA7FD2502.html?cp=13_6_4_0["Erstellen eines LIF"^]
+
+. Vergewissern Sie sich, dass die erforderlichen LUNs erstellt und einer Initiatorgruppe zugeordnet sind, die zum Zuordnen von LUNs zum Initiator auf dem Applikations-Host verwendet wird.
++
+xref:../san-admin/create-luns-mapping-igroups-task.html[LUNs erstellen und Initiatorgruppen zuordnen]
+
+. Prüfen Sie den Applikations-Host erneut, um neue LUNs zu erkennen.
+
+
+
+
+== Initialisieren Sie den ONTAP Mediator für die aktive SnapMirror Synchronisierung
+
+Nachdem Sie den ONTAP Mediator installiert und die Clusterkonfiguration bestätigt haben, müssen Sie den ONTAP Mediator für die Clusterüberwachung initialisieren. Sie können den ONTAP Mediator mit System Manager oder der ONTAP CLI initialisieren.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Mit System Manager können Sie den ONTAP Mediator Server für automatisches Failover konfigurieren. Sie können auch die selbst signierte SSL und CA durch das Drittanbieter validierte SSL-Zertifikat und CA ersetzen, wenn Sie noch nicht getan haben.
+
+
+IMPORTANT: Von ONTAP 9.8 bis 9.14.1 wird die aktive SnapMirror Synchronisierung als SnapMirror Business Continuity (SM-BC) bezeichnet.
+
+.Schritte
+. Navigieren Sie zu *Schutz > Übersicht > Mediator > Konfigurieren*.
+. Wählen Sie *Hinzufügen*, und geben Sie die folgenden ONTAP Mediatorserver-Informationen ein:
++
+** IPv4-Adresse
+** Benutzername
+** Passwort
+** Zertifikat
+
+
+
+
+--
+.CLI
+--
+Sie können den ONTAP Mediator entweder vom primären oder sekundären Cluster mithilfe der ONTAP CLI initialisieren. Wenn Sie das ausgeben `mediator add` Befehl auf einem Cluster wird der ONTAP Mediator automatisch auf dem anderen Cluster hinzugefügt.
+
+.Schritte
+. Mediator auf einem der Cluster initialisieren:
++
+`snapmirror mediator add -mediator-address IP_Address -peer-cluster cluster_name -username user_name`
+
++
+*Beispiel*
+
++
+....
+cluster1::> snapmirror mediator add -mediator-address 192.168.10.1 -peer-cluster cluster2 -username mediatoradmin
+Notice: Enter the mediator password.
+
+Enter the password: ******
+Enter the password again: ******
+....
+. Überprüfen Sie den Status der Mediator-Konfiguration:
++
+`snapmirror mediator show`
+
++
+....
+Mediator Address Peer Cluster     Connection Status Quorum Status
+---------------- ---------------- ----------------- -------------
+192.168.10.1     cluster-2        connected         true
+....
++
+`Quorum Status` Gibt an, ob die Beziehungen der SnapMirror Konsistenzgruppe mit dem Mediator synchronisiert sind; einen Status von `true` Zeigt eine erfolgreiche Synchronisierung an.
+
+
+
+--
+====

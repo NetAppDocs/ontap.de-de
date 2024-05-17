@@ -1,0 +1,136 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/remove-configuration-task.html 
+keywords: SM-BC, SMBC, removing, protection relationship, snapmirror active sync 
+summary: Sie können den synchronen SnapMirror-Schutz von null RTO entfernen und die Konfiguration der SnapMirror Active Sync Beziehung löschen. 
+---
+= Entfernen Sie eine SnapMirror Active Sync Konfiguration
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie keinen synchronen RTO-Schutz mehr für SnapMirror benötigen, können Sie Ihre SnapMirror Active Sync Beziehung löschen.
+
+
+
+== Entfernen Sie eine asymmetrische Konfiguration
+
+* Bevor Sie die SnapMirror Active Sync Beziehung löschen, muss die Zuordnung aller LUNs im Ziel-Cluster aufgehoben werden.
+* Nachdem die LUN nicht zugeordnet und der Host erneut gescannt wird, werden die Hosts vom SCSI-Ziel benachrichtigt, dass sich die LUN-Inventur geändert hat. Die vorhandenen LUNs auf sekundären Volumes von null Sekunden ändern sich, um eine neue Identität anzuzeigen, nachdem die RTO-Beziehung von null gelöscht wurde. Hosts erkennen die sekundären Volume LUNs als neue LUNs, die keine Beziehung zu den Quell-Volume LUNs haben.
+* Die sekundären Volumes bleiben DP-Volumen, nachdem die Beziehung gelöscht wurde. Sie können die ausgeben `snapmirror break` Befehl zum Konvertieren in Lesen/Schreiben.
+* Das Löschen der Beziehung ist im Failover-Zustand nicht zulässig, wenn die Beziehung nicht rückgängig gemacht wird.
+
+
+.Schritte
+. Entfernen Sie aus dem sekundären Cluster die SnapMirror Active Sync Konsistenzgruppenbeziehung zwischen dem Quell-Endpunkt und dem Zielendpunkt:
++
+`destination::>snapmirror delete -destination-path vs1_dst:/cg/cg_dst`
+
+. Geben Sie aus dem primären Cluster die Konsistenzgruppenbeziehung und die Snapshot Kopien wieder, die für die Verbindung erstellt wurden:
++
+`source::>snapmirror release -destination-path vs1_dst:/cg/cg_dst`
+
+. Führen Sie einen Hostscan durch, um den LUN-Bestand zu aktualisieren.
+. Ab ONTAP 9.10.1 wird durch Löschen der SnapMirror Beziehung die Konsistenzgruppe nicht gelöscht. Wenn Sie die Konsistenzgruppe löschen möchten, müssen Sie System Manager oder DIE ONTAP REST API verwenden. Siehe xref:../consistency-groups/delete-task.adoc[Löschen einer Konsistenzgruppe] Finden Sie weitere Informationen.
+
+
+
+
+== Entfernen einer symmetrischen aktiv/aktiv-Konfiguration
+
+Sie können eine symmetrische Konfiguration mit System Manager oder der ONTAP CLI entfernen. In beiden Schnittstellen gibt es verschiedene Schritte für xref:index.html#key-concepts[Einheitliche und nicht einheitliche Konfigurationen].
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Schritte für eine einheitliche Konfiguration
+. Entfernen Sie am primären Standort die Remote-Hosts von der Initiatorgruppe und beenden Sie die Replikation.
++
+.. Navigieren Sie zu **Hosts** > *SAN-Initiatorgruppen*.
+.. Wählen Sie die zu ändernde Initiatorgruppe und anschließend **Bearbeiten** aus.
+.. Entfernen Sie den Remote-Initiator und beenden Sie die igroup-Replikation. Wählen Sie **Speichern**.
+
+
+. Löschen Sie am sekundären Standort die replizierte Beziehung, indem Sie die Zuordnung der LUNs aufheben.
++
+.. Navigieren Sie zu **Hosts** > **SAN-Initiatorgruppen**.
+.. Wählen Sie die Initiatorgruppe mit der SnapMirror Beziehung aus und dann **Löschen**.
+.. Wählen Sie im Dialogfeld das Feld **Zuordnung der zugeordneten LUNs aufheben** und dann **Löschen**.
+.. Navigieren Sie zu **Schutz** > **Beziehungen**.
+.. Wählen Sie die SnapMirror Active Sync Beziehung und dann **Release**, um die Beziehungen zu löschen.
+
+
+
+
+.Schritte für eine nicht einheitliche Konfiguration
+. Entfernen Sie am primären Standort die Remote-Hosts von der Initiatorgruppe und beenden Sie die Replikation.
++
+.. Navigieren Sie zu **Hosts** > *SAN-Initiatorgruppen*.
+.. Wählen Sie die zu ändernde Initiatorgruppe und anschließend **Bearbeiten** aus.
+.. Entfernen Sie den Remote-Initiator und beenden Sie die igroup-Replikation. Wählen Sie **Speichern**.
+
+
+. Entfernen Sie am sekundären Standort die SnapMirror Active Sync Beziehung.
++
+.. Navigieren Sie zu **Schutz** > **Beziehungen**.
+.. Wählen Sie die SnapMirror Active Sync Beziehung und dann **Release**, um die Beziehungen zu löschen.
+
+
+
+
+--
+.CLI
+--
+.Schritte für eine einheitliche Konfiguration
+. Verschieben Sie alle VM-Workloads auf den lokalen Host in den Quellcluster der aktiven SnapMirror Synchronisierung.
+. Entfernen Sie auf dem Quell-Cluster die Initiatoren aus der Initiatorgruppe und ändern Sie die igroup-Konfiguration, um die igroup-Replizierung zu beenden.
++
+`SiteA::> igroup remove -vserver _svm_name_ -igroup _igroup_name_ -initiator _host2_
+SiteA::> igroup modify -vserver _svm_name_ -igroup _igroup_name_ -replication-peer "-"`
+
+. Löschen Sie am sekundären Standort die LUN-Zuordnung und entfernen Sie die igroup-Konfiguration:
++
+`SiteB::> lun mapping delete -vserver _svm_name_ -igroup _igroup_name_ -path <>
+SiteB::> igroup delete -vserver _svm_name_ -igroup _igroup_name_`
+
+. Löschen Sie am sekundären Standort die SnapMirror Active Sync Beziehung.
++
+`SiteB::> snapmirror delete -destination-path _destination_path_`
+
+. Geben Sie am primären Standort die SnapMirror Active Sync Beziehung vom primären Standort frei.
++
+`SiteA::> snapmirror release -destination-path _destination_path_`
+
+. Ermitteln Sie die Pfade neu, um zu überprüfen, ob nur der lokale Pfad für den Host verfügbar ist.
+
+
+.Schritte für eine nicht einheitliche Konfiguration
+. Verschieben Sie alle VM-Workloads auf den lokalen Host in den Quellcluster der aktiven SnapMirror Synchronisierung.
+. Entfernen Sie auf dem Quell-Cluster die Initiatoren aus der Initiatorgruppe.
++
+`SiteA::> igroup remove -vserver _svm_name_ -igroup _igroup_name_ -initiator _host2_`
+
+. Löschen Sie am sekundären Standort die LUN-Zuordnung und entfernen Sie die igroup-Konfiguration:
++
+`SiteB::> lun mapping delete -vserver _svm_name_ -igroup _igroup_name_ -path <>
+SiteB::> igroup delete -vserver _svm_name_ -igroup _igroup_name_`
+
+. Löschen Sie am sekundären Standort die SnapMirror Active Sync Beziehung.
++
+`SiteB::> snapmirror delete -destination-path _destination_path_`
+
+. Geben Sie am primären Standort die SnapMirror Active Sync Beziehung vom primären Standort frei.
++
+`SiteA::> snapmirror release -destination-path _destination_path_`
+
+. Ermitteln Sie die Pfade neu, um zu überprüfen, ob nur der lokale Pfad für den Host verfügbar ist.
+
+
+--
+====

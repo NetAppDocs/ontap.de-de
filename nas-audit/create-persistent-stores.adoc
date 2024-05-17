@@ -1,44 +1,113 @@
 ---
 permalink: nas-audit/create-persistent-stores.html 
 sidebar: sidebar 
-keywords: create, persistent store, fpolicy 
-summary: Ab ONTAP 9.14.1 können Sie mit FPolicy einen persistenten Speicher einrichten, um Dateizugriffsereignisse für asynchrone, nicht obligatorische Richtlinien in der SVM zu erfassen. Persistente Speicher können die Client-I/O-Verarbeitung von der FPolicy-Benachrichtigungsverarbeitung entkoppeln, um die Client-Latenz zu verringern. Synchrone und asynchrone obligatorische Konfigurationen werden nicht unterstützt. 
+keywords: create, persistent store, fpolicy, asynchronous, non, mandatory 
+summary: Ab ONTAP 9.14.1 können Sie mit FPolicy einen persistenten Speicher einrichten, um Dateizugriffsereignisse für asynchrone, nicht obligatorische Richtlinien zu erfassen. 
 ---
-= Erstellen persistenter Speicher
+= Erstellung von persistenten FPolicy-Speichern
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Ab ONTAP 9.14.1 können Sie mit FPolicy eine einrichten link:persistent-stores.html["Persistente Speicher"] So erfassen Sie Dateizugriffsereignisse für asynchrone, nicht obligatorische Richtlinien in der SVM: Persistente Speicher können die Client-I/O-Verarbeitung von der FPolicy-Benachrichtigungsverarbeitung entkoppeln, um die Client-Latenz zu verringern. Synchrone (obligatorische oder nicht obligatorische) und asynchrone obligatorische Konfigurationen werden nicht unterstützt.
+Persistente Speicher können die Client-I/O-Verarbeitung von der FPolicy-Benachrichtigungsverarbeitung entkoppeln, um die Client-Latenz zu verringern. Ab ONTAP 9.14.1 ist die Einrichtung mit FPolicy möglich link:persistent-stores.html["Persistente Speicher"] So erfassen Sie Dateizugriffsereignisse für asynchrone, nicht obligatorische Richtlinien in der SVM: Synchrone (obligatorische oder nicht obligatorische) und asynchrone obligatorische Konfigurationen werden nicht unterstützt.
 
-.Best Practices in sich vereint
-* Bevor Sie die Funktion „persistenter Speicher“ verwenden, stellen Sie sicher, dass Ihre Partneranwendungen diese Konfiguration unterstützen.
-* Das persistente Speicher-Volume wird auf SVM-Basis eingerichtet. Für jede FPolicy aktivierte SVM wird ein persistentes Speicher-Volume benötigt.
-* Der Name des persistenten Speichervolumes und der bei der Volume-Erstellung angegebene Verbindungspfad müssen übereinstimmen.
-* Erstellen Sie das persistente Speicher-Volume auf dem Node mit LIFs, die davon ausgehen, dass der maximale Datenverkehr durch FPolicy überwacht wird.
-* Lassen Sie die Snapshot-Richtlinie auf festlegen `none` Für dieses Volume anstelle von `default`. Dadurch wird sichergestellt, dass keine versehentliche Wiederherstellung des Snapshots zum Verlust aktueller Ereignisse führt und eine mögliche doppelte Ereignisverarbeitung verhindert wird.
-* Machen Sie das persistente Speicher-Volume für den externen Zugriff auf das Benutzerprotokoll (CIFS/NFS) unzugänglich, um versehentliche Beschädigungen oder das Löschen von permanenten Ereignisdatensätzen zu vermeiden. Um dies zu erreichen, heben Sie nach Aktivierung von FPolicy die Bereitstellung des Volumes in ONTAP auf, um den Verbindungspfad zu entfernen. Dies macht ihn für den Benutzerprotokollzugriff unzugänglich.
+Ab ONTAP 9.15.1 wird die Konfiguration persistenter FPolicy-Speicher vereinfacht. Der `persistent-store create` Der Befehl automatisiert die Volume-Erstellung für die SVM und konfiguriert das Volume für den persistenten Speicher.
+
+Es gibt zwei Möglichkeiten, einen persistenten Speicher zu erstellen, abhängig von der ONTAP-Version:
+
+* ONTAP 9.15.1 oder höher: Wenn Sie den persistenten Speicher erstellen, erstellt und konfiguriert ONTAP automatisch sein Volume gleichzeitig. Dies vereinfacht die Konfiguration des persistenten FPolicy Speichers und implementiert alle Best Practices.
+* ONTAP 9.14.1: Manuelles Erstellen und Konfigurieren eines Volumes und anschließende Erstellung eines persistenten Speichers für das neu erstellte Volume
+
+
+Auf jeder SVM kann nur ein persistenter Speicher eingerichtet werden. Dieser einzelne persistente Speicher muss für alle FPolicy Konfigurationen auf dieser SVM verwendet werden, selbst wenn die Richtlinien von verschiedenen Partnern stammen.
+
+
+
+== Persistenten Speicher erstellen (ONTAP 9.15.1 oder höher)
+
+Ab ONTAP 9.15.1 verwenden Sie die `fpolicy persistent-store create` Befehl zum Erstellen des persistenten FPolicy-Speichers bei Inline-Volume-Erstellung und -Konfiguration. ONTAP blockiert das Volume automatisch vom externen Benutzerprotokollzugriff (CIFS/NFS).
+
+.Bevor Sie beginnen
+* Die SVM, auf der Sie den persistenten Speicher erstellen möchten, muss über mindestens ein Aggregat verfügen.
+* Sie sollten Zugriff auf die für die SVM verfügbaren Aggregate und ausreichende Berechtigungen zum Erstellen von Volumes haben.
 
 
 .Schritte
-. Erstellen Sie ein leeres Volume auf der SVM, das für den persistenten Speicher bereitgestellt werden kann:
+. Erstellen des persistenten Speichers, wobei das Volume automatisch erstellt und konfiguriert wird:
 +
-`volume create -vserver <SVM Name> -volume <volume> -state <online> -junction-path <path> -policy <default> -unix-permissions <777> -size <value> -aggregate <aggregate name> -snapshot-policy <none>`
+`vserver fpolicy persistent-store create -vserver <vserver> -persistent-store <name> -volume <volume_name> -size <size> -autosize-mode <off|grow|grow_shrink>`
 
 +
-** Die Größe des persistenten Speichervolumes basiert auf der Dauer, für die Sie die Ereignisse, die nicht an den externen Server (Partneranwendung) gesendet werden, fortführen möchten.
+** Der `vserver` Parameter ist der Name der SVM.
+** Der `persistent-store` Parameter ist der Name des persistenten Speichers.
+** Der `volume` Parameter ist der Name des persistenten Speicher-Volume.
++
+
+NOTE: Wenn Sie ein vorhandenes, leeres Volume verwenden möchten, verwenden Sie die `volume show` Befehl, um ihn zu finden und im Volume-Parameter anzugeben.
+
+** Der `size` Der Parameter basiert auf der Dauer, für die die Ereignisse, die nicht an den externen Server (Partneranwendung) geliefert werden, fortgeführt werden sollen.
 +
 Wenn Sie beispielsweise möchten, dass in einem Cluster 30 Minuten Ereignisse mit einer Kapazität von 30.000 Benachrichtigungen pro Sekunde erhalten bleiben:
 
 +
-Erforderliche Volume-Größe = 30000 x 30 x 60 x 0,6 KB (Größe des Avg-Benachrichtigungsdatensatzes) = 32400000 KB = ~32 GB
+Erforderliche Volume-Größe = 30000 x 30 x 60 x 0,6 KB (durchschnittliche Größe des Benachrichtigungsdatensatzes) = 32400000 KB = ~32 GB
 
 +
 Um die ungefähre Benachrichtigungsrate zu ermitteln, können Sie sich entweder mit Ihrer FPolicy Partnerapplikation in Verbindung setzen oder den FPolicy-Zähler verwenden `requests_dispatched_rate`.
 
-** Es wird erwartet, dass ein Administratorbenutzer mit ausreichenden RBAC-Berechtigungen (um ein Volume zu erstellen) ein Volume (mit dem cli-Befehl des Volumes oder der REST-API) der gewünschten Größe erstellt und den Namen dieses Volumes als bereitstellt `-volume` Erstellen Sie im persistenten Speicher einen CLI-Befehl oder eine REST-API.
++
+
+NOTE: Wenn Sie ein vorhandenes Volume verwenden, ist der Parameter Größe optional. Wenn Sie für den Größenparameter einen Wert angeben, wird das Volume mit der von Ihnen angegebenen Größe geändert.
+
+** Der `autosize-mode` Der Parameter gibt den Autosize-Modus für das Volume an. Folgende Modi werden unterstützt:
++
+*** Aus - das Volumen vergrößert oder verkleinert sich nicht als Antwort auf die Menge des belegten Speicherplatzes.
+*** Vergrößern - das Volumen wächst automatisch, wenn der verwendete Platz im Volumen über der Wachstumsschwelle liegt.
+*** Grow_Shrink - das Volumen vergrößert oder verkleinert sich als Antwort auf die Menge des genutzten Speicherplatzes.
+
+
+
+
+. Erstellen Sie die FPolicy-Richtlinie, und fügen Sie dieser Richtlinie den Namen des persistenten Speichers hinzu. Weitere Informationen finden Sie unter link:create-fpolicy-policy-task.html["Erstellen Sie die FPolicy"].
+
+
+
+
+== Persistenten Speicher erstellen (ONTAP 9.14.1)
+
+Sie können ein Volume erstellen und anschließend einen persistenten Speicher zur Verwendung dieses Volumes erstellen. Anschließend können Sie das neu erstellte Volume vom externen Benutzerprotokollzugriff (CIFS/NFS) sperren.
+
+.Schritte
+. Erstellen Sie ein leeres Volume auf der SVM, das für den persistenten Speicher bereitgestellt werden kann:
++
+`volume create -vserver <SVM Name> -volume <volume> -state <online> -policy <default> -unix-permissions <777> -size <value> -aggregate <aggregate name> -snapshot-policy <none>`
+
++
+Es wird erwartet, dass ein Administratorbenutzer mit ausreichenden RBAC-Berechtigungen (zum Erstellen eines Volumes) ein Volume (mit dem cli-Befehl des Volumes oder der REST-API) der gewünschten Größe erstellt und den Namen dieses Volumes als bereitstellt `-volume` Erstellen Sie im persistenten Speicher einen CLI-Befehl oder eine REST-API.
+
++
+** Der `vserver` Parameter ist der Name der SVM.
+** Der `volume` Parameter ist der Name des persistenten Speicher-Volume.
+** Der `state` Der Parameter sollte auf „Online“ gesetzt werden, damit das Volume zur Verwendung verfügbar ist.
+** Der `policy` Der Parameter wird auf die FPolicy-Service-Richtlinie festgelegt, sofern bereits ein Parameter konfiguriert ist. Wenn nicht, können Sie den verwenden `volume modify` Befehl später, um die Richtlinie hinzuzufügen.
+** Der `unix-permissions` Parameter ist optional.
+** Der `size` Der Parameter basiert auf der Dauer, für die die Ereignisse, die nicht an den externen Server (Partneranwendung) geliefert werden, fortgeführt werden sollen.
++
+Wenn Sie beispielsweise möchten, dass in einem Cluster 30 Minuten Ereignisse mit einer Kapazität von 30.000 Benachrichtigungen pro Sekunde erhalten bleiben:
+
++
+Erforderliche Volume-Größe = 30000 x 30 x 60 x 0,6 KB (durchschnittliche Größe des Benachrichtigungsdatensatzes) = 32400000 KB = ~32 GB
+
++
+Um die ungefähre Benachrichtigungsrate zu ermitteln, können Sie sich entweder mit Ihrer FPolicy Partnerapplikation in Verbindung setzen oder den FPolicy-Zähler verwenden `requests_dispatched_rate`.
+
+** Der Parameter Aggregate ist für FlexVol Volumes erforderlich, andernfalls ist er nicht erforderlich.
+** Der `snapshot-policy` Der Parameter muss auf „Keine“ gesetzt werden. Dadurch wird sichergestellt, dass keine versehentliche Wiederherstellung des Snapshots zum Verlust aktueller Ereignisse führt und eine mögliche doppelte Ereignisverarbeitung verhindert wird.
++
+Wenn Sie ein vorhandenes, leeres Volume verwenden möchten, verwenden Sie die `volume show` Befehl, um es und die zu finden `volume modify` Befehl, um alle erforderlichen Änderungen vorzunehmen. Stellen Sie die Richtlinie, die Größe und sicher `snapshot-policy` Die Parameter werden für den persistenten Speicher korrekt eingestellt.
+
 
 
 . Persistenten Speicher erstellen:
@@ -46,10 +115,10 @@ Um die ungefähre Benachrichtigungsrate zu ermitteln, können Sie sich entweder 
 `vserver fpolicy persistent store create -vserver <SVM> -persistent-store <PS_name> -volume <volume>`
 
 +
-** Persistenter Speicher: Der Name des persistenten Speichers
-** Volume: Das persistente Speicher-Volume
+** Der `vserver` Parameter ist der Name der SVM.
+** Der `persistent-store` Parameter ist der Name des persistenten Speichers.
+** Der `volume` Parameter ist der Name des persistenten Speicher-Volume.
 
 
-. Nachdem der persistente Speicher erstellt wurde, können Sie die FPolicy-Richtlinie erstellen und dieser Richtlinie den Namen des persistenten Speichers hinzufügen.
-Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap/nas-audit/create-fpolicy-policy-task.html["Erstellen Sie die FPolicy"].
+. Erstellen Sie die FPolicy-Richtlinie, und fügen Sie dieser Richtlinie den Namen des persistenten Speichers hinzu. Weitere Informationen finden Sie unter link:create-fpolicy-policy-task.html["Erstellen Sie die FPolicy"].
 

@@ -1,0 +1,38 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/use-cases-concept.html 
+keywords: SM-BC, SMBC, overview, benefits, use cases, architecture, snapmirror active sync 
+summary: Verwenden Sie SnapMirror Active Sync, um Applikationen mit LUNs zu schützen und für transparentes Failover von Applikationen zu sorgen, sodass für Business Continuity im Falle eines Notfalls gesorgt ist. 
+---
+= Anwendungsfälle für SnapMirror Active Sync
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Anforderungen einer global vernetzten Geschäftsumgebung erfordern eine schnelle Recovery geschäftskritischer Applikationsdaten ohne Datenverluste bei Unterbrechungen wie Cyberangriffen, Stromausfällen oder Naturkatastrophen. Diese Anforderungen steigen in Bereichen wie der Finanzbranche und in Bereichen, in denen gesetzliche Vorgaben wie die DSGVO (Datenschutz-Grundverordnung) eingehalten werden.
+
+SnapMirror Active Sync bietet folgende Anwendungsfälle:
+
+.Applikationsimplementierung für Objekt mit null Recovery-Zeit (RTO)
+In einer Active Sync Implementierung von SnapMirror verfügen Sie über ein primäres und ein sekundäres Cluster. Eine LUN im primären Cluster  `1LP`) Hat einen Spiegel (`L1s`) Auf der sekundären; beide LUNs teilen sich dieselbe serielle ID und werden als Lese-Schreib-LUNs an den Host gemeldet. Lese- und Schreibvorgänge werden jedoch nur auf der primären LUN gewartet. `1LP`. Alle Schreibvorgänge auf die Spiegelung `L1S` Werden von Proxy bedient.
+
+.Applikationseinsatz für null RTO oder TAF
+TAF basiert auf dem softwarebasierten MPIO Pfad-Failover des Hosts, um einen unterbrechungsfreien Zugriff auf den Storage zu ermöglichen. Beide LUN-Kopien – beispielsweise primäre (L1P) und gespiegelte Kopien (L1S) – weisen dieselbe Identität (Seriennummer) auf und werden dem Host als lesebeschreibbar gemeldet. Lese- und Schreibzugriffe werden jedoch nur vom primären Volume verarbeitet. I/O-Anfragen, die an die gespiegelte Kopie ausgegeben werden, werden in die primäre Kopie Proxykopie verwendet. Der bevorzugte Pfad des Hosts zu L1 ist VS1:N1, basierend auf dem Zugriffsstatus Active Optimized (A/O) des Asymmetric Logical Unit Access (Alua). ONTAP Mediator ist im Rahmen der Implementierung erforderlich, insbesondere für Failover (geplant oder ungeplant) bei einem Storage-Ausfall auf dem primären System.
+
+Die aktive Synchronisierung von SnapMirror verwendet ALUA, einen Mechanismus, der ein Multipathing-Software für Applikationshosts mit Pfaden ermöglicht, die mit Prioritäten beworben werden, und Zugriffsverfügbarkeit für die Kommunikation des Applikations-Hosts mit dem Storage-Array. ALUA markiert aktive optimierte Pfade zu den Controllern, die die LUN besitzen, und andere als aktive, nicht-optimierte Pfade, die nur verwendet werden, wenn der primäre Pfad ausfällt.
+
+.Geclusterte Applikationen
+Geclusterte Applikationen, darunter VMware Metro Storage Cluster, Oracle RAC und Windows Failover Clustering mit SQL, erfordern gleichzeitigen Zugriff, damit VMs ohne Performance-Overhead an anderen Standorten Failover können. Die symmetrische aktiv/aktiv-Synchronisierung von SnapMirror dient der lokalen I/O mit bidirektionaler Replizierung, um die Anforderungen von Cluster-Applikationen zu erfüllen.
+
+.Notfallszenario
+Synchrone Replizierung mehrerer Volumes für eine Applikation zwischen Standorten an geografisch verteilten Standorten Bei Unterbrechungen des primären Storage kann automatisch ein Failover auf die sekundäre Kopie durchgeführt werden. Dies ermöglicht Business Continuity für Tier-1-Applikationen. Wenn der Standort, der das primäre Cluster hostet, einen Ausfall durchbricht, kennzeichnet die Host-Multipathing-Software alle Pfade durch das Cluster als inaktiv und verwendet Pfade vom sekundären Cluster. Das Ergebnis ist ein unterbrechungsfreier Failover, der durch ONTAP Mediator auf die gespiegelte Kopie aktiviert wird.
+
+.Windows Failover
+SnapMirror Active Sync bietet Flexibilität mit benutzerfreundlicher Granularität auf Applikationsebene und automatischem Failover. Die aktive Synchronisierung von SnapMirror verwendet die bewährte synchrone SnapMirror Replizierung über das IP-Netzwerk, um Daten mit hoher Geschwindigkeit über LAN oder WAN zu replizieren. Damit erreichen Sie hohe Datenverfügbarkeit und schnelle Datenreplizierung für Ihre geschäftskritischen Applikationen wie Oracle, Microsoft SQL Server usw. in virtuellen und physischen Umgebungen.
+
+Dank der aktiven Synchronisierung von SnapMirror können geschäftskritische Business Services auch bei einem vollständigen Standortausfall weiterlaufen, wobei als TAF auf die sekundäre Kopie zur Verfügung steht. Zur Auslösung dieses Failovers sind keine manuellen Eingriffe oder kein zusätzliches Scripting erforderlich.
