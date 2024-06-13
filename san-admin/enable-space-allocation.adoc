@@ -2,7 +2,7 @@
 permalink: san-admin/enable-space-allocation.html 
 sidebar: sidebar 
 keywords: enable, space allocation, space reclamation, unmap 
-summary: Wenn Sie die Option für die Speicherplatzzuweisung auf aktiviert setzen, benachrichtigt ONTAP den Host, wenn der Speicherplatz des Volume erschöpft ist, und die LUN im Volume kann keine Schreibvorgänge akzeptieren. Mit dieser Option kann ONTAP auch automatisch Speicherplatz freigeben, wenn der Host Daten löscht. 
+summary: Aktivieren Sie die Speicherplatzzuweisung, damit Host und Speichersystem bei der Speicherplatzverwaltung zusammenarbeiten können. 
 ---
 = Aktivieren Sie die Speicherplatzzuweisung für SAN
 :allow-uri-read: 
@@ -11,12 +11,18 @@ summary: Wenn Sie die Option für die Speicherplatzzuweisung auf aktiviert setze
 
 
 [role="lead"]
-Wenn Ihr FC- oder iSCSI-Host SCSI-Thin-Provisioning unterstützt, können Sie die Speicherplatzzuweisung aktivieren.  Wenn die Speicherplatzzuweisung aktiviert ist und einem Volume der Speicherplatz ausgeht, bleibt die LUN im Volume online und ist auf schreibgeschützten Modus festgelegt.  Der Host wird dann benachrichtigt, dass die LUN keine Schreibvorgänge mehr akzeptieren kann.  Wenn die Speicherplatzzuweisung auf Ihrem Host nicht unterstützt oder nicht aktiviert wird, schaltet ONTAP die LUN offline, wenn der Speicherplatz eines Volumes knapp wird und nicht automatisch erweitert werden kann.
+Aktivieren Sie die Speicherplatzzuweisung, um Hosts und Speichersysteme bei der LUN-Speicherplatzverwaltung zusammenzuarbeiten. Aktivieren der `space-allocation` Die Einstellung bietet folgende Vorteile:
 
-Wenn die Speicherplatzzuweisung aktiviert ist, identifiziert das hostseitige Speicherplatzmanagement zudem Datenblöcke, die im Host-Dateisystem gelöscht wurden, und gibt automatisch einen oder mehrere aus `SCSI UNMAP` Befehle zur Freigabe entsprechender Blöcke im Storage-System und zur Freigabe von Speicherplatz durch ONTAP
+* *ONTAP kann mit einem Host kommunizieren, dass kein freier Speicherplatz verfügbar ist, um einen Schreibvorgang zu bedienen*: Diese Kommunikation ist eine anmutige Möglichkeit für Hosts, Situationen zu bewältigen, die nicht im Raum liegen. Die LUN bleibt online, kann jedoch keine I/O-Schreibvorgänge bedienen, bis Speicherplatz verfügbar wird. Lese-I/O kann weiterhin ausgeführt werden. Die genaue Auswirkung auf ein Host-Betriebssystem hängt von der Hostkonfiguration ab. In einigen Fällen versucht das OS Schreib-IO erneut, bis er erfolgreich ist. In anderen Fällen könnte das Dateisystem offline gestellt werden.
++
+
+NOTE: Wenn der `space-allocation` Die Einstellung ist nicht aktiviert, eine LUN wechselt in den Status von `space-error` Wenn sie einen niedrigen Speicherplatzschwellenwert erreicht und alle IO ausfallen. Die LUN muss wieder in geändert werden `online` Status, nachdem das Speicherplatzproblem gelöst wurde. Das erneute Scannen von LUN-Geräten kann auch auf dem Host erforderlich sein, um Pfade und Geräte wieder in den Betriebszustand zu versetzen.
+
+* *Ein Host kann ausführen `SCSI UNMAP` (Manchmal auch genannt `TRIM`) Operations*: Mit diesen Operationen kann ein Host Datenblöcke auf einer LUN identifizieren, die nicht mehr benötigt werden, da sie keine gültigen Daten mehr enthalten. Die Identifizierung erfolgt normalerweise nach dem Löschen der Datei. Das Storage-System kann diese Datenblöcke dann Zuordnung aufheben, sodass der Speicherplatz an anderer Stelle verbraucht werden kann. Dieser Deallocation verbessert die gesamte Speichereffizienz erheblich, insbesondere bei Dateisystemen mit hohem Datenumsatz.
+
 
 .Bevor Sie beginnen
-Um die Speicherplatzzuweisung zu aktivieren, muss SCSI Thin Provisioning von Ihrem Host unterstützt werden. SCSI Thin Provisioning verwendet logische Blockbereitstellung gemäß dem SCSI SBC-3-Standard. Nur Hosts, die diesen Standard unterstützen, können SCSI Thin Provisioning in ONTAP verwenden.
+Für die Aktivierung der Speicherplatzzuweisung ist eine Host-Konfiguration erforderlich, die Fehler bei der Speicherplatzzuweisung korrekt verarbeiten kann, wenn ein Schreibvorgang nicht abgeschlossen werden kann. Nutzung `SCSI UNMAP` Erfordert eine Konfiguration, die logische Blockbereitstellung gemäß dem SCSI SBC-3-Standard verwenden kann.
 
 Die folgenden Hosts unterstützen derzeit SCSI Thin Provisioning beim Aktivieren der Speicherplatzzuweisung:
 
@@ -37,32 +43,18 @@ Ab ONTAP 9.15.1 ist die Speicherplatzzuweisung bei neu erstellten VMware- und Hy
 
 NOTE: Wenn Sie das Cluster auf ONTAP 9.15.1 aktualisieren, bleibt die Einstellung für die Speicherplatzzuweisung für alle LUNs, die vor dem Softwareupgrade erstellt wurden, unabhängig vom Hosttyp nach dem Upgrade unverändert.  Wenn beispielsweise eine LUN in ONTAP 9.13.1 für einen VMware Host erstellt wurde und die Speicherplatzzuweisung deaktiviert ist, bleibt die Speicherplatzzuweisung auf dieser LUN nach dem Upgrade auf ONTAP 9.15.1 deaktiviert.
 
-Sie müssen die LUN offline schalten, um die Speicherplatzzuweisung zu aktivieren. Anschließend müssen Sie die Erkennung auf dem Host durchführen, bevor der Host erkennt, dass die Speicherplatzzuweisung aktiviert wurde.
-
 .Schritte
-. Versetzen Sie die LUN in den Offline-Modus:
-+
-[source, cli]
-----
-lun modify -vserver vserver_name -volume volume_name -lun lun_name -state offline
-----
 . Speicherplatzzuweisung aktivieren:
 +
-[source, cli]
-----
-lun modify -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -space-allocation enabled
-----
+`lun modify -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -space-allocation enabled`
+
 . Vergewissern Sie sich, dass die Speicherplatzzuweisung aktiviert ist:
 +
-[source, cli]
-----
-lun show -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -fields space-allocation
-----
-. Versetzen Sie die LUN in den Online-Modus:
+`lun show -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -fields space-allocation`
+
+. Vergewissern Sie sich, dass die Speicherplatzzuweisung auf dem Host-Betriebssystem aktiviert ist.
 +
-[source, cli]
-----
-lun modify -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -state online
-----
-. Auf dem Host, scannen Sie alle Festplatten neu, um sicherzustellen, dass die Änderung an `-space-allocation` Die Option wurde ordnungsgemäß erkannt.
+
+NOTE: Einige Hostkonfigurationen, insbesondere ESX, können die Einstellungsänderung automatisch erkennen und erfordern keinen Eingriff durch den Benutzer. Für andere Konfigurationen ist möglicherweise ein erneuter Gerätescan erforderlich. Einige Dateisysteme und Volume-Manager benötigen möglicherweise zusätzliche spezifische Einstellungen, um die Rückgewinnung von Speicherplatz mithilfe zu ermöglichen `SCSI UNMAP`. Es kann erforderlich sein, Dateisysteme neu zu mounten oder ein vollständiges Betriebssystem neu zu starten. Weitere Informationen finden Sie in der Dokumentation zu Ihrem jeweiligen Betriebssystem.
+
 
