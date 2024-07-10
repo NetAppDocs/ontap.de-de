@@ -2,7 +2,7 @@
 permalink: s3-config/architecture.html 
 sidebar: sidebar 
 keywords: s3 architecture, ontap 9 
-summary: 'In ONTAP ist die zugrunde liegende Architektur für einen Bucket ein FlexGroup Volume: Ein einziger Namespace, der aus mehreren zusammengehörigen Member Volumes besteht, aber als einzelnes Volume gemanagt wird.' 
+summary: In ONTAP ist die zugrunde liegende Architektur für einen Bucket ein FlexGroup Volume, ein einziger Namespace, der aus mehreren zusammengehörigen Member Volumes besteht, aber als ein einzelnes Volume gemanagt wird. 
 ---
 = Der Netapp Architektur Sind
 :allow-uri-read: 
@@ -11,17 +11,53 @@ summary: 'In ONTAP ist die zugrunde liegende Architektur für einen Bucket ein F
 
 
 [role="lead"]
-In ONTAP ist die zugrunde liegende Architektur für einen Bucket ein FlexGroup Volume – ein einziger Namespace, der aus mehreren zusammengehörigen Member Volumes besteht, aber als einzelnes Volume gemanagt wird.
+In ONTAP ist die zugrunde liegende Architektur für einen Bucket ein link:https://docs.netapp.com/us-en/ontap/flexgroup/definition-concept.html["FlexGroup Volume"]einziger Namespace, der aus mehreren zusammengehörigen Member Volumes besteht, aber als ein einzelnes Volume gemanagt wird.
 
-image:fg-overview-s3-config.gif["Das FlexGroup Volume war als Gruppe von FlexVol Volumes vertreten, die als Komponenten bezeichnet werden"]
+image::../media/fg-overview-s3-config.gif[Das FlexGroup Volume war als Gruppe von FlexVol Volumes vertreten, die als Komponenten bezeichnet werden]
 
-Buckets werden nur durch die physischen Maximalwerte der zugrunde liegenden Hardware begrenzt, deren maximale Anzahl an Architekturen höher sein könnte. Buckets können von der flexiblen FlexGroup Größenanpassung profitieren, um automatisch eine Komponente eines FlexGroup Volume zu vergrößern, wenn der Speicherplatz knapp wird. Es gibt ein Limit von 1000 Buckets pro FlexGroup Volume oder 1/3 der Kapazität des FlexGroup Volume (um das Datenwachstum in Buckets zu berücksichtigen).
+Der Zugriff auf den Bucket wird durch autorisierte Benutzer und Client-Applikationen bereitgestellt.
+
+image::../media/s3-svm-layout.png[S3-SVM-Bucket-Zugriff]
 
 [NOTE]
 ====
-Dem FlexGroup Volume mit S3 Buckets ist kein NAS- oder SAN-Protokollzugriff gestattet.
+Wenn ein Bucket ausschließlich für S3-Applikationen verwendet wird, einschließlich Verwendung als FabricPool-Endpunkt, unterstützt das zugrunde liegende FlexGroup Volume nur das S3-Protokoll.
+
+Ab ONTAP 9.12.1 kann das S3-Protokoll auch in Funktionen aktiviert werden link:../s3-multiprotocol/index.html["Multiprotokoll-NAS-Volumes"] , die bereits für die Verwendung von NAS-Protokollen vorkonfiguriert sind. Wenn das S3-Protokoll in Multiprotokoll-NAS-Volumes aktiviert ist, können Client-Applikationen Daten mithilfe von NFS, SMB und S3 lesen und schreiben.
 
 ====
-Der Zugriff auf den Bucket wird durch autorisierte Benutzer und Client-Applikationen bereitgestellt.
 
-image:s3-svm-layout.png["S3-SVM-Bucket-Zugriff"]
+
+== Bucket-Grenzwerte
+
+Die minimale Bucket-Größe beträgt 95 GB. + die maximale Bucket-Größe ist auf die maximale FlexGroup-Größe von 60 PB beschränkt.
+
+Es sind maximal 1000 Buckets pro FlexGroup Volume oder 12,000 Buckets pro Cluster (mit 12 FlexGroup Volumes) verfügbar.
+
+
+
+== Automatische FlexGroup-Dimensionierung mit ONTAP 9.14.1 und höher
+
+Ab ONTAP 9.14.1 basiert die Standard-FlexGroup-Größe auf der Größe der zugrunde liegenden Buckets. Das FlexGroup Volume lässt sich beim Hinzufügen oder Entfernen von Buckets automatisch vergrößern oder verkleinern.
+
+Wenn beispielsweise „Initial Bucket_A“ mit 100 GB bereitgestellt wird, wird die FlexGroup mit 100 GB über Thin Provisioning bereitgestellt. Wenn zwei zusätzliche Buckets erstellt werden, Bucket_B mit 300 GB und Bucket_C mit 500 GB, wächst das FlexGroup Volume auf 900 GB an.
+
+(Bucket_A bei 100 GB + Bucket_B bei 300 GB + Bucket_C bei 500 GB = 900 GB)
+
+Wenn Bucket_A gelöscht wird, wird das zugrunde liegende FlexGroup-Volume auf 800 GB verkleinert.
+
+
+
+== Standardgrößen für FlexGroup in ONTAP 9.13.1 und früher wurden korrigiert
+
+Um die Kapazität für die Bucket-Erweiterung zur Verfügung zu stellen, sollte die insgesamt genutzte Kapazität aller Buckets im FlexGroup Volume basierend auf verfügbaren Storage-Aggregaten auf weniger als 33 % der maximalen FlexGroup Volume-Kapazität betragen. Wenn diese Voraussetzungen nicht erfüllt werden können, wird der neu erstellte Bucket auf einem neuen, automatisch erstellten FlexGroup Volume bereitgestellt.
+
+Vor ONTAP 9.14.1 ist die FlexGroup-Größe abhängig von der Umgebung auf Standardgröße festgelegt:
+
+* 1,6 PB in ONTAP
+* 100 TB in ONTAP Select
+
+
+Wenn ein Cluster nicht über genügend Kapazität verfügt, um ein FlexGroup Volume mit der Standardgröße bereitzustellen, reduziert ONTAP die Standardgröße um die Hälfte, bis sie in der vorhandenen Umgebung bereitgestellt werden kann.
+
+In einer Umgebung mit 300 TB wird beispielsweise automatisch ein FlexGroup Volume mit 200 TB bereitgestellt (1,6 PB, 800 TB und 400 TB FlexGroup Volumes, die für die Umgebung zu groß sind).
