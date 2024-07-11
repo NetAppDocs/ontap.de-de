@@ -1,0 +1,89 @@
+---
+sidebar: sidebar 
+permalink: smb-admin/windows-backup-symlinks.html 
+keywords: windows, windows server, backup, backup application, symbolic link, symlink, unix, unix-style 
+summary: 'Wenn eine Backup-Anwendung unter Windows auf einen symbolischen Unix-artigen Link (Symlink) stößt, wird der Link gefolgt und die Daten gesichert. Ab ONTAP 9.15.1 haben Sie die Möglichkeit, die Symlinks statt der Daten zu sichern. Diese Funktion wird vollständig von ONTAP FlexGroups und FlexVols unterstützt.' 
+---
+= Windows-Backup-Anwendungen und Unix-ähnliche Symlinks
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn eine Backup-Anwendung unter Windows auf einen symbolischen Unix-artigen Link (Symlink) stößt, wird der Link gefolgt und die Daten gesichert. Ab ONTAP 9.15.1 haben Sie die Möglichkeit, die Symlinks statt der Daten zu sichern. Diese Funktion wird vollständig von ONTAP FlexGroups und FlexVols unterstützt.
+
+
+
+== Überblick
+
+Bevor Sie ändern, wie ONTAP Symlinks während eines Windows-Backup-Vorgangs verarbeitet, sollten Sie mit den Vorteilen, Schlüsselkonzepten und Konfigurationsoptionen vertraut sein.
+
+
+
+=== Vorteile
+
+Wenn diese Funktion deaktiviert oder nicht verfügbar ist, wird jeder Symlink durchlaufen und die Daten, zu denen er verknüpft, werden gesichert. Aus diesem Grund können unnötige Daten manchmal gesichert werden und in bestimmten Situationen kann die Anwendung in einer Schleife enden. Durch das Sichern der Symlinks werden diese Probleme vermieden. Und da die Symlink-Dateien im Vergleich zu den Daten in den meisten Fällen sehr klein sind, benötigen die Backups weniger Zeit. Auch die Gesamt-Performance des Clusters kann sich wegen der reduzierten I/O-Operationen verbessern.
+
+
+
+=== Windows Serverumgebung
+
+Diese Funktion wird für Backup-Anwendungen unterstützt, die unter Windows ausgeführt werden. Sie sollten die relevanten technischen Aspekte der Umgebung kennen, bevor Sie sie verwenden.
+
+.Erweiterte Attribute
+Windows unterstützt erweiterte Attribute (EA), die zusammen zusätzliche Metadaten bilden, die optional den Dateien zugeordnet sind. Diese Attribute werden von verschiedenen Anwendungen verwendet, wie zum Beispiel das Windows-Subsystem für Linux, wie unter beschrieben https://learn.microsoft.com/en-us/windows/wsl/file-permissions["Dateiberechtigungen für WSL"^]. Beim Lesen von Daten aus ONTAP können Applikationen erweiterte Attribute für jede Datei anfordern.
+
+Die Symlinks werden in den erweiterten Attributen zurückgegeben, wenn die Funktion aktiviert ist. Daher muss eine Backup-Anwendung eine Standard-EA-Unterstützung bereitstellen, die zum Speichern der Metadaten verwendet wird. Einige Windows-Dienstprogramme unterstützen und bewahren die erweiterten Attribute. Wenn die Sicherungssoftware jedoch das Sichern und Wiederherstellen der erweiterten Attribute nicht unterstützt, werden die mit jeder Datei verknüpften Metadaten nicht beibehalten und die Symlinks nicht ordnungsgemäß verarbeitet.
+
+.Windows-Konfiguration
+Backup-Anwendungen, die auf einem Microsoft Windows-Server ausgeführt werden, können eine besondere Berechtigung erhalten, die ihnen die normale Dateisicherheit ermöglicht. Dies geschieht normalerweise, indem die Anwendungen der Gruppe Backup Operators hinzugefügt werden. Die Apps können dann nach Bedarf Dateien sichern und wiederherstellen sowie andere verwandte Systemvorgänge durchführen. Das von den Backup-Anwendungen verwendete SMB-Protokoll hat geringfügige Änderungen, die von ONTAP beim Lesen und Schreiben der Daten erkannt werden können.
+
+
+
+=== Anforderungen
+
+Die symlink-Backup-Funktion hat mehrere Anforderungen, darunter:
+
+* Ihr Cluster führt ONTAP 9.15.1 oder höher aus.
+* Eine Windows-Backup-Anwendung, der spezielle Sicherungsberechtigungen gewährt wurden.
+* Die Backup-Applikation muss zudem erweiterte Attribute unterstützen und diese während des Backup-Vorgangs anfordern.
+* Die Symlink-Backup-Funktion von ONTAP ist für die entsprechende Daten-SVM aktiviert.
+
+
+
+
+=== Konfigurationsoptionen
+
+Zusätzlich zur ONTAP-CLI können Sie diese Funktion auch über die REST-API verwalten. Weitere Informationen finden Sie unter https://docs.netapp.com/us-en/ontap-automation/whats-new.html["Neuerungen an der ONTAP REST-API und Automatisierung"^] . Die Konfiguration, die bestimmt, wie ONTAP die Unix-artigen Symlinks verarbeitet, muss für jede SVM separat durchgeführt werden.
+
+
+
+== Aktivieren Sie die Symlink-Backup-Funktion in ONTAP
+
+Für einen vorhandenen CLI-Befehl wurde mit ONTAP 9.15.1 eine Konfigurationsoption eingeführt. Mit dieser Option können Sie die Symlink-Verarbeitung im Unix-Stil aktivieren oder deaktivieren.
+
+.Bevor Sie beginnen
+Überprüfen Sie die Grundfunktionen <<Anforderungen>>. Außerdem:
+
+* Erhöhen Sie Ihre CLI-Berechtigungen auf die erweiterte Ebene.
+* Bestimmen Sie die zu ändernde Daten-SVM. Im Beispielbefehl wird die SVM `vs1` verwendet.
+
+
+.Schritte
+. Legen Sie die erweiterte Berechtigungsebene fest.
++
+[source, cli]
+----
+set privilege advanced
+----
+. Aktivieren Sie die Symlink-Dateisicherung.
++
+[source, cli]
+----
+vserver cifs options modify -vserver vs1 -is-backup-symlink-enabled true
+----
+
