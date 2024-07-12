@@ -2,7 +2,7 @@
 permalink: smb-hyper-v-sql/configure-shares-continuous-availability-task.html 
 sidebar: sidebar 
 keywords: configure, shares, continuous, availability, hyper, v, sql, server, virutal, machine, database, file 
-summary: Sie können vorhandene Shares so ändern, dass diese kontinuierlich verfügbaren Shares werden, die mit den Hyper-V und SQL Server Applikationsserver für den unterbrechungsfreien Zugriff auf Hyper-V Virtual Machines, Konfigurationsdateien und SQL Server Datenbankdateien verwendet werden. 
+summary: Freigaben ändern, um kontinuierlich verfügbare Freigaben zu sein Hyper-V- und SQL Server-Anwendungsserver werden für unterbrechungsfreien Zugriff verwendet 
 ---
 = Konfigurieren Sie vorhandene Shares für kontinuierliche Verfügbarkeit
 :allow-uri-read: 
@@ -42,45 +42,52 @@ Die folgenden Freigabeigenschaften dürfen nicht festgelegt werden. Wenn sie in 
 .Schritte
 . Die aktuellen Einstellungen für den Freigabeparameter und die aktuelle Liste der konfigurierten Freigabeneigenschaften anzeigen:
 +
-`*vserver cifs share show -vserver _vserver_name_ -share-name _share_name_*`
-
-. Ändern Sie ggf. die Freigabeparameter, um Symlinks zu deaktivieren und Offline-Dateien mithilfe des auf manuell zu setzen `vserver cifs share properties modify` Befehl.
-+
-Sie können Symlinks deaktivieren, indem Sie den Wert des festlegen `-symlink` Parameter an `""`.
-
+[source, cli]
+----
+vserver cifs share show -vserver <vserver_name> -share-name <share_name>
+----
+. Ändern Sie bei Bedarf die Freigabeparameter, um Symlinks zu deaktivieren und Offline-Dateien mit dem Befehl auf manuell zu setzen `vserver cifs share modify` .
 +
 ** Sie können Symlinks deaktivieren, indem Sie den Wert des festlegen `-symlink` Parameter an `""`.
 ** Sie können die einstellen `-offline-files` Parameter auf die richtige Einstellung durch Angabe `manual`.
 
 
-. Fügen Sie die hinzu `continuously-available` Teilen Sie die Eigenschaft, und, falls erforderlich, die `oplocks` Eigenschaft teilen:
+. Fügen Sie die Eigenschaft „Share“ und, falls erforderlich, die Eigenschaft „Share“ hinzu `continuously-available` `oplocks` :
 +
-`*vserver cifs share properties add -vserver _vserver_name_ -share-name _share_name_ -share-properties continuously-available[,oplock]*`
-
+[source, cli]
+----
+vserver cifs share properties add -vserver <vserver_name> -share-name <share_name> -share-properties continuously-available[,oplock]
+----
 +
 Wenn der `oplocks` Die Freigabegenschaft ist nicht bereits festgelegt, Sie müssen sie zusammen mit dem hinzufügen `continuously-available` Eigenschaft freigeben.
 
 . Entfernen Sie alle Share-Eigenschaften, die nicht auf kontinuierlich verfügbaren Freigaben unterstützt werden:
 +
-`*vserver cifs share properties remove -vserver _vserver_name_ -share-name _share_name_ -share-properties properties[,...]*`
-
+[source, cli]
+----
+vserver cifs share properties remove -vserver <vserver_name> -share-name <share_name> -share-properties properties[,...]
+----
 +
 Sie können eine oder mehrere Share-Eigenschaften entfernen, indem Sie die Share-Eigenschaften mit einer kommagetrennten Liste angeben.
 
 . Überprüfen Sie das `-symlink` Und `-offline-files` Parameter sind korrekt eingestellt:
 +
-`*vserver cifs share show -vserver _vserver_name_ -share-name _share_name_ -fields symlink-properties,offline-files*`
-
+[source, cli]
+----
+vserver cifs share show -vserver <vserver_name> -share-name <share_name> -fields symlink-properties,offline-files
+----
 . Vergewissern Sie sich, dass die Liste der konfigurierten Freigabeigenschaften korrekt ist:
 +
-`*vserver cifs shares properties show -vserver _vserver_name_ -share-name share_name*`
-
+[source, cli]
+----
+vserver cifs share properties show -vserver <vserver_name> -share-name <share_name>
+----
 
 
 .Beispiele
-Das folgende Beispiel zeigt, wie eine vorhandene Freigabe mit dem Namen „`share1`“ auf Storage Virtual Machine (SVM) vs1 für NDOS mit einem Applikations-Server über SMB konfiguriert wird:
+Im folgenden Beispiel wird gezeigt, wie eine vorhandene Freigabe namens „share1“ auf der Storage Virtual Machine (SVM) „vs1“ für NDOS mit einem Applikations-Server über SMB konfiguriert wird:
 
-* Die Symlinks werden auf der Freigabe durch Festlegen des deaktiviert `-symlink` Parameter auf „“.
+* Symlinks werden für die Freigabe deaktiviert, indem der Parameter auf gesetzt `-symlink` `""`wird.
 * Der `-offline-file` Parameter wurde geändert und auf festgelegt `manual`.
 * Der `continuously-available` Share-Eigenschaft wird zur Freigabe hinzugefügt.
 * Der `oplocks` Die Freigabeigenschaft befindet sich bereits in der Liste der Freigabeneigenschaften. Sie muss daher nicht hinzugefügt werden.
