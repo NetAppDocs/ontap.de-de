@@ -1,0 +1,43 @@
+---
+sidebar: sidebar 
+permalink: ontap-security-hardening/data-replication-encryption.html 
+keywords: tr-4569, ontap hardening guide, encrypted SnapMirror, SnapVault, FlexCache, pre-shared key, TLS 1.2 
+summary: Datenreplizierungsverschlüsselung mit TLS 1.2 verschlüsseln Replizierungsverkehr für SnapMirror, SnapVault und FlexCache mit einem vorab gemeinsamen Schlüssel zwischen ONTAP Clustern. 
+---
+= Datenreplizierung Verschlüsselung
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media
+
+
+[role="lead"]
+Als Ergänzung zur Verschlüsselung von Daten im Ruhezustand können Sie den ONTAP-Datenverkehr zwischen Clustern mithilfe von TLS 1.2 mit einem vorab gemeinsam genutzten Schlüssel für SnapMirror, SnapVault oder FlexCache verschlüsseln.
+
+Bei der Replizierung von Daten für Disaster Recovery, Caching oder Backup müssen die Daten während der Übertragung über das Netzwerk von einem ONTAP Cluster zum anderen gesichert werden. Auf diese Weise werden böswillige man-in-the-Middle-Angriffe auf sensible Daten während der Übertragung verhindert.
+
+Ab ONTAP 9.6 bietet Cluster-Peering-Verschlüsselung TLS 1.2 AES-256 GCM-Verschlüsselung für ONTAP Datenreplizierungsfunktionen wie SnapMirror, SnapVault und FlexCache. Die Verschlüsselung wird über einen vorab freigegebenen Schlüssel (PSK) zwischen zwei Cluster-Peers eingerichtet.
+
+Unternehmen, die Technologien wie NSE, NVE und NAE zur Sicherung von Daten im Ruhezustand einsetzen, können außerdem die End-to-End-Datenverschlüsselung durch Upgrade auf ONTAP 9.6 oder höher zur Verwendung der Cluster-Peering-Verschlüsselung nutzen.
+
+Cluster-Peering verschlüsselt alle Daten zwischen den Cluster-Peers. Wenn Sie beispielsweise SnapMirror verwenden, werden alle Peering-Informationen sowie alle SnapMirror Beziehungen zwischen dem Quell- und Ziel-Cluster-Peer verschlüsselt. Sie können keine Klartextdaten zwischen Cluster-Peers senden, für die die Cluster-Peering-Verschlüsselung aktiviert ist.
+
+Ab ONTAP 9.6 ist bei neuen Cluster-Peer-Beziehungen standardmäßig die Verschlüsselung aktiviert. Um die Verschlüsselung für Cluster-Peer-Beziehungen zu aktivieren, die vor ONTAP 9.6 erstellt wurden, müssen Sie das Quell- und Ziel-Cluster auf 9.6 aktualisieren. Darüber hinaus müssen Sie den Befehl verwenden `cluster peer modify` , um die Quell- und Ziel-Cluster-Peers zu ändern, um Cluster-Peering-Verschlüsselung zu verwenden.
+
+Sie können eine vorhandene Peer-Beziehung in ONTAP 9.6 umwandeln, um die Cluster-Peering-Verschlüsselung zu verwenden, wie im folgenden Beispiel gezeigt:
+
+[listing]
+----
+On the Destination Cluster Peer
+
+cluster2::> cluster peer modify cluster1 -auth-status-admin use-authentication -encryption-protocol-proposed tls-psk
+
+When prompted enter a passphrase.
+
+On the Source Cluster Peer
+
+cluster1::> cluster peer modify cluster2 -auth-status-admin use-authentication -encryption-protocol-proposed tls-psk
+
+When prompted enter the same passphrase you created in the previous step.
+----

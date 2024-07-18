@@ -1,0 +1,102 @@
+---
+sidebar: sidebar 
+permalink: ontap-security-hardening/system-auditing.html 
+keywords: tr-4569, ontap hardening guide, security, log forwarding, log encryption, events, syslog, audit, event notification 
+summary: Stellen Sie die Integrität der Ereignisüberwachung sicher, indem Sie ONTAP-Ereignisse auf einen Remote-Syslog-Server laden. 
+---
+= Prüfung von Storage-Verwaltungssystemen
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media
+
+
+[role="lead"]
+Stellen Sie die Integrität der Ereignisüberwachung sicher, indem Sie ONTAP-Ereignisse auf einen Remote-Syslog-Server laden. Bei diesem Server könnte es sich um ein Sicherheitsinformationsereignismanagementsystem wie Splunk handelt.
+
+
+
+== Senden Sie Syslog
+
+Protokoll- und Audit-Informationen sind für ein Unternehmen im Hinblick auf Support und Verfügbarkeit von unschätzbarem Wert. Zudem handelt es sich bei den in Protokollen (Syslog) und Audit-Berichten enthaltenen Informationen und Details in der Regel um sensible Daten. Um die Sicherheitskontrollen und das Sicherheitsniveau aufrechtzuerhalten, müssen Unternehmen die Protokoll- und Audit-Daten unbedingt sicher managen.
+
+Das verlagern von Syslog-Informationen ist nötig, um den Umfang oder die Auswirkungen einer Sicherheitsverletzung auf ein einzelnes System oder eine einzelne Lösung zu beschränken. Daher empfiehlt NetApp, Syslog-Informationen sicher an einen sicheren Storage- oder Aufbewahrungsort zu verlagern.
+
+
+
+=== Erstellen Sie ein Ziel für die Protokollweiterleitung
+
+Verwenden Sie den `cluster log-forwarding create` Befehl, um Protokollweiterleitungsziele für die Remote-Protokollierung zu erstellen.
+
+.Parameter
+Verwenden Sie die folgenden Parameter, um den Befehl zu konfigurieren `cluster log-forwarding create` :
+
+* *Ziel-Host.* Dieser Name ist der Hostname oder die IPv4- oder IPv6-Adresse des Servers, an den die Protokolle weitergeleitet werden sollen.
++
+[listing]
+----
+-destination <Remote InetAddress>
+----
+* *Zielport.* Dies ist der Port, an dem der Zielserver abhört.
++
+[listing]
+----
+[-port <integer>]
+----
+* *Protokoll zur Protokollweiterleitung.* Dieses Protokoll wird zum Senden von Meldungen an das Ziel verwendet.
++
+[listing]
+----
+[-protocol \{udp-unencrypted|tcp-unencrypted|tcp-encrypted}]
+----
++
+Das Protokoll für die Protokollweiterleitung kann einen der folgenden Werte verwenden:
+
++
+** `udp-unencrypted`. Benutzer-Datagram-Protokoll ohne Sicherheit.
+** `tcp-unencrypted`. TCP ohne Sicherheit.
+** `tcp-encrypted`. TCP mit Transport Layer Security (TLS).
+
+
+* * Überprüfen Sie die Identität des Zielservers.* Wenn dieser Parameter auf true gesetzt ist, wird die Identität des Protokollweiterleitungsziels durch Validierung des Zertifikats überprüft. Der Wert kann nur dann auf TRUE gesetzt werden, wenn der `tcpencrypted` Wert im Protokollfeld ausgewählt ist.
++
+[listing]
+----
+[-verify-server \{true|false}]
+----
+* *Syslog-Funktion.* Dieser Wert ist die Syslog-Funktion, die für die weitergeleiteten Protokolle verwendet werden soll.
++
+[listing]
+----
+[-facility <Syslog Facility>]
+----
+* *Überspringen Sie den Verbindungstest.* Normalerweise überprüft der `cluster log-forwarding create` Befehl, ob das Ziel durch Senden eines ICMP-Ping (Internet Control Message Protocol) erreichbar ist, und schlägt fehl, wenn es nicht erreichbar ist. Wenn Sie diesen Wert so einstellen, `true` dass die Ping-Prüfung umgangen wird, können Sie das Ziel konfigurieren, wenn es nicht erreichbar ist.
++
+[listing]
+----
+[-force [true]]
+----
+
+
+
+NOTE: NetApp empfiehlt, die Verbindung zu einem Typ mit dem `cluster log-forwarding` Befehl zu erzwingen `-tcp-encrypted` .
+
+
+
+== Ereignisbenachrichtigung
+
+Der Schutz der Informationen und Daten, die ein System verlassen, ist für die Aufrechterhaltung und das Management der Sicherheit des Systems von entscheidender Bedeutung. Die durch die ONTAP Lösung generierten Ereignisse bieten eine Fülle von Informationen über die Lösung, die verarbeiteten Informationen und vieles mehr. Die Vitalität dieser Daten macht deutlich, dass sie sicher gemanagt und migriert werden müssen.
+
+Der `event notification create` Befehl sendet eine neue Benachrichtigung über eine Reihe von Ereignissen, die durch einen Ereignisfilter definiert wurden, an ein oder mehrere Benachrichtigungsziele. In den folgenden Beispielen werden die Konfiguration für Ereignisbenachrichtigungen und der `event notification show` Befehl dargestellt, mit dem die konfigurierten Filter und Ziele für Ereignisbenachrichtigungen angezeigt werden.
+
+[listing]
+----
+cluster1::> event notification create -filter-name filter1 -destinations
+ email_dest,syslog_dest,snmp-traphost
+
+cluster1::> event notification show
+ID     Filter Name       Destinations
+-----  ----------------  -----------------
+1 filter1 email_dest, syslog_dest, snmp-traphost
+----
