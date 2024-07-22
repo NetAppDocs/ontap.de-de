@@ -1,0 +1,57 @@
+---
+permalink: upgrade/snapmirror-cascade-relationship-blocked.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, 9.9.1. 9.10.1, update, cascade, LTR, long term retention, snapshots, considerations, secondary storage 
+summary: 'Wenn Sie in Ihrem Cluster eine SnapMirror Kaskadenbeziehung konfiguriert haben, müssen Sie möglicherweise LTR-Snapshots (Long-Term Retention) vor dem Upgrade deaktivieren' 
+---
+= Deaktivieren Sie Snapshots für die langfristige Aufbewahrung vor einem ONTAP-Upgrade
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn Sie ein Upgrade von ONTAP 9.9.1 oder einer älteren Version auf ONTAP 9.10.1 oder höher durchführen und in Ihrem Cluster eine SnapMirror-Kaskadenbeziehung konfiguriert ist, sollten Sie vor dem Upgrade LTR-Snapshots (Long-Term Retention) aus den mittleren Volumes in der Kaskadenkonfiguration deaktivieren. Die Kaskadierung eines Volumes mit aktivierten LTR Snapshots wird in ONTAP 9.10.1 oder höher nicht unterstützt. Die Verwendung dieser Konfiguration nach der Aktualisierung kann zu fehlenden Backups und Snapshots führen.
+
+Sie müssen in den folgenden Szenarien Maßnahmen ergreifen:
+
+* Snapshots für die langfristige Aufbewahrung (Long Term Retention, LTR) werden auf dem „B“-Volume in einer SnapMirror Kaskadierung „A > B > C“ oder auf einem anderen mittleren SnapMirror Ziel-Volume in Ihrer größeren Kaskadenkonfiguration konfiguriert.
+* LTR Snapshots werden durch einen Zeitplan definiert, der auf eine SnapMirror-Richtlinienregel angewendet wird. Diese Regel repliziert keine Snapshots vom Quell-Volume, erstellt sie aber direkt auf dem Ziel-Volume.
++
+
+NOTE: Weitere Informationen zu Zeitplänen und SnapMirror-Richtlinien finden Sie im Knowledge Base-Artikel.
+
+
+
+.Schritte
+. Entfernen Sie die LTR-Regel aus der SnapMirror-Richtlinie für das mittlere Volume der Kaskadenkonfiguration:
++
+[listing]
+----
+Secondary::> snapmirror policy remove-rule -vserver <> -policy <> -snapmirror-label <>
+----
+. Fügen Sie die Regel erneut für das SnapMirror-Label ohne den LTR-Zeitplan hinzu:
++
+[listing]
+----
+Secondary::> snapmirror policy add-rule -vserver <> -policy <> -snapmirror-label <> -keep <>
+----
++
+
+NOTE: Entfernen von LTR Snapshots aus den SnapMirror-Richtlinien-Regeln bedeutet, dass SnapMirror die Snapshots mit dem angegebenen Label aus dem Quell-Volume zieht. Möglicherweise müssen Sie auch einen Zeitplan in der Snapshot-Richtlinie des Quell-Volumes hinzufügen oder ändern, um ordnungsgemäß gekennzeichnete Snapshots zu erstellen.
+
+. Falls erforderlich, können Sie einen Zeitplan auf der Snapshot-Richtlinie des Quell-Volumes ändern (oder erstellen), um die Erstellung von Snapshots mit einem SnapMirror-Label zu ermöglichen:
++
+[listing]
+----
+Primary::> volume snapshot policy modify-schedule -vserver <> -policy <> -schedule <> -snapmirror-label <>
+----
++
+[listing]
+----
+Primary::> volume snapshot policy add-schedule -vserver <> -policy <> -schedule <> -snapmirror-label <> -count <>
+----
+
+
+
+NOTE: LTR Snapshots können weiterhin auf dem endgültigen SnapMirror Ziel-Volume in einer SnapMirror Kaskadenkonfiguration aktiviert werden.
