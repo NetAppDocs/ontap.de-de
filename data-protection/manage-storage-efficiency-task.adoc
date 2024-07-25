@@ -1,8 +1,8 @@
 ---
 permalink: data-protection/manage-storage-efficiency-task.html 
 sidebar: sidebar 
-keywords: manage, storage, efficiency, snapmirror, snap mirror, compression, compress, postporcess, update relationship, volume 
-summary: SnapMirror erhält die Storage-Effizienz auf den Quell- und Ziel-Volumes mit einer Ausnahme, wenn die nachgelagerte Datenkomprimierung auf dem Zielsystem aktiviert ist. In diesem Fall gehen sämtliche Storage-Effizienz auf dem Zielsystem verloren. Um dieses Problem zu beheben, müssen Sie die nachgelagerte Komprimierung auf dem Ziel deaktivieren, die Beziehung manuell aktualisieren und die Storage-Effizienz erneut aktivieren. 
+keywords: snapmirror, efficiency, manage, storage, snap mirror, compression, compress, postprocess, post-process, update relationship, volume 
+summary: Um die Storage-Effizienz zwischen Quell- und Ziel-Volumes mit SnapMirror aufrechtzuerhalten, muss die nachgelagerte Komprimierung auf dem Ziel-Volume deaktiviert werden 
 ---
 = Management der Storage-Effizienz
 :allow-uri-read: 
@@ -11,39 +11,36 @@ summary: SnapMirror erhält die Storage-Effizienz auf den Quell- und Ziel-Volume
 
 
 [role="lead"]
-SnapMirror erhält die Storage-Effizienz auf den Quell- und Ziel-Volumes mit einer Ausnahme, wenn die nachgelagerte Datenkomprimierung auf dem Zielsystem aktiviert ist. In diesem Fall gehen sämtliche Storage-Effizienz auf dem Zielsystem verloren. Um dieses Problem zu beheben, müssen Sie die nachgelagerte Komprimierung auf dem Ziel deaktivieren, die Beziehung manuell aktualisieren und die Storage-Effizienz erneut aktivieren.
-
-.Was Sie benötigen
-* Quell- und Ziel-Cluster sowie SVMs müssen Peering durchgeführt werden.
-+
-https://docs.netapp.com/us-en/ontap-system-manager-classic/peering/index.html["Cluster- und SVM-Peering"^]
-
-* Sie müssen die nachgelagerte Komprimierung auf dem Ziel deaktivieren.
-
+SnapMirror bewahrt die Storage-Effizienz auf den Quell- und Ziel-Volumes auf, außer wenn die nachgelagerte Datenkomprimierung auf dem Ziel-Volume aktiviert ist. In diesem Fall geht die gesamte Storage-Effizienz auf dem Ziel-Volume verloren. Um dieses Problem zu beheben, müssen Sie die nachgelagerte Komprimierung auf dem Ziel-Volume deaktivieren, die Beziehung manuell aktualisieren und die Storage-Effizienz erneut aktivieren.
 
 .Über diese Aufgabe
 Sie können das verwenden `volume efficiency show` Befehl zum Bestimmen, ob Effizienz auf einem Volume aktiviert ist Weitere Informationen finden Sie auf den man-Pages.
 
-Überprüfen Sie, ob SnapMirror die Storage-Effizienz aufrechtzuerhalten, indem Sie sich die SnapMirror Prüfprotokolle ansehen und die Übertragungsbeschreibung ermitteln. Wenn die Übertragungsbeschreibung angezeigt wird `transfer_desc=Logical Transfer`, SnapMirror aufrechterhalten der Storage-Effizienz nicht. Wenn die Übertragungsbeschreibung angezeigt wird `transfer_desc=Logical Transfer with Storage Efficiency`, SnapMirror dient der Aufrechterhaltung der Storage-Effizienz. Beispiel:
+Überprüfen Sie, ob SnapMirror die Storage-Effizienz aufrechtzuerhalten, indem Sie sich die SnapMirror Prüfprotokolle ansehen und die Übertragungsbeschreibung ermitteln. Wenn die Transferbeschreibung angezeigt wird `transfer_desc=Logical Transfer with Storage Efficiency`, hält SnapMirror die Speichereffizienz aufrecht. Wenn die Transferbeschreibung angezeigt wird `transfer_desc=Logical Transfer`, hält SnapMirror die Speichereffizienz nicht aufrecht. Beispiel:
 
 [listing]
 ----
 Fri May 22 02:13:02 CDT 2020 ScheduledUpdate[May 22 02:12:00]:cc0fbc29-b665-11e5-a626-00a09860c273 Operation-Uuid=39fbcf48-550a-4282-a906-df35632c73a1 Group=none Operation-Cookie=0 action=End source=<sourcepath> destination=<destpath> status=Success bytes_transferred=117080571 network_compression_ratio=1.0:1 transfer_desc=Logical Transfer - Optimized Directory Mode
 ----
-Logischer Transfer mit Storage
+.Bevor Sie beginnen
+* Quell- und Ziel-Cluster sowie SVMs müssen Peering durchgeführt werden.
++
+https://docs.netapp.com/us-en/ontap-system-manager-classic/peering/index.html["Cluster- und SVM-Peering"^]
 
-Ab ONTAP 9.3 ist kein manuelles Update mehr nötig, um die Storage-Effizienz wieder zu steigern. Wenn SnapMirror feststellt, dass die nachgelagerte Komprimierung deaktiviert wurde, wird die Storage-Effizienz automatisch bei dem nächsten geplanten Update aktiviert. Die Quelle und das Ziel müssen ONTAP 9.3 ausführen.
-
-Seit ONTAP 9.3 managen AFF Systeme Storage-Effizienzeinstellungen anders als FAS Systeme, nachdem ein Ziel-Volume beschrieben werden kann:
-
-* Nachdem Sie ein Zielvolumen mit der schreibbar gemacht haben `snapmirror break` Befehl, die Caching-Richtlinie auf dem Volume ist automatisch auf „`Auto`“ gesetzt (Standard).
+* Sie müssen die nachgelagerte Komprimierung auf dem Ziel-Volume deaktivieren.
+* Logischer Transfer mit Storage: Ab ONTAP 9.3 ist kein manuelles Update mehr erforderlich, um die Storage-Effizienz erneut zu aktivieren. Wenn SnapMirror feststellt, dass die nachgelagerte Komprimierung deaktiviert wurde, wird die Storage-Effizienz automatisch bei dem nächsten geplanten Update aktiviert. Die Quelle und das Ziel müssen ONTAP 9.3 ausführen.
+* Seit ONTAP 9.3 managen AFF Systeme Storage-Effizienzeinstellungen anders als FAS Systeme, nachdem ein Ziel-Volume beschrieben werden kann:
++
+** Nachdem Sie ein Zielvolumen mit der schreibbar gemacht haben `snapmirror break` Befehl, die Caching-Richtlinie auf dem Volume ist automatisch auf „`Auto`“ gesetzt (Standard).
 +
 [NOTE]
 ====
 Dieses Verhalten gilt nur für FlexVol Volumes und nicht für FlexGroup Volumes.
 
 ====
-* Bei Resynchronisierung wird die Caching-Richtlinie automatisch auf „`none`“ eingestellt. Deduplizierung und Inline-Komprimierung werden unabhängig von Ihren ursprünglichen Einstellungen automatisch deaktiviert. Sie müssen die Einstellungen nach Bedarf manuell ändern.
+** Bei Resynchronisierung wird die Caching-Richtlinie automatisch auf „`none`“ eingestellt. Deduplizierung und Inline-Komprimierung werden unabhängig von Ihren ursprünglichen Einstellungen automatisch deaktiviert. Sie müssen die Einstellungen nach Bedarf manuell ändern.
+
+
 
 
 [NOTE]
@@ -51,18 +48,20 @@ Dieses Verhalten gilt nur für FlexVol Volumes und nicht für FlexGroup Volumes.
 Manuelle Updates mit aktivierter Storage-Effizienz können sehr zeitaufwendig sein. Möglicherweise möchten Sie den Betrieb in Zeiten geringerer Auslastung ausführen.
 
 ====
-.Schritt
+.Schritte
 . Aktualisierung einer Replizierungsbeziehung und erneute Aktivierung der Storage-Effizienz:
 +
-`snapmirror update -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ... -enable-storage-efficiency true`
-
+[source, cli]
+----
+snapmirror update -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ... -enable-storage-efficiency true
+----
 +
 Eine vollständige Befehlssyntax finden Sie in der man-Page.
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen. Der Befehl schlägt fehl, wenn eine allgemeine Snapshot Kopie nicht auf dem Quell- und Zielsystem vorhanden ist. Nutzung `snapmirror initialize` Um die Beziehung neu zu initialisieren.
+Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen. Der Befehl schlägt fehl, wenn auf der Quelle und dem Ziel keine gemeinsame Snapshot Kopie vorhanden ist. Verwenden Sie `snapmirror initialize` , um die Beziehung neu zu initialisieren.
 
 ====
 +
