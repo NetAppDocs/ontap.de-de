@@ -20,14 +20,6 @@ Bevor Sie RSH verwenden können, müssen die folgenden Bedingungen erfüllt werd
 +
 Der `-application` Parameter von `security login` Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Weitere Informationen finden Sie im `security login` Man-Pages.
 
-* RSH muss bereits in der Management-Firewall-Richtlinie aktiviert sein, die von den Cluster- oder Node-Management-LIFs verwendet wird, damit RSH-Anfragen die Firewall durchlaufen können.
-+
-RSH ist standardmäßig deaktiviert. Der `system services firewall policy show` Befehl mit dem `-service rsh` Der Parameter zeigt an, ob RSH in einer Firewallrichtlinie aktiviert wurde. Weitere Informationen finden Sie im `system services firewall policy` Man-Pages.
-
-* Wenn Sie IPv6-Verbindungen verwenden, muss IPv6 bereits auf dem Cluster konfiguriert und aktiviert sein. Firewallrichtlinien müssen bereits mit IPv6-Adressen konfiguriert sein.
-+
-Der `network options ipv6 show` Der Befehl zeigt an, ob IPv6 aktiviert ist. Der `system services firewall policy show` Befehl zeigt Firewallrichtlinien an.
-
 
 
 .Über diese Aufgabe
@@ -40,20 +32,35 @@ Sie sollten SSH verwenden, um auf das Cluster zuzugreifen. SSH bietet eine siche
 Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zusammen mit der Node-Management-LIF verwendet.
 
 +
-Falls die Rate der kommenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
+Falls die Rate der eingehenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
 
+* RSH-Befehle erfordern erweiterte Berechtigungen.
 
 
 .Schritte
-. Geben Sie an einem Administrationshost den folgenden Befehl ein:
+. Bestätigen Sie, dass das RSH-Sicherheitsprotokoll aktiviert ist:
 +
-`*rsh _hostname_or_IP_ -l _username:passwordcommand_*`
+`security protocol show`
 
 +
-`_hostname_or_IP_` Ist der Host-Name oder die IP-Adresse der Cluster-Management-LIF oder eine Node-Management-LIF. Es wird empfohlen, die Cluster-Management-LIF zu verwenden. Sie können eine IPv4- oder IPv6-Adresse verwenden.
+.. Wenn das RSH-Sicherheitsprotokoll aktiviert ist, fahren Sie mit dem nächsten Schritt fort.
+.. Wenn das RSH-Sicherheitsprotokoll nicht aktiviert ist, verwenden Sie den folgenden Befehl, um es zu aktivieren:
++
+`security protocol modify -application rsh -enabled true`
+
+
+
+. Vergewissern Sie sich, dass der `management-rsh-server` Service auf den Management-LIFs vorhanden ist:
++
+`network interface show -services management-rsh-server`
 
 +
-`_command_` Ist der Befehl, den Sie über RSH ausführen möchten.
+.. Wenn der `management-rsh-server` Dienst vorhanden ist, fahren Sie mit dem nächsten Schritt fort.
+.. Wenn der `management-rsh-server` Dienst nicht vorhanden ist, fügen Sie ihn mit dem folgenden Befehl hinzu:
++
+`network interface service-policy add-service -vserver cluster1 -policy default-management -service management-rsh-server`
+
+
 
 
 
