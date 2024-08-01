@@ -13,27 +13,62 @@ summary: Sie müssen eine Replizierungsbeziehung neu synchronisieren, nachdem Si
 [role="lead"]
 Sie müssen eine Replizierungsbeziehung neu synchronisieren, nachdem Sie ein Ziel-Volume schreibbar machen, nachdem ein Update fehlschlägt, weil eine gemeinsame Snapshot-Kopie nicht auf den Quell- und Ziel-Volumes vorhanden ist oder Sie die Replizierungsrichtlinie für die Beziehung ändern möchten.
 
+Ab ONTAP 9.8 können Sie mit System Manager eine erneute Synchronisierung durchführen, um eine vorhandene Sicherungsbeziehung zu löschen und die Funktionen der Quell- und Ziel-Volumes rückgängig zu machen. Anschließend verwenden Sie das Ziel-Volume, um Daten bereitzustellen, während Sie die Quelle reparieren oder ersetzen, die Quelle aktualisieren und die ursprüngliche Konfiguration der Systeme wiederherstellen.
+
 .Über diese Aufgabe
 * Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen.
 * Volumes, die Teil einer Fan-out- oder Kaskadenkonfiguration sind, können zur erneuten Synchronisierung länger dauern. Es ist nicht ungewöhnlich, dass die SnapMirror Beziehung den Status „Vorbereitung“ für einen längeren Zeitraum meldet.
 
 
-.Schritt
+Durch dieses Verfahren werden die Daten im ursprünglichen Quell-Volume in einer asynchronen Beziehung ersetzt, sodass Sie Daten vom ursprünglichen Quell-Volume erneut bereitstellen und die ursprüngliche Sicherungsbeziehung wieder aufnehmen können.
+
+[NOTE]
+====
+System Manager unterstützt keine umgekehrte Resynchronisierung mit Intracluster-Beziehungen. Sie können die ONTAP CLI verwenden, um Vorgänge für die umgekehrte Neusynchronisierung mit Intracluster-Beziehungen durchzuführen.
+
+====
+Wenn Sie eine umgekehrte Neusynchronisierung durchführen, werden alle neueren Daten auf dem Quell-Volume gelöscht als die Daten der gemeinsamen Snapshot Kopie.
+
+.Schritte
+Sie können Replikationsbeziehungen mit System Manager oder der ONTAP-CLI neu synchronisieren. Nachdem Sie ein beschreibbares Ziel-Volume erstellt haben, können Sie eine Replikationsbeziehung mit System Manager umsynchronisieren. Wenn Sie die ONTAP-CLI verwenden, ist das Verfahren unabhängig davon, ob Sie ein Zielvolume beschreibbar machen oder die Replikationsbeziehung aktualisieren.
+
+[role="tabbed-block"]
+====
+.System Manager reversynchronisieren
+--
+. Klicken Sie auf dem Ziel-Cluster auf *Schutz > Beziehungen*.
+. Bewegen Sie den Mauszeiger über die unterbrochene Beziehung, die Sie umkehren möchten, klicken Sie auf image:icon_kabob.gif["Kabob-Symbol"], und wählen Sie *Resync umkehren*.
+. Klicken Sie im Fenster *Reverse Resync Relationship* auf *Reverse Resync*.
+. Überwachen Sie unter *Relationships* den Fortschritt der umgekehrten Neusynchronisierung, indem Sie *Transferstatus* für die Beziehung anzeigen.
+
+
+--
+.System Manager neu synchronisieren
+--
+. Klicken Sie Auf *Schutz > Beziehungen*.
+. Bewegen Sie den Mauszeiger über die Beziehung, die Sie neu synchronisieren möchten, und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"] , und wählen Sie dann *Pause*.
+. Wenn der Beziehungsstatus „abgebrochen“ anzeigt, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"] und wählen Sie dann *Resync*.
+. Überwachen Sie unter *Relationships* den Fortschritt der Neusynchronisierung, indem Sie den Beziehungsstatus überprüfen. Nach Abschluss der Resynchronisierung ändert sich der Status in „gespiegelt“.
+
+
+--
+.CLI
+--
 . Neusynchronisierung der Quell- und Ziel-Volumes:
 +
-`snapmirror resync -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ... -type DP|XDP -policy _policy_`
-
+[source, cli]
+----
+snapmirror resync -source-path <SVM:volume|cluster://SVM/volume> -destination-path <SVM:volume|cluster://SVM/volume> -type DP|XDP -policy <policy>
+----
 +
 Eine vollständige Befehlssyntax finden Sie in der man-Page.
 
 +
-[NOTE]
-====
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
 
-====
+NOTE: Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
+
 +
-Im folgenden Beispiel wird die Beziehung zwischen dem Quell-Volume neu synchronisiert `volA` Ein `svm1` Und dem Ziel-Volume `volA_dst` Ein `svm_backup`:
+Im folgenden Beispiel wird die Beziehung zwischen dem Quell-Volume auf und dem Ziel-Volume auf neu synchronisiert `volA` `svm1` `volA_dst` `svm_backup`:
 
 +
 [listing]
@@ -41,3 +76,6 @@ Im folgenden Beispiel wird die Beziehung zwischen dem Quell-Volume neu synchroni
 cluster_dst::> snapmirror resync -source-path svm1:volA -destination-path svm_backup:volA_dst
 ----
 
+
+--
+====

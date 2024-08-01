@@ -1,8 +1,8 @@
 ---
 permalink: system-admin/enable-telnet-rsh-access-cluster-task.html 
 sidebar: sidebar 
-keywords: enable, telnet, rsh, access, cluster, mgmt, management, firewall, policy 
-summary: 'Als Best Practice für Sicherheit werden Telnet und RSH in der vordefinierten Management-Firewall-Richtlinie (Mgmt) deaktiviert. Um es dem Cluster zu ermöglichen, Telnet- oder RSH-Anfragen zu akzeptieren, müssen Sie eine neue Management Firewall-Richtlinie erstellen, über die Telnet- oder RSH-Anfragen aktiviert sind, und die neue Richtlinie dann der Cluster-Management-LIF zuordnen.' 
+keywords: enable, telnet, rsh, access, cluster, mgmt, management, service, policy 
+summary: Aus Sicherheitsgründen sind Telnet und RSH standardmäßig deaktiviert. Damit das Cluster Telnet- oder RSH-Anforderungen akzeptieren kann, müssen Sie den Service in der Standardrichtlinie für den Verwaltungsdienst aktivieren. 
 ---
 = Aktivieren Sie Telnet- oder RSH-Zugriff auf den Cluster
 :hardbreaks:
@@ -12,22 +12,55 @@ summary: 'Als Best Practice für Sicherheit werden Telnet und RSH in der vordefi
 
 
 [role="lead"]
-Als Best Practice für Sicherheit sind Telnet und RSH in der vordefinierten Management-Firewall-Richtlinie deaktiviert (`mgmt`). Um es dem Cluster zu ermöglichen, Telnet- oder RSH-Anfragen zu akzeptieren, müssen Sie eine neue Management Firewall-Richtlinie erstellen, über die Telnet- oder RSH-Anfragen aktiviert sind, und die neue Richtlinie dann der Cluster-Management-LIF zuordnen.
+Aus Sicherheitsgründen sind Telnet und RSH standardmäßig deaktiviert. Damit das Cluster Telnet- oder RSH-Anforderungen akzeptieren kann, müssen Sie den Service in der Standardrichtlinie für den Verwaltungsdienst aktivieren.
 
 .Über diese Aufgabe
-ONTAP verhindert das Ändern vordefinierter Firewall-Richtlinien, doch Sie können durch das Klonen vordefinierter Richtlinien eine neue Richtlinie erstellen `mgmt` Management-Firewall-Richtlinie und dann die Aktivierung von Telnet oder RSH unter der neuen Richtlinie Allerdings sind Telnet und RSH keine sicheren Protokolle. Daher sollten Sie erwägen, SSH zum Zugriff auf den Cluster zu verwenden. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung.
+* RSH ist kein sicheres Protokoll.
++
+Sie sollten SSH verwenden, um auf das Cluster zuzugreifen. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung.
 
-Führen Sie die folgenden Schritte durch, um Telnet- oder RSH-Zugriff auf die Cluster zu aktivieren:
+* ONTAP unterstützt maximal 50 RSH-Sitzungen pro Node.
++
+Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zusammen mit der Node-Management-LIF verwendet.
+
++
+Falls die Rate der eingehenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
+
+* RSH-Befehle erfordern erweiterte Berechtigungen.
+
 
 .Schritte
-. Wechseln Sie in den erweiterten Berechtigungsmodus:
-`*set advanced*`
-. Aktivieren eines Sicherheitsprotokolls (RSH oder Telnet):
-`*security protocol modify -application _security_protocol_ -enabled true*`
-. Erstellen Sie eine neue Management-Firewall-Richtlinie auf der Grundlage von `mgmt` Management-Firewallrichtlinie:
-`*system services firewall policy clone -policy mgmt -destination-policy _policy-name_*`
-. Aktivieren Sie Telnet oder RSH unter der neuen Management Firewall-Richtlinie:
-`*system services firewall policy create -policy _policy-name_ -service _security_protocol_ -action allow -ip-list _ip_address/netmask_*`Um alle IP-Adressen zuzulassen, sollten Sie angeben `-ip-list 0.0.0.0/0`
-. Zuordnen der neuen Richtlinie zu der Cluster-Management-LIF:
-`*network interface modify -vserver _cluster_management_LIF_ -lif cluster_mgmt -firewall-policy _policy-name_*`
+. Vergewissern Sie sich, dass das RSH- oder Telnet-Sicherheitsprotokoll aktiviert ist:
++
+`security protocol show`
+
++
+.. Wenn das RSH- oder Telnet-Sicherheitsprotokoll aktiviert ist, fahren Sie mit dem nächsten Schritt fort.
+.. Wenn das RSH- oder Telnet-Sicherheitsprotokoll nicht aktiviert ist, verwenden Sie den folgenden Befehl, um es zu aktivieren:
++
+`security protocol modify -application <rsh/telnet> -enabled true`
+
+
+
+. Vergewissern Sie sich, dass der `management-rsh-server` Service oder `management-telnet-server` auf den Management-LIFs vorhanden ist:
++
+`network interface show -services management-rsh-server`
+
++
+Oder
+
++
+`network interface show -services management-telnet-server`
+
++
+.. Wenn der `management-rsh-server` oder `management-telnet-server` -Dienst vorhanden ist, fahren Sie mit dem nächsten Schritt fort.
+.. Wenn der `management-rsh-server` Dienst oder `management-telnet-server` nicht vorhanden ist, fügen Sie ihn mit dem folgenden Befehl hinzu:
++
+`network interface service-policy add-service -vserver cluster1 -policy default-management -service management-rsh-server`
+
++
+`network interface service-policy add-service -vserver cluster1 -policy default-management -service management-telnet-server`
+
+
+
 

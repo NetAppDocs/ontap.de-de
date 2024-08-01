@@ -1,8 +1,8 @@
 ---
 permalink: data-protection/make-svm-destination-volumes-writeable-task.html 
 sidebar: sidebar 
-keywords: make, svm, destination, volume, writable 
-summary: Sie müssen SVM Ziel-Volumes schreibbar machen, bevor Sie Daten an Clients bereitstellen können. Das Verfahren ist weitgehend identisch mit dem Verfahren zur Volume-Replikation, mit einer Ausnahme. Wenn Sie beim Erstellen der SVM-Replizierungsbeziehung „-identitäts-Presserve“ auf „true“ setzen, müssen Sie die Quell-SVM beenden, bevor Sie die Ziel-SVM aktivieren. 
+keywords: make, svm, storage vm, destination, volume, writable 
+summary: Sie müssen SVM Ziel-Volumes schreibbar machen, bevor Sie Daten an Clients bereitstellen können. 
 ---
 = SVM Ziel-Volumes beschreibbar machen
 :allow-uri-read: 
@@ -11,7 +11,9 @@ summary: Sie müssen SVM Ziel-Volumes schreibbar machen, bevor Sie Daten an Clie
 
 
 [role="lead"]
-Sie müssen SVM Ziel-Volumes schreibbar machen, bevor Sie Daten an Clients bereitstellen können. Das Verfahren ist weitgehend identisch mit dem Verfahren zur Volume-Replikation, mit einer Ausnahme. Wenn Sie die Einstellung festgelegt haben `-identity-preserve true` Beim Erstellen der SVM-Replizierungsbeziehung müssen Sie die Quell-SVM vor Aktivierung der Ziel-SVM beenden.
+Sie müssen SVM Ziel-Volumes schreibbar machen, bevor Sie Daten an Clients bereitstellen können.
+
+Das Verfahren ist weitgehend identisch mit dem Verfahren zur Volume-Replikation, mit einer Ausnahme. Wenn Sie beim Erstellen der SVM-Replikationsbeziehung festlegen `-identity-preserve true` , müssen Sie die Quell-SVM vor der Aktivierung der Ziel-SVM anhalten.
 
 .Über diese Aufgabe
 Eine vollständige Befehlssyntax finden Sie in der man-Page.
@@ -21,17 +23,36 @@ Eine vollständige Befehlssyntax finden Sie in der man-Page.
 In einem Disaster-Recovery-Szenario können Sie kein SnapMirror Update von der Quell-SVM auf die SVM für das Disaster-Recovery-Ziel-SVM durchführen, da Ihre Quell-SVM und deren Daten nicht zugänglich sind, und da Updates aufgrund der letzten Neusynchronisierung möglicherweise schlecht oder beschädigt sind.
 
 ====
+Ab ONTAP 9.8 können Sie mit System Manager im Notfall eine Ziel-Storage-VM aktivieren. Durch die Aktivierung der Ziel-Storage-VM werden die SVM Ziel-Volumes beschreibbar und können Sie Daten für die Clients bereitstellen.
+
 .Schritte
+Sie können diese Aufgabe über System Manager oder die ONTAP CLI ausführen.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wenn auf das Quellcluster zugegriffen werden kann, überprüfen Sie, ob die SVM angehalten wurde: Navigieren Sie zu *Storage > Storage VMs* und prüfen Sie die Spalte *State* für die SVM.
+. Wenn der Quell-SVM-Status "läuft" ist, stoppen Sie ihn: Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und wählen Sie *Stop*.
+. Suchen Sie auf dem Ziel-Cluster die gewünschte Schutzbeziehung: Navigieren Sie zu *Schutz > Beziehungen*.
+. Bewegen Sie den Mauszeiger über den Namen der gewünschten Quell-Speicher-VM, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"], und wählen Sie *Ziel-Speicher-VM aktivieren*.
+. Wählen Sie im Fenster *Zielspeicher VM aktivieren* *Zielspeicher VM aktivieren und die Beziehung unterbrechen*.
+. Klicken Sie Auf *Aktivieren*.
+
+
+--
+.CLI
+--
 . Stoppen Sie die geplanten Transfers von der Ziel-SVM oder dem Ziel-Cluster auf das Ziel:
 +
-`snapmirror quiesce -source-path _SVM_: -destination-path _SVM_:`
-
+[source, cli]
+----
+snapmirror quiesce -source-path <SVM>: -destination-path <SVM>:
+----
 +
-[NOTE]
-====
-Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Siehe das folgende Beispiel.
 
-====
+NOTE: Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Siehe das folgende Beispiel.
+
 +
 Im folgenden Beispiel werden geplante Transfers zwischen der Quell-SVM angehalten `svm1` Und als Ziel-SVM zu definieren `svm_backup`:
 
@@ -42,14 +63,14 @@ cluster_dst::> snapmirror quiesce -source-path svm1: -destination-path svm_backu
 ----
 . Stoppen Sie den laufenden Transfer von der Ziel-SVM oder dem Ziel-Cluster zum Ziel:
 +
-`snapmirror abort -source-path _SVM_: -destination-path _SVM_:`
-
+[source, cli]
+----
+snapmirror abort -source-path <SVM>: -destination-path <SVM>:
+----
 +
-[NOTE]
-====
-Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Siehe das folgende Beispiel.
 
-====
+NOTE: Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Siehe das folgende Beispiel.
+
 +
 Im folgenden Beispiel werden kontinuierliche Transfers zwischen der Quell-SVM angehalten `svm1` Und als Ziel-SVM zu definieren `svm_backup`:
 
@@ -60,14 +81,14 @@ cluster_dst::> snapmirror abort -source-path svm1: -destination-path svm_backup:
 ----
 . Unterbrechen Sie die Replizierungsbeziehung von der Ziel-SVM oder dem Ziel-Cluster:
 +
-`snapmirror break -source-path _SVM_: -destination-path _SVM_:`
-
+[source, cli]
+----
+snapmirror break -source-path <SVM>: -destination-path <SVM>:
+----
 +
-[NOTE]
-====
-Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Siehe das folgende Beispiel.
 
-====
+NOTE: Sie müssen nach dem SVM-Namen in einen Doppelpunkt (:) eingeben `-source-path` Und `-destination-path` Optionen: Siehe das folgende Beispiel.
+
 +
 Das folgende Beispiel unterbricht die Beziehung zwischen der Quell-SVM `svm1` Und als Ziel-SVM zu definieren `svm_backup`:
 
@@ -78,8 +99,10 @@ cluster_dst::> snapmirror break -source-path svm1: -destination-path svm_backup:
 ----
 . Wenn Sie die Einstellung festgelegt haben `-identity-preserve true` Beenden Sie beim Erstellen der SVM-Replizierungsbeziehung die Quell-SVM:
 +
-`vserver stop -vserver _SVM_`
-
+[source, cli]
+----
+vserver stop -vserver <SVM>
+----
 +
 Im folgenden Beispiel wird die Quell-SVM angehalten `svm1`:
 
@@ -90,8 +113,10 @@ cluster_src::> vserver stop svm1
 ----
 . Starten der Ziel-SVM:
 +
-`vserver start -vserver _SVM_`
-
+[source, cli]
+----
+vserver start -vserver <SVM>
+----
 +
 Das folgende Beispiel startet die Ziel-SVM `svm_backup`:
 
@@ -104,3 +129,6 @@ cluster_dst::> vserver start svm_backup
 
 .Nachdem Sie fertig sind
 Konfigurieren von SVM Ziel-Volumes für Datenzugriff wie in beschrieben link:configure-destination-volume-data-access-concept.html["Konfiguration des Ziel-Volume für den Datenzugriff"].
+
+--
+====
