@@ -20,14 +20,6 @@ Bevor Sie per Telnet auf das Cluster zugreifen können, müssen die folgenden Be
 +
 Der `-application` Parameter von `security login` Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Weitere Informationen finden Sie im `security login` Man-Pages.
 
-* Telnet muss bereits in der Management-Firewall-Richtlinie aktiviert sein, die vom Cluster- oder Node-Management-LIFs verwendet wird, damit Telnet-Anfragen die Firewall durchlaufen können.
-+
-Standardmäßig ist Telnet deaktiviert. Der `system services firewall policy show` Befehl mit dem `-service telnet` Der Parameter zeigt an, ob Telnet in einer Firewallrichtlinie aktiviert wurde. Weitere Informationen finden Sie im `system services firewall policy` Man-Pages.
-
-* Wenn Sie IPv6-Verbindungen verwenden, muss IPv6 bereits auf dem Cluster konfiguriert und aktiviert sein. Firewallrichtlinien müssen bereits mit IPv6-Adressen konfiguriert sein.
-+
-Der `network options ipv6 show` Der Befehl zeigt an, ob IPv6 aktiviert ist. Der `system services firewall policy show` Befehl zeigt Firewallrichtlinien an.
-
 
 
 .Über diese Aufgabe
@@ -43,15 +35,33 @@ Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zu
 Falls die Rate der kommenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
 
 * Wenn Sie von einem Windows-Host aus auf die ONTAP-CLI zugreifen möchten, können Sie ein Dienstprogramm eines Drittanbieters wie z. B. PuTTY verwenden.
+* RSH-Befehle erfordern erweiterte Berechtigungen.
 
 
 .Schritte
-. Geben Sie an einem Administrationshost den folgenden Befehl ein:
+. Vergewissern Sie sich, dass das Telnet-Sicherheitsprotokoll aktiviert ist:
 +
-`*telnet _hostname_or_IP_*`
+`security protocol show`
 
 +
-`_hostname_or_IP_` Ist der Host-Name oder die IP-Adresse der Cluster-Management-LIF oder eine Node-Management-LIF. Es wird empfohlen, die Cluster-Management-LIF zu verwenden. Sie können eine IPv4- oder IPv6-Adresse verwenden.
+.. Wenn das Telnet-Sicherheitsprotokoll aktiviert ist, fahren Sie mit dem nächsten Schritt fort.
+.. Wenn das Telnet-Sicherheitsprotokoll nicht aktiviert ist, verwenden Sie den folgenden Befehl, um es zu aktivieren:
++
+`security protocol modify -application telnet -enabled true`
+
+
+
+. Vergewissern Sie sich, dass der `management-telnet-server` Service auf den Management-LIFs vorhanden ist:
++
+`network interface show -services management-telnet-server`
+
++
+.. Wenn der `management-telnet-server` Dienst vorhanden ist, fahren Sie mit dem nächsten Schritt fort.
+.. Wenn der `management-telnet-server` Dienst nicht vorhanden ist, fügen Sie ihn mit dem folgenden Befehl hinzu:
++
+`network interface service-policy add-service -vserver cluster1 -policy default-management -service management-telnet-server`
+
+
 
 
 
