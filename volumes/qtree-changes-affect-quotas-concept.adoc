@@ -1,10 +1,10 @@
 ---
 permalink: volumes/qtree-changes-affect-quotas-concept.html 
 sidebar: sidebar 
-keywords: how, qtree, changes, affect, quotas 
+keywords: how, qtree, quota, delete qtree, rename qtree, tree quotas, security, style of a qtree, security style, style 
 summary: Wenn Sie den Sicherheitsstil eines qtree löschen, umbenennen oder ändern, können sich die durch ONTAP angewendeten Kontingente je nach aktuellen Kontingenten ändern. 
 ---
-= Auswirkungen der Änderung von qtree auf die Übersicht über Kontingente
+= Wie sich qtree Änderungen auf Kontingente auswirken
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -12,3 +12,44 @@ summary: Wenn Sie den Sicherheitsstil eines qtree löschen, umbenennen oder änd
 
 [role="lead"]
 Wenn Sie den Sicherheitsstil eines qtree löschen, umbenennen oder ändern, können sich die durch ONTAP angewendeten Kontingente je nach aktuellen Kontingenten ändern.
+
+
+
+== Qtree Löschungen und Tree Quotas
+
+Beim Löschen eines qtree werden alle Quoten, die für diesen qtree gelten, weder explizit noch abgeleitet, von ONTAP nicht mehr angewendet.
+
+Ob die Kontingentregeln bestehen, hängen davon ab, wo Sie den qtree löschen:
+
+* Wenn Sie einen qtree mit ONTAP löschen, werden die Kontingentregeln für diesen qtree automatisch gelöscht, einschließlich Baumquote-Regeln und sämtlichen Benutzer- und Gruppenkontingenten, die für diesen qtree konfiguriert sind.
+* Wenn Sie einen qtree mit Ihrem CIFS- oder NFS-Client löschen, müssen Sie alle Kontingentregeln für diesen qtree löschen, um Fehler zu vermeiden, wenn Sie Quoten neu initialisieren. Wenn Sie einen neuen qtree mit dem gleichen Namen erstellen wie den von Ihnen gelöschten, werden die bestehenden Kontingentregeln nicht auf den neuen qtree angewendet, bis Sie Quoten neu initialisieren.
+
+
+
+
+== Wie sich die Umbenennung eines qtree auf Kontingente auswirkt
+
+Wenn Sie einen qtree mit ONTAP umbenennen, werden die Kontingentregeln für diesen qtree automatisch aktualisiert. Wenn Sie einen qtree unter Verwendung des CIFS- oder NFS-Client umbenennen, müssen Sie alle Kontingentregeln für diesen qtree aktualisieren.
+
+
+NOTE: Wenn Sie einen qtree mit Ihrem CIFS- oder NFS-Client umbenennen und keine Kontingentregeln für diesen qtree mit dem neuen Namen aktualisieren, bevor Sie Kontingente neu initialisieren, werden diese nicht auf den qtree angewendet. Explizite Kontingente für den qtree, einschließlich Tree Quotas und Benutzer- oder Gruppenkontingente für den qtree, können in abgeleitete Kontingente umgewandelt werden.
+
+
+
+== Qtree-Sicherheitstypen und Benutzerkontingente
+
+Sie können Access Control Lists (ACLs) auf qtrees anwenden, indem Sie NTFS oder unterschiedliche Sicherheitsstile verwenden, jedoch nicht über den UNIX-Sicherheitsstil. Das Ändern des Sicherheitstils eines qtree kann sich auf die Berechnung von Kontingenten auswirken. Sie sollten immer Quoten neu initialisieren, nachdem Sie den Sicherheitsstil eines qtree geändert haben.
+
+Wenn Sie den Sicherheitsstil eines qtree von NTFS oder gemischt zu UNIX ändern, werden alle ACLs für Dateien in diesem qtree ignoriert und die Dateinutzung für die UNIX Benutzer-IDs wird berechnet.
+
+Wenn Sie den Sicherheitsstil eines qtree von UNIX entweder in Mixed oder NTFS ändern, werden die zuvor verborgenen ACLs sichtbar. Außerdem werden alle ignorierten ACLs wieder wirksam und die NFS-Benutzerinformationen werden ignoriert. Wenn bereits keine ACL vorhanden war, werden die NFS-Informationen weiterhin bei der Kontingentberechnung verwendet.
+
+
+NOTE: Um sicherzustellen, dass die Kontingentnutzung für UNIX- und Windows-Benutzer nach Änderung des Sicherheitsstils korrekt berechnet wird, müssen Sie die Quoten für das Volumen, das diesen qtree enthält, neu initialisieren.
+
+.Beispiel
+Das folgende Beispiel zeigt, wie eine Änderung im Sicherheitsstil eines qtree dazu führt, dass ein anderer Benutzer für die Nutzung einer Datei im entsprechenden qtree in Rechnung gestellt wird.
+
+Angenommen, die NTFS-Sicherheit ist in Kraft auf qtree A, und eine ACL verleiht Windows-Benutzern `corp\joe` die Eigentumsrechte an einer Datei mit 5 MB. Der Benutzer `corp\joe` berechnet 5 MB Speicherplatz für qtree A.
+
+Jetzt ändern Sie den Sicherheitsstil von qtree A von NTFS zu UNIX. Nach der Neuinitialisierung von Quotas `corp\joe` wird der Windows-Benutzer für diese Datei nicht mehr berechnet, sondern der UNIX-Benutzer, der der UID der Datei entspricht, wird für die Datei berechnet. Die UID kann ein UNIX-Benutzer sein `corp\joe`, dem oder der Root-Benutzer zugeordnet ist.
