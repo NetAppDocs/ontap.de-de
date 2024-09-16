@@ -2,59 +2,30 @@
 permalink: system-admin/access-cluster-rsh-task.html 
 sidebar: sidebar 
 keywords: access, cluster, rsh, cluster, administrative, task, secure, protocol, service, policy, lif, firewall, role 
-summary: Sie können dem Cluster RSH-Anfragen zur Ausführung administrativer Aufgaben ausgeben. RSH ist kein sicheres Protokoll und ist standardmäßig deaktiviert. 
+summary: Sie können RSH-Anforderungen an das Cluster ausgeben, um administrative Aufgaben durchzuführen. RSH ist kein sicheres Protokoll und ist standardmäßig deaktiviert. 
 ---
-= Zugriff auf den Cluster über RSH
+= Greifen Sie über RSH auf das Cluster zu
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können dem Cluster RSH-Anfragen zur Ausführung administrativer Aufgaben ausgeben. RSH ist kein sicheres Protokoll und ist standardmäßig deaktiviert.
+Sie können RSH-Anforderungen an das Cluster ausgeben, um administrative Aufgaben durchzuführen. RSH ist kein sicheres Protokoll und ist standardmäßig deaktiviert.
 
-Im Laufe der Zeit hat sich die Art und Weise, in der ONTAP den auf LIFs unterstützten Datenverkehr managt, geändert.
+Telnet und RSH sind keine sicheren Protokolle. Sie sollten SSH für den Zugriff auf den Cluster in Erwägung ziehen. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung. Weitere Informationen finden Sie unter link:./access-cluster-ssh-task.html["Greifen Sie über SSH auf das Cluster zu"].
 
-* ONTAP 9 5 und frühere Versionen verwenden LIF-Rollen und Firewall-Dienste
-* ONTAP 9 6 und neuere Versionen verwenden LIF-Servicerichtlinien
-+
-** ONTAP 9 5 Release führte LIF-Service-Richtlinien ein
-** ONTAP 9.6 ersetzte LIF Rollen durch LIF Service Policies
-** ONTAP 9.10.1 ersetzte Firewall-Services durch LIF-Servicerichtlinien
-
-
-
-
-Die Methode, die Sie konfigurieren, hängt von der Version von ONTAP ab, die Sie verwenden.
-
-Weitere Informationen zu:
-
-* Firewallrichtlinien finden Sie unter link:https://docs.netapp.com/us-en/ontap-cli//system-services-firewall-policy-show.html["Befehl: Firewall-Policy-show"^]
-* LIF-Rollen finden Sie unter link:../networking/lif_roles95.html["LIF-Rollen (ONTAP 9.5 und früher)"]
-* LIF-Servicerichtlinien, siehe link:../networking/lifs_and_service_policies96.html["LIFs und Service-Richtlinien (ONTAP 9.6 und höher)"]
-
-
-Telnet und RSH sind keine sicheren Protokolle. Sie sollten SSH für den Zugriff auf den Cluster in Erwägung ziehen. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung. Weitere Informationen finden Sie unter link:./access-cluster-ssh-task.html["Greifen Sie über SSH auf den Cluster zu"]
-
-[role="tabbed-block"]
-====
-.ONTAP 9.6 oder höher
---
 .Bevor Sie beginnen
 Bevor Sie RSH verwenden können, müssen die folgenden Bedingungen erfüllt werden:
 
 * Sie müssen über ein lokales Cluster-Benutzerkonto verfügen, das so konfiguriert ist, dass RSH als Zugriffsmethode verwendet wird.
 +
-Der `-application` Parameter von `security login` Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Weitere Informationen finden Sie im `security login` Man-Pages.
+Der `-application` Parameter der `security login` Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Weitere Informationen finden Sie in den `security login` man-Pages.
 
 
 
 .Über diese Aufgabe
-* RSH ist kein sicheres Protokoll.
-+
-Sie sollten SSH verwenden, um auf das Cluster zuzugreifen. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung.
-
-* ONTAP unterstützt maximal 50 RSH-Sitzungen pro Node.
+* ONTAP unterstützt maximal 50 gleichzeitige RSH-Sitzungen pro Node.
 +
 Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zusammen mit der Node-Management-LIF verwendet.
 
@@ -64,6 +35,10 @@ Falls die Rate der eingehenden Verbindungen mehr als 10 pro Sekunde ist, wird de
 * RSH-Befehle erfordern erweiterte Berechtigungen.
 
 
+[role="tabbed-block"]
+====
+.ONTAP 9.6 oder höher
+--
 .Schritte
 . Bestätigen Sie, dass das RSH-Sicherheitsprotokoll aktiviert ist:
 +
@@ -91,31 +66,11 @@ Falls die Rate der eingehenden Verbindungen mehr als 10 pro Sekunde ist, wird de
 
 
 
-.Beispiel einer RSH-Anforderung
-Das folgende Beispiel zeigt, wie der Benutzer namens „`joe`“, der mit RSH-Zugriff eingerichtet wurde, eine RSH-Anforderung zum Ausführen des ausgeben kann `cluster show` Befehl:
-
-[listing]
-----
-
-admin_host$ rsh 10.72.137.28 -l joe:password cluster show
-
-Node                  Health  Eligibility
---------------------- ------- ------------
-node1                 true    true
-node2                 true    true
-2 entries were displayed.
-
-admin_host$
-----
 --
 .ONTAP 9.5 oder früher
 --
 .Bevor Sie beginnen
 Bevor Sie RSH verwenden können, müssen die folgenden Bedingungen erfüllt werden:
-
-* Sie müssen über ein lokales Cluster-Benutzerkonto verfügen, das so konfiguriert ist, dass RSH als Zugriffsmethode verwendet wird.
-+
-Der Parameter -Application der Sicherheits-Login-Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Weitere Informationen finden Sie auf den Security Login man-Seiten.
 
 * RSH muss bereits in der Management-Firewall-Richtlinie aktiviert sein, die von den Cluster- oder Node-Management-LIFs verwendet wird, damit RSH-Anfragen die Firewall durchlaufen können.
 +
@@ -124,20 +79,6 @@ RSH ist standardmäßig deaktiviert. Der Befehl System Services Firewall Policy 
 * Wenn Sie IPv6-Verbindungen verwenden, muss IPv6 bereits auf dem Cluster konfiguriert und aktiviert sein. Firewallrichtlinien müssen bereits mit IPv6-Adressen konfiguriert sein.
 +
 Der `network options ipv6 show` Befehl zeigt an, ob IPv6 aktiviert ist. Der `system services firewall policy show` Befehl zeigt Firewallrichtlinien an.
-
-
-
-.Über diese Aufgabe
-* RSH ist kein sicheres Protokoll.
-+
-Sie sollten SSH verwenden, um auf das Cluster zuzugreifen. SSH bietet eine sichere Remote Shell und interaktive Netzwerksitzung.
-
-* ONTAP unterstützt maximal 50 RSH-Sitzungen pro Node.
-+
-Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zusammen mit der Node-Management-LIF verwendet.
-
-+
-Falls die Rate der kommenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
 
 
 
@@ -154,22 +95,21 @@ Falls die Rate der kommenden Verbindungen mehr als 10 pro Sekunde ist, wird der 
 
 
 
+--
+====
 .Beispiel einer RSH-Anforderung
-Das folgende Beispiel zeigt, wie der Benutzer „joe“, der mit RSH-Zugriff eingerichtet wurde, eine RSH-Anforderung zum Ausführen des Cluster show-Befehls ausgeben kann:
+Das folgende Beispiel zeigt, wie der Benutzer „`joe`“, der mit RSH-Zugriff eingerichtet wurde, eine RSH-Anforderung zur Ausführung des `cluster show` Befehls ausgeben kann:
 
 [listing]
 ----
+
 admin_host$ rsh 10.72.137.28 -l joe:password cluster show
 
-Node  Health Eligibility
-----  ------ -----------
-node1 true   true
-node2 true   true
-
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
 2 entries were displayed.
 
-admin_host
-
+admin_host$
 ----
---
-====

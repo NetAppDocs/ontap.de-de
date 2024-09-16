@@ -19,11 +19,11 @@ Eine S3-fähige Storage-VM muss bereits vorhanden sein, die einen S3-Server und 
 Sie müssen bereits Benutzer oder Gruppen erstellt haben, bevor Sie Berechtigungen erteilen.
 
 .Über diese Aufgabe
-Sie können neue Anweisungen für neue Benutzer und Gruppen hinzufügen oder die Attribute vorhandener Anweisungen ändern. Weitere Optionen finden Sie im `vserver object-store-server bucket policy` Man-Pages.
+Sie können neue Anweisungen für neue Benutzer und Gruppen hinzufügen oder die Attribute vorhandener Anweisungen ändern. Weitere Optionen finden Sie in den `vserver object-store-server bucket policy` man-Pages.
 
 Benutzer- und Gruppenberechtigungen können bei Erstellung des Buckets oder nach Bedarf später zugewiesen werden. Sie können auch die Bucket-Kapazität und die QoS-Richtliniengruppenzuweisung ändern.
 
-Ab ONTAP 9.9 unterstützen Sie die Objekt-Tagging-Funktionen von AWS für Clients mit dem ONTAP S3-Server `GetObjectTagging`, `PutObjectTagging`, und `DeleteObjectTagging` Es müssen die Bucket- oder Gruppenrichtlinien verwendet werden.
+Wenn Sie ab ONTAP 9.9.1 die Objekt-Tagging-Funktionalität des AWS-Clients mit dem ONTAP S3-Server unterstützen möchten, `GetObjectTagging` `PutObjectTagging` `DeleteObjectTagging` müssen die Aktionen, und über die Bucket- oder Gruppenrichtlinien erlaubt sein.
 
 Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
 
@@ -47,7 +47,7 @@ Die Standardeinstellungen *_bucketname_* und *_bucketname/*_* gewähren Zugriff 
 
 
 
-NOTE: Ab ONTAP 9.14.1 können Sie Variablen für die Bucket-Richtlinie im Feld *Ressourcen* angeben. Diese Variablen sind Platzhalter, die bei der Bewertung der Richtlinie durch kontextbezogene Werte ersetzt werden. Beispiel: Wenn `${aws:username}` Wird als Variable für eine Richtlinie angegeben, dann wird diese Variable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden.
+NOTE: Ab ONTAP 9.14.1 können Sie Variablen für die Bucket-Richtlinie im Feld *Ressourcen* angeben. Diese Variablen sind Platzhalter, die bei der Bewertung der Richtlinie durch kontextbezogene Werte ersetzt werden. Beispiel: Wenn `${aws:username}` als Variable für eine Richtlinie angegeben ist, wird diese Variable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden.
 
 --
 .CLI
@@ -75,7 +75,7 @@ Die Anweisung kann den Zugriff erlauben oder verweigern
  a| 
 `-action`
  a| 
-Sie können angeben `*` Um alle Aktionen oder eine Liste mit einer oder mehreren der folgenden Aktionen zu bedeuten: `GetObject, PutObject, DeleteObject, ListBucket, GetBucketAcl,GetObjectAcl, ListBucketMultipartUploads,` Und `ListMultipartUploadParts`.
+Sie können festlegen `*`, dass alle Aktionen oder eine Liste mit einer oder mehreren der folgenden Aktionen gemeint sind: `GetObject, PutObject, DeleteObject, ListBucket, GetBucketAcl,GetObjectAcl, ListBucketMultipartUploads,` Und `ListMultipartUploadParts`.
 
 
 
@@ -86,7 +86,7 @@ Eine Liste mit einem oder mehreren S3-Benutzern oder -Gruppen.
 
 ** Es können maximal 10 Benutzer oder Gruppen angegeben werden.
 ** Wenn eine S3-Gruppe angegeben wird, muss sie sich im Formular befinden `group/group_name.`
-** `*` Kann als öffentlicher Zugriff angegeben werden, d. h. ohne Zugriffsschlüssel und Geheimschlüssel.
+** `*` Kann angegeben werden, um öffentlichen Zugriff zu bedeuten, d. h. Zugriff ohne Zugriffsschlüssel und geheimen Schlüssel.
 ** Wenn kein Principal angegeben wird, werden allen S3-Benutzern in der Storage-VM Zugriff gewährt.
 
 
@@ -95,11 +95,11 @@ Eine Liste mit einem oder mehreren S3-Benutzern oder -Gruppen.
  a| 
 `-resource`
  a| 
-Den Bucket und jedes darin enthaltene Objekt. Die Platzhalterzeichen `*` Und `?` Kann verwendet werden, um einen regulären Ausdruck zum Angeben einer Ressource zu bilden. Für eine Ressource können Sie Variablen in einer Richtlinie angeben. Bei diesen Richtlinienvariablen handelt es sich um Platzhalter, die bei der Bewertung der Richtlinie durch die Kontextwerte ersetzt werden.
+Den Bucket und jedes darin enthaltene Objekt. Die Platzhalterzeichen `*` und `?` können verwendet werden, um einen regulären Ausdruck für die Angabe einer Ressource zu bilden. Für eine Ressource können Sie Variablen in einer Richtlinie angeben. Bei diesen Richtlinienvariablen handelt es sich um Platzhalter, die bei der Bewertung der Richtlinie durch die Kontextwerte ersetzt werden.
 
 |===
 +
-Sie können optional einen Textstring als Kommentar mit dem angeben `-sid` Option.
+Mit der `-sid` Option können Sie optional einen Text-String als Kommentar angeben.
 
 
 
@@ -116,7 +116,7 @@ Im folgenden Beispiel wird eine Bucket-Policy-Anweisung für den Objektspeicher-
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
 ----
-Ab ONTAP 9.14.1 können Sie Variablen für eine Bucket-Richtlinie angeben. Im folgenden Beispiel wird eine Server-Bucket-Richtlinienanweisung für die Storage-VM erstellt `svm1` Und `bucket1`, Und gibt an `${aws:username}` Als Variable für eine Policy-Ressource. Wenn die Richtlinie ausgewertet wird, wird die Richtlinienvariable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden. Wenn beispielsweise die folgende Richtlinienanweisung bewertet wird, `${aws:username}` Wird durch den Benutzer ersetzt, der den S3-Vorgang durchführt. Wenn ein Benutzer `user1` Führt den Vorgang durch, auf den der Benutzer Zugriff hat `bucket1` Als `bucket1/user1/*`.
+Ab ONTAP 9.14.1 können Sie Variablen für eine Bucket-Richtlinie angeben. Im folgenden Beispiel wird eine Policy-Anweisung für Server-Buckets für die Storage-VM `svm1` und `bucket1` erstellt und `${aws:username}` als Variable für eine Policy-Ressource angegeben. Wenn die Richtlinie ausgewertet wird, wird die Richtlinienvariable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden. Wenn beispielsweise die folgende Richtlinienanweisung bewertet wird, `${aws:username}` wird sie durch den Benutzer ersetzt, der den S3-Vorgang ausführt. Wenn ein Benutzer `user1` den Vorgang durchführt, erhält dieser Benutzer Zugriff auf `bucket1` AS `bucket1/user1/*`.
 
 [listing]
 ----

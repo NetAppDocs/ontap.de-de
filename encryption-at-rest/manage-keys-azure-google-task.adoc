@@ -12,9 +12,9 @@ summary: Nutzen Sie den Azure, Google Cloud oder AWS Schlüsselmanager, um den S
 
 
 [role="lead"]
-Ab ONTAP 9.10.1 können Sie dies nutzen link:https://docs.microsoft.com/en-us/azure/key-vault/general/basic-concepts["Azure Key Vault (AKV)"^] Und link:https://cloud.google.com/kms/docs["Der Verschlüsselungsmanagement-Service (Cloud KMS) der Google Cloud-Plattform"^] Zum Schutz Ihrer ONTAP-Verschlüsselungen in einer Cloud-gehosteten Applikation. Ab ONTAP 9.12.0 können Sie auch NVE-Schlüssel mit schützen link:https://docs.aws.amazon.com/kms/latest/developerguide/overview.html["KMS VON AWS"^].
+Ab ONTAP 9.10.1 können Sie link:https://docs.microsoft.com/en-us/azure/key-vault/general/basic-concepts["Azure Key Vault (AKV)"^]link:https://cloud.google.com/kms/docs["Der Verschlüsselungsmanagement-Service (Cloud KMS) der Google Cloud-Plattform"^]Ihre ONTAP-Verschlüsselungen in einer Cloud-gehosteten Applikation verwenden  und schützen. Ab ONTAP 9.12.0 können Sie NVE Schlüssel auch mit schützenlink:https://docs.aws.amazon.com/kms/latest/developerguide/overview.html["KMS VON AWS"^].
 
-AWS KMS, AKV und Cloud KMS können zum Schutz eingesetzt werden link:configure-netapp-volume-encryption-concept.html["NetApp Volume Encryption (NVE)-Schlüssel"] Nur für Data SVMs.
+AWS KMS, AKV und Cloud KMS können link:configure-netapp-volume-encryption-concept.html["NetApp Volume Encryption (NVE)-Schlüssel"]nur für Daten-SVMs eingesetzt werden.
 
 .Über diese Aufgabe
 Das Verschlüsselungsmanagement mit einem Cloud-Provider kann über die CLI oder die ONTAP REST-API aktiviert werden.
@@ -51,9 +51,7 @@ Die Aktivierung des externen Schlüsselmanagements hängt von dem jeweiligen Sch
 +
 ** `DescribeKey`
 ** `Encrypt`
-** `Decrypt`
-+
-Weitere Informationen finden Sie in der AWS-Dokumentation für link:https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#grant["Zuschüsse"^].
+** `Decrypt` + Weitere Informationen finden Sie in der AWS-Dokumentation für link:https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#grant["Zuschüsse"^].
 
 
 
@@ -74,36 +72,31 @@ Weitere Informationen finden Sie in der AWS-Dokumentation für link:https://docs
 --
 .Aktivieren Sie Azure Key Vault auf einer ONTAP SVM
 . Bevor Sie beginnen, müssen Sie die entsprechenden Authentifizierungsdaten von Ihrem Azure-Konto beziehen, entweder ein Clientgeheimnis oder ein Zertifikat. Sie müssen außerdem sicherstellen, dass alle Nodes im Cluster sich in einem ordnungsgemäßen Zustand befinden. Sie können dies mit dem Befehl überprüfen `cluster show`.
-. Setzen Sie die privilegierte Stufe auf „Erweiterd“
+. Setzen Sie die privilegierte Ebene auf erweitert
 `set -priv advanced`
 . Aktivieren Sie AKV auf der SVM
-`security key-manager external azure enable -client-id _client_id_ -tenant-id _tenant_id_ -name -key-id _key_id_ -authentication-method {certificate|client-secret}`Geben Sie bei der entsprechenden Aufforderung entweder das Clientzertifikat oder den Clientschlüssel aus Ihrem Azure-Konto ein.
-. Überprüfen Sie, ob AKV richtig aktiviert ist:
-`security key-manager external azure show vserver _svm_name_`
-Wenn die Erreichbarkeit des Service nicht in Ordnung ist, stellen Sie die Verbindung zum AKV Key Management Service über die LIF der Daten-SVM her.
+`security key-manager external azure enable -client-id _client_id_ -tenant-id _tenant_id_ -name -key-id _key_id_ -authentication-method {certificate|client-secret}` Wenn Sie dazu aufgefordert werden, geben Sie entweder das Client-Zertifikat oder den Client-Schlüssel aus Ihrem Azure-Konto ein.
+. Vergewissern Sie sich, dass AKV korrekt aktiviert
+`security key-manager external azure show vserver _svm_name_` ist: Wenn die Service-Erreichbarkeit nicht in Ordnung ist, stellen Sie die Verbindung zum AKV-Schlüsselverwaltungsservice über die Daten-SVM-LIF her.
 
 
 --
 .Google Cloud
 --
 .Aktivieren Sie Cloud-KMS auf einer ONTAP SVM
-. Bevor Sie beginnen, erhalten Sie den privaten Schlüssel für die Google Cloud KMS-Kontoschlüsseldatei in einem JSON-Format. Dieser Punkt ist in Ihrem GCP-Konto enthalten.
-Sie müssen außerdem sicherstellen, dass alle Nodes im Cluster sich in einem ordnungsgemäßen Zustand befinden. Sie können dies mit dem Befehl überprüfen `cluster show`.
+. Bevor Sie beginnen, erhalten Sie den privaten Schlüssel für die Google Cloud KMS-Kontoschlüsseldatei in einem JSON-Format. Dieser Punkt ist in Ihrem GCP-Konto enthalten. Sie müssen außerdem sicherstellen, dass alle Nodes im Cluster sich in einem ordnungsgemäßen Zustand befinden. Sie können dies mit dem Befehl überprüfen `cluster show`.
 . Privilegierte Ebene auf erweitert setzen:
 `set -priv advanced`
-. Aktivieren Sie Cloud KMS auf der SVM
-`security key-manager external gcp enable -vserver _svm_name_ -project-id _project_id_-key-ring-name _key_ring_name_ -key-ring-location _key_ring_location_ -key-name _key_name_`
-Geben Sie bei entsprechender Aufforderung den Inhalt der JSON-Datei mit dem privaten Schlüssel für Dienstkonto ein
-. Vergewissern Sie sich, dass Cloud KMS mit den korrekten Parametern konfiguriert ist:
-`security key-manager external gcp show vserver _svm_name_`
-Der Status von `kms_wrapped_key_status` Wird sein `“UNKNOWN”` Wenn keine verschlüsselten Volumes erstellt wurden.
-Wenn die Serviceability nicht in Ordnung ist, stellen Sie die Konnektivität zum GCP-Schlüsselmanagement-Service über die Daten-SVM LIF her.
+. Cloud-KMS auf der SVM aktivieren
+`security key-manager external gcp enable -vserver _svm_name_ -project-id _project_id_-key-ring-name _key_ring_name_ -key-ring-location _key_ring_location_ -key-name _key_name_` Wenn Sie dazu aufgefordert werden, geben Sie den Inhalt der JSON-Datei mit dem privaten Schlüssel des Servicekontos ein
+. Vergewissern Sie sich, dass Cloud KMS mit den richtigen Parametern konfiguriert ist:
+`security key-manager external gcp show vserver _svm_name_` Der Status von `kms_wrapped_key_status` lautet `“UNKNOWN”`, wenn keine verschlüsselten Volumes erstellt wurden. Wenn die Erreichbarkeit des Dienstes nicht in Ordnung ist, stellen Sie die Verbindung zum GCP-Schlüsselverwaltungsservice über die Daten-SVM-LIF her.
 
 
 --
 ====
-Wenn bereits ein oder mehrere verschlüsselte Volumes für eine Daten-SVM konfiguriert sind und die entsprechenden NVE Schlüssel vom Onboard-Schlüsselmanager des Admin-SVM gemanagt werden, sollten diese Schlüssel zu dem externen Verschlüsselungsmanagement-Service migriert werden. Führen Sie dazu den Befehl mit der CLI aus:
-`security key-manager key migrate -from-Vserver _admin_SVM_ -to-Vserver _data_SVM_`Erst dann können neue verschlüsselte Volumes für die Daten-SVM des Mandanten erstellt werden, wenn alle NVE-Schlüssel der Daten-SVM erfolgreich migriert wurden.
+Wenn bereits ein oder mehrere verschlüsselte Volumes für eine Daten-SVM konfiguriert sind und die entsprechenden NVE Schlüssel vom Onboard-Schlüsselmanager des Admin-SVM gemanagt werden, sollten diese Schlüssel zu dem externen Verschlüsselungsmanagement-Service migriert werden. Dazu führen Sie über die CLI den Befehl aus:
+`security key-manager key migrate -from-Vserver _admin_SVM_ -to-Vserver _data_SVM_` Neue verschlüsselte Volumes können erst für die Daten-SVM des Mandanten erstellt werden, wenn alle NVE-Schlüssel der Daten-SVM erfolgreich migriert wurden.
 
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/cloud-manager-cloud-volumes-ontap/task-encrypting-volumes.html["Verschlüsseln von Volumes mit NetApp Verschlüsselungslösungen für Cloud Volumes ONTAP"^]

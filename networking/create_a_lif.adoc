@@ -24,7 +24,7 @@ Mit ONTAP verbundene Switch Ports sollten als Spanning-Tree Edge Ports konfiguri
 * Der zugrunde liegende physische oder logische Netzwerk-Port muss für den Administrator-up-Status konfiguriert worden sein.
 * Wenn Sie planen, einen Subnetznamen zu verwenden, um die IP-Adresse und den Netzwerkmaskenwert für eine LIF zuzuweisen, muss das Subnetz bereits vorhanden sein.
 +
-Subnetze enthalten einen Pool mit IP-Adressen, die zum selben Layer-3-Subnetz gehören. Die Erstellung erfolgt mit System Manager oder mit `network subnet create` Befehl.
+Subnetze enthalten einen Pool mit IP-Adressen, die zum selben Layer-3-Subnetz gehören. Sie werden mit System Manager oder dem `network subnet create` Befehl erstellt.
 
 * Der Mechanismus zur Angabe der von einem LIF bearbeiteten Traffic-Art ist geändert. Für ONTAP 9.5 und früher verwendeten LIFs Rollen, um den Typ des Datenverkehrs anzugeben, den er verarbeiten würde. Ab ONTAP 9.6 verwenden LIFs Service-Richtlinien, um den Typ des Datenverkehrs anzugeben, den es verarbeiten würde.
 
@@ -45,7 +45,7 @@ Die unterstützten Protokolle sind SMB, NFS, FlexCache, iSCSI und FC; ISCSI und 
 * Wenn Sie eine große Anzahl von LIFs im Cluster besitzen, können Sie die vom Cluster unterstützte LIF-Kapazität überprüfen:
 +
 ** System Manager: Ab ONTAP 9.12.0 können Sie den Durchsatz auf dem Netzwerk-Interface-Grid einsehen.
-** CLI: Verwenden Sie das `network interface capacity show` Befehl und die LIF-Kapazität, die auf jedem Node mithilfe von unterstützt wird `network interface capacity details show` Befehl (auf der erweiterten Berechtigungsebene).
+** CLI: Verwenden Sie den `network interface capacity show` Befehl und die auf jedem Node unterstützte LIF-Kapazität. Verwenden Sie dazu den `network interface capacity details show` Befehl (auf der erweiterten Berechtigungsebene).
 
 
 * Wenn bereits ab ONTAP 9.7 andere LIFs für die SVM im selben Subnetz vorhanden sind, müssen Sie den Home Port der LIF nicht angeben. ONTAP wählt automatisch einen zufälligen Port auf dem angegebenen Home-Node in derselben Broadcast-Domäne wie die anderen LIFs, die bereits im selben Subnetz konfiguriert sind.
@@ -62,13 +62,13 @@ Ab ONTAP 9.4 wird FC-NVMe unterstützt. Wenn Sie eine FC-NVMe-LIF erstellen, sol
 * Pro SVM kann nur eine NVMe-LIF konfiguriert werden, die den Datenverkehr verarbeitet.
 * Wenn Sie eine Netzwerkschnittstelle mit einem Subnetz erstellen, wählt ONTAP automatisch eine verfügbare IP-Adresse aus dem ausgewählten Subnetz aus und weist sie der Netzwerkschnittstelle zu. Sie können das Subnetz ändern, wenn es mehr als ein Subnetz gibt, aber Sie können die IP-Adresse nicht ändern.
 * Wenn Sie eine SVM für eine Netzwerkschnittstelle erstellen (hinzufügen), können Sie keine IP-Adresse angeben, die sich im Bereich eines vorhandenen Subnetzes befindet. Sie erhalten einen Subnetzkonflikt. Dieses Problem tritt in anderen Workflows für eine Netzwerkschnittstelle auf, z. B. beim Erstellen oder Ändern von Clusterschnittstellen in SVM-Einstellungen oder in Cluster-Einstellungen.
-* Ab ONTAP 9.10.1 beginnt der `network interface` CLI-Befehle enthalten eine `-rdma-protocols` Parameter für NFS über RDMA-Konfigurationen. Das Erstellen von Netzwerkschnittstellen für NFS mit RDMA-Konfigurationen wird in System Manager ab ONTAP 9.12.1 unterstützt. Weitere Informationen finden Sie unter xref:../nfs-rdma/configure-lifs-task.html[KONFIGURIEREN SIE LIFS für NFS über RDMA].
+* Ab ONTAP 9.10.1 `network interface` enthalten die CLI-Befehle einen `-rdma-protocols` Parameter für NFS over RDMA-Konfigurationen. Das Erstellen von Netzwerkschnittstellen für NFS mit RDMA-Konfigurationen wird in System Manager ab ONTAP 9.12.1 unterstützt. Weitere Informationen finden Sie unter xref:../nfs-rdma/configure-lifs-task.html[KONFIGURIEREN SIE LIFS für NFS über RDMA].
 * Ab ONTAP 9.11.1 ist der automatische iSCSI LIF-Failover auf All-Flash SAN-Array (ASA)-Plattformen verfügbar.
 +
-ISCSI-LIF-Failover wird automatisch aktiviert (die Failover-Richtlinie ist auf festgelegt `sfo-partner-only` Und der Wert für die automatische Zurücksetzung ist auf festgelegt `true`) Auf neu erstellten iSCSI LIFs, wenn in der angegebenen SVM keine iSCSI LIFs vorhanden sind oder alle bestehenden iSCSI LIFs in der angegebenen SVM bereits mit iSCSI LIF Failover aktiviert sind.
+ISCSI-LIF-Failover ist automatisch aktiviert (die Failover-Richtlinie ist auf festgelegt `sfo-partner-only` und der Auto-revert-Wert ist auf eingestellt `true`) bei neu erstellten iSCSI-LIFs, wenn in der angegebenen SVM keine iSCSI-LIFs vorhanden sind oder wenn alle vorhandenen iSCSI-LIFs in der angegebenen SVM bereits mit iSCSI-LIF-Failover aktiviert sind.
 
 +
-Wenn Sie nach dem Upgrade auf ONTAP 9.11.1 oder höher bereits vorhandene iSCSI LIFs in einer SVM haben, die mit der iSCSI LIF Failover-Funktion nicht aktiviert wurden, und Sie neue iSCSI LIFs in derselben SVM erstellen, setzen die neuen iSCSI LIFs dieselbe Failover-Richtlinie voraus (`disabled`) Der vorhandenen iSCSI LIFs in der SVM.
+Wenn Sie nach einem Upgrade auf ONTAP 9.11.1 oder höher bereits iSCSI-LIFs in einer SVM vorhanden sind, die nicht mit der iSCSI-LIF-Failover-Funktion aktiviert wurden, und Sie neue iSCSI-LIFs in derselben SVM erstellen, übernehmen die neuen iSCSI-LIFs dieselbe Failover(`disabled`-Richtlinie ) der vorhandenen iSCSI-LIFs in der SVM.
 
 +
 link:../san-admin/asa-iscsi-lif-fo-task.html["LIF-Failover für ASA-Plattformen"]
@@ -152,17 +152,17 @@ ipspace1
 network interface create -vserver _SVM_name_ -lif _lif_name_ -service-policy _service_policy_name_ -home-node _node_name_ -home-port port_name {-address _IP_address_ - netmask _Netmask_value_ | -subnet-name _subnet_name_} -firewall- policy _policy_ -auto-revert {true|false}
 ....
 +
-** `-home-node` Ist der Node, den das LIF zurückgibt, wenn das `network interface revert` Befehl wird auf dem LIF ausgeführt.
+** `-home-node` Ist der Node, zu dem das LIF zurückgibt, wenn der `network interface revert` Befehl auf der LIF ausgeführt wird.
 +
 Sie können auch angeben, ob die LIF automatisch auf den Home-Node und den Home-Port zurückgesetzt werden soll. Verwenden Sie dazu die Option -Auto-revert.
 
-** `-home-port` Ist der physische oder logische Port, an den das LIF zurückgibt, wenn das `network interface revert` Befehl wird auf dem LIF ausgeführt.
-** Sie können eine IP-Adresse mit dem angeben `-address` Und `-netmask` Optionen, oder Sie aktivieren die Zuweisung von einem Subnetz mit dem `-subnet_name` Option.
+** `-home-port` Ist der physische oder logische Port, zu dem die LIF zurückgibt, wenn der `network interface revert` Befehl auf der LIF ausgeführt wird.
+** Sie können eine IP-Adresse mit den `-address` `-netmask` Optionen und angeben oder die Zuweisung aus einem Subnetz mit der `-subnet_name` Option aktivieren.
 ** Wenn Sie zur Versorgung der IP-Adresse und Netzwerkmaske ein Subnetz verwenden, wird bei einem Gateway automatisch eine Standardroute zu diesem Gateway zur SVM hinzugefügt, wenn mithilfe dieses Subnetzes eine LIF erstellt wird.
-** Wenn Sie IP-Adressen manuell zuweisen (ohne ein Subnetz zu verwenden), müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, wenn Clients oder Domänen-Controller in einem anderen IP-Subnetz vorhanden sind. Der `network route create` Die man-Page enthält Informationen zum Erstellen einer statischen Route in einer SVM.
-** `-auto-revert` Ermöglicht Ihnen, anzugeben, ob eine Daten-LIF automatisch auf den Home-Node zurückgesetzt wird – unter Umständen wie „Starten“, ändert den Status der Managementdatenbank oder wenn die Netzwerkverbindung hergestellt wird. Die Standardeinstellung ist `false`, Aber Sie können es auf einstellen `true` Abhängig von Netzwerkmanagement-Richtlinien in Ihrer Umgebung.
-**  `-service-policy` Ab ONTAP 9.5 können Sie dem eine Service-Richtlinie für das LIF zuweisen `-service-policy` Option. Wenn eine Service-Richtlinie für eine LIF angegeben wird, wird diese Richtlinie verwendet, um eine Standardrolle, Failover-Richtlinie und Datenprotokollliste für die LIF zu erstellen. In ONTAP 9.5 werden Service-Richtlinien nur für Cluster-übergreifende und BGP-Peer-Services unterstützt. In ONTAP 9.6 können Service-Richtlinien für mehrere Daten- und Management-Services erstellt werden.
-** `-data-protocol` Sie können eine LIF erstellen, die die FCP- oder NVMe/FC-Protokolle unterstützt. Diese Option ist beim Erstellen eines IP-LIF nicht erforderlich.
+** Wenn Sie IP-Adressen manuell zuweisen (ohne ein Subnetz zu verwenden), müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, wenn Clients oder Domänen-Controller in einem anderen IP-Subnetz vorhanden sind. Die `network route create` man-Page enthält Informationen zum Erstellen einer statischen Route innerhalb einer SVM.
+** `-auto-revert` Ermöglicht Ihnen die Angabe, ob eine Daten-LIF automatisch auf ihren Home Node zurückgesetzt wird, wenn beispielsweise ein Start erfolgt, Änderungen am Status der Managementdatenbank oder die Netzwerkverbindung hergestellt wird. Die Standardeinstellung ist `false`, Sie können sie jedoch `true` abhängig von den Netzwerkverwaltungsrichtlinien in Ihrer Umgebung auf festlegen.
+**  `-service-policy` Ab ONTAP 9.5 können Sie mit der `-service-policy` Option eine Service-Richtlinie für die LIF zuweisen. Wenn eine Service-Richtlinie für eine LIF angegeben wird, wird diese Richtlinie verwendet, um eine Standardrolle, Failover-Richtlinie und Datenprotokollliste für die LIF zu erstellen. In ONTAP 9.5 werden Service-Richtlinien nur für Cluster-übergreifende und BGP-Peer-Services unterstützt. In ONTAP 9.6 können Service-Richtlinien für mehrere Daten- und Management-Services erstellt werden.
+** `-data-protocol` Ermöglicht Ihnen das Erstellen einer logischen Schnittstelle, die die FCP- oder NVMe/FC-Protokolle unterstützt. Diese Option ist beim Erstellen eines IP-LIF nicht erforderlich.
 
 
 . *Optional*: Eine IPv6-Adresse in der Option -address zuweisen:
@@ -171,12 +171,12 @@ Sie können auch angeben, ob die LIF automatisch auf den Home-Node und den Home-
 +
 Der `network ndp prefix show` Befehl ist auf der erweiterten Berechtigungsebene verfügbar.
 
-.. Verwenden Sie das Format `prefix::id` Um die IPv6-Adresse manuell zu erstellen.
+.. Verwenden Sie das Format `prefix::id`, um die IPv6-Adresse manuell zu erstellen.
 +
-`prefix` Ist das Präfix auf verschiedenen Schnittstellen gelernt.
+`prefix` Wird das Präfix an verschiedenen Schnittstellen gelernt.
 
 +
-Für die Ableitung der `id`, Wählen Sie eine zufällige 64-Bit-Hexadezimalzahl aus.
+ `id`Wählen Sie zum Ableiten der eine zufällige 64-Bit-Hexadezimalzahl aus.
 
 
 
@@ -220,7 +220,7 @@ Failover Targets: node1:e0d, node1:e0e, node2:e0d, node2:e0e
 | IPv6-Adresse | Netzwerk-Ping6 
 |===
 .Beispiele
-Der folgende Befehl erstellt eine LIF und gibt die IP-Adresse und Netzwerkmaskenwerte mit dem an `-address` Und `-netmask` Parameter:
+Mit dem folgenden Befehl wird eine LIF erstellt und die Werte der IP-Adresse und Netzwerkmaske anhand der `-address` `-netmask` Parameter und angegeben:
 
 ....
 network interface create -vserver vs1.example.com -lif datalif1 -service-policy default-data-files -home-node node-4 -home-port e1c -address 192.0.2.145 -netmask 255.255.255.0 -auto-revert true
@@ -230,7 +230,7 @@ Mit dem folgenden Befehl wird eine LIF erstellt und dem angegebenen Subnetz (nam
 ....
 network interface create -vserver vs3.example.com -lif datalif3 -service-policy default-data-files -home-node node-3 -home-port e1c -subnet-name client1_sub - auto-revert true
 ....
-Mit dem folgenden Befehl wird eine NVMe/FC-LIF erstellt und angegeben `nvme-fc` Datenprotokoll:
+Mit dem folgenden Befehl wird eine NVMe/FC-LIF erstellt und das `nvme-fc` Datenprotokoll angegeben:
 
 ....
 network interface create -vserver vs1.example.com -lif datalif1 -data-protocol nvme-fc -home-node node-4 -home-port 1c -address 192.0.2.145 -netmask 255.255.255.0 -auto-revert true

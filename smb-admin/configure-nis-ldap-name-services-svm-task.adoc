@@ -19,14 +19,14 @@ Sie müssen die Konfiguration Ihrer Name-Services-Datenbank an Ihre Name-Service
 .Über diese Aufgabe
 SVMs verwenden die Nameservices ns-Switch-Datenbanken, um die Reihenfolge zu bestimmen, in der die Quellen für eine bestimmte Name-Service-Datenbank angezeigt werden sollen. Die ns-Switch-Quelle kann eine beliebige Kombination aus „`Files`“, „`nis`“ oder „`ldap`“ sein. Für die Gruppendatenbank versucht ONTAP, die Gruppenmitgliedschaften aus allen konfigurierten Quellen zu beziehen und verwendet dann die Informationen zu den konsolidierten Gruppenmitgliedschaften für Zugriffsprüfungen. Wenn eine dieser Quellen zum Zeitpunkt des Erhalts von UNIX-Gruppeninformationen nicht verfügbar ist, kann ONTAP die vollständigen UNIX-Anmeldeinformationen nicht erhalten, und nachfolgende Zugriffsprüfungen können möglicherweise fehlschlagen. Daher müssen Sie immer prüfen, ob alle ns-Switch-Quellen für die Gruppendatenbank in den ns-Switch-Einstellungen konfiguriert sind.
 
-Standardmäßig werden alle Windows-Benutzer vom SMB-Server dem UNIX-Standardbenutzer zugeordnet, der im lokalen gespeichert ist `passwd` Datenbank: Wenn Sie die Standardkonfiguration verwenden möchten, ist die Konfiguration von NIS- oder LDAP UNIX-Diensten für Benutzer- und Gruppennamen oder die LDAP-Benutzerzuordnung für den SMB-Zugriff optional.
+Standardmäßig ordnet der SMB-Server alle Windows-Benutzer dem in der lokalen `passwd` Datenbank gespeicherten UNIX-Standardbenutzer zu. Wenn Sie die Standardkonfiguration verwenden möchten, ist die Konfiguration von NIS- oder LDAP UNIX-Diensten für Benutzer- und Gruppennamen oder die LDAP-Benutzerzuordnung für den SMB-Zugriff optional.
 
 .Schritte
 . Wenn UNIX Benutzer-, Gruppen- und Netzwerkgruppeninformationen von NIS Name Services gemanagt werden, konfigurieren Sie NIS Name Services:
 +
-.. Ermitteln Sie die aktuelle Bestellung von Namensdiensten mithilfe des `vserver services name-service ns-switch show` Befehl.
+.. Bestimmen Sie die aktuelle Reihenfolge der Namensservices mit dem `vserver services name-service ns-switch show` Befehl.
 +
-In diesem Beispiel die drei Datenbanken (`group`, `passwd`, und `netgroup`) Das kann verwendet werden `nis` Als Namensdienstquelle wird nur verwendet `files` Als Quelle.
+In diesem Beispiel (`group` `passwd` `netgroup` `nis`werden die drei Datenbanken , und), die als Namensdienstquelle verwendet werden können `files`, nur als Quelle verwendet.
 
 +
 `vserver services name-service ns-switch show -vserver vs1`
@@ -46,9 +46,9 @@ vs1             netgroup       true            files
 vs1             namemap        true            files
 ----
 +
-Sie müssen die hinzufügen `nis` Quelle an die `group` Und `passwd` Datenbanken und optional dem `netgroup` Datenbank:
+Sie müssen die `nis` Quelle zu den `group` `passwd` Datenbanken und und optional zur `netgroup` Datenbank hinzufügen.
 
-.. Passen Sie die Namensdienststellung ns-Switch Datenbankbestellung mit dem nach Bedarf an `vserver services name-service ns-switch modify` Befehl.
+.. Passen Sie die Datenbankanordnung `vserver services name-service ns-switch modify` für den Namensservice ns-Switch mit dem Befehl nach Bedarf an.
 +
 Um eine optimale Performance zu erzielen, sollten Sie einer Name-Service-Datenbank keinen Name-Service hinzufügen, es sei denn, Sie planen, diesen Name-Service für die SVM zu konfigurieren.
 
@@ -56,12 +56,12 @@ Um eine optimale Performance zu erzielen, sollten Sie einer Name-Service-Datenba
 Wenn Sie die Konfiguration für mehr als eine Namensdienstdatenbank ändern, müssen Sie den Befehl für jede Namensdienstdatenbank, die Sie ändern möchten, separat ausführen.
 
 +
-In diesem Beispiel `nis` Und `files` Werden als Quellen für das konfiguriert `group` Und `passwd` Datenbanken in dieser Reihenfolge an. Die restlichen Nameservice-Datenbanken bleiben unverändert.
+In diesem Beispiel `nis` und `files` werden `group` `passwd` in dieser Reihenfolge als Quellen für die und-Datenbanken konfiguriert. Die restlichen Nameservice-Datenbanken bleiben unverändert.
 
 +
 `vserver services name-service ns-switch modify -vserver vs1 -database group -sources nis,files` `vserver services name-service ns-switch modify -vserver vs1 -database passwd -sources nis,files`
 
-.. Überprüfen Sie, ob die Bestellung von Namensdiensten richtig ist, indem Sie die verwenden `vserver services name-service ns-switch show` Befehl.
+.. Überprüfen Sie mit dem `vserver services name-service ns-switch show` Befehl, ob die Reihenfolge der Namensservices korrekt ist.
 +
 `vserver services name-service ns-switch show -vserver vs1`
 
@@ -81,7 +81,7 @@ vs1             passwd         true            nis,
 vs1             netgroup       true            files
 vs1             namemap        true            files
 ----
-.. Erstellen Sie die Konfiguration des NIS-Namensservice: +
+.. Erstellen Sie die NIS-Name-Service-Konfiguration: +
 `vserver services name-service nis-domain create -vserver _vserver_name_ -domain _NIS_domain_name_ -servers _NIS_server_IPaddress_,... -active true+`
 +
 `vserver services name-service nis-domain create -vserver vs1 -domain example.com -servers 10.0.0.60 -active true`
@@ -89,10 +89,10 @@ vs1             namemap        true            files
 +
 [NOTE]
 ====
-Ab ONTAP 9.2 Field Portal `-nis-servers` Ersetzt das Feld `-servers`. Dieses neue Feld kann entweder einen Hostnamen oder eine IP-Adresse für den NIS-Server enthalten.
+Ab ONTAP 9.2 `-nis-servers` ersetzt das Feld das Feld `-servers`. Dieses neue Feld kann entweder einen Hostnamen oder eine IP-Adresse für den NIS-Server enthalten.
 
 ====
-.. Überprüfen Sie, ob der NIS-Namensdienst richtig konfiguriert und aktiv ist: `vserver services name-service nis-domain show vserver _vserver_name_`
+.. Überprüfen Sie, ob der NIS-Namensservice ordnungsgemäß konfiguriert und aktiv ist: `vserver services name-service nis-domain show vserver _vserver_name_`
 +
 `vserver services name-service nis-domain show vserver vs1`
 
@@ -106,5 +106,5 @@ vs1           example.com         true   10.0.0.60
 ----
 
 
-. Wenn UNIX-Benutzer-, Gruppen- und Netzwerkgruppeninformationen oder Namenszuordnungen von LDAP-Namensdiensten verwaltet werden, konfigurieren Sie LDAP-Namensdienste unter Verwendung der dort befindlichen Informationen link:../nfs-admin/index.html["NFS-Management"].
+. Wenn UNIX-Benutzer-, Gruppen- und Netzgruppeninformationen oder Namenszuordnungen von LDAP-Namensservices verwaltet werden, konfigurieren Sie LDAP-Namensservices mithilfe der Informationen unter link:../nfs-admin/index.html["NFS-Management"].
 

@@ -2,7 +2,7 @@
 permalink: san-config/set-queue-depth-task.html 
 sidebar: sidebar 
 keywords: calculate, queue depth 
-summary: Möglicherweise müssen Sie Ihre FC-Warteschlangentiefe auf dem Host abstimmen, um die maximalen Werte für ITNs pro Node und FC-Port-Fan-in zu erreichen. Die maximale Anzahl der LUNs und die Anzahl der HBAs, die eine Verbindung zu einem FC-Port herstellen können, sind durch die verfügbare Warteschlangentiefe auf den FC-Zielports begrenzt. 
+summary: Möglicherweise müssen Sie die FC-Warteschlangentiefe auf dem Host anpassen, um die Höchstwerte für ITNs pro Knoten und FC-Port-Fan-in zu erreichen. Die maximale Anzahl an LUNs und die Anzahl der HBAs, die eine Verbindung zu einem FC-Port herstellen können, werden durch die verfügbare Warteschlangentiefe auf den FC-Ziel-Ports begrenzt. 
 ---
 = Festlegen der Warteschlangentiefe auf SAN-Hosts
 :allow-uri-read: 
@@ -17,7 +17,7 @@ Möglicherweise müssen Sie die Warteschlangentiefe auf Ihrem Host ändern, um d
 
 == AIX-Hosts
 
-Sie können die Warteschlangentiefe auf AIX-Hosts mithilfe der ändern `chdev` Befehl. Änderungen, die mit dem vorgenommen wurden `chdev` Befehl bleibt während eines Neustarts bestehen.
+Sie können die Warteschlangentiefe auf AIX-Hosts mit dem `chdev` Befehl ändern. Mit dem `chdev` Befehl genommene Änderungen werden auch nach einem Neustart fortgeführt.
 
 Beispiele:
 
@@ -30,12 +30,12 @@ Beispiele:
 `chdev -l fcs0 -a num_cmd_elems=128`
 
 +
-Der Standardwert für `num_cmd_elems` Ist 200. Der maximale Wert ist 2,048.
+Der Standardwert für `num_cmd_elems` ist 200. Der maximale Wert ist 2.048.
 
 +
 [NOTE]
 ====
-Möglicherweise muss der HBA in den Offline-Modus versetzt werden, um ihn zu ändern `num_cmd_elems` Und bringen Sie es dann wieder online mit dem `rmdev -l fcs0 -R` Und `makdev -l fcs0 -P` Befehle.
+Unter Umständen muss der HBA in den Offline-Modus versetzt werden, um `num_cmd_elems` ihn zu ändern und ihn dann mithilfe der `rmdev -l fcs0 -R` `makdev -l fcs0 -P` Befehle und wieder in den Online-Modus zu versetzen.
 
 ====
 
@@ -44,17 +44,17 @@ Möglicherweise muss der HBA in den Offline-Modus versetzt werden, um ihn zu än
 
 == HP-UX-Hosts erhältlich
 
-Sie können die LUN- oder Gerätewarteschlangentiefe auf HP-UX-Hosts mithilfe des Kernel-Parameters ändern `scsi_max_qdepth`. Sie können die HBA-Warteschlangentiefe mit dem Kernel-Parameter ändern `max_fcp_reqs`.
+Sie können die LUN- oder Gerätewarteschlangentiefe auf HP-UX-Hosts mit dem Kernel-Parameter ändern `scsi_max_qdepth`. Sie können die HBA-Warteschlangentiefe mit dem Kernel-Parameter ändern `max_fcp_reqs`.
 
-* Der Standardwert für `scsi_max_qdepth` Ist 8. Der maximale Wert ist 255.
+* Der Standardwert für `scsi_max_qdepth` ist 8. Der maximale Wert ist 255.
 +
-`scsi_max_qdepth` Kann auf einem laufenden System mit dynamisch verändert werden `-u` Option auf der `kmtune` Befehl. Die Änderung wird für alle Geräte im System wirksam. Verwenden Sie beispielsweise den folgenden Befehl, um die LUN-Warteschlangentiefe auf 64 zu erhöhen:
+`scsi_max_qdepth` Kann auf einem laufenden System mit der `-u` Option des `kmtune` Befehls dynamisch geändert werden. Die Änderung wird für alle Geräte im System wirksam. Verwenden Sie beispielsweise den folgenden Befehl, um die LUN-Warteschlangentiefe auf 64 zu erhöhen:
 
 +
 `kmtune -u -s scsi_max_qdepth=64`
 
 +
-Es ist möglich, die Warteschlangentiefe für einzelne Gerätedateien mit dem zu ändern `scsictl` Befehl. Änderungen mithilfe von `scsictl` Der Befehl bleibt beim Neustart des Systems erhalten. Um die Warteschlangentiefe für eine bestimmte Gerätedatei anzuzeigen und zu ändern, führen Sie den folgenden Befehl aus:
+Mit dem `scsictl` Befehl kann die Warteschlangentiefe für einzelne Gerätedateien geändert werden. Änderungen mit dem `scsictl` Befehl gehen beim Neubooten des Systems nicht verloren. Um die Warteschlangentiefe für eine bestimmte Gerätedatei anzuzeigen und zu ändern, führen Sie den folgenden Befehl aus:
 
 +
 `scsictl -a /dev/rdsk/c2t2d0`
@@ -62,9 +62,9 @@ Es ist möglich, die Warteschlangentiefe für einzelne Gerätedateien mit dem zu
 +
 `scsictl -m queue_depth=16 /dev/rdsk/c2t2d0`
 
-* Der Standardwert für `max_fcp_reqs` Ist 512. Der maximale Wert ist 1024.
+* Der Standardwert für `max_fcp_reqs` ist 512. Der maximale Wert ist 1024.
 +
-Der Kernel muss neu aufgebaut werden und das System muss neu gestartet werden, um Änderungen an vornehmen zu können `max_fcp_reqs` Um wirksam zu werden. Verwenden Sie zum Ändern der HBA-Warteschlangentiefe in 256 beispielsweise den folgenden Befehl:
+Der Kernel muss neu aufgebaut werden und das System muss neu gestartet werden, damit `max_fcp_reqs` die Änderungen wirksam werden. Verwenden Sie zum Ändern der HBA-Warteschlangentiefe in 256 beispielsweise den folgenden Befehl:
 
 +
 `kmtune -u -s max_fcp_reqs=256`
@@ -78,13 +78,13 @@ Der Kernel muss neu aufgebaut werden und das System muss neu gestartet werden, u
 Sie können die LUN- und HBA-Warteschlangentiefe für Ihre Solaris-Hosts einstellen.
 
 * Für LUN-Warteschlangentiefe: Die Anzahl der auf einem Host verwendeten LUNs muss mit dem pro-LUN-Gashebel (lun-Queue-Tiefe) kleiner oder gleich dem Wert für die tgt-queue-Tiefe auf dem Host sein.
-* Für die Warteschlangentiefe in einem Sun-Stack: Die nativen Treiber ermöglichen nicht pro LUN oder Ziel `max_throttle` Einstellungen auf HBA-Ebene. Die empfohlene Methode zum Einstellen des `max_throttle` Der Wert für native Treiber befindet sich auf der Ebene des Typs pro Gerät (VID_PID) im `/kernel/drv/sd.conf` Und `/kernel/drv/ssd.conf` Dateien: Das Host-Dienstprogramm setzt diesen Wert auf 64 für MPxIO-Konfigurationen und 8 für Veritas DMP-Konfigurationen.
+* Für Warteschlangentiefe in einem Sun Stack: Die nativen Treiber erlauben keine `max_throttle` Einstellungen pro LUN oder pro Ziel auf HBA-Ebene. Die empfohlene Methode zum Festlegen des `max_throttle` Werts für native Treiber ist auf der Ebene pro Device (VID_PID) in den `/kernel/drv/sd.conf` `/kernel/drv/ssd.conf` Dateien und. Das Host-Dienstprogramm setzt diesen Wert auf 64 für MPxIO-Konfigurationen und 8 für Veritas DMP-Konfigurationen.
 
 
 .Schritte
 . `# cd/kernel/drv`
 . `# vi lpfc.conf`
-. Suche nach `/tft-queue (/tgt-queue)`
+. Suchen nach `/tft-queue (/tgt-queue)`
 +
 `tgt-queue-depth=32`
 
@@ -96,18 +96,18 @@ Der Standardwert ist bei der Installation auf 32 gesetzt.
 ====
 . Legen Sie den gewünschten Wert basierend auf der Konfiguration Ihrer Umgebung fest.
 . Speichern Sie die Datei.
-. Starten Sie den Host mithilfe des neu `+sync; sync; sync; reboot -- -r+` Befehl.
+. Starten Sie den Host mit dem `+sync; sync; sync; reboot -- -r+` Befehl neu.
 
 
 
 
 == VMware Hosts für einen QLogic HBA
 
-Verwenden Sie die `esxcfg-module` Befehl zum Ändern der HBA-Zeitüberschreitungseinstellungen. Manuelles Aktualisieren des `esx.conf` Datei wird nicht empfohlen.
+Verwenden Sie den `esxcfg-module` Befehl, um die Einstellungen für die HBA-Zeitüberschreitung zu ändern.  `esx.conf`Eine manuelle Aktualisierung der Datei wird nicht empfohlen.
 
 .Schritte
 . Melden Sie sich als Root-Benutzer an der Service-Konsole an.
-. Verwenden Sie die `#vmkload_mod -l` Befehl zur Überprüfung, welches Qlogic HBA-Modul derzeit geladen ist.
+.  `#vmkload_mod -l`Überprüfen Sie mit dem Befehl, welches Qlogic HBA-Modul aktuell geladen ist.
 . Führen Sie für eine einzelne Instanz eines Qlogic HBA den folgenden Befehl aus:
 +
 `#esxcfg-module -s ql2xmaxqdepth=64 qla2300_707`
@@ -138,11 +138,11 @@ Dieses Beispiel verwendet das Modul qla2300_707. Verwenden Sie das entsprechende
 
 == VMware-Hosts für einen Emulex HBA
 
-Verwenden Sie die `esxcfg-module` Befehl zum Ändern der HBA-Zeitüberschreitungseinstellungen. Manuelles Aktualisieren des `esx.conf` Datei wird nicht empfohlen.
+Verwenden Sie den `esxcfg-module` Befehl, um die Einstellungen für die HBA-Zeitüberschreitung zu ändern.  `esx.conf`Eine manuelle Aktualisierung der Datei wird nicht empfohlen.
 
 .Schritte
 . Melden Sie sich als Root-Benutzer an der Service-Konsole an.
-. Verwenden Sie die `#vmkload_mod -l grep lpfc` Befehl zur Überprüfung, welcher Emulex HBA aktuell geladen ist.
+.  `#vmkload_mod -l grep lpfc`Überprüfen Sie mit dem Befehl, welcher Emulex HBA aktuell geladen ist.
 . Geben Sie für eine einzelne Instanz eines Emulex HBA den folgenden Befehl ein:
 +
 `#esxcfg-module -s lpfc0_lun_queue_depth=16 lpfcdd_7xx`
@@ -167,17 +167,17 @@ Die LUN-Warteschlangentiefe für lpfc0 und die LUN-Warteschlangentiefe für lpfc
 +
 `#esxcfg-boot -b`
 
-. Booten Sie mit neu `#reboot`.
+. Starten Sie mit `#reboot`.
 
 
 
 
 == Windows Hosts für einen Emulex HBA
 
-Auf Windows-Hosts können Sie das verwenden `LPUTILNT` Dienstprogramm zur Aktualisierung der Warteschlangentiefe für Emulex-HBAs.
+Auf Windows-Hosts können Sie das `LPUTILNT` Dienstprogramm verwenden, um die Warteschlangentiefe für Emulex-HBAs zu aktualisieren.
 
 .Schritte
-. Führen Sie die aus `LPUTILNT` Dienstprogramm befindet sich im `C:\WINNT\system32` Verzeichnis.
+. Führen Sie das `LPUTILNT` Dienstprogramm aus `C:\WINNT\system32`, das sich im Verzeichnis befindet.
 . Wählen Sie im Menü auf der rechten Seite die Option *Drive Parameters* aus.
 . Scrollen Sie nach unten und doppelklicken Sie auf *QueueDepth*.
 +
@@ -194,13 +194,13 @@ Wenn Sie *QueueDepth* größer als 150 einstellen, muss auch der folgende Wert f
 
 == Windows Hosts für einen Qlogic HBA
 
-Auf Windows-Hosts können Sie das und verwenden `SANsurfer` HBA Manager Utility zum Aktualisieren der Queue Depths für Qlogic HBAs.
+Auf Windows-Hosts können Sie die und das `SANsurfer` HBA-Manager-Dienstprogramm verwenden, um die Warteschlangentiefen für Qlogic HBAs zu aktualisieren.
 
 .Schritte
-. Führen Sie die aus `SANsurfer` HBA Manager Utility:
+. Führen Sie das `SANsurfer` HBA-Manager-Dienstprogramm aus.
 . Klicken Sie auf *HBA-Port* > *Einstellungen*.
 . Klicken Sie im Listenfeld auf *Erweiterte HBA-Porteinstellungen*.
-. Aktualisieren Sie die `Execution Throttle` Parameter.
+. Aktualisieren Sie den `Execution Throttle` Parameter.
 
 
 
@@ -218,15 +218,15 @@ Sie können die Warteschlangentiefe eines Emulex HBA auf einem Linux-Host aktual
 Die Liste der Parameter für die Warteschlangentiefe mit ihrer Beschreibung wird angezeigt. Je nach Betriebssystemversion können Sie einen oder mehrere der folgenden Parameter für die Warteschlangentiefe ändern:
 
 +
-** `lpfc_lun_queue_depth`: Maximale Anzahl von FC-Befehlen, die an eine bestimmte LUN in Warteschlange gestellt werden können (uint)
-** `lpfc_hba_queue_depth`: Maximale Anzahl von FC-Befehlen, die an einen lpfc HBA (uint) in die Warteschlange gestellt werden können
-** `lpfc_tgt_queue_depth`: Maximale Anzahl von FC-Befehlen, die an einen bestimmten Zielport in die Warteschlange gestellt werden können (uint)
+** `lpfc_lun_queue_depth`: Maximale Anzahl von FC-Befehlen, die in eine bestimmte LUN (uint) eingereiht werden können
+** `lpfc_hba_queue_depth`: Maximale Anzahl von FC-Befehlen, die in eine Warteschlange für einen lpfc HBA (uint) gestellt werden können
+** `lpfc_tgt_queue_depth`: Maximale Anzahl von FC-Befehlen, die in einen bestimmten Zielport (uint) eingereiht werden können
 +
-Der `lpfc_tgt_queue_depth` Der Parameter ist nur für Red hat Enterprise Linux 7.x-Systeme, SUSE Linux Enterprise Server 11 SP4-Systeme und 12.x-Systeme anwendbar.
+Der `lpfc_tgt_queue_depth` Parameter gilt nur für Red hat Enterprise Linux 7.x-Systeme, SUSE Linux Enterprise Server 11 SP4-Systeme und 12.x-Systeme.
 
 
 
-. Aktualisieren Sie die Warteschlangentiefe, indem Sie dem die Parameter für die Warteschlangentiefe hinzufügen `/etc/modprobe.conf` Datei für ein Red hat Enterprise Linux 5.x-System und zum `/etc/modprobe.d/scsi.conf` Datei für ein Red hat Enterprise Linux 6.x- oder 7.x-System oder ein SUSE Linux Enterprise Server 11.x- oder 12.x-System.
+. Aktualisieren Sie die Warteschlangentiefe, indem Sie der `/etc/modprobe.conf` Datei für ein Red hat Enterprise Linux 5.x-System und der `/etc/modprobe.d/scsi.conf` Datei für ein Red hat Enterprise Linux 6.x- oder 7.x-System oder einem SUSE Linux Enterprise Server 11.x- oder 12.x-System die Warteschlangentiefe hinzufügen.
 +
 Abhängig von Ihrer Betriebssystemversion können Sie einen oder mehrere der folgenden Befehle hinzufügen:
 
@@ -238,7 +238,7 @@ Abhängig von Ihrer Betriebssystemversion können Sie einen oder mehrere der fol
 
 . Erstellen Sie ein neues RAM-Laufwerk-Image, und starten Sie dann den Host neu, damit die Updates bei einem Neustart erhalten bleiben.
 +
-Weitere Informationen finden Sie im link:../system-admin/index.html["Systemadministration"] Für Ihre Linux-Version.
+Weitere Informationen finden Sie im link:../system-admin/index.html["Systemadministration"] für Ihre Version des Linux-Betriebssystems.
 
 . Vergewissern Sie sich, dass die Werte für die Warteschlangentiefe für jeden Parameter aktualisiert werden, den Sie geändert haben:
 +
@@ -269,7 +269,7 @@ Diese Aufgabe zeigt, wie die QLogic HBA CLI zum Ändern der QLogic HBA-Warteschl
 `modinfo qla2xxx | grep ql2xmaxqdepth`
 
 +
-Sie können nur die ändern `ql2xmaxqdepth` Parameter für die Warteschlangentiefe, der die maximale Warteschlangentiefe angibt, die für jede LUN festgelegt werden kann. Der Standardwert ist 64 für RHEL 7.5 und höher. Der Standardwert ist 32 für RHEL 7.4 und früher.
+Sie können nur den `ql2xmaxqdepth` Parameter „Warteschlangentiefe“ ändern, der die maximale Warteschlangentiefe angibt, die für jede LUN festgelegt werden kann. Der Standardwert ist 64 für RHEL 7.5 und höher. Der Standardwert ist 32 für RHEL 7.4 und früher.
 
 +
 [listing]
@@ -281,10 +281,10 @@ parm:       ql2xmaxqdepth:Maximum queue depth to set for each LUN. Default is 64
 +
 ** Wenn Sie die Änderungen persistent machen möchten, führen Sie die folgenden Schritte aus:
 +
-... Aktualisieren Sie die Warteschlangentiefe, indem Sie dem den Parameter Warteschlangentiefe hinzufügen `/etc/modprobe.conf` Datei für ein Red hat Enterprise Linux 5.x-System und zum `/etc/modprobe.d/scsi.conf` Datei für ein Red hat Enterprise Linux 6.x- oder 7.x-System oder ein SUSE Linux Enterprise Server 11.x- oder 12.x-System: `options qla2xxx ql2xmaxqdepth=new_queue_depth`
+... Aktualisieren Sie die Warteschlangentiefe, indem Sie der `/etc/modprobe.conf` Datei für ein Red hat Enterprise Linux 5.x-System und der `/etc/modprobe.d/scsi.conf` Datei für ein Red hat Enterprise Linux 6.x- oder 7.x-System oder einem SUSE Linux Enterprise Server 11.x- oder 12.x-System den Parameter Warteschlangentiefe hinzufügen: `options qla2xxx ql2xmaxqdepth=new_queue_depth`
 ... Erstellen Sie ein neues RAM-Laufwerk-Image, und starten Sie dann den Host neu, damit die Updates bei einem Neustart erhalten bleiben.
 +
-Weitere Informationen finden Sie im link:../system-admin/index.html["Systemadministration"] Für Ihre Linux-Version.
+Weitere Informationen finden Sie im link:../system-admin/index.html["Systemadministration"] für Ihre Version des Linux-Betriebssystems.
 
 
 
@@ -309,13 +309,13 @@ echo 128 > /sys/module/qla2xxx/parameters/ql2xmaxqdepth
 +
 Der aktuelle Wert der Warteschlangentiefe wird angezeigt.
 
-. Ändern Sie die QLogic HBA-Warteschlangentiefe durch Aktualisieren des Firmware-Parameters `Execution Throttle` Über das QLogic HBA BIOS.
+. Ändern Sie die Warteschlangentiefe von QLogic HBA, indem Sie den Firmware-Parameter `Execution Throttle` aus dem QLogic HBA BIOS aktualisieren.
 +
 .. Melden Sie sich bei der QLogic HBA Management CLI an:
 +
 `/opt/QLogic_Corporation/QConvergeConsoleCLI/qaucli`
 
-.. Wählen Sie im Hauptmenü die aus `Adapter Configuration` Option.
+.. Wählen Sie im Hauptmenü die `Adapter Configuration` Option aus.
 +
 [listing]
 ----
@@ -343,7 +343,7 @@ QConvergeConsole
 
         Please Enter Selection: 2
 ----
-.. Wählen Sie aus der Liste der Adapterkonfigurationsparameter die aus `HBA Parameters` Option.
+.. Wählen Sie in der Liste der Adapterkonfigurationsparameter die `HBA Parameters` Option aus.
 +
 [listing]
 ----
@@ -381,9 +381,9 @@ Fibre Channel Adapter Configuration
 +
 Die Details des HBA-Ports werden angezeigt.
 
-.. Wählen Sie im Menü HBA-Parameter den aus `Display HBA Parameters` Option zum Anzeigen des aktuellen Werts des `Execution Throttle` Option.
+.. Wählen Sie im Menü HBA-Parameter die `Display HBA Parameters` Option aus `Execution Throttle`, um den aktuellen Wert der Option anzuzeigen.
 +
-Der Standardwert des `Execution Throttle` Option ist 65535.
+Der Standardwert der `Execution Throttle` Option ist 65535.
 
 +
 [listing]
@@ -436,8 +436,8 @@ Enable Fabric Assigned WWN     : N/A
 Press <Enter> to continue:
 ----
 .. Drücken Sie *Enter*, um fortzufahren.
-.. Wählen Sie im Menü HBA-Parameter den aus `Configure HBA Parameters` Option zum Ändern der HBA-Parameter.
-.. Wählen Sie im Menü Parameter konfigurieren die Option `Execute Throttle` Option und den Wert dieses Parameters aktualisieren.
+.. Wählen Sie im Menü HBA-Parameter die `Configure HBA Parameters` Option zum Ändern der HBA-Parameter aus.
+.. Wählen Sie im Menü Parameter konfigurieren die `Execute Throttle` Option aus, und aktualisieren Sie den Wert dieses Parameters.
 +
 [listing]
 ----
@@ -482,7 +482,7 @@ Link          : Online
 Enter Execution Throttle [1-65535] [65535]: 65500
 ----
 .. Drücken Sie *Enter*, um fortzufahren.
-.. Wählen Sie im Menü Parameter konfigurieren die Option `Commit Changes` Option zum Speichern der Änderungen.
+.. Wählen Sie im Menü Parameter konfigurieren die `Commit Changes` Option aus, um die Änderungen zu speichern.
 .. Verlassen Sie das Menü.
 
 

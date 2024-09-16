@@ -27,9 +27,9 @@ Wenn Sie eine ältere Version von ONTAP als ONTAP 9.3 verwenden, müssen Sie Fle
 
 
 .Schritte
-. Erstellung eines FlexGroup Ziel-Volume des Typs `DP` Dies verfügt über die gleiche Anzahl von Komponenten wie das FlexGroup Quell-Volume:
+. Erstellen Sie ein Ziel-FlexGroup-Volume `DP` mit derselben Anzahl an Komponenten wie das FlexGroup Quell-Volume:
 +
-.. Bestimmen Sie aus dem Quellcluster die Anzahl der Komponenten im Quell-FlexGroup Volume: `volume show -volume volume_name* -is-constituent true`
+.. Bestimmen Sie aus dem Quell-Cluster die Anzahl der Komponenten im Quell-FlexGroup Volume: `volume show -volume volume_name* -is-constituent true`
 +
 [listing]
 ----
@@ -46,7 +46,7 @@ vss       srcFG__0006    aggr1        online     RW         25TB    10.64TB   57
 vss       srcFG__0007    Aggr_cmode   online     RW         25TB    10.63TB   57%
 ...
 ----
-.. Erstellen Sie aus dem Ziel-Cluster ein FlexGroup Ziel-Volume vom Typ `DP` Wählen Sie für das FlexGroup Quell-Volume die gleiche Anzahl von Komponenten aus.
+.. Erstellen Sie aus dem Ziel-Cluster ein Ziel-FlexGroup-Volume des Typs `DP` mit derselben Anzahl von Komponenten wie das Quell-FlexGroup Volume.
 +
 [listing]
 ----
@@ -56,7 +56,7 @@ Warning: The FlexGroup volume "dstFG" will be created with the following number 
 Do you want to continue? {y|n}: y
 [Job 766] Job succeeded: Successful
 ----
-.. Überprüfen Sie aus dem Ziel-Cluster die Anzahl der Komponenten im FlexGroup Ziel-Volume: `volume show -volume volume_name* -is-constituent true`
+.. Überprüfen Sie vom Ziel-Cluster aus die Anzahl der Komponenten im Ziel-FlexGroup-Volume: `volume show -volume volume_name* -is-constituent true`
 +
 [listing]
 ----
@@ -75,23 +75,23 @@ vsd       dstFG__0007    Aggr_cmode   online     DP         25TB    10.63TB   57
 ----
 
 
-. Job-Zeitplan erstellen: `job schedule cron create -name job_name -month month -dayofweek day_of_week -day day_of_month -hour hour -minute minute`
+. Erstellen eines Jobplans: `job schedule cron create -name job_name -month month -dayofweek day_of_week -day day_of_month -hour hour -minute minute`
 +
-Für das `-month`, `-dayofweek`, und `-hour` Optionen, können Sie angeben `all` Die Aufgabe jeden Monat, jeden Wochentag und jede Stunde ausführen.
+Für die `-month` `-dayofweek` `-hour` Optionen , und können Sie festlegen `all`, dass der Job jeden Monat, jeden Tag der Woche bzw. jede Stunde ausgeführt wird.
 
 +
-Im folgenden Beispiel wird ein Job-Zeitplan mit dem Namen erstellt `my_weekly` Das läuft samstags um 3:00 Uhr:
+Im folgenden Beispiel wird ein Jobzeitplan mit dem Namen erstellt `my_weekly`, der samstags um 3:00 Uhr ausgeführt wird:
 
 +
 [listing]
 ----
 cluster1::> job schedule cron create -name my_weekly -dayofweek "Saturday" -hour 3 -minute 0
 ----
-. Erstellen Sie eine benutzerdefinierte Typrichtlinie `async-mirror` Für die SnapMirror Beziehung: `snapmirror policy create -vserver SVM -policy snapmirror_policy -type async-mirror`
+. Benutzerdefinierte Richtlinie des Typs `async-mirror` für die SnapMirror Beziehung erstellen: `snapmirror policy create -vserver SVM -policy snapmirror_policy -type async-mirror`
 +
-Wenn Sie keine benutzerdefinierte Richtlinie erstellen, sollten Sie die angeben `MirrorAllSnapshots` Richtlinie für SnapMirror Beziehungen
+Wenn Sie keine benutzerdefinierte Richtlinie erstellen, sollten Sie die `MirrorAllSnapshots` Richtlinie für SnapMirror-Beziehungen angeben.
 
-. Erstellen Sie im Ziel-Cluster eine SnapMirror Beziehung zwischen dem Quell-FlexGroup Volume und dem Ziel-FlexGroup Volume: `snapmirror create -source-path src_svm:src_flexgroup -destination-path dest_svm:dest_flexgroup -type XDP -policy snapmirror_policy -schedule sched_name`
+. Erstellen Sie aus dem Ziel-Cluster eine SnapMirror-Beziehung zwischen dem Quell-FlexGroup-Volume und dem Ziel-FlexGroup-Volume: `snapmirror create -source-path src_svm:src_flexgroup -destination-path dest_svm:dest_flexgroup -type XDP -policy snapmirror_policy -schedule sched_name`
 +
 SnapMirror Beziehungen für FlexGroup Volumes müssen vom Typ sein `XDP`.
 
@@ -105,7 +105,7 @@ Sie können die SnapMirror Bezeichnungen von Snapshot Kopien für FlexGroup Volu
 
 ====
 +
-Wenn die Richtlinie in ONTAP 9.4 und früheren Versionen nicht mit angegeben wurde `snapmirror create` Befehl, das `MirrorAllSnapshots` Richtlinie wird standardmäßig verwendet. Wenn in ONTAP 9.5 die Richtlinie nicht mit dem angegeben ist `snapmirror create` Befehl, das `MirrorAndVault` Richtlinie wird standardmäßig verwendet.
+Wenn in ONTAP 9.4 und früher die Policy nicht mit dem `snapmirror create` Befehl angegeben `MirrorAllSnapshots` wird, wird die Policy standardmäßig verwendet. Wenn in ONTAP 9.5 die Richtlinie nicht mit dem `snapmirror create` Befehl angegeben wird, `MirrorAndVault` wird die Richtlinie standardmäßig verwendet.
 
 +
 [listing]
@@ -113,7 +113,7 @@ Wenn die Richtlinie in ONTAP 9.4 und früheren Versionen nicht mit angegeben wur
 cluster2::> snapmirror create -source-path vss:srcFG -destination-path vsd:dstFG -type XDP -policy MirrorAllSnapshots -schedule hourly
 Operation succeeded: snapmirror create for the relationship with destination "vsd:dstFG".
 ----
-. Initialisieren Sie die SnapMirror-Beziehung vom Ziel-Cluster, indem Sie einen Basistransfer durchführen: `snapmirror initialize -destination-path dest_svm:dest_flexgroup`
+. Initialisieren Sie vom Ziel-Cluster die SnapMirror Beziehung durch einen Basistransfer: `snapmirror initialize -destination-path dest_svm:dest_flexgroup`
 +
 Nachdem der Basistransfer abgeschlossen ist, wird das Ziel-FlexGroup-Volume regelmäßig aktualisiert, basierend auf dem Zeitplan der SnapMirror Beziehung.
 

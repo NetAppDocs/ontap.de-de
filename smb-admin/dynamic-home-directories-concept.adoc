@@ -24,17 +24,17 @@ Der Freigabename kann die folgenden dynamischen Namen verwenden:
 
 +
 ** `%w` (Der Windows-Benutzername des Benutzers)
-** `%d` (Windows-Domain-Name des Benutzers)
-**  `%u` (Der zugewiesene UNIX-Benutzername des Benutzers) um den Freigabennamen in allen Home-Verzeichnissen eindeutig zu machen, muss der Freigabenname entweder den enthalten/`%w` Oder im `%u` Variabel. Der Freigeben-Name kann beides enthalten `%d` Und das/`%w` Variable (z. B. `%d`/`%w`), oder der Freigabename kann einen statischen Teil und einen variablen Teil enthalten (z. B. Home_/`%w`).
+** `%d` (Der Windows-Domänenname des Benutzers)
+**  `%u` (Der zugeordnete UNIX-Benutzername des Benutzers) damit der Freigabename in allen Home-Verzeichnissen eindeutig ist, muss der Freigabename entweder die/`%w` `%u` Variable oder enthalten. Der Freigabename kann sowohl die `%d`/`%w` Variable als auch die Variable enthalten (z. B. `%d`/`%w` ), oder der Freigabename kann einen statischen Teil und einen variablen Teil enthalten (z. B. Home_/`%w`).
 
 
 * *Pfad teilen*
 +
-Dies ist der relative Pfad, der durch die Freigabe definiert wird und somit mit einem der Share-Namen verknüpft ist, der an jeden Suchpfad angehängt wird, um den gesamten Home-Directory-Pfad des Benutzers aus dem Root der SVM zu generieren. Er kann statisch sein (z.B. `home`), dynamisch (zum Beispiel, `%w`) Oder eine Kombination der beiden (zum Beispiel, `eng/%w`).
+Dies ist der relative Pfad, der durch die Freigabe definiert wird und somit mit einem der Share-Namen verknüpft ist, der an jeden Suchpfad angehängt wird, um den gesamten Home-Directory-Pfad des Benutzers aus dem Root der SVM zu generieren. Es kann statisch (z.B. `home` ), dynamisch (z.B. ) `%w` oder eine Kombination der beiden sein (z.B. ) `eng/%w`.
 
 * *Suchpfade*
 +
-Dies ist die Gruppe der absoluten Pfade aus dem Root der SVM, die Sie angeben, dass die ONTAP-Suche nach Home Directorys geleitet wird. Sie können einen oder mehrere Suchpfade mithilfe des angeben `vserver cifs home-directory search-path add` Befehl. Wenn Sie mehrere Suchpfade angeben, versucht ONTAP sie in der angegebenen Reihenfolge, bis ein gültiger Pfad gefunden wird.
+Dies ist die Gruppe der absoluten Pfade aus dem Root der SVM, die Sie angeben, dass die ONTAP-Suche nach Home Directorys geleitet wird. Sie können mit dem `vserver cifs home-directory search-path add` Befehl einen oder mehrere Suchpfade angeben. Wenn Sie mehrere Suchpfade angeben, versucht ONTAP sie in der angegebenen Reihenfolge, bis ein gültiger Pfad gefunden wird.
 
 * *Verzeichnis*
 +
@@ -48,23 +48,23 @@ Betrachten Sie als Beispiel die folgende Einrichtung:
 * Benutzerdomäne: acme
 * Benutzername: Jsmith
 * SVM-Name: vs1
-* Home Directory share Name #1: Home_ `%w` - Freigabepfad: `%w`
-* Home-Verzeichnis Freigabenname #2: `%w` - Freigabepfad: `%d/%w`
+* Home Directory-Freigabename #1: Home_ `%w` - Freigabepfad: `%w`
+* Share-Name des Home-Verzeichnisses #2: `%w` - Share-Pfad: `%d/%w`
 * Suchpfad #1: `/vol0home/home`
 * Suchpfad #2: `/vol1home/home`
 * Suchpfad #3: `/vol2home/home`
 * Home-Verzeichnis: `/vol1home/home/jsmith`
 
 
-Szenario 1: Der Benutzer stellt eine Verbindung her `\\vs1\home_jsmith`. Dies entspricht dem ersten Home-Verzeichnis-Freigabennamen und erzeugt den relativen Pfad `jsmith`. ONTAP sucht jetzt nach einem Verzeichnis mit dem Namen `jsmith` Indem Sie die einzelnen Suchpfade in der folgenden Reihenfolge überprüfen:
+Szenario 1: Der Benutzer verbindet sich mit `\\vs1\home_jsmith`. Dies entspricht dem ersten Home Directory Share-Namen und erzeugt den relativen Pfad `jsmith`. ONTAP sucht nun nach einem Verzeichnis mit dem Namen `jsmith`, indem die einzelnen Suchpfade in der folgenden Reihenfolge überprüft werden:
 
-* `/vol0home/home/jsmith` Ist nicht vorhanden; weiter zu Suchpfad #2.
-* `/vol1home/home/jsmith` Existiert; deshalb wird der Suchpfad #3 nicht überprüft; der Benutzer ist jetzt mit seinem Home-Verzeichnis verbunden.
+* `/vol0home/home/jsmith` Existiert nicht; wird zum Suchpfad #2 verschoben.
+* `/vol1home/home/jsmith` Existiert; daher ist der Suchpfad #3 nicht geprüft; der Benutzer ist nun mit seinem Home-Verzeichnis verbunden.
 
 
-Szenario 2: Der Benutzer stellt eine Verbindung her `\\vs1\jsmith`. Dies entspricht dem zweiten Home-Verzeichnis-Freigabennamen und erzeugt den relativen Pfad `acme/jsmith`. ONTAP sucht jetzt nach einem Verzeichnis mit dem Namen `acme/jsmith` Indem Sie die einzelnen Suchpfade in der folgenden Reihenfolge überprüfen:
+Szenario 2: Der Benutzer verbindet sich mit `\\vs1\jsmith`. Dies entspricht dem zweiten Home Directory Share-Namen und erzeugt den relativen Pfad `acme/jsmith`. ONTAP sucht nun nach einem Verzeichnis mit dem Namen `acme/jsmith`, indem die einzelnen Suchpfade in der folgenden Reihenfolge überprüft werden:
 
-* `/vol0home/home/acme/jsmith` Ist nicht vorhanden; weiter zu Suchpfad #2.
-* `/vol1home/home/acme/jsmith` Ist nicht vorhanden; weiter zum Suchpfad #3.
-* `/vol2home/home/acme/jsmith` Ist nicht vorhanden; das Home-Verzeichnis ist nicht vorhanden; daher schlägt die Verbindung fehl.
+* `/vol0home/home/acme/jsmith` Existiert nicht; wird zum Suchpfad #2 verschoben.
+* `/vol1home/home/acme/jsmith` Existiert nicht; wird zum Suchpfad #3 verschoben.
+* `/vol2home/home/acme/jsmith` Existiert nicht; das Home-Verzeichnis existiert nicht; daher schlägt die Verbindung fehl.
 

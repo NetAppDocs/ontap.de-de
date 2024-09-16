@@ -17,12 +17,12 @@ summary: Sie halten einen Node in einem Cluster mit zwei Nodes an oder starten n
 Sie halten einen Node in einem Cluster mit zwei Nodes an oder starten neu, ohne die Übernahme zu initiieren, wenn Sie bestimmte Hardware-Wartungsarbeiten auf einem Node oder Shelf durchführen. Und Sie möchten die Ausfallzeiten begrenzen, indem Sie den Partner-Node aktiv halten. Oder wenn es Probleme gibt, eine manuelle Übernahme zu verhindern und Sie wollen die Aggregate des Partner-Knotens auf und stellen Daten bereit zu halten. Wenn Ihnen der technische Support bei der Behebung von Problemen hilft, sollten Sie dieses Verfahren möglicherweise im Rahmen dieser Bemühungen durchführen.
 
 .Über diese Aufgabe
-* Bevor Sie die Übernahme sperren (mit dem `-inhibit-takeover true` Parameter), deaktivieren Sie Cluster HA.
+* Bevor Sie die Übernahme verhindern (mit dem `-inhibit-takeover true` Parameter), deaktivieren Sie Cluster HA.
 
 
 [CAUTION]
 ====
-* In einem Cluster mit zwei Nodes stellt Cluster HA sicher, dass der Ausfall eines Node das Cluster nicht deaktiviert. Wenn Sie jedoch Cluster HA nicht vor Verwendung des deaktivieren  `-inhibit-takeover true` Parameter, beide Nodes stellen nicht mehr Daten bereit.
+* In einem Cluster mit zwei Nodes stellt Cluster HA sicher, dass der Ausfall eines Node das Cluster nicht deaktiviert. Wenn Sie jedoch vor Verwendung des  `-inhibit-takeover true` Parameters die Cluster-HA nicht deaktivieren, stellen beide Nodes keine Daten mehr bereit.
 * Wenn Sie versuchen, einen Node vor dem Deaktivieren von Cluster HA anzuhalten oder neu zu booten, gibt ONTAP eine Warnung aus und weist Sie an, die Cluster-HA zu deaktivieren.
 
 
@@ -32,10 +32,10 @@ Sie halten einen Node in einem Cluster mit zwei Nodes an oder starten neu, ohne 
 
 
 .Schritte
-. Vergewissern Sie sich, dass beide Nodes in einem ordnungsgemäßen Zustand sind:
+. Überprüfen Sie, ob sich beide Nodes in gutem Zustand befinden:
 `cluster show`
 +
-Für beide Nodes `true` Wird im angezeigt `Health` Spalte.
+Für beide Nodes `true` wird in der `Health` Spalte angezeigt.
 
 +
 [listing]
@@ -46,11 +46,11 @@ Node         Health  Eligibility
 node1        true     true
 node2        true     true
 ----
-. Migrieren Sie alle LIFs vom Node, den Sie anhalten oder neu auf den Partner-Node starten:
+. Migrieren Sie alle LIFs vom Node, den Sie zum Partner-Node anhalten oder neu booten.
 `network interface migrate-all -node _node_name_`
 . Wenn auf dem Node unterbrochen oder neu gebootet werden soll, gibt es Aggregate, die Sie beim Ausfall des Nodes online halten möchten, verschieben Sie sie auf den Partner-Node. Anderenfalls fahren Sie mit dem nächsten Schritt fort.
 +
-.. Zeigen Sie die Aggregate auf dem Knoten, den Sie anhalten oder neu starten möchten:
+.. Zeigen Sie die Aggregate auf dem Node an, den Sie beenden oder neu booten.
 `storage aggregates show -node _node_name_`
 +
 Beispielsweise ist node1 der Node, der angehalten oder neu gebootet werden wird:
@@ -86,7 +86,7 @@ Zum Beispiel werden die Aggregate aggr1, aggr2 und test2_aggr von node1 auf node
 . Deaktivieren von Cluster-HA:
 `cluster ha modify -configured false`
 +
-Die Rückgabeausgabe bestätigt, dass HA deaktiviert ist: `Notice: HA is disabled`
+Der ausgegebene Ausgang bestätigt, dass HA deaktiviert ist: `Notice: HA is disabled`
 
 +
 
@@ -98,45 +98,45 @@ NOTE: Dieser Vorgang deaktiviert nicht das Storage-Failover.
 ** `system node reboot -node _node_name_ -inhibit-takeover true`
 +
 
-NOTE: In der Befehlsausgabe wird eine Warnung angezeigt. Sie werden gefragt, ob Sie fortfahren möchten, und geben Sie ein `y`.
+NOTE: In der Ausgabe des Befehls wird eine Warnung angezeigt, in der Sie gefragt werden, ob Sie fortfahren möchten, geben Sie `y`.
 
 
 
-. Vergewissern Sie sich, dass der Node, der noch online ist, sich in einem ordnungsgemäßen Zustand befindet (während der Partner ausfällt):
+. Vergewissern Sie sich, dass der Node, der noch online ist, sich in einem ordnungsgemäßen Zustand befindet (bei einem Ausfall des Partners):
 `cluster show`
 +
-Für den Online-Node: `true` Wird im angezeigt `Health` Spalte.
+Für den Online-Knoten `true` wird in der `Health` Spalte angezeigt.
 
 +
 
 NOTE: In der Ausgabe des Befehls finden Sie eine Warnung, dass für die Cluster-HA nicht konfiguriert ist. Sie können die Warnung derzeit ignorieren.
 
 . Führen Sie die Aktionen durch, die zum Anhalten oder Neustarten des Knotens erforderlich sind.
-. Booten Sie den Offline-Node über die LOADER-Eingabeaufforderung:
+. Starten Sie den Offline-Node von der Loader-Eingabeaufforderung aus:
 `boot_ontap`
-. Vergewissern Sie sich, dass beide Nodes in einem ordnungsgemäßen Zustand sind:
+. Überprüfen Sie, ob sich beide Nodes in gutem Zustand befinden:
 `cluster show`
 +
-Für beide Nodes `true` Wird im angezeigt `Health` Spalte.
+Für beide Nodes `true` wird in der `Health` Spalte angezeigt.
 
 +
 
 NOTE: In der Ausgabe des Befehls finden Sie eine Warnung, dass für die Cluster-HA nicht konfiguriert ist. Sie können die Warnung derzeit ignorieren.
 
-. Erneute Aktivierung von Cluster HA:
+. Cluster-HA erneut aktivieren:
 `cluster ha modify -configured true`
-. Wenn Sie zuvor in diesem Verfahren Aggregate zum Partner-Node verschoben haben, verschieben Sie sie zurück zu ihrem Home-Node. Andernfalls fahren Sie mit dem nächsten Schritt fort:
+. Wenn Sie Aggregate zu einem früheren Zeitpunkt in diesem Verfahren zum Partner-Node verschoben haben, verschieben Sie sie zurück in den Home Node, fahren Sie andernfalls mit dem nächsten Schritt fort:
 `storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
 +
-Zum Beispiel werden Aggregate aggr1, aggr2 und test2_aggr von Node node2 auf Node node1 verschoben:
+So werden beispielsweise die Aggregate aggr1, aggr2 und test2_aggr von Node node2 auf Node node1 verschoben:
 `storage aggregate relocation start -node _node2_ -destination _node1_ -aggregate-list _aggr1_,_aggr2_,_test2_aggr_`
 
 . Zurücksetzen von LIFs auf ihre Home Ports:
 +
-.. Zeigen Sie LIFs an, die nicht zu Hause sind:
+.. Anzeigen von LIFs, die nicht zu Hause sind:
 `network interface show -is-home false`
 .. Wenn keine Home-LIFs wurden, die nicht vom ausgefallenen Node migriert wurden, vergewissern Sie sich, dass sie vor dem Zurücksetzen geschützt sind.
-.. Wenn dies sicher ist, stellen Sie alle LIFs nach Hause zurück.
+.. Wenn es sicher ist, setzen Sie alle LIFs zurück.
 `network interface revert *`
 
 

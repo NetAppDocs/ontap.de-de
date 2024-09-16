@@ -25,7 +25,7 @@ Stellen Sie vor der Konfiguration von LDAP-Gruppen und der Aktivierung des fast-
 . In dieser Storage-VM wurde ein Bucket erstellt. Siehe link:../s3-config/create-bucket-task.html["Erstellen eines Buckets"].
 . DNS ist auf der Storage-VM konfiguriert. Siehe link:../networking/configure_dns_services_manual.html["Konfigurieren Sie DNS-Dienste"].
 . Auf der Storage-VM wird ein selbstsigniertes CA-Zertifikat (Root Certification Authority) des LDAP-Servers installiert. Siehe link:../nfs-config/install-self-signed-root-ca-certificate-svm-task.html["Installieren Sie das selbstsignierte Root-CA-Zertifikat auf der SVM"].
-. Ein LDAP-Client wird mit TLS auf der SVM konfiguriert. Siehe link:../nfs-config/create-ldap-client-config-task.html["Erstellen Sie eine LDAP-Client-Konfiguration"] Und link:../nfs-config/enable-ldap-svms-task.html["Verknüpfen Sie die LDAP-Client-Konfiguration mit SVMs, um Informationen zu erhalten"].
+. Ein LDAP-Client wird mit TLS auf der SVM konfiguriert. Siehe link:../nfs-config/create-ldap-client-config-task.html["Erstellen Sie eine LDAP-Client-Konfiguration"] und link:../nfs-config/enable-ldap-svms-task.html["Verknüpfen Sie die LDAP-Client-Konfiguration mit SVMs, um Informationen zu erhalten"].
 
 
 
@@ -42,14 +42,14 @@ ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
 +
 Weitere Informationen zu diesem Befehl finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-ns-switch-modify.html["vserver Services Name-Service ns-Switch modify"] Befehl.
 
-. Erstellen einer Bucket-Richtlinienanweisung für Objektspeicher mit dem `principal` Legen Sie die LDAP-Gruppe fest, der Sie Zugriff gewähren möchten:
+. Erstellen Sie eine Objektspeicher-Bucket-Policy-Anweisung mit der `principal` Einstellung auf die LDAP-Gruppe, der Sie Zugriff gewähren möchten:
 +
 [listing]
 ----
 object-store-server bucket policy statement create -bucket <bucket-name> -effect allow -principal nasgroup/<ldap-group-name> -resource <bucket-name>, <bucket-name>/*
 ----
 +
-Beispiel: Im folgenden Beispiel wird eine Bucket-Policy-Anweisung für erstellt `buck1`. Die Richtlinie ermöglicht den Zugriff auf die LDAP-Gruppe `group1` Für die Ressource (Bucket und deren Objekte) `buck1`.
+Beispiel: Im folgenden Beispiel wird eine Bucket Policy-Anweisung für erstellt `buck1`. Die Richtlinie ermöglicht den Zugriff der LDAP-Gruppe `group1` auf die Ressource (Bucket und deren Objekte) `buck1`.
 
 +
 [listing]
@@ -57,7 +57,7 @@ Beispiel: Im folgenden Beispiel wird eine Bucket-Policy-Anweisung für erstellt 
 vserver object-store-server bucket policy add-statement -bucket buck1 -effect allow -action
 GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts, ListBucketVersions,GetObjectTagging,PutObjectTagging,DeleteObjectTagging,GetBucketVersioning,PutBucketVersioning -principal nasgroup/group1 -resource buck1, buck1/*
 ----
-. Überprüfen Sie, ob ein Benutzer aus der LDAP-Gruppe stammt `group1` Kann S3-Vorgänge vom S3-Client ausführen.
+. Vergewissern Sie sich, dass ein Benutzer der LDAP-Gruppe `group1` S3-Vorgänge vom S3-Client ausführen kann.
 
 
 
@@ -77,10 +77,8 @@ Weitere Informationen zu diesem Befehl finden Sie im link:https://docs.netapp.co
 . Stellen Sie sicher, dass für einen LDAP-Benutzer, der auf den S3-Bucket zugreift, in den Bucket-Richtlinien definierte Berechtigungen gelten. Weitere Informationen finden Sie unter link:../s3-config/create-modify-bucket-policy-task.html["Ändern einer Bucket-Richtlinie"].
 . Überprüfen Sie, ob ein Benutzer aus der LDAP-Gruppe die folgenden Vorgänge ausführen kann:
 +
-.. Konfigurieren Sie den Zugriffsschlüssel auf dem S3-Client in folgendem Format:
-`"NTAPFASTBIND" + base64-encode(user-name:password)`
-Beispiel: `"NTAPFASTBIND"` + base64-encode(ldapuser:password), was dazu führt
-                      `NTAPFASTBINDbGRhcHVzZXI6cGFzc3dvcmQ=`
+.. Konfigurieren Sie den Zugriffsschlüssel auf dem S3-Client in diesem Format:
+`"NTAPFASTBIND" + base64-encode(user-name:password)` Beispiel: `"NTAPFASTBIND"` + base64-encode(ldapuser:password), was dazu führt  `NTAPFASTBINDbGRhcHVzZXI6cGFzc3dvcmQ=`
 +
 
 NOTE: Der S3-Client fordert möglicherweise einen geheimen Schlüssel an. In Ermangelung eines geheimen Schlüssels kann ein Passwort mit mindestens 16 Zeichen eingegeben werden.

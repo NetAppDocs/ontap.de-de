@@ -23,7 +23,7 @@ Sie sollten diesen Prozess nur verwenden, wenn Sie sicher sind, dass die Authent
 Wenn die Festplatten partitioniert werden, müssen sie zunächst nicht partitioniert werden, bevor Sie diesen Prozess starten können.
 
 
-NOTE: Der Befehl zum Entpartitionieren einer Festplatte ist nur auf der Diagnose-Ebene verfügbar und sollte nur unter NetApp Support Supervision durchgeführt werden. **Es wird dringend empfohlen, sich vor dem Fortfahren mit dem NetApp Support zu in Verbindung zu setzen.** Diese kann auch im Knowledge Base Artikel beschrieben werden link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Wie man ein Ersatzlaufwerk in ONTAP entpartitionieren"^].
+NOTE: Der Befehl zum Entpartitionieren einer Festplatte ist nur auf der Diagnose-Ebene verfügbar und sollte nur unter NetApp Support Supervision durchgeführt werden. **Es wird dringend empfohlen, sich vor dem Fortfahren an den NetApp-Support zu wenden.** Weitere Informationen finden Sie im Knowledge Base-Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Wie man ein Ersatzlaufwerk in ONTAP entpartitionieren"^].
 
 .Schritte
 . Rückgabe eines FIPS-Laufwerks oder SED an den Dienst:
@@ -40,18 +40,16 @@ Nicht im FIPS-Compliance-Modus oder im FIPS-Compliance-Modus und der FIPS-Schlü
  a| 
 .. Legen Sie die Berechtigungsebene auf erweitert fest:
 `set -privilege advanced`
-.. Setzen Sie den FIPS-Schlüssel auf die Standard-Herstellsichere ID 0x0:
+.. Setzen Sie den FIPS-Schlüssel auf die standardmäßige gesicherte Herstellerkennung 0x0 zurück:
 `storage encryption disk modify -fips-key-id 0x0 -disk _disk_id_`
-.. Überprüfen Sie, ob der Vorgang erfolgreich war:
-`storage encryption disk show-status`Wenn der Vorgang fehlgeschlagen ist, verwenden Sie den PSID-Prozess in diesem Thema.
-.. Bereinigen der defekten Scheibe:
-`storage encryption disk sanitize -disk _disk_id_`Überprüfen Sie, ob der Vorgang mit dem Befehl erfolgreich war `storage encryption disk show-status` Bevor Sie mit dem nächsten Schritt fortfahren.
-.. Entfernen Sie die desinfizierte Festplatte:
+.. Überprüfen Sie, ob
+`storage encryption disk show-status` der Vorgang erfolgreich war: Wenn der Vorgang fehlgeschlagen ist, verwenden Sie den PSID-Prozess in diesem Thema.
+.. Bereinigen Sie die beschädigte Festplatte:
+`storage encryption disk sanitize -disk _disk_id_` Überprüfen Sie mit dem Befehl `storage encryption disk show-status`, ob der Vorgang erfolgreich war, bevor Sie mit dem nächsten Schritt fortfahren.
+.. Bereinigte Festplatte aufheben:
 `storage disk unfail -spare true -disk _disk_id_`
-.. Prüfen Sie, ob die Festplatte einen Eigentümer hat:
-`storage disk show -disk _disk_id_`
- +
- Wenn der Datenträger keinen Eigentümer hat, weisen Sie einen zu.
+.. Überprüfen Sie, ob die Festplatte einen Besitzer hat:
+`storage disk show -disk _disk_id_` + Wenn die Platte keinen Besitzer hat, weisen Sie einen zu.
 `storage disk assign -owner node -disk _disk_id_`
 +
 ... Geben Sie den Knotenpunkt für den Knoten ein, der die Festplatten besitzt, die Sie desinfizieren möchten:
@@ -59,13 +57,13 @@ Nicht im FIPS-Compliance-Modus oder im FIPS-Compliance-Modus und der FIPS-Schlü
 `system node run -node _node_name_`
 
 +
-Führen Sie die aus `disk sanitize release` Befehl.
+Führen Sie den `disk sanitize release` Befehl aus.
 
 
 
 .. Verlassen Sie die Nodeshell. Fehler der Festplatte erneut aufheben:
 `storage disk unfail -spare true -disk _disk_id_`
-.. Überprüfen Sie, ob die Festplatte nun frei und in einem Aggregat wiederverwendet werden kann:
+.. Überprüfen Sie, ob die Festplatte jetzt als Ersatzlaufwerk verwendet und in einem Aggregat wiederverwendet werden kann:
 `storage disk show -disk _disk_id_`
 
 
@@ -77,14 +75,12 @@ Im FIPS-Compliance-Modus ist der FIPS-Schlüssel nicht verfügbar, und SEDs habe
 .. Beziehen Sie die PSID des Datenträgers von der Datenträgerbezeichnung.
 .. Legen Sie die Berechtigungsebene auf erweitert fest:
 `set -privilege advanced`
-.. Zurücksetzen der Festplatte auf die werkseitigen Einstellungen:
-`storage encryption disk revert-to-original-state -disk _disk_id_ -psid _disk_physical_secure_id_`Überprüfen Sie, ob der Vorgang mit dem Befehl erfolgreich war `storage encryption disk show-status` Bevor Sie mit dem nächsten Schritt fortfahren.
-.. Wenn Sie ONTAP 9.8P5 oder eine frühere Version verwenden, fahren Sie mit dem nächsten Schritt fort. Wenn Sie ONTAP 9.8P6 oder höher verwenden, nehmen Sie die bereinigte Festplatte wieder auf.
+.. Setzen Sie die Festplatte auf die werkseitig konfigurierten Einstellungen zurück:
+`storage encryption disk revert-to-original-state -disk _disk_id_ -psid _disk_physical_secure_id_` Überprüfen Sie `storage encryption disk show-status`, ob der Vorgang mit dem Befehl erfolgreich war, bevor Sie mit dem nächsten Schritt fortfahren.
+.. Wenn Sie ONTAP 9.8P5 oder eine frühere Version verwenden, fahren Sie mit dem nächsten Schritt fort. Wenn Sie ONTAP 9.8P6 oder höher ausführen, nehmen Sie den Fehler auf der bereinigten Festplatte zurück.
 `storage disk unfail -disk _disk_id_`
-.. Prüfen Sie, ob die Festplatte einen Eigentümer hat:
-`storage disk show -disk _disk_id_`
- +
- Wenn der Datenträger keinen Eigentümer hat, weisen Sie einen zu.
+.. Überprüfen Sie, ob die Festplatte einen Besitzer hat:
+`storage disk show -disk _disk_id_` + Wenn die Platte keinen Besitzer hat, weisen Sie einen zu.
 `storage disk assign -owner node -disk _disk_id_`
 +
 ... Geben Sie den Knotenpunkt für den Knoten ein, der die Festplatten besitzt, die Sie desinfizieren möchten:
@@ -92,17 +88,17 @@ Im FIPS-Compliance-Modus ist der FIPS-Schlüssel nicht verfügbar, und SEDs habe
 `system node run -node _node_name_`
 
 +
-Führen Sie die aus `disk sanitize release` Befehl.
+Führen Sie den `disk sanitize release` Befehl aus.
 
 
 
 .. Verlassen Sie die Nodeshell.. Fehler der Festplatte erneut aufheben:
 `storage disk unfail -spare true -disk _disk_id_`
-.. Überprüfen Sie, ob die Festplatte nun frei und in einem Aggregat wiederverwendet werden kann:
+.. Überprüfen Sie, ob die Festplatte jetzt als Ersatzlaufwerk verwendet und in einem Aggregat wiederverwendet werden kann:
 `storage disk show -disk _disk_id_`
 
 
 |===
 
 
-Eine vollständige Befehlssyntax finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-assign.html["Befehlsreferenz"^].
+Vollständige Befehlssyntax finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-assign.html["Befehlsreferenz"^].

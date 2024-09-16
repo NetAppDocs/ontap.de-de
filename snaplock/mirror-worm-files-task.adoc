@@ -17,8 +17,8 @@ AUSSERDEM KÖNNEN WORM-Dateien zur Disaster Recovery und zu anderen Zwecken an e
 Die Quell- und Ziel-Volumes müssen in Peering-Clustern mit Peering SVMs erstellt werden. Weitere Informationen finden Sie unter https://docs.netapp.com/us-en/ontap-system-manager-classic/peering/index.html["Cluster- und SVM-Peering"^].
 
 .Über diese Aufgabe
-* Ab ONTAP 9.5 können Sie WORM-Dateien mit dem XDP-Typ (erweiterte Datensicherung) SnapMirror Beziehung replizieren, anstatt die DP-Beziehung (Datenschutz) zu verwenden. XDP-Modus ist unabhängig von der ONTAP-Version und ist in der Lage, Dateien im selben Block zu differenzieren, was die Resynchronisierung replizierter Compliance-Modus-Volumes erheblich erleichtert. Informationen zum Konvertieren einer bestehenden DP-Typ-Beziehung in eine XDP-Beziehung finden Sie unter link:../data-protection/index.html["Datensicherung"].
-* Resync-Vorgang auf einer DP-Typ SnapMirror-Beziehung schlägt für ein Compliance-Modus-Volume fehl, wenn SnapLock feststellt, dass es zu einem Datenverlust führt. Falls ein Resynchronisierungsvorgang fehlschlägt, können Sie das verwenden `volume clone create` Befehl, um einen Klon des Ziel-Volume zu erstellen. Sie können dann das Quell-Volume mit dem Klon neu synchronisieren.
+* Ab ONTAP 9.5 können Sie WORM-Dateien mit dem XDP-Typ (erweiterte Datensicherung) SnapMirror Beziehung replizieren, anstatt die DP-Beziehung (Datenschutz) zu verwenden. XDP-Modus ist unabhängig von der ONTAP-Version und ist in der Lage, Dateien im selben Block zu differenzieren, was die Resynchronisierung replizierter Compliance-Modus-Volumes erheblich erleichtert. Informationen zum Konvertieren einer vorhandenen DP-Beziehung in eine XDP-Beziehung finden Sie unter link:../data-protection/index.html["Datensicherung"].
+* Resync-Vorgang auf einer DP-Typ SnapMirror-Beziehung schlägt für ein Compliance-Modus-Volume fehl, wenn SnapLock feststellt, dass es zu einem Datenverlust führt. Wenn eine Neusynchronisierung fehlschlägt, können Sie den `volume clone create` Befehl verwenden, um einen Klon des Ziel-Volume zu erstellen. Sie können dann das Quell-Volume mit dem Klon neu synchronisieren.
 * Eine SnapMirror-Beziehung des Typs XDP zwischen SnapLock-konformen Volumes unterstützt eine Resynchronisierung nach einer Pause, auch wenn Daten auf dem Ziel von der Quelle nach der Pause umgeleitet wurden.
 +
 Wenn bei einer Resynchronisierung Datendivergenz zwischen der Quelle, dem Ziel über den gemeinsamen Snapshot hinaus erkannt wird, wird ein neuer Snapshot auf das Ziel geschnitten, um diese Divergenz zu erfassen. Der neue Snapshot und der gemeinsame Snapshot sind mit einer Aufbewahrungszeit wie folgt gesperrt:
@@ -35,7 +35,7 @@ Wenn das Ziellaufwerk eine Ablauffrist hat, die später als das Quellvolumen ist
 
 Wenn auf dem Ziel gesetzliche Aufbewahrungspflichten liegen, die sich von der Quelle unterscheiden, ist eine Resynchronisierung nicht zulässig. Quelle und Ziel müssen identische gesetzlichen Aufbewahrungspflichten haben oder alle gesetzlichen Aufbewahrungspflichten auf dem Ziel müssen vor Beginn einer Neusynchronisierung freigegeben werden.
 
-Eine gesperrte Snapshot Kopie auf dem Ziel-Volume, das zum Erfassen der divergenten Daten erstellt wurde, kann mithilfe der CLI auf die Quelle kopiert werden `snapmirror update -s snapshot` Befehl. Der nach dem Kopieren kopierte Snapshot wird weiterhin an der Quelle gesperrt.
+Eine gesperrte Snapshot Kopie auf dem Ziel-Volume, die zur Erfassung der divergierenden Daten erstellt wurde `snapmirror update -s snapshot`, kann mithilfe der CLI in die Quelle kopiert werden, indem der Befehl ausgeführt wird. Der nach dem Kopieren kopierte Snapshot wird weiterhin an der Quelle gesperrt.
 
 * SVM-Datensicherungsbeziehungen werden nicht unterstützt.
 * Beziehungen zur Lastverteilung für Daten werden nicht unterstützt.
@@ -71,8 +71,8 @@ Ab ONTAP 9.12.1 kann mit System Manager die SnapMirror Replizierung von WORM-Dat
 .CLI
 --
 . Ermitteln des Ziel-Clusters
-. Auf dem Ziel-Cluster link:https://docs.netapp.com/us-en/ontap/system-admin/install-license-task.html["Installieren Sie die SnapLock-Lizenz"], link:https://docs.netapp.com/us-en/ontap/snaplock/initialize-complianceclock-task.html["Initialisieren Sie die Compliance Clock"], Und wenn Sie eine ONTAP-Version vor 9.10.1 verwenden, link:https://docs.netapp.com/us-en/ontap/snaplock/create-snaplock-aggregate-task.html["Erstellung eines SnapLock Aggregats"].
-. Erstellen Sie auf dem Ziel-Cluster ein SnapLock Ziel-Volume des Typs `DP` Das ist entweder die gleiche Größe wie oder größer als das Quellvolumen:
+. Auf dem Ziel-Cluster, link:https://docs.netapp.com/us-en/ontap/system-admin/install-license-task.html["Installieren Sie die SnapLock-Lizenz"], link:https://docs.netapp.com/us-en/ontap/snaplock/initialize-complianceclock-task.html["Initialisieren Sie die Compliance Clock"]und, wenn Sie eine ONTAP-Version vor 9.10.1 verwenden, link:https://docs.netapp.com/us-en/ontap/snaplock/create-snaplock-aggregate-task.html["Erstellung eines SnapLock Aggregats"].
+. Erstellen Sie auf dem Ziel-Cluster ein SnapLock-Ziel-Volume des Typs `DP`, das entweder dieselbe oder eine größere Größe als das Quell-Volume hat:
 +
 `*volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_ -snaplock-type compliance|enterprise -type DP -size _size_*`
 
@@ -81,7 +81,7 @@ Ab ONTAP 9.12.1 kann mit System Manager die SnapMirror Replizierung von WORM-Dat
 NOTE: Ab ONTAP 9.10.1 können SnapLock- und nicht-SnapLock-Volumes auf demselben Aggregat vorhanden sein. Wenn Sie ONTAP 9.10.1 verwenden, sind Sie daher nicht mehr erforderlich, ein separates SnapLock Aggregat zu erstellen. Mithilfe der Option Volume -snaplock-TYPE können Sie einen Compliance- oder Enterprise SnapLock Volume-Typ festlegen. In älteren Versionen als ONTAP ONTAP 9.10.1 übernimmt der SnapLock-Modus – Compliance oder Enterprise – das Aggregat. Versionsflexible Ziel-Volumes werden nicht unterstützt. Die Spracheinstellung des Zielvolumens muss mit der Spracheinstellung des Quellvolumens übereinstimmen.
 
 +
-Mit dem folgenden Befehl wird eine 2-GB-SnapLock erstellt `Compliance` Volume mit Namen `dstvolB` In `SVM2` Auf dem Aggregat `node01_aggr`:
+Mit dem folgenden Befehl wird ein 2 GB SnapLock- `Compliance`Volume erstellt, das `dstvolB` im `SVM2` Aggregat genannt `node01_aggr` wird:
 
 +
 [listing]
@@ -105,7 +105,7 @@ SVM2::> snapmirror policy create -vserver SVM2 -policy SVM1-mirror
 `*job schedule cron create -name _schedule_name_ -dayofweek _day_of_week_ -hour _hour_ -minute _minute_*`
 
 +
-Mit dem folgenden Befehl wird ein SnapMirror Zeitplan mit dem Namen erstellt `weekendcron`:
+Mit dem folgenden Befehl wird ein SnapMirror-Zeitplan mit `weekendcron` dem Namen erstellt:
 
 +
 [listing]
@@ -117,7 +117,7 @@ SVM2::> job schedule cron create -name weekendcron -dayofweek "Saturday, Sunday"
 `*snapmirror create -source-path _source_path_ -destination-path _destination_path_ -type XDP|DP -policy _policy_name_ -schedule _schedule_name_*`
 
 +
-Mit dem folgenden Befehl wird eine SnapMirror Beziehung zwischen dem Quell-Volume erstellt `srcvolA` Ein `SVM1` Und dem Ziel-Volume `dstvolB` Ein `SVM2`, Und weist die Richtlinie zu `SVM1-mirror` Und Zeitplan `weekendcron`:
+Mit dem folgenden Befehl wird eine SnapMirror-Beziehung zwischen dem Quell-Volume `srcvolA` `SVM1` `dstvolB` auf und dem Ziel-Volume auf erstellt `SVM2` und die Policy `SVM1-mirror` und den Zeitplan zugewiesen `weekendcron`:
 
 +
 [listing]
@@ -136,7 +136,7 @@ NOTE: Der XDP-Typ ist in ONTAP 9.5 und höher erhältlich. Sie müssen den DP-Ty
 Der Initialisierungsvorgang führt einen _Baseline Transfer_ zum Ziel-Volume durch. SnapMirror erstellt eine Snapshot-Kopie des Quell-Volume und überträgt dann die Kopie mit allen Datenblöcken, die er auf das Ziel-Volume verweist. Sie überträgt zudem alle anderen Snapshot Kopien auf dem Quell-Volume auf das Ziel-Volume.
 
 +
-Mit dem folgenden Befehl wird die Beziehung zwischen dem Quell-Volume initialisiert `srcvolA` Ein `SVM1` Und dem Ziel-Volume `dstvolB` Ein `SVM2`:
+Mit dem folgenden Befehl wird die Beziehung zwischen dem Quell-Volume `srcvolA` auf `SVM1` und dem Ziel-Volume `dstvolB` auf initialisiert `SVM2`:
 
 +
 [listing]
