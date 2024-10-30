@@ -6,16 +6,60 @@ summary: Sie müssen ein LIF angeben, das zur Einrichtung einer Datenverbindung 
 ---
 = Konfigurieren Sie ein LIF
 :allow-uri-read: 
-:icons: font
-:imagesdir: ../media/
 
 
 [role="lead"]
 Sie müssen ein LIF angeben, das zur Einrichtung einer Datenverbindung und zur Steuerung der Verbindung zwischen dem Node und der Backup-Applikation verwendet wird. Nach der Identifizierung der LIF müssen Sie überprüfen, ob für die LIF Firewall- und Failover-Richtlinien festgelegt sind.
 
 
-NOTE: Ab ONTAP 9.10.1 sind Firewall-Richtlinien veraltet und werden vollständig durch LIF-Servicerichtlinien ersetzt. Weitere Informationen finden Sie unter link:../networking/configure_firewall_policies_for_lifs.html["Konfigurieren Sie Firewallrichtlinien für LIFs"].
+NOTE: Ab ONTAP 9.10.1 sind Firewall-Richtlinien veraltet und werden vollständig durch LIF-Servicerichtlinien ersetzt. Weitere Informationen finden Sie unter link:../networking/manage_supported_traffic.html["Unterstützter Datenverkehr verwalten"].
 
+[role="tabbed-block"]
+====
+.ONTAP 9.10.1 oder höher
+--
+.Schritte
+. Identifizieren Sie die Intercluster LIF, die auf den Nodes gehostet wird `network interface show` `-service-policy`, indem Sie den Befehl mit dem Parameter verwenden.
++
+`network interface show -service-policy default-intercluster`
+
+. Stellen Sie sicher, dass die Intercluster LIF den Service umfasst `backup-ndmp-control`:
++
+`network interface service-policy show`
+
+. Vergewissern Sie sich, dass die Failover-Richtlinie für die Intercluster LIFs ordnungsgemäß festgelegt ist:
++
+.. Überprüfen Sie `local-only` mithilfe des `network interface show -failover` Befehls, ob die Failover-Richtlinie für die Intercluster-LIFs auf festgelegt ist.
++
+[listing]
+----
+cluster1::> network interface show -failover
+            Logical          Home              Failover     Failover
+Vserver     Interface        Node:Port         Policy       Group
+--------    ---------------  ----------------- ------------ --------
+cluster1    IC1               cluster1-1:e0a    local-only   Default
+                                                    Failover Targets:
+                                                    .......
+            IC2               cluster1-2:e0b    local-only   Default
+                                                    Failover Targets:
+                                                    .......
+cluster1-1  cluster1-1_mgmt1 cluster1-1:e0m    local-only    Default
+                                                    Failover Targets:
+                                                    .......
+----
+.. Wenn die Failover-Richtlinie nicht ordnungsgemäß festgelegt ist, ändern Sie die Failover-Richtlinie mithilfe des `network interface modify` Befehls mit dem `-failover-policy` Parameter.
++
+[listing]
+----
+cluster1::> network interface modify -vserver cluster1 -lif IC1 -failover-policy local-only
+----
+
+
+
+
+--
+.ONTAP 9.9 oder früher
+--
 .Schritte
 . Identifizieren Sie die Intercluster LIF, die auf den Nodes gehostet wird `network interface show` `-role`, indem Sie den Befehl mit dem Parameter verwenden.
 +
@@ -45,7 +89,7 @@ Vserver     Policy       Service    Allowed
 cluster1    intercluster dns        -
                          http       -
                          https      -
-                         **ndmp       0.0.0.0/0, ::/0**
+                         ndmp       0.0.0.0/0, ::/0
                          ndmps      -
                          ntp        -
                          rsh        -
@@ -74,10 +118,10 @@ cluster1::> network interface show -failover
             Logical          Home              Failover     Failover
 Vserver     Interface        Node:Port         Policy       Group
 --------    ---------------  ----------------- ------------ --------
-cluster1    **IC1               cluster1-1:e0a    local-only   Default**
+cluster1    IC1               cluster1-1:e0a    local-only   Default
                                                     Failover Targets:
                                                     .......
-            **IC2               cluster1-2:e0b    local-only   Default**
+            IC2               cluster1-2:e0b    local-only   Default
                                                     Failover Targets:
                                                     .......
 cluster1-1  cluster1-1_mgmt1 cluster1-1:e0m    local-only    Default
@@ -93,3 +137,6 @@ cluster1::> network interface modify -vserver cluster1 -lif IC1 -failover-policy
 
 
 
+
+--
+====
