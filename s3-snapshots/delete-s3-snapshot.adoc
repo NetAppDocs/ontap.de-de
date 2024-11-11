@@ -1,0 +1,67 @@
+---
+sidebar: sidebar 
+permalink: s3-snapshots/delete-s3-snapshot.html 
+keywords: s3 snapshots, delete S3 snapshots 
+summary: Sie können nicht mehr benötigte S3-Snapshots löschen und Speicherplatz in Ihren Buckets freigeben. 
+---
+= S3-Snapshots löschen
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können nicht mehr benötigte S3-Snapshots löschen und Speicherplatz in Ihren Buckets freigeben. Sie können S3-Snapshots manuell entfernen oder die Snapshot-Richtlinien, die den S3-Buckets zugeordnet sind, ändern, um die Anzahl der für einen Zeitplan einzubehaltenden Snapshots zu ändern.
+
+Snapshot-Richtlinien für S3-Buckets folgen denselben Löschregeln wie die herkömmlichen Snapshot-Richtlinien für ONTAP. Weitere Informationen zum Erstellen von Snapshot-Richtlinien finden Sie unter link:../data-protection/create-snapshot-policy-task.html["Erstellen einer Snapshot-Richtlinie"].
+
+.Über diese Aufgabe
+* Wenn eine Objektversion (in einem versionierten Bucket) oder ein Objekt (in einem nicht versionierten Bucket) in mehreren Snapshots erfasst wird, wird das Objekt erst nach dem Löschen des letzten Snapshot, der es schützt, aus dem Dateisystem entfernt.
+* Wenn Sie einen S3-Bucket löschen müssen, der Objekte mit Snapshots enthält, stellen Sie sicher, dass Sie alle Snapshots aller Objekte in diesem Bucket gelöscht haben.
+* Wenn Sie ein Cluster auf eine ONTAP-Version vor ONTAP 9.16.1 zurücksetzen müssen, stellen Sie sicher, dass Sie alle S3-Snapshots für alle Buckets gelöscht haben. Unter Umständen müssen Sie den Befehl auch ausführen `vserver object-store-server bucket clear-snapshot-metadata`, um die Snapshot-Metadaten für einen S3 Bucket zu entfernen. Weitere Informationen finden Sie unter link:../s3-snapshots/delete-s3-snapshot.html#clear-s3-snapshots-metadata["Löschen Sie die S3 Snapshots-Metadaten"].
+* Wenn Sie Snapshots in Stapeln löschen, können Sie eine große Anzahl von Objekten entfernen, die in mehreren Snapshots erfasst wurden. Dadurch wird effektiv mehr Speicherplatz freigegeben, als durch eine einzelne Snapshot-Löschung verursacht werden würde. Dadurch können Sie mehr Speicherplatz für Ihre Storage-Objekte zurückgewinnen.
+
+
+.Schritte
+. Führen Sie den folgenden Befehl aus, um einen bestimmten S3-Snapshot zu löschen:
++
+[listing]
+----
+vserver object-store-server bucket snapshot delete -vserver <svm_name> -bucket <bucket_name> -snapshot <snapshot_name>
+----
+. Führen Sie den folgenden Befehl aus, um alle S3-Snapshots in einem Bucket zu entfernen:
++
+[listing]
+----
+vserver object-store-server bucket snapshot delete -vserver <svm_name> -bucket <bucket_name> -snapshot *
+----
+
+
+
+
+== Löschen Sie die S3 Snapshots-Metadaten
+
+Mit S3 Snapshots werden auch Snapshot-Metadaten in einem Bucket generiert. Die Snapshot-Metadaten befinden sich weiterhin im Bucket, selbst wenn alle Snapshots entfernt wurden. Das Vorhandensein von Snapshot-Metadaten blockiert die folgenden Vorgänge:
+
+* Setzen Sie das Cluster auf eine ältere ONTAP-Version als ONTAP 9.16.1 zurück
+* Konfiguration von S3 SnapMirror auf dem Bucket
+
+
+Bevor Sie diese Vorgänge ausführen, sollten Sie alle Snapshot-Metadaten aus dem Bucket löschen.
+
+.Bevor Sie beginnen
+Vergewissern Sie sich, dass Sie alle S3-Snapshots aus einem Bucket entfernt haben, bevor Sie mit dem Löschen der Metadaten beginnen.
+
+.Schritte
+. Führen Sie den folgenden Befehl aus, um die Snapshot-Metadaten aus einem Bucket zu löschen:
+
+
+[listing]
+----
+vserver object-store-server bucket clear-snapshot-metadata -vserver <svm_name> -bucket <bucket_name>
+----

@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: authentication/oauth2-authorization.html 
 keywords: scopes, self-contained scopes, active directory, ldap, rest role, local users, groups 
-summary: Für die Anpassung Ihrer ONTAP-Clientautorisierung stehen verschiedene Optionen zur Verfügung. Die Autorisierungsentscheidungen basieren letztlich auf den ONTAP-REST-Rollen, die entweder in den Zugriffstoken enthalten sind oder von diesen abgeleitet wurden. 
+summary: Die ONTAP OAuth 2.0 Implementierung ist flexibel und robust und bietet Ihnen die Funktionen, die Sie zur Sicherung Ihrer ONTAP Umgebung benötigen. Es stehen mehrere Konfigurationsoptionen zur Verfügung, die sich gegenseitig ausschließen. Die Autorisierungsentscheidungen basieren letztlich auf den ONTAP-REST-Rollen, die entweder in den OAuth 2.0-Zugriffstoken enthalten sind oder von diesen abgeleitet wurden. 
 ---
-= Optionen für die ONTAP-Clientautorisierung
+= Übersicht und Optionen für die ONTAP-Clientautorisierung
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,33 +14,24 @@ summary: Für die Anpassung Ihrer ONTAP-Clientautorisierung stehen verschiedene 
 
 
 [role="lead"]
-Für die Anpassung Ihrer ONTAP-Clientautorisierung stehen verschiedene Optionen zur Verfügung. Die Autorisierungsentscheidungen basieren letztlich auf den ONTAP-REST-Rollen, die entweder in den Zugriffstoken enthalten sind oder von diesen abgeleitet wurden.
+Die ONTAP OAuth 2.0 Implementierung ist flexibel und robust und bietet Ihnen die Funktionen, die Sie zur Sicherung Ihrer ONTAP Umgebung benötigen. Es stehen mehrere Konfigurationsoptionen zur Verfügung, die sich gegenseitig ausschließen. Die Autorisierungsentscheidungen basieren letztlich auf den ONTAP-REST-Rollen, die entweder in den OAuth 2.0-Zugriffstoken enthalten sind oder von diesen abgeleitet wurden.
 
 
 CAUTION: Sie können nur verwendenlink:../authentication/overview-oauth2.html#selected-terminology["ONTAP REST-Rollen"], wenn Sie die Autorisierung für OAuth 2.0 konfigurieren. Die früheren herkömmlichen ONTAP Rollen werden nicht unterstützt.
 
-
-
-== Einführung
-
-Die OAuth 2.0 Implementierung in ONTAP ist flexibel und robust und bietet Ihnen die Optionen, die Sie für die Sicherung der ONTAP Umgebung benötigen. Im Wesentlichen gibt es drei Hauptkonfigurationskategorien zur Definition der ONTAP-Clientautorisierung. Diese Konfigurationsoptionen schließen sich gegenseitig aus.
-
-ONTAP wendet je nach Konfiguration die am besten geeignete Option an. link:../authentication/oauth2-authorization.html#how-ontap-determines-access["Wie ONTAP den Zugriff bestimmt"]Weitere Informationen dazu, wie ONTAP Ihre Konfigurationsdefinitionen verarbeitet, um Zugriffsentscheidungen zu treffen, finden Sie unter.
+ONTAP wendet je nach Konfiguration die am besten geeignete Autorisierungsoption an. Weitere Informationen dazu, wie ONTAP Client-Zugriffsentscheidungen trifft, finden Sie unterlink:../authentication/oauth2-determine-access.html["Wie ONTAP den Zugriff bestimmt"].
 
 .OAuth 2.0 eigenständige Oszilloskope
-Diese Bereiche enthalten eine oder mehrere benutzerdefinierte REST-Rollen, die jeweils in einer einzigen Zeichenfolge gekapselt sind. Sie sind unabhängig von den Rollendefinitionen von ONTAP. Sie müssen diese Bereichszeichenfolgen auf Ihrem Autorisierungsserver definieren.
+Diese Bereiche enthalten eine oder mehrere benutzerdefinierte REST-Rollen, die jeweils in einer einzigen Zeichenfolge im Zugriffstoken eingekapselt sind. Sie sind unabhängig von den Rollendefinitionen von ONTAP. Sie müssen die Bereichszeichenfolgen auf Ihrem Autorisierungsserver konfigurieren. Weitere Informationen finden Sie unter link:../authentication/oauth2-sc-scopes.html["Eigenständige Oszilloskope von OAuth 2.0"] .
 
-.Lokale ONTAP-spezifische REST-Rollen und Benutzer
-Je nach Konfiguration können die lokalen ONTAP-Identitätsdefinitionen für Zugriffsentscheidungen verwendet werden. Folgende Optionen stehen zur Verfügung:
+.Lokale ONTAP-REST-Rollen
+Es kann eine einzelne benannte REST-Rolle verwendet werden, entweder erstellt oder benutzerdefiniert. Die scope Syntax für eine benannte Rolle ist *ontap-role-*<URL-encoded-ONTAP-role-name>. Wenn die Rolle ONTAP beispielsweise der scope string ist `admin`, wird dies der Fall sein `ontap-role-admin`.
 
-* Einzelne benannte REST-Rolle
-* Übereinstimmung des Benutzernamens mit einem lokalen ONTAP-Benutzer
+.Benutzer
+Der Benutzername im Zugriffstoken, der mit Zugriff auf die Anwendung "http" definiert ist, kann verwendet werden. Anhand der definierten Authentifizierungsmethode wird ein Benutzer in der folgenden Reihenfolge getestet: Passwort, Domäne (Active Directory), nsswitch (LDAP).
 
-
-Die scope Syntax für eine benannte Rolle ist *ontap-role-*<URL-encoded-ONTAP-role-name>. Wenn die Rolle beispielsweise „admin“ lautet, lautet der Scope-String „ontap-role-admin“.
-
-.Active Directory oder LDAP-Gruppen
-Wenn die lokalen ONTAP-Definitionen überprüft werden, aber keine Zugriffsentscheidung getroffen werden kann, werden die Active Directory („Domain“)- oder LDAP („nsswitch“)-Gruppen verwendet. Gruppeninformationen können auf zwei Arten angegeben werden:
+.Gruppen
+Die Autorisierungsserver können so konfiguriert werden, dass sie ONTAP-Gruppen für die Autorisierung verwenden. Wenn die lokalen ONTAP-Definitionen überprüft werden, aber keine Zugriffsentscheidung getroffen werden kann, werden die Active Directory („Domain“)- oder LDAP („nsswitch“)-Gruppen verwendet. Gruppeninformationen können auf zwei Arten angegeben werden:
 
 * OAuth 2.0-Scope-String
 +
@@ -52,162 +43,4 @@ Dies ist für Zugriffstoken vorgesehen, die von ADFS unter Verwendung des Ablauf
 
 
 
-
-
-== Eigenständige Oszilloskope von OAuth 2.0
-
-In sich geschlossene Bereiche sind Strings, die im Zugriffstoken enthalten sind. Jede dieser Rollen ist vollständig definiert und beinhaltet alles, was ONTAP für eine Zugriffsentscheidung benötigt. Der Umfang unterscheidet sich von jeder der REST-Rollen, die in ONTAP selbst definiert sind.
-
-
-
-=== Format der Bereichszeichenfolge
-
-Auf einer Basisebene wird der Umfang als zusammenhängende Zeichenfolge dargestellt und besteht aus sechs durch Doppelpunkte getrennten Werten. Die im Scope String verwendeten Parameter werden im Folgenden beschrieben.
-
-
-
-==== ONTAP-Literal
-
-Der Umfang muss mit dem Literalwert `ontap` in Kleinbuchstaben beginnen. Der ONTAP-spezifische Umfang wird angegeben.
-
-
-
-==== Cluster
-
-Dies definiert, auf welchen ONTAP Cluster sich der Umfang bezieht. Die Werte können Folgendes umfassen:
-
-* Cluster-UUID
-+
-Identifiziert ein einzelnes Cluster.
-
-* Sternchen (***)
-+
-Gibt an, dass der Umfang auf alle Cluster angewendet wird.
-
-
-
-Sie können den ONTAP-CLI-Befehl verwenden `cluster identity show`, um die UUID Ihres Clusters anzuzeigen. Falls nicht angegeben, gilt der Umfang für alle Cluster.
-
-
-
-==== Rolle
-
-Der Name der im eigenständigen Bereich enthaltenen REST-Rolle. Dieser Wert wird von ONTAP nicht untersucht oder auf vorhandene REST-Rollen abgestimmt, die für ONTAP definiert sind. Der Name wird für die Protokollierung verwendet.
-
-
-
-==== Zugangsstufe
-
-Dieser Wert gibt die Zugriffsebene an, die auf die Clientanwendung angewendet wird, wenn der API-Endpunkt im Umfang verwendet wird. Es gibt sechs mögliche Werte, wie in der Tabelle unten beschrieben.
-
-[cols="25,75"]
-|===
-| Zugangsstufe | Beschreibung 
-
-
-| Keine | Verweigert allen Zugriff auf den angegebenen Endpunkt. 
-
-
-| readonly | Nur Lesezugriff mit GET ist möglich. 
-
-
-| Read_create | Ermöglicht den Lesezugriff sowie die Erstellung neuer Ressourceninstanzen über POST. 
-
-
-| Lesen_ändern | Ermöglicht den Lesezugriff sowie die Möglichkeit, vorhandene Ressourcen mithilfe von PATCHES zu aktualisieren. 
-
-
-| Lesen_create_modify | Ermöglicht alle Zugriffe außer Löschen. Zu den zulässigen Operationen gehören GET (read), POST (create) und PATCH (Update). 
-
-
-| Alle | Ermöglicht vollständigen Zugriff. 
-|===
-
-
-==== SVM
-
-Der Name der SVM innerhalb des Clusters, für den der Umfang gilt. Verwenden Sie den ***-Wert (Sternchen), um alle SVMs anzuzeigen.
-
-
-CAUTION: Diese Funktion wird von ONTAP 9.14.1 nicht vollständig unterstützt. Sie können den SVM-Parameter ignorieren und ein Sternchen als Platzhalter verwenden. Überprüfen Sie die https://library.netapp.com/ecm/ecm_download_file/ECMLP2492508["Versionshinweise zu ONTAP"^], um auf zukünftigen SVM-Support zu prüfen.
-
-
-
-==== REST-API-URI
-
-Der vollständige oder teilweise Pfad zu einer Ressource oder einem Satz zugehöriger Ressourcen. Der String muss mit beginnen `/api`. Wenn Sie keinen Wert angeben, gilt der Umfang für alle API-Endpunkte im ONTAP-Cluster.
-
-
-
-=== Beispiele für den Umfang
-
-Im Folgenden werden einige Beispiele für eigenständige Oszilloskope vorgestellt.
-
-ontap:*:joes-role:read_create_modify:*:/API/Cluster:: Bietet dem Benutzer, dem diese Rolle zugewiesen `/cluster` ist, den Zugriff auf den Endpunkt zu lesen, zu erstellen und zu ändern.
-
-
-
-
-=== CLI-Verwaltungstool
-
-Um die Verwaltung der eigenständigen Bereiche einfacher und weniger fehleranfällig `security oauth2 scope` zu machen, bietet ONTAP den CLI-Befehl, um auf der Grundlage Ihrer Eingabeparameter Scope Strings zu generieren.
-
-Der Befehl `security oauth2 scope` hat zwei Anwendungsfälle basierend auf Ihrer Eingabe:
-
-* CLI-Parameter für den Umfang einer Zeichenfolge
-+
-Mit dieser Version des Befehls können Sie auf Grundlage der Eingabeparameter eine Bereichszeichenfolge generieren.
-
-* Scope-String zu CLI-Parametern
-+
-Sie können diese Version des Befehls verwenden, um die Befehlsparameter basierend auf der Zeichenfolge für den Eingabebereich zu generieren.
-
-
-
-.Beispiel
-Im folgenden Beispiel wird eine Scope-String mit der Ausgabe generiert, die nach dem unten stehenden Befehlsbeispiel enthalten ist. Die Definition gilt für alle Cluster.
-
-[listing]
-----
-security oauth2 scope cli-to-scope -role joes-role -access readonly -api /api/cluster
-----
-`ontap:*:joes-role:readonly:*:/api/cluster`
-
-
-
-== Wie ONTAP den Zugriff bestimmt
-
-Um OAuth 2.0 richtig zu entwickeln und zu implementieren, müssen Sie verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen.
-
-.Schritt 1: Eigenständige Bereiche
-Wenn das Zugriffstoken eigenständige Bereiche enthält, untersucht ONTAP diese Bereiche zuerst. Wenn keine eigenständigen Bereiche vorhanden sind, mit Schritt 2 fortfahren.
-
-Wenn ein oder mehrere eigenständige Bereiche vorhanden sind, wendet ONTAP jeden Bereich an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wird, endet die Verarbeitung.
-
-Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, fahren Sie mit Schritt 2 fort.
-
-.Schritt 2: Überprüfen Sie die lokale Rollenmarkierung
-ONTAP überprüft den Wert des Flags `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der für ONTAP definiert ist, separat festgelegt.
-
-* Wenn der Wert lautet, `true` fahren Sie mit Schritt 3 fort.
-* Wenn der Wert `false` verarbeitet wird, endet und der Zugriff verweigert wird.
-
-
-.Schritt 3: Benannte ONTAP REST-Rolle
-Wenn das Zugriffstoken eine benannte REST-Rolle enthält, verwendet ONTAP die Rolle, um die Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
-
-Wenn keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wurde, fahren Sie mit Schritt 4 fort.
-
-.Schritt 4: Lokale ONTAP-Benutzer
-Extrahieren Sie den Benutzernamen aus dem Zugriffstoken und versuchen Sie, ihn einem lokalen ONTAP-Benutzer zuzuordnen.
-
-Wenn ein lokaler ONTAP-Benutzer abgeglichen wird, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
-
-Wenn ein lokaler ONTAP-Benutzer nicht stimmt oder kein Benutzername im Zugriffstoken vorhanden ist, fahren Sie mit Schritt 5 fort.
-
-.Schritt 5: Gruppen-zu-Rollen-Zuordnung
-Extrahieren Sie die Gruppe aus dem Zugriffstoken, und versuchen Sie, sie einer Gruppe zuzuordnen. Die Gruppen werden über Active Directory oder einen gleichwertigen LDAP-Server definiert.
-
-Wenn eine Gruppenübereinstimme vorhanden ist, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
-
-Wenn keine Gruppenübereinstimme vorhanden ist oder keine Gruppe im Zugriffstoken vorhanden ist, wird der Zugriff verweigert und die Verarbeitung wird beendet.
+Weitere Informationen finden Sie unter link:../authentication/oauth2-groups.html["Arbeiten mit Gruppen"] .

@@ -1,0 +1,83 @@
+---
+sidebar: sidebar 
+permalink: s3-snapshots/index.html 
+keywords: s3 snapshots, S3 Snapshot copy overview, what is S3 snapshot, can you create S3 snapshots 
+summary: Mit der S3 Snapshot Technologie lassen sich zeitpunktgenaue Backups von S3-Buckets erstellen. 
+---
+= S3 Snapshot – Übersicht
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab der Version ONTAP 9.16.1 können Sie ONTAP Snapshot Technologie verwenden, um schreibgeschützte, zeitpunktgenaue Images Ihrer ONTAP S3 Buckets zu generieren.
+
+Mit der S3-Snapshot-Funktion können Sie Snapshots manuell erstellen oder automatisch durch Snapshot-Richtlinien generieren. S3-Snapshots werden S3-Clients als S3-Buckets bereitgestellt. Sie können den Inhalt aus den Snapshots über S3-Clients durchsuchen und wiederherstellen.
+
+In ONTAP 9.16.1 erfassen S3 Snapshots nur die aktuellen Versionen der Objekte in S3 Buckets. Die nicht aktuellen Versionen versionierter Buckets werden in den S3-Snapshots nicht erfasst. Außerdem werden die Point-in-Time-Objekttags in den Snapshots nicht erfasst, wenn die Objekt-Tags nach der Erstellung der Snapshots geändert werden.
+
+
+TIP: S3 Snapshots basieren auf der Cluster-Zeit. Sie sollten den NTP-Server im Cluster so konfigurieren, dass die Zeit synchronisiert wird. Weitere Informationen finden Sie unter link:../system-admin/manage-cluster-time-concept.html["Verwalten der Cluster-Zeit"].
+
+.Kontingente und Speicherplatznutzung
+Quoten verfolgen die Anzahl der Objekte und die logische Größe, die in einem S3-Bucket verwendet werden. Bei der Erstellung von S3-Snapshots werden die in den S3-Snapshots erfassten Objekte auf die Anzahl und Größe der verwendeten Bucket-Objekte angerechnet, bis die Snapshots aus dem Filesystem gelöscht werden.
+
+.Mehrteilige Objekte
+Bei mehrteiligen Objekten werden nur die endgültigen Objekte in Snapshots erfasst. Teilweise Uploads von mehrteiligen Objekten werden nicht in Snapshots erfasst.
+
+
+
+== Snapshots in versionierten und nichtversionierten Buckets
+
+Sie können Snapshots sowohl für versionierte als auch für nichtversionierte Buckets erstellen. Der Snapshot enthält nur die aktuellen Objektversionen zu einem Zeitpunkt, zu dem der Snapshot erfasst wird.
+
+.Versionierte Buckets und Snapshots
+In Buckets mit aktivierter Objektversionierung behält ein Snapshot den Inhalt der letzten Objektversion bei, nach der der Snapshot erstellt wurde. Nicht aktuelle Versionen im Bucket werden ausgeschlossen.
+
+Betrachten wir dieses Beispiel: In einem Bucket, auf dem die Objektversionierung aktiviert ist, weist das Objekt `obj1` die Versionen v1, v2, v3, v4 und v5 auf. Sie haben einen Snapshot von `obj1` v3 (der neuesten Version am Erfassungspunkt) erstellt `snap1`. Beim Browsen `snap1` erscheint , `obj1` als Objekt mit Inhalt, der bei v3 erstellt wurde. Der Inhalt der vorherigen Versionen wird nicht zurückgegeben.
+
+
+NOTE: Die nicht aktuellen Versionen bleiben im Dateisystem erhalten, bis die Snapshots gelöscht werden.
+
+.Nicht versionierte Buckets und Snapshots
+In nicht versionierten Buckets bewahren S3-Snapshots den Inhalt der letzten Commits vor der Snapshot-Erstellung bei.
+
+Betrachten Sie dieses Beispiel: In einem Bucket, bei dem die Objektversionierung nicht verfügbar ist, wurde das Objekt `obj1` mehrfach überschrieben (t1, t2, t3, t4 und t5). Sie haben irgendwann zwischen t3 und t4 einen S3-Snapshot erstellt `snap1`. Beim Browsen `snap1` `obj1` wird mit dem bei t3 erstellten Inhalt angezeigt.
+
+
+
+== Objektablauf und Snapshots
+
+ONTAP S3 Objektablauf und S3 Snapshots funktionieren unabhängig voneinander. Die ONTAP Objektverfallsfunktion läuft Objektversionen gemäß den für den S3-Bucket definierten Lifecycle-Managementregeln ab. S3 Snapshots sind statische Kopien von Bucket-Objekten zu einem Zeitpunkt, zu dem der Snapshot erstellt wurde.
+
+Wenn die Objektversionierung in einem Bucket aktiviert ist und eine bestimmte Version eines Objekts aufgrund einer für diesen Bucket definierten Ablaufregel gelöscht wird, bleibt der Inhalt der abgelaufenen Objektversion weiterhin im Dateisystem, wenn die Version in einem oder mehreren S3-Snapshots als aktuelle Version erfasst wurde. Diese Objektversion wird im Dateisystem nur dann nicht mehr existieren, wenn dieser Snapshot gelöscht wird.
+
+Gleichermaßen wird das Objekt in einem Bucket, in dem die Versionierung deaktiviert ist, auf der Grundlage einer Ablaufregel gelöscht, aber in einigen vorhandenen S3-Snapshots noch erfasst, im Dateisystem beibehalten. Das Objekt wird dauerhaft aus dem Dateisystem entfernt, wenn die Snapshots, die es erfassen, gelöscht werden.
+
+Weitere Informationen über S3-Objektablauf und Lifecycle-Management finden Sie unter link:../s3-config/create-bucket-lifecycle-rule-task.html["Erstellen einer Bucket-Lifecycle-Management-Regel"].
+
+
+
+== Beschränkungen bei S3 Snapshots
+
+Beachten Sie die folgenden Funktionsausschlüsse und -Szenarien in ONTAP 9.16.1:
+
+* Sie können bis zu 1023 Snapshots für einen S3-Bucket generieren.
+* Es ist erforderlich, alle S3-Snapshots und -Metadaten aus allen Buckets eines Clusters zu löschen, bevor das Cluster auf eine ONTAP-Version vor ONTAP 9 zurückgesetzt wird.16.1.
+* Wenn Sie einen S3-Bucket löschen müssen, der Objekte mit Snapshots enthält, stellen Sie sicher, dass Sie alle entsprechenden Snapshots aller Objekte in diesem Bucket gelöscht haben.
+* S3-Snapshots werden in diesen Konfigurationen nicht unterstützt:
++
+** Für Buckets in einer SnapMirror-Beziehung
+** In Buckets, für die die Objektsperrung aktiviert ist
+** Auf NetApp BlueXP 
+** Auf System Manager
+** In ONTAP MetroCluster-Konfigurationen zu verschieben
+
+
+

@@ -1,0 +1,157 @@
+---
+permalink: encryption-at-rest/migrate-keys-between-key-managers.html 
+sidebar: sidebar 
+keywords: onboard key manager, external key manager, configure, migrate keys, store keys, authentication keys, encryption keys 
+summary: 'Sie können den integrierten Schlüsselmanager von ONTAP oder einen externen Schlüsselmanager oder beide (in einem Fall) für die Verwaltung der Datenverschlüsselung verwenden.' 
+---
+= Migrieren Sie die ONTAP Datenverschlüsselung zwischen Schlüsselmanagern
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können Ihre Datenschlüssel entweder über den integrierten ONTAP Schlüsselmanager oder einen externen Schlüsselmanager (oder beides) managen. Externe Schlüsselmanager können nur auf Ebene der Storage-VM aktiviert werden. Auf ONTAP Cluster-Ebene können Sie entweder den Onboard-Schlüsselmanager oder einen externen Schlüsselmanager aktivieren.
+
+[cols="2,2"]
+|===
+| Wenn Sie Ihren Schlüsselmanager im... | Sie können... 
+
+
+| Nur Cluster-Ebene  a| 
+Entweder dem Onboard-Schlüsselmanager oder einem externen Schlüsselmanager
+
+
+
+| Nur SVM-Ebene | Nur ein externer Schlüsselmanager 
+
+
+ a| 
+Auf Cluster- und SVM-Ebene
+ a| 
+Eine der folgenden Kombinationen von Schlüsselmanagern:
+
+* Option 1
++
+Cluster-Ebene: Onboard-Schlüsselmanager
+
++
+SVM-Ebene: Externer Schlüsselmanager
+
+* Option 2
++
+Cluster-Ebene: Externer Schlüsselmanager
+
++
+SVM-Ebene: Externer Schlüsselmanager
+
+
+
+|===
+
+
+== Migrieren Sie Schlüssel zwischen Schlüsselmanagern auf ONTAP-Cluster-Ebene
+
+Ab ONTAP 9.16.1 können Sie die ONTAP Befehlszeilenschnittstelle (CLI) verwenden, um Schlüssel zwischen Schlüsselmanagern auf Cluster-Ebene zu migrieren.
+
+[role="tabbed-block"]
+====
+.Vom Onboard-Verschlüsselungsmanagement bis zum externen Schlüsselmanager
+--
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Erstellen Sie eine inaktive externe Schlüsselmanager-Konfiguration:
++
+[source, cli]
+----
+security key-manager external create-config
+----
+. Wechseln Sie zum externen Schlüsselmanager:
++
+[source, cli]
+----
+security key-manager keystore enable -vserver <svm_name> -type KMIP
+----
+. Löschen Sie die Onboard-Schlüsselmanager-Konfiguration:
++
+[source, cli]
+----
+security key-manager keystore delete-config -vserver <svm_name> -type OKM
+----
+. Legen Sie die Berechtigungsebene auf admin fest:
++
+[source, cli]
+----
+set -privilege admin
+----
+
+
+--
+.Vom externen Schlüsselmanager zum Onboard-Schlüsselmanager
+--
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Erstellen einer inaktiven Onboard-Schlüsselmanager-Konfiguration:
++
+[source, cli]
+----
+security key-manager onboard create-config
+----
+. Aktivieren der Onboard-Konfiguration für Verschlüsselungsmanagement:
++
+[source, cli]
+----
+security key-manager keystore enable -vserver <svm_name> -type OKM
+----
+. Löschen Sie die externe Schlüsselmanager-Konfiguration
++
+[source, cli]
+----
+security key-manager keystore delete-config -vserver <svm_name> -type KMIP
+----
+. Legen Sie die Berechtigungsebene auf admin fest:
++
+[source, cli]
+----
+set -privilege admin
+----
+
+
+--
+====
+
+
+== Schlüsselmanagement auf ONTAP-Cluster- und Storage-VM-Ebene migrieren
+
+Mithilfe der ONTAP Befehlszeilenschnittstelle (CLI) können Sie Schlüssel zwischen dem Schlüsselmanager auf Cluster-Ebene und einem Schlüsselmanager auf Storage-VM-Ebene migrieren.
+
+.Schritte
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Migrieren der Schlüssel:
++
+[source, cli]
+----
+security key-manager key migrate -from-vserver <svm_name> -to-vserver <svm_name>
+----
+. Legen Sie die Berechtigungsebene auf admin fest:
++
+[source, cli]
+----
+set -privilege admin
+----
+

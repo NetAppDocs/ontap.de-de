@@ -1,0 +1,144 @@
+---
+permalink: flexgroup/enable-adv-capacity-flexgroup-task.html 
+sidebar: sidebar 
+keywords: flexgroup advanced capacity balancing, flexgroup granular data distribution, gdd, flexgroup, volume, balancing 
+summary: Ab ONTAP 9.16.1 wird ein erweiterter Kapazitätsausgleich eingeführt, um die Datenverteilung zwischen FlexGroup Member Volumes zu ermöglichen, wenn sehr große Dateien wachsen und Platz auf einem Mitglied-Volume benötigen. 
+---
+= Gleichen Sie ONTAP FlexGroup-Volumes aus, indem Sie Dateidaten neu verteilen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.16.1 können Sie den erweiterten Kapazitätsausgleich aktivieren, um die Datenverteilung zwischen FlexGroup Member Volumes zu ermöglichen, wenn sehr große Dateien wachsen und Platz auf einem Mitglied-Volume benötigen.
+
+Advanced Capacity Balancing erweitert die in ONTAP 9.12.1 eingeführte granulare Datenfunktionalität, die ONTAP ermöglichtlink:manage-flexgroup-rebalance-task.html["Neuausrichtung von FlexGroup Volumes"], indem Dateien an andere Mitglieder verschoben werden. Ab ONTAP 9.16.1 sind bei Aktivierung des erweiterten Kapazitätsausgleichs mit der `-granular-data advanced` Option sowohl die Funktionen für die einfache Dateiverteilung als auch die erweiterten Kapazitätsfunktionen aktiviert.
+
+[NOTE]
+====
+Sowohl die Dateiverteilung als auch der erweiterte Kapazitätsausgleich sind standardmäßig deaktiviert. Nachdem diese Funktionen aktiviert wurden, können sie nicht mehr deaktiviert werden. Wenn Sie den Kapazitätsausgleich deaktivieren müssen, müssen Sie einen Snapshot wiederherstellen, der vor der Aktivierung des erweiterten Kapazitätsausgleichs erstellt wurde.
+
+====
+Der erweiterte Kapazitätsausgleich wird durch neue Schreibvorgänge ausgelöst, die den freien Speicherplatz eines Volumes auf 10 GB oder 1 % erreichen.
+
+
+
+== Wie Dateien verteilt werden
+
+Wenn eine Datei erstellt wird oder groß genug ist, um einen erweiterten Kapazitätsausgleich auszulösen, wird die Datei in Stripes zwischen 1 GB und 10 GB über die zugehörigen FlexGroup Volumes verteilt.
+
+Wenn der erweiterte Kapazitätsausgleich aktiviert ist, verteilt ONTAP vorhandene große Dateien nicht rückwirkend. Wenn eine vorhandene große Datei weiter wächst, nachdem der erweiterte Kapazitätsausgleich aktiviert wurde, kann der neue Inhalt vorhandener großer Dateien je nach Größe und verfügbarem Speicherplatz auf die Mitglied-FlexGroup-Volumes verteilt werden.
+
+Ein erweiterter Kapazitätsausgleich bestimmt die Stripe-Breite, indem der auf dem Mitgliedsvolume verfügbare freie Speicherplatz verwendet wird. Beim erweiterten Kapazitätsausgleich wird ein Dateistreifen erstellt, der 1 % des verfügbaren freien Speicherplatzes beträgt. Das bedeutet, dass Stripes größer werden können, wenn mehr Speicherplatz verfügbar ist. Und diese werden kleiner, wenn sich die FlexGroup füllt.
+
+Neben dem auf dem Mitgliedsvolume verfügbaren Speicherplatz verwendet der erweiterte Kapazitätsausgleich mehrere andere Faktoren, um die Stripe-Breite zu bestimmen:
+
+* Minimale Streifenbreite: Die kleinste Streifenbreite, die je gewählt wurde, ist 1GB.
+* Maximale Stripe-Breite: Die größtmögliche Stripe-Breite beträgt 10 GB.
+* Granularität: Streifen werden immer in Vielfachen von 1GB erstellt.
+
+
+
+
+== Unterstützte Protokolle
+
+Erweiterter Kapazitätsausgleich wird mit folgenden Protokollen unterstützt:
+
+* NFSv3, NFSv4 UND NFSv4.1
+* PNFS
+* SMB
+
+
+
+
+== Erweiterter Kapazitätsausgleich
+
+Der erweiterte Kapazitätsausgleich ist standardmäßig deaktiviert. Sie müssen den erweiterten Kapazitätsausgleich aktivieren, um die FlexGroup-Kapazität automatisch auszugleichen. Beachten Sie, dass Sie diese Funktion nicht deaktivieren können, sobald Sie sie aktivieren, aber Sie können sie von einem Snapshot wiederherstellen, der vor Aktivierung des erweiterten Kapazitätsausgleichs erstellt wurde.
+
+.Bevor Sie beginnen
+* Auf allen Nodes im Cluster muss ONTAP 9.16.1 oder höher ausgeführt werden.
+* Sie können nicht auf eine Version vor ONTAP 9.16.1 zurücksetzen, wenn der erweiterte Kapazitätsausgleich aktiviert ist. Wenn Sie zurücksetzen müssen, müssen Sie zuerst einen Snapshot wiederherstellen, der erstellt wurde, bevor der erweiterte Kapazitätsausgleich aktiviert wurde.
+* Wenn der NFS-Copy-Offload (`vserver nfs -vstorage enabled`auf einer SVM aktiviert wurde, können Sie den erweiterten Kapazitätsausgleich auf einem FlexGroup-Volume nicht aktivieren. Gleiches gilt, wenn Sie auf jedem FlexGroup Volume in einer SVM den erweiterten Kapazitätsausgleich aktiviert haben, können Sie den NFS-Kopiervorgang nicht aktivieren.
+* Erweiterter Kapazitätsausgleich wird bei FlexCache-Schreibzugriff nicht unterstützt.
+
+
+.Über diese Aufgabe
+Während der Erstellung von DP-Ziel-Volumes unter Verwendung einer der granularen Datenoptionen (einfach oder erweitert) zeigt das Ziel die Einstellung als deaktiviert an, bis die SnapMirror-Übertragung abgeschlossen ist. Nach Abschluss der Übertragung zeigt das DP-Ziel granulare Daten als „aktiviert“ an.
+
+
+
+=== Erweiterter Kapazitätsausgleich während der FlexGroup-Erstellung
+
+.Schritte
+Sie können System Manager oder die ONTAP CLI beim Erstellen eines neuen FlexGroup Volume verwenden, um den erweiterten Kapazitätsausgleich zu aktivieren.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie zu *Speicher > Volumes* und klicken Sie auf image:icon_add_blue_bg.gif["Symbol hinzufügen"].
+. Geben Sie im Fenster *Volume hinzufügen* den Namen und die Größe des Volumes ein. Klicken Sie dann auf *Weitere Optionen*.
+. Wählen Sie unter *Speicher und Optimierung* *Volume-Daten über den Cluster verteilen (FlexGroup)* aus.
+. Wählen Sie *Erweiterter Kapazitätsausgleich*.
+. Schließen Sie die Konfiguration des Volumes ab, und klicken Sie auf *Speichern*.
+
+
+--
+.CLI
+--
+. Erstellung eines Volumes mit aktivierter erweiterter Kapazitätsverteilung:
++
+[source, cli]
+----
+volume create -vserver <svm name> -volume <volume name> -size <volume size> -auto-provision-as flexgroup -junction-path /<path> -granular-data advanced
+----
++
+Beispiel:
+
++
+[listing]
+----
+volume create -vserver vs0 -volume newvol -size 1TB -auto-provision-as flexgroup -junction-path /newvol -granular-data advanced
+----
+
+
+--
+====
+
+
+=== Erweiterter Kapazitätsausgleich für vorhandene FlexGroup Volumes
+
+.Schritte
+Sie können System Manager oder die ONTAP CLI verwenden, um einen erweiterten Kapazitätsausgleich zu ermöglichen.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie zu *Speicher > Volumes*, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"], und wählen Sie *Bearbeiten > Volume*.
+. Wählen Sie im Fenster *Volume bearbeiten* unter *Speicher und Optimierung* *Erweiterter Kapazitätsausgleich* aus.
+. Klicken Sie Auf *Speichern*.
+
+
+--
+.CLI
+--
+. Ändern Sie ein vorhandenes FlexGroup-Volume, um den erweiterten Kapazitätsausgleich zu aktivieren:
++
+[source, cli]
+----
+volume modify -vserver <svm name> -volume <volume name> -granular-data advanced
+----
++
+Beispiel:
+
++
+[listing]
+----
+volume modify -vserver vs0 -volume newvol  -granular-data advanced
+----
+
+
+--
+====

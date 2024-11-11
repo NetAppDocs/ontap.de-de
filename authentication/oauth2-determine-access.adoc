@@ -1,0 +1,121 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-determine-access.html 
+keywords: oauth 2.0, oauth2, scopes, groups, roles, users, determine access 
+summary: Um OAuth 2.0 richtig zu entwickeln und zu implementieren, müssen Sie verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen. 
+---
+= Wie ONTAP den Client-Zugriff bestimmt
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Um OAuth 2.0 richtig zu entwickeln und zu implementieren, müssen Sie verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen. Die wichtigsten Schritte zur Bestimmung des Zugriffs sind unten auf der Grundlage der ONTAP Version dargestellt.
+
+
+NOTE: Es gab keine signifikanten Updates für OAuth 2.0 mit ONTAP 9.15.1. Wenn Sie Version 9.15.1 verwenden, lesen Sie die Beschreibung für ONTAP 9.14.1.
+
+.Verwandte Informationen
+* link:../authentication/oauth2-as-servers.html#oauth-2-0-features-supported-in-ontap["In ONTAP unterstützte Funktionen von OAuth 2.0"]
+
+
+
+
+== ONTAP 9.16.1
+
+ONTAP 9.16.1 erweitert die Standard-OAuth 2.0-Unterstützung um Microsoft-Entra-ID-spezifische Erweiterungen für native Entra-ID-Gruppen sowie externe Rollenzuordnung.
+
+.Bestimmen Sie den Client-Zugriff für ONTAP 9.16.1
+[%collapsible]
+====
+.Schritt 1: Eigenständige Bereiche
+Wenn das Zugriffstoken eigenständige Bereiche enthält, untersucht ONTAP diese Bereiche zuerst. Wenn keine eigenständigen Bereiche vorhanden sind, mit Schritt 2 fortfahren.
+
+Wenn ein oder mehrere eigenständige Bereiche vorhanden sind, wendet ONTAP jeden Bereich an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wird, endet die Verarbeitung.
+
+Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, fahren Sie mit Schritt 2 fort.
+
+.Schritt 2: Überprüfen Sie die lokale Rollenmarkierung
+ONTAP überprüft den booleschen Parameter `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der für ONTAP definiert ist, separat festgelegt.
+
+* Wenn der Wert lautet, `true` fahren Sie mit Schritt 3 fort.
+* Wenn der Wert `false` verarbeitet wird, endet und der Zugriff verweigert wird.
+
+
+.Schritt 3: Benannte ONTAP REST-Rolle
+Wenn das Zugriffstoken eine benannte REST-Rolle im Feld oder oder `scp` als Antrag enthält `scope`, verwendet ONTAP diese Rolle, um die Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+
+Wenn keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wurde, fahren Sie mit Schritt 4 fort.
+
+.Schritt 4: Benutzer
+Extrahieren Sie den Benutzernamen aus dem Zugriffstoken und versuchen Sie, ihn mit Benutzern zu vergleichen, die Zugriff auf die Anwendung „http“ haben. Die Benutzer werden anhand der Authentifizierungsmethode in der folgenden Reihenfolge untersucht:
+
+* Passwort
+* Domäne (Active Directory)
+* Nsswitch (LDAP)
+
+
+Wenn ein übereinstimmender Benutzer gefunden wird, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+
+Wenn ein Benutzer nicht stimmt oder kein Benutzername im Zugriffstoken vorhanden ist, fahren Sie mit Schritt 5 fort.
+
+.Schritt 5: Gruppen
+Wenn eine oder mehrere Gruppen eingeschlossen sind, wird das Format geprüft. Wenn die Gruppen als UUIDs dargestellt werden, wird eine interne Gruppenzuordnungstabelle durchsucht. Wenn ein Gruppenabgleich und eine zugehörige Rolle vorhanden sind, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende. Weitere Informationen finden Sie unter link:../authentication/oauth2-groups.html["Arbeiten mit Gruppen"].
+
+Wenn Gruppen als Namen dargestellt und mit Domain- oder nsswitch-Autorisierung konfiguriert werden, versucht ONTAP, sie einer Active Directory- bzw. LDAP-Gruppe zuzuordnen. Wenn eine Gruppenübereinstimme vorhanden ist, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+
+Wenn keine Gruppenübereinstimme vorhanden ist oder keine Gruppe im Zugriffstoken vorhanden ist, wird der Zugriff verweigert und die Verarbeitung wird beendet.
+
+====
+
+
+== ONTAP 9.14.1
+
+Die Unterstützung von OAuth 2.0 wird mit ONTAP 9.14.1 auf Basis der Standard-OAuth 2.0-Funktionen eingeführt.
+
+.Bestimmen Sie den Client-Zugriff für ONTAP 9.14.1
+[%collapsible]
+====
+.Schritt 1: Eigenständige Bereiche
+Wenn das Zugriffstoken eigenständige Bereiche enthält, untersucht ONTAP diese Bereiche zuerst. Wenn keine eigenständigen Bereiche vorhanden sind, mit Schritt 2 fortfahren.
+
+Wenn ein oder mehrere eigenständige Bereiche vorhanden sind, wendet ONTAP jeden Bereich an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wird, endet die Verarbeitung.
+
+Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, fahren Sie mit Schritt 2 fort.
+
+.Schritt 2: Überprüfen Sie die lokale Rollenmarkierung
+ONTAP überprüft den booleschen Parameter `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der für ONTAP definiert ist, separat festgelegt.
+
+* Wenn der Wert lautet, `true` fahren Sie mit Schritt 3 fort.
+* Wenn der Wert `false` verarbeitet wird, endet und der Zugriff verweigert wird.
+
+
+.Schritt 3: Benannte ONTAP REST-Rolle
+Wenn das Zugriffstoken eine benannte REST-Rolle im Feld oder `scp` enthält `scope`, verwendet ONTAP die Rolle, um die Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+
+Wenn keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wurde, fahren Sie mit Schritt 4 fort.
+
+.Schritt 4: Benutzer
+Extrahieren Sie den Benutzernamen aus dem Zugriffstoken und versuchen Sie, ihn mit Benutzern zu vergleichen, die Zugriff auf die Anwendung „http“ haben. Die Benutzer werden anhand der Authentifizierungsmethode in der folgenden Reihenfolge untersucht:
+
+* Passwort
+* Domäne (Active Directory)
+* Nsswitch (LDAP)
+
+
+Wenn ein übereinstimmender Benutzer gefunden wird, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+
+Wenn ein Benutzer nicht stimmt oder kein Benutzername im Zugriffstoken vorhanden ist, fahren Sie mit Schritt 5 fort.
+
+.Schritt 5: Gruppen
+Wenn eine oder mehrere Gruppen eingeschlossen und mit einer Domain- oder nsswitch-Autorisierung konfiguriert sind, versucht ONTAP, sie einer Active Directory- bzw. LDAP-Gruppe zuzuordnen.
+
+Wenn eine Gruppenübereinstimme vorhanden ist, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+
+Wenn keine Gruppenübereinstimme vorhanden ist oder keine Gruppe im Zugriffstoken vorhanden ist, wird der Zugriff verweigert und die Verarbeitung wird beendet.
+
+====

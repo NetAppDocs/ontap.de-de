@@ -1,0 +1,190 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-groups.html 
+keywords: oauth 2.0, oauth2, identity mapping, group uuid, group name, group mapping, external roles, role mapping 
+summary: ONTAP bietet verschiedene Optionen zum Konfigurieren von Gruppen basierend auf Ihrem Autorisierungsserver. Die Gruppen können dann Rollen zugeordnet werden, die von ONTAP zur Bestimmung des Zugriffs verwendet werden. 
+---
+= Arbeiten mit Gruppen
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+ONTAP bietet verschiedene Optionen zum Konfigurieren von Gruppen basierend auf Ihrem Autorisierungsserver. Die Gruppen können dann Rollen zugeordnet werden, die von ONTAP zur Bestimmung des Zugriffs verwendet werden.
+
+
+
+== Wie Gruppen identifiziert werden
+
+Wenn Sie eine Gruppe auf einem Autorisierungsserver konfigurieren, wird sie identifiziert und in einem OAuth 2.0-Zugriffstoken mit einem Namen oder einer UUID übertragen. Vor der Konfiguration von ONTAP müssen Sie sich darüber im Klaren sein, wie Ihr Autorisierungsserver Gruppen verarbeitet.
+
+
+NOTE: Wenn mehrere Gruppen in einem Zugriffstoken enthalten sind, versucht ONTAP, jede Gruppe zu verwenden, bis eine Übereinstimmung vorhanden ist.
+
+
+
+=== Gruppennamen
+
+Viele Autorisierungsserver identifizieren und stellen Gruppen mit einem Namen dar. Hier ist ein Fragment eines JSON-Zugriffstoken, das vom Active Directory Federation Service (ADFS) generiert wird und mehrere Gruppen enthält. Weitere Informationen finden Sie unter <<Verwalten von Gruppen mit Namen>> .
+
+[listing]
+----
+  ...
+  "sub": "User1_TestDev@NICAD5.COM",
+  "group": [
+    "NICAD5\\Domain Users",
+    "NICAD5\\Development Group",
+    "NICAD5\\Production Group"
+  ],
+  "apptype": "Confidential",
+  "appid": "3bff3b2b-8e40-44ba-7c11-d73c3b76e3e8",
+  ...
+----
+
+
+=== Gruppen-UUIDs
+
+Einige Autorisierungsserver identifizieren und stellen Gruppen mit einer UUID dar. Hier ist ein Fragment eines JSON-Zugriffstoken, das von Microsoft Entra ID mit mehreren Gruppen generiert wird. Weitere Informationen finden Sie unter <<Verwalten von Gruppen mit UUIDs>> .
+
+[listing]
+----
+  ...
+  "appid": "4aff4b4b-8e40-44ba-7c11-d73c3b76e3d7",
+  "appidacr": "1",
+  "groups": [
+    "8ea4c5b0-bcad-4e66-8f1e-cd395474a448",
+    "a8558fc2-a1b2-4cb7-cc41-59bd831840cc"],
+  "name": "admin007 with group membership",
+  ...
+----
+
+
+== Verwalten von Gruppen mit Namen
+
+Wenn Ihr Autorisierungsserver zur Identifizierung von Gruppen Namen verwendet, müssen Sie sicherstellen, dass jede Gruppe für ONTAP definiert ist. Je nach Sicherheitsumgebung ist die Gruppe möglicherweise bereits definiert.
+
+Hier ist ein Beispiel für einen CLI-Befehl, der eine Gruppe zu ONTAP definiert. Beachten Sie, dass es eine benannte Gruppe aus dem Beispiel-Zugriffstoken verwendet. Sie müssen sich auf der ONTAP *admin* Berechtigungsebene befinden, um den Befehl ausgeben zu können.
+
+.Beispiel
+[listing]
+----
+security login create -user-or-group-name "NICAD5\\Domain Users" -application http -authentication-method domain -role admin
+----
+
+NOTE: Sie können diese Funktion auch mit der ONTAP REST-API konfigurieren. Weitere Informationen finden Sie unter https://docs.netapp.com/us-en/ontap-automation/["ONTAP-Automatisierung"^] .
+
+
+
+== Verwalten von Gruppen mit UUIDs
+
+Wenn Ihr Autorisierungsserver Gruppen mit UUID-Werten darstellt, müssen Sie vor der Verwendung einer Gruppe eine Konfiguration in zwei Schritten durchführen. Ab ONTAP 9.16.1 sind zwei Mapping-Funktionen verfügbar und wurden mit Microsoft Entra ID getestet. Sie müssen sich auf der ONTAP *admin* Berechtigungsebene befinden, um die CLI Befehle ausgeben zu können.
+
+
+NOTE: Sie können diese Funktionen auch mit der ONTAP-REST-API konfigurieren. Weitere Informationen finden Sie auf der https://docs.netapp.com/us-en/ontap-automation/["ONTAP-Automatisierung"^] Dokumentations-Website.
+
+.Verwandte Informationen
+* https://docs.netapp.com/us-en/ontap-cli/["ONTAP-CLI-Befehle"^]
+
+
+
+
+=== Ordnen Sie eine Gruppen-UUID einem Gruppennamen zu
+
+Wenn Sie einen Autorisierungsserver verwenden, der Gruppen darstellt, die UUID-Werte verwenden, müssen Sie die Gruppen-UUIDs Gruppennamen zuordnen. Die primären ONTAP CLI-Vorgänge werden im Folgenden beschrieben.
+
+
+
+==== Erstellen
+
+Mit dem Befehl können Sie eine neue Gruppenzuordnungskonfiguration definieren `security login group create`. Die Gruppen-UUID und der Name müssen mit der Konfiguration auf dem Autorisierungsserver übereinstimmen.
+
+.Parameter
+Die Parameter, die zum Erstellen einer Gruppenzuordnung verwendet werden, werden im Folgenden beschrieben.
+
+[cols="30,70"]
+|===
+| Parameter | Beschreibung 
+
+
+| `vserver` | Gibt optional den Namen der SVM (vServer) an, mit der die Gruppe verknüpft ist. Wenn sie nicht angegeben ist, ist die Gruppe dem ONTAP-Cluster zugeordnet. 
+
+
+| `name` | Der eindeutige Name der Gruppe, die ONTAP verwendet. 
+
+
+| `type` | Dieser Wert gibt den Identitätsanbieter an, von dem die Gruppe stammt. 
+
+
+| `uuid` | Gibt die universell eindeutige Kennung der Gruppe an, die vom Autorisierungsserver bereitgestellt wird. 
+|===
+Hier ist ein Beispiel für einen CLI-Befehl, der eine Gruppe zu ONTAP definiert. Beachten Sie, dass es eine UUID-Gruppe aus dem Beispiel-Zugriffstoken verwendet.
+
+.Beispiel
+[listing]
+----
+security login group create -vserver ontap-cls-1 -name IAM_Dev -type entra -uuid 8ea4c5b0-bcad-4e66-8f1e-cd395474a448
+----
+Nach dem Erstellen der Gruppe wird eine eindeutige schreibgeschützte Ganzzahl-ID für die Gruppe generiert.
+
+
+
+==== Zusätzliche CLI-Vorgänge
+
+Der Befehl unterstützt mehrere zusätzliche Vorgänge, darunter:
+
+* Anzeigen
+* Ändern
+* Löschen
+
+
+Sie können die Option verwenden `show`, um die eindeutige Gruppen-ID abzurufen, die für eine Gruppe generiert wurde. Weitere Informationen finden Sie in der Referenzdokumentation zu ONTAP-Befehlen.
+
+
+
+=== Ordnen Sie eine Gruppen-UUID einer Rolle zu
+
+Wenn Sie einen Autorisierungsserver verwenden, der Gruppen darstellt, die UUID-Werte verwenden, können Sie die Gruppe einer Rolle zuordnen. Die primären ONTAP CLI-Vorgänge werden im Folgenden beschrieben. Außerdem müssen Sie sich auf der ONTAP *admin* Berechtigungsebene befinden, um die Befehle ausgeben zu können.
+
+
+NOTE: Sie müssen zuerst <<Ordnen Sie eine Gruppen-UUID einem Gruppennamen zu>>die eindeutige Integer-ID abrufen, die für die Gruppe generiert wurde. Sie benötigen die ID, um die Gruppe einer Rolle zuzuordnen.
+
+
+
+==== Erstellen
+
+Mit dem Befehl können Sie eine neue Rollenzuordnung definieren `security login group role-mapping create`.
+
+.Parameter
+Im Folgenden werden die Parameter beschrieben, mit denen eine Gruppe einer Rolle zugeordnet werden kann.
+
+[cols="30,70"]
+|===
+| Parameter | Beschreibung 
+
+
+| `group-id` | Gibt die eindeutige ID an, die mit dem Befehl für die Gruppe generiert `security login group create` wurde. 
+
+
+| `role` | Der Name der ONTAP-Rolle, der die Gruppe zugeordnet ist. 
+|===
+.Beispiel
+[listing]
+----
+security login group role-mapping create -group-id 1 -role admin
+----
+
+
+==== Zusätzliche CLI-Vorgänge
+
+Der Befehl unterstützt mehrere zusätzliche Vorgänge, darunter:
+
+* Anzeigen
+* Ändern
+* Löschen
+
+
+Weitere Informationen finden Sie in der Referenzdokumentation zu ONTAP-Befehlen.

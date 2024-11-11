@@ -1,0 +1,132 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-sc-scopes.html 
+keywords: self-contained scopes, scopes 
+summary: In sich geschlossene Bereiche sind Strings, die im Zugriffstoken enthalten sind. Jede dieser Rollen ist vollständig definiert und beinhaltet alles, was ONTAP für eine Zugriffsentscheidung benötigt. Der Umfang unterscheidet sich von jeder der REST-Rollen, die in ONTAP selbst definiert sind. 
+---
+= Eigenständige Oszilloskope von OAuth 2.0
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+In sich geschlossene Bereiche sind Strings, die im Zugriffstoken enthalten sind. Jede dieser Rollen ist vollständig definiert und beinhaltet alles, was ONTAP für eine Zugriffsentscheidung benötigt. Der Umfang unterscheidet sich von jeder der REST-Rollen, die in ONTAP selbst definiert sind.
+
+
+
+== Format der Bereichszeichenfolge
+
+Auf einer Basisebene wird der Umfang als zusammenhängende Zeichenfolge dargestellt und besteht aus sechs durch Doppelpunkte getrennten Werten. Die im Scope String verwendeten Parameter werden im Folgenden beschrieben.
+
+
+
+=== ONTAP-Literal
+
+Der Umfang muss mit dem Literalwert `ontap` in Kleinbuchstaben beginnen. Der ONTAP-spezifische Umfang wird angegeben.
+
+
+
+=== Cluster
+
+Dies definiert, auf welchen ONTAP Cluster sich der Umfang bezieht. Die Werte können Folgendes umfassen:
+
+* Cluster-UUID
++
+Identifiziert ein einzelnes Cluster.
+
+* Sternchen (***)
++
+Gibt an, dass der Umfang auf alle Cluster angewendet wird.
+
+
+
+Sie können den ONTAP-CLI-Befehl verwenden `cluster identity show`, um die UUID Ihres Clusters anzuzeigen. Falls nicht angegeben, gilt der Umfang für alle Cluster.
+
+
+
+=== Rolle
+
+Der Name der im eigenständigen Bereich enthaltenen REST-Rolle. Dieser Wert wird von ONTAP nicht untersucht oder auf vorhandene REST-Rollen abgestimmt, die für ONTAP definiert sind. Der Name wird für die Protokollierung verwendet.
+
+
+
+=== Zugangsstufe
+
+Dieser Wert gibt die Zugriffsebene an, die auf die Clientanwendung angewendet wird, wenn der API-Endpunkt im Umfang verwendet wird. Es gibt sechs mögliche Werte, wie in der Tabelle unten beschrieben.
+
+[cols="25,75"]
+|===
+| Zugangsstufe | Beschreibung 
+
+
+| Keine | Verweigert allen Zugriff auf den angegebenen Endpunkt. 
+
+
+| readonly | Nur Lesezugriff mit GET ist möglich. 
+
+
+| Read_create | Ermöglicht den Lesezugriff sowie die Erstellung neuer Ressourceninstanzen über POST. 
+
+
+| Lesen_ändern | Ermöglicht den Lesezugriff sowie die Möglichkeit, vorhandene Ressourcen mithilfe von PATCHES zu aktualisieren. 
+
+
+| Lesen_create_modify | Ermöglicht alle Zugriffe außer Löschen. Zu den zulässigen Operationen gehören GET (read), POST (create) und PATCH (Update). 
+
+
+| Alle | Ermöglicht vollständigen Zugriff. 
+|===
+
+
+=== SVM
+
+Der Name der SVM innerhalb des Clusters, für den der Umfang gilt. Verwenden Sie den ***-Wert (Sternchen), um alle SVMs anzuzeigen.
+
+
+CAUTION: Diese Funktion wird von ONTAP 9.14.1 nicht vollständig unterstützt. Sie können den SVM-Parameter ignorieren und ein Sternchen als Platzhalter verwenden. Überprüfen Sie die https://library.netapp.com/ecm/ecm_download_file/ECMLP2492508["Versionshinweise zu ONTAP"^], um auf zukünftigen SVM-Support zu prüfen.
+
+
+
+=== REST-API-URI
+
+Der vollständige oder teilweise Pfad zu einer Ressource oder einem Satz zugehöriger Ressourcen. Der String muss mit beginnen `/api`. Wenn Sie keinen Wert angeben, gilt der Umfang für alle API-Endpunkte im ONTAP-Cluster.
+
+
+
+== Beispiele für den Umfang
+
+Im Folgenden werden einige Beispiele für eigenständige Oszilloskope vorgestellt.
+
+ontap:*:joes-role:read_create_modify:*:/API/Cluster:: Bietet dem Benutzer, dem diese Rolle zugewiesen `/cluster` ist, den Zugriff auf den Endpunkt zu lesen, zu erstellen und zu ändern.
+
+
+
+
+== CLI-Verwaltungstool
+
+Um die Verwaltung der eigenständigen Bereiche einfacher und weniger fehleranfällig `security oauth2 scope` zu machen, bietet ONTAP den CLI-Befehl, um auf der Grundlage Ihrer Eingabeparameter Scope Strings zu generieren.
+
+Der Befehl `security oauth2 scope` hat zwei Anwendungsfälle basierend auf Ihrer Eingabe:
+
+* CLI-Parameter für den Umfang einer Zeichenfolge
++
+Mit dieser Version des Befehls können Sie auf Grundlage der Eingabeparameter eine Bereichszeichenfolge generieren.
+
+* Scope-String zu CLI-Parametern
++
+Sie können diese Version des Befehls verwenden, um die Befehlsparameter basierend auf der Zeichenfolge für den Eingabebereich zu generieren.
+
+
+
+.Beispiel
+Im folgenden Beispiel wird eine Scope-String mit der Ausgabe generiert, die nach dem unten stehenden Befehlsbeispiel enthalten ist. Die Definition gilt für alle Cluster.
+
+[listing]
+----
+security oauth2 scope cli-to-scope -role joes-role -access readonly -api /api/cluster
+----
+`ontap:*:joes-role:readonly:*:/api/cluster`

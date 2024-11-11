@@ -1,10 +1,10 @@
 ---
 permalink: s3-multiprotocol/index.html 
 sidebar: sidebar 
-keywords: multiprotocol, s3, configuration, overview, nfs, smb 
+keywords: multiprotocol, s3, configuration, overview, nfs, smb, multipart 
 summary: Ab ONTAP 9.12.1 können Kunden, die das S3-Protokoll ausführen, auf dieselben Daten zugreifen, die Clients zur Verfügung stehen, die die Protokolle NFS und SMB verwenden, ohne dass sie neu formatiert werden müssen. 
 ---
-= S3-Multi-Protokoll-Übersicht
+= S3-Multi-Protokoll-Unterstützung in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -27,13 +27,13 @@ Sie können nun integrierten Zugriff auf Applikationen wie Spark und Kafka biete
 
 
 
-== Funktionsweise von S3-Protokollen
+== Funktionsweise der S3-Multi-Protokoll-Unterstützung
 
-Mit ONTAP Multi-Protokoll können Sie denselben Datensatz wie eine Dateihierarchie oder Objekte in einem Bucket präsentieren. Dazu erstellt ONTAP „S3-NAS-Buckets“, mit denen S3-Clients Dateien in NAS-Storage mit S3-Objektanforderungen erstellen, lesen, löschen und aufzählen können. Diese Zuordnung entspricht der NAS-Sicherheitskonfiguration, wobei die Zugriffsberechtigungen für Dateien und Verzeichnisse beachtet werden und ggf. in den Sicherheitsprüfungen geschrieben werden.
+Dank der Multiprotokoll-Unterstützung von ONTAP können Sie denselben Datensatz als Dateihierarchie oder als Objekte in einem Bucket präsentieren. Dazu erstellt ONTAP „S3-NAS-Buckets“, mit denen S3-Clients Dateien in NAS-Storage mit S3-Objektanforderungen erstellen, lesen, löschen und aufzählen können. Diese Zuordnung entspricht der NAS-Sicherheitskonfiguration, wobei die Zugriffsberechtigungen für Dateien und Verzeichnisse beachtet werden und ggf. in den Sicherheitsprüfungen geschrieben werden.
 
 Diese Zuordnung wird erreicht, indem eine angegebene NAS-Verzeichnishierarchie als S3-Bucket präsentiert wird. Jede Datei in der Verzeichnishierarchie wird als S3-Objekt dargestellt, dessen Name relativ vom zugeordneten Verzeichnis nach unten ist, wobei die Verzeichnisgrenzen durch das Schrägstrich-Zeichen ('/') dargestellt werden.
 
-Normale ONTAP-definierte S3 Benutzer können auf diesen Storage zugreifen, gemäß den für den Bucket definierten Bucket-Richtlinien, die das NAS-Verzeichnis zugeordnet sind. Hierfür müssen zwischen den S3 Benutzern und SMB/NFS Benutzern Zuordnungen definiert werden. Die Zugangsdaten des SMB/NFS-Benutzers werden für die Überprüfung der NAS-Berechtigungen verwendet und in alle Audit-Datensätze aufgenommen, die sich aus diesen Zugriffen ergeben.
+ONTAP-definierte S3-Benutzer können auf diesen Storage zugreifen, gemäß den Bucket-Richtlinien, die für den Bucket definiert sind, der dem NAS-Verzeichnis zugeordnet ist. Hierfür müssen zwischen den S3 Benutzern und SMB/NFS Benutzern Zuordnungen definiert werden. Die Zugangsdaten des SMB/NFS-Benutzers werden für die Überprüfung der NAS-Berechtigungen verwendet und in alle Audit-Datensätze aufgenommen, die sich aus diesen Zugriffen ergeben.
 
 Durch SMB- oder NFS-Clients wird eine Datei sofort in einem Verzeichnis abgelegt und somit für Clients sichtbar, bevor sie darauf geschrieben wird. S3-Clients erwarten unterschiedliche Semantik, wobei das neue Objekt erst sichtbar ist, wenn alle Daten geschrieben wurden. Durch diese Zuordnung von S3 zu NAS-Storage werden Dateien mithilfe von S3-Semantik erstellt, sodass die Dateien extern unsichtbar bleiben, bis der S3-Erstellungsbefehl abgeschlossen ist.
 
@@ -64,6 +64,27 @@ Erfahren Sie mehr über link:../nas-audit/index.html["Prüfung von NAS-Ereigniss
 
 
 
+== Mehrteiliges Objekt-Upload
+
+Ab ONTAP 9.16.1 wird das Hochladen von Objekten in mehrteiligen Teilen unterstützt, wenn link:../flexgroup/enable-adv-capacity-flexgroup-task.html["Erweiterter Kapazitätsausgleich"] auf FlexGroup Volumes aktiviert ist.
+
+Durch Objekt-Multi-Part-Upload auf NAS File Storage kann ein S3-Protokoll-Client große Objekte in kleineren Teilen hochladen. Das Hochladen von mehrteiligen Objekten bietet folgende Vorteile:
+
+* Es ermöglicht das parallele Hochladen von Objekten.
+* Bei einem Upload-Fehler oder einer Pause müssen nur die Teile hochgeladen werden, die noch nicht hochgeladen wurden. Der Upload des gesamten Objekts muss nicht neu gestartet werden.
+* Wenn die Objektgröße nicht im Voraus bekannt ist (z. B. wenn ein großes Objekt noch geschrieben wird), können Clients sofort mit dem Hochladen von Teilen des Objekts beginnen und den Upload nach der Erstellung des gesamten Objekts abschließen.
+
+
+Multipart Upload unterstützt die folgenden S3-Aktionen:
+
+* AbortMehrteilaUpload
+* CompleteMultipartUpload
+* CreateMultipartUpload
+* ListenMehrpartUpload
+
+
+
+
 == S3- und NAS-Interoperabilität
 
 ONTAP S3 NAS Buckets unterstützen NAS- und S3-Standardfunktionen, ausgenommen die hier aufgeführt.
@@ -72,7 +93,7 @@ ONTAP S3 NAS Buckets unterstützen NAS- und S3-Standardfunktionen, ausgenommen d
 
 === Die NAS-Funktionen werden derzeit von S3 NAS Buckets nicht unterstützt
 
-FabricPool Kapazitäts-Tier:: S3-NAS-Buckets können nicht als Kapazitäts-Tier für FabricPool konfiguriert werden.
+FabricPool Kapazitäts-Tier:: S3 NAS-Buckets können nicht als Kapazitäts-Tier für FabricPool konfiguriert werden.
 
 
 
@@ -100,16 +121,6 @@ Versionierung:: Es ist nicht möglich, die Versionierung in der Bucket-Mapping-K
 --
 * Anfragen, die nicht-Null-Versionsangaben (die versionId=xyz query-string) enthalten, erhalten Fehlerantworten.
 * Anfragen, die sich auf den Versionierungsstatus eines Buckets auswirken, werden mit Fehlern abgelehnt.
-
-
---
-Mehrteilige Vorgänge:: Die folgenden Vorgänge werden nicht unterstützt:
-+
---
-* AbortMehrteilaUpload
-* CompleteMultipartUpload
-* CreateMultipartUpload
-* ListenMehrpartUpload
 
 
 --
