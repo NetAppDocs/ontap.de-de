@@ -1,0 +1,87 @@
+---
+permalink: networking/convert-uta2-port-cna-fc.html 
+sidebar: sidebar 
+keywords: change, uta2, port, cna mode, fc mode 
+summary: Ändern Sie die UTA2-Persönlichkeit vom CNA-Modus in den FC-Modus, wenn Sie das physische Medium ändern müssen, das den Port mit seinem Netzwerk verbindet oder um die FC-Initiatoren und das Ziel zu unterstützen. 
+---
+= Verdecken Sie den UTA2-Port in ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können den UTA2-Port vom CNA-Modus (Converged Network Adapter) in den FC-Modus (Fibre Channel) oder umgekehrt konvertieren.
+
+Sie sollten die UTA2-Persönlichkeit vom CNA-Modus in den FC-Modus ändern, wenn Sie das physische Medium ändern müssen, das den Port mit seinem Netzwerk verbindet oder um die FC-Initiatoren und das Ziel zu unterstützen.
+
+[role="tabbed-block"]
+====
+.Vom CNA-Modus zum FC-Modus
+--
+.Schritte
+. Versetzen Sie den Adapter in den Offline-Modus:
++
+[source, cli]
+----
+network fcp adapter modify -node <node_name> -adapter <adapter_name> -status-admin down
+----
+. Ändern des Portmodus:
++
+[source, cli]
+----
+ucadmin modify -node <node_name> -adapter <adapter_name> -mode fcp
+----
+. Booten Sie den Node neu, und versetzen Sie den Adapter dann in den Online-Modus:
++
+[source, cli]
+----
+network fcp adapter modify -node <node_name> -adapter <adapter_name> -status-admin up
+----
+. Benachrichtigen Sie den Administrator oder VIF-Manager, dass er den Port löschen oder entfernen soll, falls zutreffend:
++
+** Wenn der Port als Home Port einer logischen Schnittstelle verwendet wird, ist ein Mitglied einer Interface Group (ifgrp), oder Hosts VLANs, dann sollte ein Administrator Folgendes tun:
++
+*** Verschieben Sie die LIFs, entfernen Sie den Port aus dem ifgrp oder löschen Sie die VLANs.
+*** Löschen Sie den Port manuell, indem Sie den `network port delete` Befehl ausführen. Wenn der `network port delete` Befehl fehlschlägt, sollte der Admin die Fehler beheben und dann den Befehl erneut ausführen.
+
+
+** Wenn der Port nicht als Home-Port einer LIF verwendet wird, kein Mitglied eines ifgrp ist und keine VLANs hostet, dann sollte der VIF-Manager den Port zum Zeitpunkt des Neustarts aus seinen Datensätzen entfernen. Wenn der VIF-Manager den Port nicht entfernt, muss der Administrator ihn nach dem Neubooten mit dem `network port delete` Befehl manuell entfernen.
+
+
+. Vergewissern Sie sich, dass das richtige SFP+ installiert ist:
++
+[source, cli]
+----
+network fcp adapter show -instance -node -adapter
+----
++
+Für CNA sollten Sie einen 10-GB-Ethernet SFP verwenden. Vor dem Ändern der Konfiguration auf dem Node sollten Sie für FC entweder einen 8-Gbit-SFP oder einen 16-Gbit-SFP verwenden.
+
+
+
+--
+.Vom FC-Modus zum CNA-Modus
+--
+.Schritte
+. Versetzen Sie den Adapter in den Offline-Modus:
++
+[source, cli]
+----
+network fcp adapter modify -node <node_name> -adapter <adapter_name> -status-admin down
+----
+. Ändern des Portmodus:
++
+[source, cli]
+----
+ucadmin modify -node <node_name> -adapter <adapter_name> -mode cna
+----
+. Booten Sie den Node neu
+. Stellen Sie sicher, dass das richtige SFP+ installiert ist.
++
+Für CNA sollten Sie einen 10-GB-Ethernet SFP verwenden.
+
+
+
+--
+====

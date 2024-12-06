@@ -2,22 +2,31 @@
 permalink: revert/task_verify_health.html 
 sidebar: sidebar 
 keywords: ontap, revert, reverting, reversion, downgrade, downgrading, verifying, verify, cluster, health 
-summary: Nach der Wiederherstellung oder Downgrade eines Clusters sollten Sie überprüfen, ob die Nodes ordnungsgemäß arbeiten und am Cluster teilnehmen können und dass das Cluster sich in einem Quorum befindet. 
+summary: Nachdem Sie einen ONTAP-Cluster zurückgesetzt haben, sollten Sie überprüfen, ob die Nodes in einem ordnungsgemäßen Zustand sind und für eine Teilnahme am Cluster geeignet sind, und ob das Cluster Quorum vorhanden ist. 
 ---
-= Prüfen Sie den Cluster- und Storage-Zustand nach Downgrade oder Zurücksetzen
+= Überprüfen Sie den Cluster- und Storage-Zustand nach dem Zurücksetzen der ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Nach einem Downgrade oder Zurücksetzen eines Clusters sollten Sie überprüfen, ob die Nodes in einem ordnungsgemäßen Zustand und zur Teilnahme am Cluster qualifiziert sind und dass sich das Cluster in einem Quorum befindet. Außerdem sollten Sie den Status der Festplatten, Aggregate und Volumes überprüfen.
+Nachdem Sie einen ONTAP Cluster zurückgesetzt haben, sollten Sie überprüfen, ob die Nodes in einem ordnungsgemäßen Zustand sind und für eine Teilnahme am Cluster geeignet sind, und ob das Cluster Quorum vorhanden ist. Außerdem sollten Sie den Status der Festplatten, Aggregate und Volumes überprüfen.
 
 
 
 == Überprüfen des Cluster-Systemzustands
 
-. Überprüfen Sie, ob die Nodes im Cluster online sind und am Cluster teilnehmen können: `cluster show`
+.Schritte
+. Vergewissern Sie sich, dass die Nodes im Cluster online sind und am Cluster teilnehmen können:
++
+[source, cli]
+----
+cluster show
+----
++
+In diesem Beispiel ist das Cluster in einem ordnungsgemäßen Zustand und alle Nodes können am Cluster teilnehmen.
+
 +
 [listing]
 ----
@@ -30,8 +39,12 @@ node1                 true    true
 +
 Wenn ein Knoten fehlerhaft oder nicht geeignet ist, überprüfen Sie die EMS-Protokolle auf Fehler und ergreifen Sie Korrekturmaßnahmen.
 
-. Stellen Sie die Berechtigungsebene auf erweitert: + ein
-`set -privilege advanced`
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Geben Sie ein, `y` um fortzufahren.
 
@@ -51,34 +64,40 @@ Beachten Sie, dass für jeden Ring möglicherweise ein anderer Quorum-Master vor
  a| 
 Managementapplikation
  a| 
-`cluster ring show -unitname mgmt`
-
+[source, cli]
+----
+cluster ring show -unitname mgmt
+----
 
 
  a| 
 Volume-Standortdatenbank
  a| 
-`cluster ring show -unitname vldb`
-
+[source, cli]
+----
+cluster ring show -unitname vldb
+----
 
 
  a| 
 Virtual Interface Manager
  a| 
-`cluster ring show -unitname vifmgr`
-
+[source, cli]
+----
+cluster ring show -unitname vifmgr
+----
 
 
  a| 
 SAN Management-Daemon
  a| 
-`cluster ring show -unitname bcomd`
-
+[source, cli]
+----
+cluster ring show -unitname bcomd
+----
 |===
 +
 Dieses Beispiel zeigt den Datenbankprozess für den Speicherort des Volumes:
-
-
 
 +
 [listing]
@@ -92,8 +111,20 @@ node2     vldb     154      154      14847    node0     secondary
 node3     vldb     154      154      14847    node0     secondary
 4 entries were displayed.
 ----
-. Kehren Sie zur Administrator-Berechtigungsebene zurück: `set -privilege admin`
-. Wenn Sie in einer SAN-Umgebung arbeiten, stellen Sie sicher, dass sich jeder Knoten in einem SAN-Quorum befindet: `event log show  -severity informational -message-name scsiblade.*`
+
+
+. Zurück zur Administratorberechtigungsebene:
++
+[source, cli]
+----
+set -privilege admin
+----
+. Wenn Sie in einer SAN-Umgebung arbeiten, vergewissern Sie sich, dass sich jeder Knoten in einem SAN-Quorum befindet:
++
+[source, cli]
+----
+event log show  -severity informational -message-name scsiblade.*
+----
 +
 Die letzte scsiblade-Ereignismeldung für jeden Knoten sollte darauf hinweisen, dass sich das scsi-Blade im Quorum befindet.
 
@@ -117,6 +148,7 @@ link:../system-admin/index.html["Systemadministration"]
 
 Nach der Umrüstung oder Downgrade eines Clusters sollten Sie den Status Ihrer Festplatten, Aggregate und Volumes überprüfen.
 
+.Schritte
 . Überprüfen des Festplattenstatus:
 +
 [cols="2*"]
@@ -127,7 +159,12 @@ Nach der Umrüstung oder Downgrade eines Clusters sollten Sie den Status Ihrer F
  a| 
 Fehlerhafte Festplatten
  a| 
-.. Defekte Festplatten anzeigen: `storage disk show -state broken`
+.. Fehlerhafte Festplatten anzeigen:
++
+[source, cli]
+----
+storage disk show -state broken
+----
 .. Entfernen oder ersetzen Sie alle defekten Festplatten.
 
 
@@ -136,12 +173,22 @@ Fehlerhafte Festplatten
  a| 
 Festplatten werden gewartet oder rekonstruiert
  a| 
-.. Zeigen Sie alle Festplatten an, die sich im Wartungs-, Ausstehenden- oder Rekonstruktionstatus befinden: `storage disk show -state maintenance|pending|reconstructing`
+.. Anzeigen aller Datenträger in Wartungs-, Ausstehend- oder Rekonstruktionstatus:
++
+[source, cli]
+----
+storage disk show -state maintenance|pending|reconstructing
+----
 .. Warten Sie, bis die Wartung oder Rekonstruktion abgeschlossen ist, bevor Sie fortfahren.
 
 
 |===
-. Überprüfen Sie, ob alle Aggregate online sind, indem Sie den Status des physischen und logischen Storage, einschließlich Storage-Aggregaten anzeigen: `storage aggregate show -state !online`
+. Überprüfen Sie, ob alle Aggregate online sind, indem Sie den Status des physischen und logischen Storage anzeigen, einschließlich Storage-Aggregate:
++
+[source, cli]
+----
+storage aggregate show -state !online
+----
 +
 Mit diesem Befehl werden die Aggregate angezeigt, die _Not_ online sind. Alle Aggregate müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
 
@@ -151,7 +198,12 @@ Mit diesem Befehl werden die Aggregate angezeigt, die _Not_ online sind. Alle Ag
 cluster1::> storage aggregate show -state !online
 There are no entries matching your query.
 ----
-. Überprüfen Sie, ob alle Volumes online sind, indem Sie alle Volumes anzeigen, die _Not_ online sind: `volume show -state !online`
+. Überprüfen Sie, ob alle Volumes online sind, indem Sie alle Volumes anzeigen, die _Not_ online sind:
++
+[source, cli]
+----
+volume show -state !online
+----
 +
 Alle Volumes müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
 
@@ -161,7 +213,12 @@ Alle Volumes müssen vor und nach einem größeren Upgrade oder einer erneuten V
 cluster1::> volume show -state !online
 There are no entries matching your query.
 ----
-. Vergewissern Sie sich, dass keine inkonsistenten Volumes vorhanden sind: `volume show -is-inconsistent true`
+. Vergewissern Sie sich, dass es keine inkonsistenten Volumes gibt:
++
+[source, cli]
+----
+volume show -is-inconsistent true
+----
 +
 Lesen Sie den Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Volume_Showing_WAFL_Inconsistent["Volume zeigt WAFL inkonsistent an"]der Knowledge Base, wie Sie die inkonsistenten Volumes bewältigen können.
 
@@ -169,3 +226,9 @@ Lesen Sie den Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data
 
 .Verwandte Informationen
 link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"]
+
+
+
+== Prüfen des Client-Zugriffs (SMB und NFS)
+
+Testen Sie bei den konfigurierten Protokollen den Zugriff von SMB- und NFS-Clients, um zu überprüfen, ob auf das Cluster zugegriffen werden kann.

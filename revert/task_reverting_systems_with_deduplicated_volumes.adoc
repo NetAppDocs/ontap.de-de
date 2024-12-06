@@ -4,46 +4,74 @@ sidebar: sidebar
 keywords: ontap, revert, reverting, reversion, systems, deduplication, deduplicated, volumes 
 summary: Vor dem Zurücksetzen von einer Version von ONTAP 9 müssen Sie sicherstellen, dass die Volumes ausreichend freien Speicherplatz für den Revert enthalten. 
 ---
-= Überprüfen Sie, ob die deduplizierten Volumes vor dem Zurücksetzen ausreichend freier Speicherplatz verfügen
+= Überprüfen Sie den freien Speicherplatz für deduplizierte Volumes, bevor Sie ONTAP zurücksetzen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Vor dem Zurücksetzen von einer Version von ONTAP 9 müssen Sie sicherstellen, dass die Volumes ausreichend freien Speicherplatz für den Revert enthalten.
+Bevor Sie ein ONTAP-Cluster von einer beliebigen Version von ONTAP 9 zurücksetzen, müssen Sie sicherstellen, dass die Volumes ausreichend freien Speicherplatz für die Wiederherstellung enthalten.
 
 Das Volume muss über genügend Speicherplatz verfügen, um die Einsparungen zu realisieren, die durch Inline-Erkennung von Nullen erzielt wurden. Siehe Knowledge Base-Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_to_see_space_savings_from_deduplication%2C_compression%2C_and_compaction_in_ONTAP_9["Wie lässt sich mit ONTAP 9 die Speicherersparnis durch Deduplizierung, Komprimierung und Data-Compaction erreichen"].
 
 Wenn Sie sowohl die Deduplizierung als auch die Datenkomprimierung auf einem Volume aktiviert haben, das Sie zurücksetzen möchten, müssen Sie die Datenkomprimierung vor der Zurücksetzen der Deduplizierung zurücksetzen.
 
-. Verwenden Sie den Befehl „Volume Efficiency show“ mit der Option „-fields“, um den Fortschritt der auf den Volumes ausgeführten Effizienzvorgänge anzuzeigen.
+.Schritte
+. Sehen Sie sich den Fortschritt der Effizienzvorgänge an, die auf den Volumes ausgeführt werden:
 +
-Mit dem folgenden Befehl wird der Fortschritt des Effizienzvorgangs angezeigt: `volume efficiency show -fields vserver,volume,progress`
-
-. Verwenden Sie den Befehl Volume Efficiency stop mit der Option -all, um alle aktiven und in der Warteschlange befindlichen Deduplizierungsvorgänge zu beenden.
+[source, cli]
+----
+volume efficiency show -fields vserver,volume,progress
+----
+. Beenden Sie alle aktiven Deduplizierungsprozesse und deren Warteschlange:
 +
-Mit dem folgenden Befehl werden alle aktiven und in der Warteschlange befindlichen Deduplizierungsvorgänge auf Volume Vola angehalten: `volume efficiency stop -vserver vs1 -volume VolA -all`
-
-. Verwenden Sie den Befehl set -Privilege Advanced, um sich auf der erweiterten Berechtigungsebene einzuloggen.
-. Verwenden Sie den Befehl „revert-to“ für Volume-Effizienz mit der Option -Version, um die Effizienzmetadaten eines Volume auf eine bestimmte ONTAP-Version herunterzustufen.
+[source, cli]
+----
+volume efficiency stop -vserver <svm_name> -volume <volume_name> -all
+----
+. Legen Sie die Berechtigungsebene auf erweitert fest:
 +
-Mit dem folgenden Befehl werden die Effizienzmetadaten auf Volume-Vola auf ONTAP 9.x zurückgesetzt: `volume efficiency revert-to -vserver vs1 -volume VolA -version 9.x`
+[source, cli]
+----
+set -privilege advanced
+----
+. Downgrade der Effizienz-Metadaten eines Volumes auf die Zielversion von ONTAP:
++
+[source, cli]
+----
+volume efficiency revert-to -vserver <svm_name> -volume <volume_name> -version <version>
+----
++
+Im folgenden Beispiel werden die Effizienzmetadaten auf Volume Vola auf ONTAP 9.x zurückgesetzt
 
++
+[listing]
+----
+volume efficiency revert-to -vserver vs1 -volume VolA -version 9.x
+----
 +
 
 NOTE: Mit dem Befehl „revert-to“ für die Volume-Effizienz werden auf dem Node, auf dem dieser Befehl ausgeführt wird, vorhandene Volumes zurückgesetzt. Dieser Befehl bewirkt nicht, dass Volumes über Nodes hinweg zurückgesetzt werden.
 
-. Verwenden Sie den Befehl Volume Efficiency show mit der Option -op-Status, um den Fortschritt des Downgrades zu überwachen.
+. Überwachen Sie den Fortschritt des Downgrades:
 +
-Mit dem folgenden Befehl wird der Status des Downgrades überwacht und angezeigt: `volume efficiency show -vserver vs1 -op-status Downgrading`
-
-. Wenn die Zurücksetzen nicht erfolgreich ist, verwenden Sie den Befehl zur Anzeige der Volume-Effizienz mit der Option -Instanz, um zu ermitteln, warum die Wiederherstellung fehlgeschlagen ist.
+[source, cli]
+----
+volume efficiency show -vserver <svm_name> -op-status Downgrading
+----
+. Wenn die Rücksetzung nicht erfolgreich ist, zeigen Sie die Instanz an, um zu sehen, warum die Rücksetzung fehlgeschlagen ist.
 +
-Mit dem folgenden Befehl werden detaillierte Informationen zu allen Feldern angezeigt: `volume efficiency show -vserver vs1 -volume vol1 - instance`
-
-. Nachdem der Rückgängig ist, kehren Sie zur Administrator-Berechtigungsebene zurück: `set -privilege admin`
+[source, cli]
+----
+volume efficiency show -vserver <svm_name> -volume <volume_name> - instance
+----
+. Nach Abschluss des Vorgangs „Zurücksetzen“ kehren Sie zur Administratorberechtigungsebene zurück:
 +
-link:../volumes/index.html["Logisches Storage-Management"]
+[source, cli]
+----
+set -privilege admin
+----
 
 
+Erfahren Sie mehr über link:../volumes/index.html["Logisches Storage-Management"].

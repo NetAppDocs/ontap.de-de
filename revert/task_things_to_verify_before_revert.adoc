@@ -1,25 +1,34 @@
 ---
 permalink: revert/task_things_to_verify_before_revert.html 
 sidebar: sidebar 
-keywords: ontap, revert, reversion, reverting, downgrade, downgrading, preparation 
-summary: Verschiedene Konfigurationseinstellungen können die Bereitschaft für Cluster-Upgrades beeinträchtigen. 
+keywords: ontap, revert, reversion, reverting, downgrade, downgrading, preparation, pre-revert, checks, verification, cluster health, storage health, system time, jobs 
+summary: Vor dem Zurücksetzen von ONTAP sollten Sie den Clusterzustand, den Storage-Zustand und die Systemzeit überprüfen. Sie sollten außerdem überprüfen, ob auf dem Cluster keine Jobs ausgeführt werden. 
 ---
-= Dinge zu überprüfen, bevor Sie zurückkehren
+= Vor dem Zurücksetzen eines ONTAP-Clusters müssen Systemverifizierungen durchgeführt werden
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Vor dem Zurücksetzen sollten Sie den Cluster-Zustand, den Storage-Zustand und die Systemzeit überprüfen. Sie sollten auch Clusterjobs löschen, die ausgeführt werden, und SMB-Sitzungen, die nicht kontinuierlich verfügbar sind, ordnungsgemäß beenden.
+Bevor Sie ein ONTAP-Cluster zurücksetzen, sollten Sie den Clusterzustand, den Storage-Zustand und die Systemzeit überprüfen. Sie sollten außerdem überprüfen, ob auf dem Cluster keine Jobs ausgeführt werden.
 
 
 
 == Überprüfen des Cluster-Systemzustands
 
-Bevor Sie das Cluster wiederherstellen, sollten Sie überprüfen, ob die Nodes ordnungsgemäß sind und berechtigt sind, am Cluster teilzunehmen, und dass sich das Cluster in einem Quorum befindet.
+Bevor Sie einen ONTAP-Cluster zurücksetzen, sollten Sie überprüfen, ob die Nodes in einem ordnungsgemäßen Zustand sind und für eine Teilnahme am Cluster geeignet sind und ob das Cluster Quorum vorhanden ist.
 
-. Überprüfen Sie, ob die Nodes im Cluster online sind und am Cluster teilnehmen können: `cluster show`
+.Schritte
+. Vergewissern Sie sich, dass die Nodes im Cluster online sind und am Cluster teilnehmen können:
++
+[source, cli]
+----
+cluster show
+----
++
+In diesem Beispiel sind alle Nodes in einem ordnungsgemäßen Zustand und können am Cluster teilnehmen.
+
 +
 [listing]
 ----
@@ -32,8 +41,12 @@ node1                 true    true
 +
 Wenn ein Knoten fehlerhaft oder nicht geeignet ist, überprüfen Sie die EMS-Protokolle auf Fehler und ergreifen Sie Korrekturmaßnahmen.
 
-. Stellen Sie die Berechtigungsebene auf erweitert: + ein
-`set -privilege advanced`
+. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Geben Sie ein, `y` um fortzufahren.
 
@@ -53,29 +66,37 @@ Beachten Sie, dass für jeden Ring möglicherweise ein anderer Quorum-Master vor
  a| 
 Managementapplikation
  a| 
-`cluster ring show -unitname mgmt`
-
+[source, cli]
+----
+cluster ring show -unitname mgmt
+----
 
 
  a| 
 Volume-Standortdatenbank
  a| 
-`cluster ring show -unitname vldb`
-
+[source, cli]
+----
+cluster ring show -unitname vldb
+----
 
 
  a| 
 Virtual Interface Manager
  a| 
-`cluster ring show -unitname vifmgr`
-
+[source, cli]
+----
+cluster ring show -unitname vifmgr
+----
 
 
  a| 
 SAN Management-Daemon
  a| 
-`cluster ring show -unitname bcomd`
-
+[source, cli]
+----
+cluster ring show -unitname bcomd
+----
 |===
 +
 Dieses Beispiel zeigt den Datenbankprozess für den Speicherort des Volumes:
@@ -94,9 +115,18 @@ node3     vldb     154      154      14847    node0     secondary
 ----
 
 
-. Zurück zur Administratorberechtigungsebene: +
-`set -privilege admin`
-. Wenn Sie in einer SAN-Umgebung arbeiten, stellen Sie sicher, dass sich jeder Knoten in einem SAN-Quorum befindet: `event log show  -severity informational -message-name scsiblade.*`
+. Zurück zur Administratorberechtigungsebene:
++
+[source, cli]
+----
+set -privilege admin
+----
+. Wenn Sie in einer SAN-Umgebung arbeiten, vergewissern Sie sich, dass sich jeder Knoten in einem SAN-Quorum befindet:
++
+[source, cli]
+----
+event log show  -severity informational -message-name scsiblade.*
+----
 +
 Die letzte scsiblade-Ereignismeldung für jeden Knoten sollte darauf hinweisen, dass sich das scsi-Blade im Quorum befindet.
 
@@ -118,8 +148,9 @@ link:../system-admin/index.html["Systemadministration"]
 
 == Überprüfung des Storage-Zustands
 
-Bevor Sie ein Cluster zurücksetzen, sollten Sie den Status Ihrer Festplatten, Aggregate und Volumes überprüfen.
+Bevor Sie ein ONTAP Cluster zurücksetzen, sollten Sie den Status Ihrer Festplatten, Aggregate und Volumes überprüfen.
 
+.Schritte
 . Überprüfen des Festplattenstatus:
 +
 [cols="2*"]
@@ -130,7 +161,12 @@ Bevor Sie ein Cluster zurücksetzen, sollten Sie den Status Ihrer Festplatten, A
  a| 
 Fehlerhafte Festplatten
  a| 
-.. Defekte Festplatten anzeigen: `storage disk show -state broken`
+.. Fehlerhafte Festplatten anzeigen:
++
+[source, cli]
+----
+storage disk show -state broken
+----
 .. Entfernen oder ersetzen Sie alle defekten Festplatten.
 
 
@@ -139,12 +175,22 @@ Fehlerhafte Festplatten
  a| 
 Festplatten werden gewartet oder rekonstruiert
  a| 
-.. Zeigen Sie alle Festplatten an, die sich im Wartungs-, Ausstehenden- oder Rekonstruktionstatus befinden: `storage disk show -state maintenance|pending|reconstructing`
+.. Anzeigen aller Datenträger in Wartungs-, Ausstehend- oder Rekonstruktionstatus:
++
+[source, cli]
+----
+storage disk show -state maintenance|pending|reconstructing
+----
 .. Warten Sie, bis die Wartung oder Rekonstruktion abgeschlossen ist, bevor Sie fortfahren.
 
 
 |===
-. Überprüfen Sie, ob alle Aggregate online sind, indem Sie den Status des physischen und logischen Storage, einschließlich Storage-Aggregaten anzeigen: `storage aggregate show -state !online`
+. Überprüfen Sie, ob alle Aggregate online sind, indem Sie den Status des physischen und logischen Storage einschließlich Storage-Aggregate anzeigen: +
++
+[source, cli]
+----
+storage aggregate show -state !online
+----
 +
 Mit diesem Befehl werden die Aggregate angezeigt, die _Not_ online sind. Alle Aggregate müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
 
@@ -154,7 +200,12 @@ Mit diesem Befehl werden die Aggregate angezeigt, die _Not_ online sind. Alle Ag
 cluster1::> storage aggregate show -state !online
 There are no entries matching your query.
 ----
-. Überprüfen Sie, ob alle Volumes online sind, indem Sie alle Volumes anzeigen, die _Not_ online sind: `volume show -state !online`
+. Überprüfen Sie, ob alle Volumes online sind, indem Sie alle Volumes anzeigen, die _Not_ online sind:
++
+[source, cli]
+----
+volume show -state !online
+----
 +
 Alle Volumes müssen vor und nach einem größeren Upgrade oder einer erneuten Version online sein.
 
@@ -164,7 +215,12 @@ Alle Volumes müssen vor und nach einem größeren Upgrade oder einer erneuten V
 cluster1::> volume show -state !online
 There are no entries matching your query.
 ----
-. Vergewissern Sie sich, dass keine inkonsistenten Volumes vorhanden sind: `volume show -is-inconsistent true`
+. Vergewissern Sie sich, dass es keine inkonsistenten Volumes gibt:
++
+[source, cli]
+----
+volume show -is-inconsistent true
+----
 +
 Lesen Sie den Artikel link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Volume_Showing_WAFL_Inconsistent["Volume zeigt WAFL inkonsistent an"]der Knowledge Base, wie Sie die inkonsistenten Volumes bewältigen können.
 
@@ -175,12 +231,23 @@ link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"]
 
 
 
-== Überprüfen der Systemzeit
+== Überprüfen Sie die Systemzeit
 
-Bevor Sie die Einstellungen zurücksetzen, sollten Sie überprüfen, ob NTP konfiguriert ist und ob die Zeit über das Cluster synchronisiert wird.
+Bevor Sie ein ONTAP-Cluster zurücksetzen, sollten Sie überprüfen, ob NTP konfiguriert ist und die Zeit im Cluster synchronisiert ist.
 
-. Überprüfen Sie, ob das Cluster einem NTP-Server zugeordnet ist: `cluster time-service ntp server show`
-. Überprüfen Sie, ob auf jedem Node dasselbe Datum und dieselbe Uhrzeit angegeben sind: `cluster date show`
+.Schritte
+. Vergewissern Sie sich, dass das Cluster einem NTP-Server zugeordnet ist:
++
+[source, cli]
+----
+cluster time-service ntp server show
+----
+. Vergewissern Sie sich, dass jeder Node dasselbe Datum und dieselbe Uhrzeit hat:
++
+[source, cli]
+----
+cluster date show
+----
 +
 [listing]
 ----
@@ -199,9 +266,18 @@ node3     4/6/2013 20:54:38   GMT
 
 == Vergewissern Sie sich, dass keine Jobs ausgeführt werden
 
-Bevor Sie die ONTAP Software zurücksetzen, müssen Sie den Status von Cluster-Jobs überprüfen. Bei beliebigen Aggregaten, Volumes, NDMP (Dump oder Restore) oder Snapshot Jobs (z. B. Erstellen, Löschen, Verschieben, Ändern, Replizieren, Und Mount-Jobs) werden ausgeführt oder in die Warteschlange gestellt. Sie müssen zulassen, dass die Jobs erfolgreich abgeschlossen werden, oder dass die in der Warteschlange befindlichen Einträge angehalten werden.
+Bevor Sie ein ONTAP-Cluster zurücksetzen, sollten Sie den Status von Cluster-Jobs überprüfen. Wenn Aggregat-, Volume-, NDMP- (Dump- oder Restore-Jobs) oder Snapshot-Jobs (wie beispielsweise Jobs zum Erstellen, Löschen, Verschieben, Ändern, Replizieren und Mounten) ausgeführt oder in die Warteschlange eingereiht werden, sollten Sie zulassen, dass die Jobs erfolgreich abgeschlossen werden oder die Einträge in der Warteschlange anhalten.
 
-. Prüfen Sie die Liste aller ausgeführten oder in der Warteschlange befindlichen Aggregat-, Volume- oder Snapshot Jobs: `job show`
+.Schritte
+. Prüfen Sie die Liste aller laufenden oder wartenden Aggregat-, Volume- oder Snapshot-Jobs in der Warteschlange:
++
+[source, cli]
+----
+job show
+----
++
+In diesem Beispiel gibt es zwei Jobs in der Warteschlange:
+
 +
 [listing]
 ----
@@ -214,17 +290,19 @@ Job ID Name                 Vserver    Node           State
 8630   Certificate Expiry Check
                             cluster1   -              Queued
        Description: Certificate Expiry Check
-.
-.
-.
 ----
-. Löschen Sie alle laufenden oder in der Warteschlange befindlichen Jobs für Aggregate, Volumes oder Snapshot Kopien: `job delete -id job_id`
+. Löschen aller laufenden oder in Warteschlange befindlichen Aggregat-, Volume- oder Snapshot-Kopie-Jobs:
 +
-[listing]
+[source, cli]
 ----
-cluster1::> job delete -id 8629
+job delete -id <job_id>
 ----
-. Überprüfen Sie, ob keine Aggregat-, Volume- oder Snapshot-Jobs ausgeführt oder in eine Warteschlange verschoben werden: `job show`
+. Vergewissern Sie sich, dass keine Aggregat-, Volume- oder Snapshot-Jobs ausgeführt oder in eine Warteschlange eingereiht werden:
++
+[source, cli]
+----
+job show
+----
 +
 In diesem Beispiel wurden alle laufenden und in der Warteschlange befindlichen Jobs gelöscht:
 
@@ -244,65 +322,3 @@ Job ID Name                 Vserver    Node           State
 2 entries were displayed
 ----
 
-
-
-
-== SMB-Sitzungen, die beendet werden sollen
-
-Bevor Sie die Daten zurücksetzen, sollten Sie SMB-Sitzungen, die nicht kontinuierlich verfügbar sind, identifizieren und ordnungsgemäß beenden.
-
-Kontinuierlich verfügbare SMB-Freigaben, auf die von Hyper-V oder Microsoft SQL Server Clients mit dem SMB 3.0 Protokoll zugegriffen wird, müssen vor einem Upgrade oder Downgrade nicht beendet werden.
-
-. Ermitteln Sie alle etablierten SMB-Sitzungen, die nicht kontinuierlich verfügbar sind: `vserver cifs session show -continuously-available No -instance`
-+
-Dieser Befehl zeigt detaillierte Informationen zu SMB-Sessions an, bei denen keine kontinuierliche Verfügbarkeit vorhanden ist. Sie sollten sie beenden, bevor Sie mit der ONTAP-Herabstufung fortfahren.
-
-+
-[listing]
-----
-cluster1::> vserver cifs session show -continuously-available No -instance
-
-                        Node: node1
-                     Vserver: vs1
-                  Session ID: 1
-               Connection ID: 4160072788
-Incoming Data LIF IP Address: 198.51.100.5
-      Workstation IP address: 203.0.113.20
-    Authentication Mechanism: NTLMv2
-                Windows User: CIFSLAB\user1
-                   UNIX User: nobody
-                 Open Shares: 1
-                  Open Files: 2
-                  Open Other: 0
-              Connected Time: 8m 39s
-                   Idle Time: 7m 45s
-            Protocol Version: SMB2_1
-      Continuously Available: No
-1 entry was displayed.
-----
-. Identifizieren Sie bei Bedarf die Dateien, die für jede von Ihnen identifizierte SMB-Sitzung geöffnet sind: `vserver cifs session file show -session-id session_ID`
-+
-[listing]
-----
-cluster1::> vserver cifs session file show -session-id 1
-
-Node:       node1
-Vserver:    vs1
-Connection: 4160072788
-Session:    1
-File    File      Open Hosting                               Continuously
-ID      Type      Mode Volume          Share                 Available
-------- --------- ---- --------------- --------------------- ------------
-1       Regular   rw   vol10           homedirshare          No
-Path: \TestDocument.docx
-2       Regular   rw   vol10           homedirshare          No
-Path: \file1.txt
-2 entries were displayed.
-----
-
-
-
-
-== NVMe in-Band-Authentifizierung
-
-Wenn Sie von ONTAP 9.12.1 oder höher auf ONTAP 9.12.0 oder früher link:../nvme/disable-secure-authentication-nvme-task.html["Deaktivieren Sie die in-Band-Authentifizierung"]zurücksetzen, müssen Sie dies vor dem Zurücksetzen tun. Wenn die bandinterne Authentifizierung mit DH-HMAC-CHAP nicht deaktiviert ist, schlägt die Wiederherstellung fehl.
