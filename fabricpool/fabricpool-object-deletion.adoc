@@ -1,0 +1,135 @@
+---
+permalink: fabricpool/fabricpool-object-deletion.html 
+sidebar: sidebar 
+keywords: fabricpool, fabric pool, tiering, delete, defrag, unreclaimed, threshold 
+summary: FabricPool löscht Objekte, nachdem ein bestimmter Prozentsatz der Blöcke im Objekt von ONTAP nicht mehr referenziert wurde. 
+---
+= Löschen und Defragmentieren von FabricPool-Objekten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+FabricPool löscht keine Blöcke aus verbundenen Objektspeichern. Stattdessen löscht FabricPool Objekte, nachdem ein bestimmter Prozentsatz der Blöcke im Objekt von ONTAP nicht mehr referenziert wurde.
+
+Beispiel: Es gibt 1,024 4-KB-Blöcke in einem zu Amazon S3 Tiered-Objekt mit 4 MB. Defragmentierung und Löschung erfolgen erst, wenn weniger als 205 4-KB-Blöcke (20 % von 1,024) von ONTAP referenziert werden. Wenn genügend (1,024) Blöcke keine Referenzen haben, werden ihre ursprünglichen 4-MB-Objekte gelöscht und ein neues Objekt erstellt.
+
+Sie können den Schwellwert für nicht zurückgewonnener Speicherplatz anpassen und für verschiedene Objektspeicher auf andere Standardwerte festlegen. Die Standardeinstellungen sind:
+
+|===
+
+
+| Objektspeicher | ONTAP 9.3 und frühere Versionen | ONTAP 9.4 bis 9.7 | ONTAP 9.8 und höher | Cloud Volumes ONTAP 
+
+
+ a| 
+Amazon S3
+ a| 
+0 % erreicht
+ a| 
+20 % erreicht
+ a| 
+20 % erreicht
+ a| 
+30 % erreicht
+
+
+
+ a| 
+Google Cloud Storage
+ a| 
+k. A.
+ a| 
+12 % erreicht
+ a| 
+20 % erreicht
+ a| 
+35 % erreicht
+
+
+
+ a| 
+Microsoft Azure Blob Storage
+ a| 
+k. A.
+ a| 
+15 % erreicht
+ a| 
+25 % erreicht
+ a| 
+35 % erreicht
+
+
+
+ a| 
+NetApp ONTAP S3
+ a| 
+k. A.
+ a| 
+k. A.
+ a| 
+40 % erreicht
+ a| 
+k. A.
+
+
+
+ a| 
+NetApp StorageGRID
+ a| 
+0 % erreicht
+ a| 
+40 % erreicht
+ a| 
+40 % erreicht
+ a| 
+k. A.
+
+|===
+
+
+== Schwellenwert für nicht zurückgewonnenen Speicherplatz
+
+Wenn Sie die standardmäßigen Schwellenwerteinstellungen für nicht zurückgewonnenen Speicherplatz ändern, wird die akzeptierte Menge an Objektfragmentierung erhöht oder verringert. Durch die Verringerung der Fragmentierung wird die physische Kapazität verringert, die vom Cloud-Tier genutzt wird, und zwar auf Kosten zusätzlicher Objektspeicher-Ressourcen (Lese- und Schreibvorgänge).
+
+
+
+=== Schwellwertreduzierung
+
+Um zusätzliche Ausgaben zu vermeiden, sollten Sie in Erwägung ziehen, bei der Verwendung von Preisschemata für Objektspeicher, die die Storage-Kosten verringern, jedoch die Kosten für Lesevorgänge erhöhen, die Schwellenwerte für nicht zurückgewonnener Speicherplatz zu verringern. Hierzu zählen beispielsweise Amazon Standard-IA und Azure Blob Storage Cool.
+
+So kann beispielsweise das Tiering einer Menge von 10 Jahre alten Projekten, die aus rechtlichen Gründen gespeichert wurden, bei der Verwendung eines Preisschemas wie Standard-IA oder Cool günstiger sein als bei der Verwendung von Standardpreisregelungen. Lesezugriffe sind für ein solches Volume zwar teurer, einschließlich der für die Objektdefragmentierung erforderlichen Lesezugriffe, werden aber wahrscheinlich nicht häufig auftreten.
+
+
+
+=== Schwellenwert erhöht sich
+
+Alternativ können Sie auch Schwellenwerte für nicht zurückgewonnener Speicherplatz erhöhen, wenn durch Objektfragmentierung erheblich mehr Kapazität von Objektspeicher verwendet wird, als für die Daten erforderlich ist, auf die von ONTAP referenziert wird. Wenn beispielsweise in einem Worst-Case-Szenario ein nicht zurückgewonnener Speicherplatz-Schwellenwert von 20 % verwendet wird, bei dem alle Objekte zum maximal zulässigen Umfang gleich fragmentiert sind, bedeutet dies, dass 80 % der Gesamtkapazität in der Cloud-Tier von ONTAP nicht referenziert werden können. Beispiel:
+
+2 TB auf ONTAP verwiesen + 8 TB ohne Verweis von ONTAP = 10 TB Gesamtkapazität, die von der Cloud-Tier verwendet wird
+
+In dieser Situation ist es vorteilhaft, den Schwellenwert für nicht zurückgewonnenen Speicherplatz zu erhöhen oder die Mindestkühltage für Volumes zu erhöhen, um die Kapazität zu verringern, die von nicht referenzierten Blöcken verwendet wird.
+
+[NOTE]
+====
+Wenn Objekte defragmentiert und Storage-effizienter gemacht werden, können zugrunde liegende Dateien stärker fragmentiert werden, wenn referenzierte Blöcke auf neue, effizientere Objekte geschrieben werden. Aus diesem Grund führt eine deutliche Erhöhung des nicht zurückgewonnener Speicherplatz zu Objekten mit höherer Storage-Effizienz, aber möglicherweise auch einer verminderten sequenziellen Lese-Performance.
+
+====
+
+
+== Ändern Sie den Schwellenwert für nicht zurückgewonnenen Speicherplatz
+
+Sie können den Prozentsatz des nicht zurückgewonnener Speicherplatz für verschiedene Objektspeicher anpassen.
+
+.Bevor Sie beginnen
+Eine erweiterte Berechtigungsebene ist erforderlich.
+
+.Schritte
+. Um den standardmäßigen Schwellenwert für nicht zurückgewonnenen Speicherplatz zu ändern, passen Sie den folgenden Befehl an und führen Sie ihn aus:
++
+[source, cli]
+----
+storage aggregate object-store modify -aggregate <name> -object-store-name <name> -unreclaimedspace-threshold <%> (0%-99%)
+----
+

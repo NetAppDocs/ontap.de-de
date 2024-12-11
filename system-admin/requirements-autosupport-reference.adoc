@@ -1,8 +1,8 @@
 ---
-sidebar: sidebar 
 permalink: system-admin/requirements-autosupport-reference.html 
-keywords: requirements, autosupport, messages, http, https, smtp, smtps 
-summary: Sie müssen HTTPS mit TLSv1.2 oder sicheren SMTP für die Bereitstellung von AutoSupport-Nachrichten verwenden, um die beste Sicherheit zu gewährleisten und die neuesten AutoSupport-Funktionen zu unterstützen. 
+sidebar: sidebar 
+keywords: requirements, autosupport, messages, https, smtp, smtps, tls, email, proxy, certificate, validation 
+summary: Sie müssen HTTPS mit TLSv1.2 oder SMTPS für die Bereitstellung von AutoSupport Nachrichten verwenden, um die bestmögliche Sicherheit zu bieten und die neuesten AutoSupport Funktionen zu unterstützen. 
 ---
 = Bereiten Sie die Verwendung von AutoSupport vor
 :allow-uri-read: 
@@ -17,63 +17,49 @@ Sie können ein ONTAP-Cluster konfigurieren, um AutoSupport-Meldungen an NetApp 
 
 == AutoSupport-Nachrichten an NetApp senden
 
-AutoSupport-Meldungen können entweder über das HTTP- oder SMTP-Protokoll an NetApp gesendet werden. Zur Verbesserung der Sicherheit können Sie TLS mit HTTP verwenden. Ab ONTAP 9.15.1 können Sie TLS auch mit SMTP verwenden.
+AutoSupport-Meldungen können entweder über HTTPS- oder SMTP-Protokolle an NetApp gesendet werden. Ab ONTAP 9.15.1 können Sie TLS auch mit SMTP verwenden.
 
 
-TIP: Verwenden Sie HTTP mit TLS (HTTPS), wenn möglich.
+TIP: Verwenden Sie nach Möglichkeit HTTPS zur Kommunikation mit AutoSupport OnDemand und zum Hochladen großer Dateien.
 
 Beachten Sie auch Folgendes:
 
 * Für die AutoSupport-Meldungen kann nur ein Ausgabekanal an NetApp konfiguriert werden. Sie können nicht zwei Protokolle verwenden, um AutoSupport Meldungen an NetApp zu übermitteln.
 * AutoSupport begrenzt die maximale Dateigröße für jedes Protokoll. Wenn die Größe einer AutoSupport Meldung das konfigurierte Limit überschreitet, liefert AutoSupport so viele Meldungen wie möglich, doch wird ein Trunking durchgeführt.
-* Sie können die maximale Dateigröße bei Bedarf ändern.  `system node autosupport modify`Weitere Informationen finden Sie im Befehl.
+* Sie können die maximale Dateigröße bei Bedarf ändern. Weitere Informationen zum[`system node autosupport modify` ^]-Befehl finden Sie in der ONTAP-Befehlsreferenz.
 * Beide Protokolle können basierend auf der Adressenfamilie, in die der Name aufgelöst wird, über IPv4 oder IPv6 übertragen werden.
 * Die TCP-Verbindung, die von ONTAP zum Senden von AutoSupport-Nachrichten eingerichtet wurde, ist vorübergehend und nur von kurzer Dauer.
 
 
 
 
-=== HTTP
+=== HTTPS
 
 Dies bietet die robustesten Funktionen. Beachten Sie Folgendes:
 
 * AutoSupport OnDemand und die Übertragung großer Dateien werden unterstützt.
-* Es wird zuerst versucht, eine HTTP-PUT-Anforderung zu stellen. Wenn die Anforderung während der Übertragung fehlschlägt, wird die Anforderung an der Stelle neu gestartet, an der sie angehalten wurde.
-* Wenn der Server PUT nicht unterstützt, wird stattdessen die HTTP-POST-Methode verwendet.
-* Die Standardeinstellung für HTTP-Übertragungen ist 50 MB.
-* Das ungesicherte HTTP-Protokoll verwendet Port 80.
+* Es wird zuerst versucht, eine HTTPS-PUT-Anforderung zu stellen. Wenn die Anforderung während der Übertragung fehlschlägt, wird die Anforderung an der Stelle neu gestartet, an der sie angehalten wurde.
+* Wenn der Server PUT nicht unterstützt, wird stattdessen die HTTPS-POST-Methode verwendet.
+* Die Standardeinstellung für HTTPS-Übertragungen ist 50 MB.
+* Das HTTPS-Protokoll verwendet Port 443.
 
 
 
 
 === SMTP
 
-Als allgemeine Regel sollten Sie SMTP nur verwenden, wenn HTTPS/HTTP aus irgendeinem Grund nicht zulässig oder nicht unterstützt ist. Beachten Sie Folgendes:
+Als allgemeine Regel sollten Sie SMTP nur verwenden, wenn HTTPS nicht zulässig ist oder nicht unterstützt wird. Beachten Sie Folgendes:
 
 * AutoSupport OnDemand und Übertragungen großer Dateien werden nicht unterstützt.
 * Wenn SMTP-Anmeldeinformationen konfiguriert sind, werden sie unverschlüsselt und im Klaren gesendet.
-* Die Standardeinstellung für HTTP-Übertragungen ist 5 MB.
+* Die Standardgrenze für Übertragungen beträgt 5 MB.
 * Das ungesicherte SMTP-Protokoll verwendet Port 25.
 
 
+.Verbessern Sie die SMTP-Sicherheit mit TLS
+Bei Verwendung von SMTP ist der gesamte Datenverkehr unverschlüsselt und kann leicht abgefangen und gelesen werden. Ab ONTAP 9.15.1 können Sie TLS auch mit SMTP (SMTPS) verwenden. In diesem Fall wird _Explicit TLS_ verwendet, der den sicheren Kanal aktiviert, nachdem die TCP-Verbindung hergestellt wurde.
 
-
-=== Verbessern Sie die Sicherheit mit TLS
-
-Bei Verwendung von HTTP oder SMTP ist der gesamte Datenverkehr unverschlüsselt und kann leicht abgefangen und gelesen werden. Bei der Verwendung von HTTP sollten Sie das Protokoll immer so konfigurieren, dass es auch TLS (HTTPS) verwendet.
-
-
-NOTE: Ab ONTAP 9.15.1 können Sie TLS auch mit SMTP (SMTPS) verwenden. In diesem Fall wird _Explicit TLS_ verwendet, der den sicheren Kanal aktiviert, nachdem die TCP-Verbindung hergestellt wurde.
-
-.Ports für sichere Protokolle
-Die folgenden Ports werden normalerweise für die sicheren Versionen dieser Protokolle verwendet:
-
-* HTTPS - Port 443
-* SMTPS - Port 587
-
-
-.Zertifikatvalidierung
-Mit TLS wird das vom Server heruntergeladene Zertifikat von ONTAP basierend auf dem Stammzertifizierungsstellenzertifikat validiert. Bevor Sie HTTPS oder SMTPS verwenden, müssen Sie sicherstellen, dass das Stammzertifikat in ONTAP installiert ist. Weitere Informationen finden Sie unter <<Installieren Sie das Serverzertifikat>> .
+Der folgende Port wird normalerweise für SMTPS verwendet: Port 587
 
 
 
@@ -81,9 +67,11 @@ Mit TLS wird das vom Server heruntergeladene Zertifikat von ONTAP basierend auf 
 
 Bei der Konfiguration von AutoSupport müssen zusätzlich einige Überlegungen angestellt werden.
 
+Weitere Informationen zu den Befehlen, die für diese Überlegungen relevant sind, finden Sie unter link:../system-admin/setup-autosupport-task.html["AutoSupport einrichten"].
 
 
-=== Senden einer lokalen Kopie per E-Mail
+
+=== Senden Sie eine lokale Kopie per E-Mail
 
 Unabhängig vom Protokoll, das zum Senden von AutoSupport-Nachrichten an NetApp verwendet wird, können Sie auch eine Kopie jeder Nachricht an eine oder mehrere lokale E-Mail-Adressen senden. Beispielsweise können Sie Meldungen an Ihre interne Support-Organisation oder an eine Partnerorganisation senden.
 
@@ -94,17 +82,17 @@ NOTE: Wenn Sie Nachrichten über SMTP (oder SMTPS) an NetApp senden und gleichze
 
 === HTTP-Proxy
 
-Abhängig von Ihrer Netzwerkkonfiguration erfordert das HTTPS-Protokoll möglicherweise eine zusätzliche Konfiguration einer Proxy-URL. Wenn HTTPS zum Senden von AutoSupport-Nachrichten an den technischen Support verwendet wird und Sie über einen Proxy verfügen, müssen Sie die URL für den Proxy angeben. Wenn der Proxy einen anderen Port als den Standardport (Port 3128) verwendet, können Sie den Port für diesen Proxy angeben. Optional können Sie auch einen Benutzernamen und ein Passwort für die Proxy-Authentifizierung angeben.
+Je nach Netzwerkkonfiguration erfordert das HTTPS-Protokoll möglicherweise eine zusätzliche Konfiguration einer Proxy-URL. Wenn HTTPS zum Senden von AutoSupport-Nachrichten an den technischen Support verwendet wird und Sie über einen Proxy verfügen, müssen Sie die URL für den Proxy angeben. Wenn der Proxy einen anderen Port als den Standardport (Port 3128) verwendet, können Sie den Port für diesen Proxy angeben. Optional können Sie auch einen Benutzernamen und ein Passwort für die Proxy-Authentifizierung angeben.
 
 
 
 == Installieren Sie das Serverzertifikat
 
-Wenn Sie TLS (HTTPS oder SMTPS) verwenden, müssen Sie sicherstellen, dass ONTAP das Serverzertifikat validieren kann. Diese Validierung erfolgt auf der Grundlage der Zertifizierungsstelle, die das Serverzertifikat signiert hat.
+Mit TLS (HTTPS oder SMTPS) wird das vom Server heruntergeladene Zertifikat anhand des Stammzertifizierungszertifikats von ONTAP validiert. Bevor Sie HTTPS oder SMTPS verwenden, müssen Sie sicherstellen, dass das Stammzertifikat in ONTAP installiert ist und dass ONTAP das Serverzertifikat validieren kann. Diese Validierung erfolgt auf der Grundlage der Zertifizierungsstelle, die das Serverzertifikat signiert hat.
 
-ONTAP enthält eine große Anzahl vorinstallierter Stammzertifizierungsstellen-Zertifikate. So wird in vielen Fällen das Zertifikat für Ihren Server sofort von ONTAP ohne zusätzliche Konfiguration erkannt. Je nachdem, wie das Serverzertifikat signiert wurde, müssen Sie möglicherweise ein Stammzertifizierungsstellenzertifikat und alle Zwischenzertifikate installieren.
+ONTAP enthält eine große Anzahl vorinstallierter Stammzertifizierungsstellen-Zertifikate. In vielen Fällen wird das Zertifikat für Ihren Server ohne zusätzliche Konfiguration sofort von ONTAP erkannt. Je nachdem, wie das Serverzertifikat signiert wurde, müssen Sie möglicherweise ein Stammzertifizierungsstellenzertifikat und alle Zwischenzertifikate installieren.
 
-Befolgen Sie die unten angegebenen Anweisungen, um das Zertifikat bei Bedarf zu installieren. Installieren Sie alle erforderlichen Zertifikate auf Cluster-Ebene.
+Gehen Sie wie folgt vor, um das Zertifikat bei Bedarf zu installieren. Installieren Sie alle erforderlichen Zertifikate auf Cluster-Ebene.
 
 .Schritte
 [role="tabbed-block"]
@@ -125,29 +113,41 @@ Befolgen Sie die unten angegebenen Anweisungen, um das Zertifikat bei Bedarf zu 
 --
 . Starten Sie die Installation:
 +
-`security certificate install -type server-ca`
-
+[source, cli]
+----
+security certificate install -type server-ca
+----
 . Suchen Sie nach der folgenden Konsolenmeldung:
 +
-`Please enter Certificate: Press <Enter> when done`
-
+[listing]
+----
+Please enter Certificate: Press <Enter> when done
+----
 . Öffnen Sie die Zertifikatdatei mit einem Texteditor.
 . Kopieren Sie das gesamte Zertifikat einschließlich der folgenden Zeilen:
 +
-`-----BEGIN CERTIFICATE-----`
-
+[listing]
+----
+-----BEGIN CERTIFICATE-----
+----
 +
-`-----END CERTIFICATE-----`
-
+[listing]
+----
+-----END CERTIFICATE-----
+----
 . Fügen Sie das Zertifikat nach der Eingabeaufforderung in das Terminal ein.
 . Drücken Sie *Enter*, um die Installation abzuschließen.
-. Vergewissern Sie sich, dass das Zertifikat installiert ist, indem Sie eine der folgenden Methoden verwenden:
+. Überprüfen Sie, ob das Zertifikat installiert ist, indem Sie einen der folgenden Befehle ausführen:
 +
-`security certificate show-user-installed`
-
+[source, cli]
+----
+security certificate show-user-installed
+----
 +
-`security certificate show`
-
+[source, cli]
+----
+security certificate show
+----
 
 
 --
