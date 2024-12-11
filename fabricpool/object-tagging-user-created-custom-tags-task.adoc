@@ -1,7 +1,7 @@
 ---
 permalink: fabricpool/object-tagging-user-created-custom-tags-task.html 
 sidebar: sidebar 
-keywords: object, tagging, user-created, custom tags, fabricpool, fabric pool, sort 
+keywords: object, tagging, user-created, custom tags, fabricpool, fabric pool, sort, fabricpool sorting, fabricpool data 
 summary: Ab ONTAP 9.8 unterstützt FabricPool das Objekt-Tagging mithilfe benutzererstellter benutzerdefinierter Tags, damit Sie Objekte einfacher managen können. Wenn Sie als Benutzer mit der Administratorberechtigungsebene arbeiten, können Sie neue Objekt-Tags erstellen und vorhandene Tags ändern, löschen und anzeigen. 
 ---
 = Objekt-Tagging unter Verwendung benutzerdefinierter Tags im Überblick
@@ -12,3 +12,173 @@ summary: Ab ONTAP 9.8 unterstützt FabricPool das Objekt-Tagging mithilfe benutz
 
 [role="lead"]
 Ab ONTAP 9.8 unterstützt FabricPool das Objekt-Tagging mithilfe benutzererstellter benutzerdefinierter Tags, damit Sie Objekte einfacher managen können. Wenn Sie als Benutzer mit der Administratorberechtigungsebene arbeiten, können Sie neue Objekt-Tags erstellen und vorhandene Tags ändern, löschen und anzeigen.
+
+
+
+== Weisen Sie während der Volume-Erstellung ein neues Tag zu
+
+Sie können ein neues Objekt-Tag erstellen, wenn Sie neuen Objekten, die von einem neu erstellten Volume abgestuft werden, ein oder mehrere Tags zuweisen möchten. Mithilfe von Tags können Sie Tiering-Objekte klassifizieren und sortieren, was sich einfacheres Datenmanagement ermöglicht. Ab ONTAP 9.8 können Sie mit System Manager Objekt-Tags erstellen.
+
+.Über diese Aufgabe
+Sie können Tags nur auf FabricPool Volumes festlegen, die an StorageGRID angeschlossen sind. Diese Tags werden während der Verschiebung eines Volumes beibehalten.
+
+* Es sind maximal 4 Tags pro Volume zulässig.
+* In der CLI muss jedes Objekt-Tag ein Schlüssel-Wert-Paar sein, das durch ein Gleichheitszeichen getrennt ist.
+* In der CLI müssen mehrere Tags durch ein Komma getrennt werden.
+* Jeder Tag-Wert kann maximal 127 Zeichen enthalten.
+* Jeder Tag-Schlüssel muss entweder mit einem alphabetischen Zeichen oder einem Unterstrich beginnen.
++
+Schlüssel dürfen nur alphanumerische Zeichen und Unterstriche enthalten, und die maximal zulässige Anzahl von Zeichen beträgt 127.
+
+
+
+Sie können Objekt-Tags mit ONTAP System Manager oder der ONTAP CLI zuweisen.
+
+.Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie zu *Storage > Tiers*.
+. Suchen Sie eine Storage Tier mit Volumes, die markiert werden sollen.
+. Klicken Sie auf die Registerkarte *Volumes*.
+. Suchen Sie das gewünschte Volume und wählen Sie in der Spalte *Object Tags* die Option *Klicken Sie, um Tags* einzugeben.
+. Geben Sie einen Schlüssel und einen Wert ein.
+. Klicken Sie Auf *Anwenden*.
+
+
+--
+.CLI
+--
+. Verwenden Sie den `volume create` Befehl mit der `-tiering-object-tags` Option, um ein neues Volume mit den angegebenen Tags zu erstellen. Sie können mehrere Tags in kommagetrennten Paaren angeben:
++
+[listing]
+----
+volume create [ -vserver <vserver name> ] -volume <volume_name> -tiering-object-tags <key1=value1> [,<key2=value2>,<key3=value3>,<key4=value4> ]
+----
++
+Im folgenden Beispiel wird ein Volume mit dem Namen „fp_Volume1“ mit drei Objekt-Tags erstellt.
+
++
+[listing]
+----
+vol create -volume fp_volume1 -vserver vs0 -tiering-object-tags project=fabricpool,type=abc,content=data
+----
+
+
+--
+====
+
+
+== Ändern Sie ein vorhandenes Tag
+
+Sie können den Namen eines Tags ändern, Tags für vorhandene Objekte im Objektspeicher ersetzen oder neuen Objekten, die Sie später hinzufügen möchten, ein anderes Tag hinzufügen.
+
+.Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie zu *Storage > Tiers*.
+. Suchen Sie eine Speicherebene mit Volumes, die Tags enthalten, die Sie ändern möchten.
+. Klicken Sie auf die Registerkarte *Volumes*.
+. Suchen Sie das Volume mit Tags, die Sie ändern möchten, und klicken Sie in der Spalte *Object Tags* auf den Tag-Namen.
+. Tag ändern.
+. Klicken Sie Auf *Anwenden*.
+
+
+--
+.CLI
+--
+. Verwenden Sie den `volume modify` Befehl mit der `-tiering-object-tags` Option, um ein vorhandenes Tag zu ändern.
++
+[listing]
+----
+volume modify [ -vserver <vserver name> ] -volume <volume_name> -tiering-object-tags <key1=value1> [ ,<key2=value2>,
+<key3=value3>,<key4=value4> ]
+----
++
+Im folgenden Beispiel wird der Name des vorhandenen Tag type=abc in type=xyz geändert.
+
++
+[listing]
+----
+vol create -volume fp_volume1 -vserver vs0 -tiering-object-tags project=fabricpool,type=xyz,content=data
+----
+
+
+--
+====
+
+
+== Tag löschen
+
+Sie können Objekt-Tags löschen, wenn sie nicht mehr auf einem Volume oder auf Objekten im Objektspeicher festgelegt werden sollen.
+
+.Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Navigieren Sie zu *Storage > Tiers*.
+. Suchen Sie eine Speicherebene mit Volumes, die Tags enthalten, die Sie löschen möchten.
+. Klicken Sie auf die Registerkarte *Volumes*.
+. Suchen Sie das Volume mit Tags, die Sie löschen möchten, und klicken Sie in der Spalte *Object Tags* auf den Tag-Namen.
+. Um das Tag zu löschen, klicken Sie auf das Papierkorb-Symbol.
+. Klicken Sie Auf *Anwenden*.
+
+
+--
+.CLI
+--
+. Verwenden Sie den `volume modify` Befehl mit der `-tiering-object-tags` Option gefolgt von einem leeren Wert (`""`), um ein vorhandenes Tag zu löschen.
++
+Im folgenden Beispiel werden die vorhandenen Tags auf fp_Volume1 gelöscht.
+
++
+[listing]
+----
+vol modify -volume fp_volume1 -vserver vs0 -tiering-object-tags ""
+----
+
+
+--
+====
+
+
+== Vorhandene Tags für ein Volume anzeigen
+
+Sie können die vorhandenen Tags auf einem Volume anzeigen, um zu sehen, welche Tags verfügbar sind, bevor Sie neue Tags an die Liste anhängen.
+
+.Schritte
+. Verwenden Sie den `volume show` Befehl mit der `tiering-object-tags` Option, um vorhandene Tags auf einem Volume anzuzeigen.
++
+[listing]
+----
+volume show [ -vserver <vserver name> ] -volume <volume_name> -fields tiering-object-tags
+----
+
+
+
+
+== Prüfen des Objekt-Tagging auf FabricPool Volumes
+
+Sie können prüfen, ob Tagging auf einem oder mehreren FabricPool Volumes abgeschlossen ist.
+
+.Schritte
+. Verwenden Sie den `vol show` Befehl mit der `-fields needs-object-retagging` Option, um zu sehen, ob das Tagging ausgeführt wird, ob es abgeschlossen ist oder ob das Tagging nicht eingestellt ist.
++
+[listing]
+----
+vol show -fields needs-object-retagging  [ -instance | -volume <volume name>]
+----
++
+Einer der folgenden Werte wird angezeigt:
+
++
+** `true`: Der Objekt-Tagging-Scanner ist noch nicht gestartet oder muss für dieses Volume erneut laufen
+** `false`: Der Objekt-Tagging-Scanner hat das Tagging für dieses Volumen abgeschlossen
+** `+<->+`: Der Objekt-Tagging-Scanner ist für dieses Volumen nicht anwendbar. Dies geschieht für Volumes, die nicht in FabricPool liegen.
+
+
+

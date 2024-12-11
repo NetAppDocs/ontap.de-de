@@ -13,8 +13,91 @@ summary: Wenn Sie ab ONTAP 9.8 Cluster-Administratoren auf der erweiterten Berec
 [role="lead"]
 Ab ONTAP 9.8 können Sie als Cluster-Administrator auf der erweiterten Berechtigungsebene Daten proaktiv von der Cloud-Tier auf die Performance-Tier heraufstufen, indem Sie eine Kombination aus den `tiering-policy` und der `cloud-retrieval-policy` Einstellung verwenden.
 
-
-
-== Über diese Aufgabe
-
+.Über diese Aufgabe
 Möglicherweise möchten Sie dies tun, wenn Sie die Verwendung von FabricPool auf einem Volume beenden `snapshot-only` möchten oder wenn Sie über eine Tiering-Richtlinie verfügen und die wiederhergestellten Snapshot-Kopie-Daten zurück in die Performance-Tier bringen möchten.
+
+
+
+== Sämtliche Daten von einem FabricPool Volume auf die Performance-Tier übertragen
+
+Alle Daten können proaktiv auf einem FabricPool Volume in der Cloud-Tier abgerufen und in die Performance-Tier verschoben werden.
+
+.Schritte
+. Verwenden Sie den `volume modify` Befehl, um `tiering-policy` auf `none` und `cloud-retrieval-policy` auf zu setzen `promote`.
++
+[listing]
+----
+volume modify -vserver <vserver-name> -volume <volume-name> -tiering-policy none -cloud-retrieval-policy promote
+----
+
+
+
+
+== Übertragen von Dateisystemdaten auf die Performance-Tier
+
+Sie können aktive Dateisystemdaten proaktiv von einer wiederhergestellten Snapshot Kopie in der Cloud-Tier abrufen und auf die Performance-Tier übertragen.
+
+.Schritte
+. Verwenden Sie den `volume modify` Befehl, um `tiering-policy` auf `snapshot-only` und `cloud-retrieval-policy` auf zu setzen `promote`.
++
+[listing]
+----
+volume modify -vserver <vserver-name> -volume <volume-name> -tiering-policy snapshot-only cloud-retrieval-policy promote
+----
+
+
+
+
+== Überprüfen des Status einer Performance-Tier-Promotion
+
+Sie können den Status der Performance-Tier-Hochstufung überprüfen, um festzustellen, wann der Vorgang abgeschlossen ist.
+
+.Schritte
+. Verwenden Sie den Volume- `object-store`Befehl mit der `tiering` Option, um den Status der Performance-Tier-Heraufstufung zu überprüfen.
++
+[listing]
+----
+volume object-store tiering show [ -instance | -fields <fieldname>, ... ] [ -vserver <vserver name> ] *Vserver
+[[-volume] <volume name>] *Volume [ -node <nodename> ] *Node Name [ -vol-dsid <integer> ] *Volume DSID
+[ -aggregate <aggregate name> ] *Aggregate Name
+----
++
+[listing]
+----
+volume object-store tiering show v1 -instance
+
+                                  Vserver: vs1
+                                   Volume: v1
+                                Node Name: node1
+                              Volume DSID: 1023
+                           Aggregate Name: a1
+                                    State: ready
+                      Previous Run Status: completed
+                 Aborted Exception Status: -
+               Time Scanner Last Finished: Mon Jan 13 20:27:30 2020
+                 Scanner Percent Complete: -
+                      Scanner Current VBN: -
+                         Scanner Max VBNs: -
+      Time Waiting Scan will be scheduled: -
+                           Tiering Policy: snapshot-only
+     Estimated Space Needed for Promotion: -
+                        Time Scan Started: -
+  Estimated Time Remaining for scan to complete: -
+                    Cloud Retrieve Policy: promote
+----
+
+
+
+
+== Auslöser für geplante Migration und Tiering
+
+Ab ONTAP 9.8 können Sie jederzeit eine Tiering-Scan-Anfrage auslösen, wenn Sie nicht auf den standardmäßigen Tiering-Scan warten möchten.
+
+.Schritte
+. Verwenden Sie den `volume object-store` Befehl mit der `trigger` Option, um Migration und Tiering anzufordern.
++
+[listing]
+----
+volume object-store tiering trigger [ -vserver <vserver name> ] *VServer Name [-volume] <volume name> *Volume Name
+----
+
