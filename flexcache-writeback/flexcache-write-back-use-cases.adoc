@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: tr-4743, flexcache writeback, flexcache write-back, use cases, workloads, technical report, netapp tr, ontap tr 
 summary: Dies sind Schreibprofile, die sich am besten für eine schreibBack-fähige FlexCache eignen. Sie sollten Ihren Workload testen, um festzustellen, ob Write-Back- oder Write-Around die beste Performance bietet. 
 ---
-= FlexCache Nutzungsfälle für die Rückschreibung
+= Anwendungsfälle für die ONTAP FlexCache-Rückschreibung
 :allow-uri-read: 
 
 
@@ -21,17 +21,19 @@ NOTE: Write-Back ist kein Ersatz für Write-Around. Obwohl Write-Back-Anwendunge
 .Dateigröße
 Die Dateigröße ist weniger wichtig als die Anzahl der Schreibvorgänge, die zwischen dem und -Aufrufen für eine Datei ausgegeben `OPEN` `CLOSE` wurden. Kleine Dateien haben von Natur aus weniger `WRITE` Anrufe, wodurch sie weniger ideal für das Zurückschreiben sind. Große Dateien können mehr Schreibvorgänge zwischen und Aufrufen haben `OPEN` `CLOSE` , aber dies ist nicht garantiert.
 
+Auf der link:../flexcache-writeback/flexcache-write-back-guidelines.html["FlexCache-Rückschreibrichtlinien"] Seite finden Sie die aktuellen Empfehlungen zur maximalen Dateigröße.
+
 .Schreibgröße
-Beim Schreiben von einem Client sind andere NAS-Anrufe außer Schreibanrufe beteiligt:
+Beim Schreiben von einem Client sind andere modifizierende NAS-Anrufe außer Schreibanrufe beteiligt. Dazu gehören unter anderem:
 
 * `CREATE`
 * `OPEN`
 * `CLOSE`
-* `READDIR/READDIRPLUS`
-*  `SETATTR`: `SETATTR` Aufrufe, die nur ändern `mtime`, `atime`oder `ctime` im Cache verarbeitet werden.
+* `SETATTR`
+* `SET_INFO`
 
 
-Diese Aufrufe müssen am Ursprung verarbeitet werden und einen Rückschreib aller schmutzigen Daten auslösen, die im schreibrückaktivierten Cache für die Datei gesammelt werden, auf der ausgeführt wird. IO auf die Datei wird stillgelegt, bis der Schreibvorgang abgeschlossen ist.
+`SETATTR` Und `SET_INFO` Aufrufe, die gesetzt `mtime`, , , , `atime` `ctime` `owner` `group` oder `size` werden im Cache verarbeitet. Der Rest dieser Aufrufe muss am Ursprung verarbeitet werden und einen Rückschreibvorgang für alle schmutzigen Daten auslösen, die im schreibBack-aktivierten Cache für die Datei gesammelt werden, auf der ausgeführt wird. IO auf die Datei wird stillgelegt, bis der Schreibvorgang abgeschlossen ist.
 
 Wenn Sie wissen, dass diese Anrufe das WAN durchlaufen müssen, können Sie Workloads identifizieren, die sich für Write-Back eignen. Je mehr Schreibvorgänge zwischen `OPEN` und `CLOSE` Anrufen erfolgen können, ohne dass einer der oben aufgeführten Anrufe ausgegeben wird, desto besser ist die Performance-Steigerung des Rückschreibens.
 
@@ -48,7 +50,7 @@ Wenn eine Datei schmutzige Daten in einem Cache akkumuliert, schreibt der Cache 
 
 == Überlegungen zur Latenz
 
-Wenn FlexCache im Write-Back-Modus arbeitet, ist dies für NAS-Clients mit zunehmender Latenz vorteilhafter. Es gibt jedoch einen Punkt, an dem der Overhead von Write-Back die Vorteile überwiegt, die in Umgebungen mit niedriger Latenz erzielt werden. In einigen NetApp-Tests führten die Vorteile bei Write-Back zu einer minimalen Latenz zwischen Cache und Ursprung von 8 ms. Diese Latenz variiert je nach Workload. Stellen Sie daher sicher, dass Sie die Vorteile Ihres Nutzens genau kennen.
+Wenn FlexCache im Write-Back-Modus arbeitet, ist dies für NAS-Clients mit zunehmender Latenz vorteilhafter. Es gibt jedoch einen Punkt, an dem der Overhead von Write-Back die Vorteile überwiegt, die in Umgebungen mit niedriger Latenz erzielt werden. In einigen NetApp-Tests führten die Write-Back-Ergebnisse zu einer minimalen Latenz zwischen Cache und Ursprung von 8 ms. Diese Latenz variiert je nach Workload. Stellen Sie daher sicher, dass Sie den Endpunkt Ihres Workloads kennen.
 
 Das folgende Diagramm zeigt den Rückgabepunkt für den Rückschreibvorgang in NetApp Labortests. Die `x` Achse ist die Dateigröße und die `y` Achse die verstrichene Zeit. Bei dem Test wurde NFSv3 verwendet, wobei ein und 256 KB und 64 ms WAN-Latenz gemountet `rsize` `wsize` werden. Dieser Test wurde mit einer kleinen ONTAP Select-Instanz sowohl für den Cache als auch für den Ursprungs sowie mit einem einzigen Thread-Schreibvorgang durchgeführt. Ihre Ergebnisse können variieren.
 

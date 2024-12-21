@@ -1,0 +1,40 @@
+---
+permalink: flexcache-writeback/flexcache-write-back-guidelines.html 
+sidebar: sidebar 
+keywords: tr-4743, flexcache writeback, flexcache write-back, flexcache, write-back, write back, guidelines, best practices, performance, ontap tr, netapp tr 
+summary: Folgen Sie diesen Richtlinien, um eine optimale Leistung bei der Verwendung von FlexCache Write-Back zu gewährleisten. 
+---
+= ONTAP FlexCache-Rückschreibrichtlinien
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+FlexCache Write-Back umfasst viele komplexe Interaktionen zwischen Ursprung und Cache. Um eine optimale Performance zu erzielen, sollten Sie sicherstellen, dass Ihre Umgebung diese Richtlinien befolgt. Diese Richtlinien basieren auf der neuesten größeren ONTAP-Version (ONTAP 9.15.1), die zum Zeitpunkt der Content-Erstellung verfügbar ist.
+
+**BEST PRACTICE:** Testen Sie Ihren Produktionsaufwand in einer nicht-produktiven Umgebung. Das ist noch wichtiger, wenn Sie FlexCache Write-Back außerhalb dieser Richtlinien implementieren.
+
+Die folgenden Richtlinien wurden intern bei NetApp ausführlich getestet. Es wird *_stark_* empfohlen, dass Sie in ihnen bleiben. Andernfalls kann es zu unerwartetem Verhalten kommen.
+
+* ONTAP 9.15.1P5 bietet wesentliche Verbesserungen für die FlexCache Write-Back-Funktionen. Es wird *_stark_* empfohlen, dass Sie die aktuelle empfohlene Version nach 9.15.1P5 sowohl am Ursprung als auch im Cache-Cluster ausführen.
+* In ihrer aktuellen Version sollten die FlexCache Write-Back-Caches mit einer einzigen Komponente für das gesamte FlexCache Volume konfiguriert werden. FlexCaches mit mehreren Bestandteilen kann zu unerwünschtem Entfernen von Daten aus dem Cache führen.
+* Die Tests wurden für Dateien mit einer Größe von weniger als 100 GB und für WAN-Umgehungszeiten zwischen Cache und Ursprung von maximal 100 ms durchgeführt. Alle Workloads, die außerhalb dieser Grenzwerte liegen, können zu unerwarteten Performance-Merkmalen führen.
+* Beim Schreiben in alternative SMB-Datenströme wird die Hauptdatei aus dem Cache entfernt. Alle schmutzigen Daten für die Hauptdatei müssen an den Ursprung gespült werden, bevor andere Vorgänge an dieser Datei stattfinden können. Der alternative Datenstrom wird auch an den Ursprung weitergeleitet.
+* Durch Umbenennen einer Datei wird die Datei aus dem Cache entfernt. Alle schmutzigen Daten für die Datei müssen an den Ursprung gespült werden, bevor andere Vorgänge an dieser Datei stattfinden können.
+* Derzeit können nur die folgenden Attribute für eine Datei auf dem schreibgeschützten FlexCache-Volume geändert oder festgelegt werden:
++
+** Zeitstempel
+** Modusbits
+** NT-ACLs
+** Eigentümer
+** Gruppieren
+** Größe
++
+Alle anderen Attribute, die geändert oder gesetzt werden, werden an den Ursprung weitergeleitet, was dazu führen kann, dass die Datei aus dem Cache entfernt wird. Wenn Sie andere Attribute ändern oder im Cache einstellen müssen, bitten Sie Ihr Account Team, ein PVR zu öffnen.
+
+
+
+* Snapshots, die am Ursprung aufgenommen wurden, verursachen den Abruf aller ausstehenden schmutzigen Daten aus jedem Rückschreibungs-aktivierten Cache, der mit diesem Ursprungsvolume verbunden ist. Dies kann mehrere Wiederholungen des Vorgangs erfordern, wenn erhebliche Write-Back-Aktivitäten ausgeführt werden, da das Entfernen dieser fehlerhaften Dateien einige Zeit in Anspruch nehmen kann.
+* Der Ursprung muss unter 80% voll bleiben. Cache-Volumes erhalten keine exklusiven Sperrdelegationen, wenn nicht mindestens 20 % des Speicherplatzes im Ursprungs-Volume verbleiben. Aufrufe zu einem Write-Back-aktivierten Cache werden in dieser Situation an den Ursprung weitergeleitet. Dadurch wird verhindert, dass der Speicherplatz am Ursprung knapp wird, was dazu führen würde, dass schmutzige Daten in einem Cache mit aktivierter Rückschreibfunktion verwaist bleiben.
+
