@@ -26,7 +26,7 @@ Standardmäßig werden neue Volumes mit ARP im deaktivierten Modus erstellt. ARP
 ARP wird auf vorhandenen Volumes nicht automatisch aktiviert. Die in diesem Verfahren beschriebenen Änderungen wirken sich nur auf neue Volumes aus. Erfahren Sie, wie man link:enable-task.html["Aktivieren Sie ARP für vorhandene Volumes"].
 
 * *Für ONTAP 9.10.1 bis 9.15.1 und ARP mit FlexGroup-Volumes* standardmäßig sind neue Volumes, die mit ARP aktiviert sind, auf den  (oder "Dry-Run") Modus eingestelltlink:index.html#learning-and-active-modes["Lernmodus"], in dem das System die Arbeitslast analysiert, um das normale Verhalten zu charakterisieren. Der Lernmodus kann manuell (alle ARP-Versionen) oder automatisch (ab ARP 9.13.1) in den aktiven Modus überführt werden. Mit ARP 9.13.1 und höher wurde das adaptive Lernen zu ARP-Analysen hinzugefügt, sodass der Wechsel vom Lernmodus zum aktiven Modus automatisch erfolgt.
-* *Für ONTAP 9.16.1 und höher mit FlexVol-Volumes* Wenn Sie ARP aktivieren, beginnt der ARP/AI-Schutz sofort im aktiven Modus. Es ist kein Lernzeitraum erforderlich.
+* *Für ONTAP 9.16.1 und höher mit FlexVol-Volumen* wenn Sie ARP aktivieren, ist der ARP/AI-Schutz sofort aktiviert und aktiv. Es ist kein Lernzeitraum erforderlich.
 
 
 .Bevor Sie beginnen
@@ -48,11 +48,7 @@ Sie können System Manager oder die ONTAP-CLI verwenden, um ARP auf neuen Volume
 . Aktivieren Sie das Kontrollkästchen, um ARP für NAS-Volumes zu aktivieren. Aktivieren Sie das Zusatzfeld, um ARP auf allen in Frage kommenden NAS-Volumes in der Speicher-VM zu aktivieren.
 +
 
-NOTE: Bei ONTAP 9.16.1 ist der aktive Modus bei neuen FlexVol Volumes automatisch standardmäßig aktiviert, ohne dass ein Lernzeitraum erforderlich ist.
-
-+
-
-NOTE: In bestehenden Volumes gelten der Lern- und der aktiv-Modus nur für neu geschriebene Daten, nicht für bereits vorhandene Daten im Volume. Die vorhandenen Daten werden nicht gescannt und analysiert, da die Merkmale eines früheren normalen Datenverkehrs auf der Grundlage der neuen Daten angenommen werden, nachdem das Volume für ARP aktiviert wurde.
+NOTE: Für ONTAP 9.16.1 ermöglichen diese Aktionen den ARP/AI-Schutz als Standard für neue FlexVol-Volumes. Es ist kein Lernzeitraum erforderlich.
 
 . Wenn Sie ein Upgrade auf ARP 9.13.1 oder höher durchgeführt haben, wählen Sie optional *automatisch vom Lernen zum aktiven Modus wechseln, nachdem Sie ausreichend gelernt haben*. Auf diese Weise kann ARP das optimale Lernintervall bestimmen und den Wechsel zum aktiven Modus automatisieren.
 
@@ -62,32 +58,36 @@ NOTE: In bestehenden Volumes gelten der Lern- und der aktiv-Modus nur für neu g
 --
 * Ändern Sie eine vorhandene SVM, um ARP standardmäßig in neuen Volumes zu aktivieren:
 +
-** Setzen Sie für ONTAP 9.15.1 und frühere Versionen und FlexGroup-Volumes den Standardstatus auf `dry-run` (Lernmodus):
+
+NOTE: Bei ONTAP 9.15.1 und älteren Versionen und FlexGroup Volumes werden die neuen Volumes im Lernmodus gestartet. Bei ONTAP 9.16.1 und höher mit FlexVol Volumes ist ARP/AI sofort aktiviert. Verwenden Sie in beiden Fällen `dry-run` als Wert.
+
 +
-`vserver modify -vserver <svm_name> -anti-ransomware-default-volume-state dry-run`
-
-** Stellen Sie für ONTAP 9.16.1 und höher mit ARP/AI- und FlexVol-Volumes den Standardstatus auf (aktiver Modus) ein `active`:
-+
-`vserver modify -vserver <svm_name> -anti-ransomware-default-volume-state active`
-
-
-
+[source, cli]
+----
+vserver modify -vserver <svm_name> -anti-ransomware-default-volume-state dry-run
+----
 * Neue SVM mit standardmäßig aktiviertem ARP für neue Volumes erstellen:
 +
-** Setzen Sie für ONTAP 9.15.1 und frühere Versionen und FlexGroup-Volumes den Standardstatus auf `dry-run` (Lernmodus):
+
+NOTE: Bei ONTAP 9.15.1 und älteren Versionen und FlexGroup Volumes werden die neuen Volumes im Lernmodus gestartet. Bei ONTAP 9.16.1 und höher mit FlexVol Volumes ist ARP/AI sofort aktiviert. Verwenden Sie in beiden Fällen `dry-run` als Wert.
+
 +
-`vserver create -vserver <svm_name> -anti-ransomware-default-volume-state dry-run <other parameters as needed>`
-
-** Stellen Sie für ONTAP 9.16.1 und höher mit ARP/AI- und FlexVol-Volumes den Standardstatus auf (aktiver Modus) ein `active`:
+[source, cli]
+----
+vserver create -vserver <svm_name> -anti-ransomware-default-volume-state dry-run <other parameters as needed>
+----
+* Wenn Sie ein Upgrade auf ONTAP 9.13.1 bis ONTAP 9.15.1 durchgeführt haben und der Standardstatus lautet `dry-run`, ist das adaptive Lernen aktiviert, sodass die Statusänderung `active` automatisch erfolgt. Ändern Sie die vorhandene SVM, wenn dieses Verhalten nicht automatisch aktiviert werden soll:
 +
-`vserver modify -vserver <svm_name> -anti-ransomware-default-volume-state active`
-
-
-
-* Wenn Sie ein Upgrade auf ONTAP 9.13.1 oder höher durchgeführt haben und der Standardstatus lautet `dry-run`, wird das adaptive Lernen aktiviert, sodass der Wechsel zum aktiven Status automatisch erfolgt. Ändern Sie die vorhandene SVM, wenn dieses Verhalten nicht automatisch aktiviert werden soll:
+[source, cli]
+----
+vserver modify <svm_name> -anti-ransomware-auto-switch-from-learning-to-enabled false
+----
+* Überprüfen Sie, ob ARP-fähige Volumes `enabled` den Status aufweisen.
 +
-`vserver modify <svm_name> -anti-ransomware-auto-switch-from-learning-to-enabled false`
-
+[source, cli]
+----
+security anti-ransomware volume show
+----
 
 
 --

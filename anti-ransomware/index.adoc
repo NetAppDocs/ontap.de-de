@@ -24,8 +24,8 @@ Seit ONTAP 9.10.1 nutzt die Funktion Autonomous Ransomware Protection (ARP) Work
 
 Ab ONTAP 9.16.1 verbessert ARP die Cyber-Resilienz durch ein Machine-Learning-Modell für Ransomware-Analysen, das ständig neue Formen von Ransomware mit einer Genauigkeit von 99 % erkennt. Das Machine-Learning-Modell von ARP ist sowohl vor als auch nach einem simulierten Ransomware-Angriff auf einen großen Datensatz mit Dateien vortrainiert. Dieses ressourcenintensive Training findet außerhalb von ONTAP statt, aber das Lernen aus diesem Training wird für das Modell in ONTAP verwendet.
 
-.Sofortiger Übergang in den aktiven Modus für ARP/AI mit FlexVol Volumes
-Mit ARP/AI und FlexVol Volumen, gibt es kein <<Lernen und aktive Modi,Lernzeitraum>>. ARP/AI beginnt im aktiven Modus unmittelbar nach der Installation oder dem Upgrade auf 9.16. Nach der Aktualisierung des Clusters auf ONTAP 9.16.1 wird ARP/AI automatisch für vorhandene und neue FlexVol Volumes aktiviert, wenn ARP bereits für diese Volumes aktiviert ist.
+.Sofortiger Übergang zu aktiver Sicherung für ARP/AI mit FlexVol Volumes
+Mit ARP/AI und FlexVol Volumen, gibt es kein <<Lernen und aktive Modi,Lernzeitraum>>. ARP/AI ist unmittelbar nach der Installation oder dem Upgrade auf 9.16 aktiviert und aktiv. Nach der Aktualisierung des Clusters auf ONTAP 9.16.1 wird ARP/AI automatisch für vorhandene und neue FlexVol Volumes aktiviert, wenn ARP bereits für diese Volumes aktiviert ist.
 
 link:enable-arp-ai-with-au.html["Erfahren Sie mehr über die Aktivierung von ARP/AI"]
 
@@ -106,11 +106,14 @@ NOTE: Kein Ransomware-Erkennungs- oder Präventionssystem kann die Sicherheit be
 
 == Lernen und aktive Modi
 
-ARP verfügt über zwei Modi:
+Für alle ARP, die mit ONTAP 9.10.1 bis 9.15.1 laufen und ARP für FlexGroup-Volumes mit ONTAP 9.16.1 verwendet wird, hat ARP zwei Modi:
 
 * *Lernmodus* (oder „Trockenlauf“-Modus)
 * *Aktiver Modus* (oder "aktiviert" Modus)
 
+
+
+NOTE: Mit ARP/AI ab ONTAP 9.16.1, gibt es keine Lernphase, in der ARP mit FlexVol Volumes verwendet wird. ARP/AI auf FlexVol Volumes ist unmittelbar nach der Installation oder einem Upgrade auf 9.16.1 aktiviert und aktiv. Wenn Sie ONTAP 9.16.1 und ARP mit FlexGroup Volumes verwenden, ist vor der Umstellung auf den aktiven Modus noch ein Lernzeitraum erforderlich.
 
 .Lernmodus
 Für alle ARP, die mit ONTAP 9.10.1 bis 9.15.1 ausgeführt werden und ARP für FlexGroup-Volumes mit ONTAP 9.16.1 verwendet wird, läuft ARP im _Learning-Modus_. Im Lernmodus entwickelt das ONTAP System ein Warnmeldungsprofil auf der Grundlage der Analysebereiche Entropie, Dateierweiterungstypen und Datei-IOPS. Nachdem Sie ARP im Learning-Modus ausreichend Zeit ausgeführt haben, um Workload-Merkmale zu bewerten, können Sie in den aktiven Modus wechseln und mit dem Schutz Ihrer Daten beginnen.
@@ -121,9 +124,7 @@ Es wird empfohlen, ARP 30 Tage lang im Lernmodus zu belassen. Ab ONTAP 9.13.1 be
 TIP: Der Befehl `security anti-ransomware volume workload-behavior show` zeigt Dateierweiterungen an, die im Volume erkannt wurden. Wenn Sie diesen Befehl früh im Lernmodus ausführen und er eine genaue Darstellung der Dateitypen zeigt, sollten Sie diese Daten nicht als Grundlage für den Wechsel in den aktiven Modus verwenden, da ONTAP weiterhin andere Metriken sammelt.
 
 .Aktiver Modus
-Bei ARP, die mit ONTAP 9.10.1 bis 9.15.1 ausgeführt werden, wechselt ARP nach Abschluss des optimalen Lernintervalls in den _aktiven Modus_. Mit ARP/AI ab ONTAP 9.16.1, gibt es keine Lernphase, in der ARP mit FlexVol Volumes verwendet wird. ARP/AI auf FlexVol Volumes beginnt unmittelbar nach der Installation oder dem Upgrade auf 9.16.1 im aktiven Modus. Wenn Sie ONTAP 9.16.1 und ARP mit FlexGroup Volumes verwenden, ist vor der Umstellung auf den aktiven Modus noch ein Lernzeitraum erforderlich.
-
-Nachdem ARP in den aktiven Modus gewechselt ist, erstellt ONTAP ARP-Snapshots, um die Daten zu schützen, wenn eine Bedrohung erkannt wird.
+Bei ARP, die mit ONTAP 9.10.1 bis 9.15.1 ausgeführt werden, wechselt ARP nach Abschluss des optimalen Lernintervalls in den _aktiven Modus_. Nachdem ARP in den aktiven Modus gewechselt ist, erstellt ONTAP ARP-Snapshots, um die Daten zu schützen, wenn eine Bedrohung erkannt wird.
 
 Wenn im aktiven Modus eine Dateierweiterung als anormal gekennzeichnet ist, sollten Sie die Warnmeldung auswerten. Sie können auf die Warnung reagieren, um Ihre Daten zu schützen, oder Sie können die Warnung als falsch positiv markieren. Wenn Sie eine Warnung als falsch positiv markieren, wird das Warnungsprofil aktualisiert. Wenn die Warnmeldung beispielsweise durch eine neue Dateierweiterung ausgelöst wird und Sie die Warnmeldung als falsch positiv markieren, erhalten Sie beim nächsten Mal keine Warnmeldung, wenn diese Dateierweiterung beobachtet wird.
 
@@ -134,7 +135,7 @@ NOTE: Ab ONTAP 9.11.1 können Sie die Erkennungsparameter für ARP anpassen. Wei
 
 == Bedrohungsbewertung und ARP-Snapshots
 
-Im aktiven Modus bewertet ARP die Bedrohungswahrscheinlichkeit anhand eingehender Daten, die mit gelernten Analysen gemessen werden. Eine Messung wird zugewiesen, wenn ARP eine Bedrohung erkennt:
+Wenn ARP aktiv ist und sich nicht im Lernmodus befindet, bewertet ARP die Bedrohungswahrscheinlichkeit anhand eingehender Daten, die mit gelernten Analysen gemessen werden. Eine Messung wird zugewiesen, wenn ARP eine Bedrohung erkennt:
 
 * *Low*: Früheste Erkennung einer Anomalie im Volume (z.B. wird eine neue Dateierweiterung im Volume beobachtet). Diese Erkennungsstufe ist nur in Versionen vor ONTAP 9.16.1 verfügbar, die nicht über ARP/AI verfügen.
 * *Mittel*: Es werden mehrere Dateien mit derselben nie gesehenen Dateierweiterung beobachtet.
@@ -147,9 +148,9 @@ Im aktiven Modus bewertet ARP die Bedrohungswahrscheinlichkeit anhand eingehende
 
 In einer Situation mit geringen Bedrohungen erkennt ONTAP eine Anomalie und erstellt einen Snapshot des Volumes, um den besten Recovery-Punkt zu erstellen. ONTAP setzt den Namen des ARP-Snapshots voraus `Anti-ransomware-backup`, um ihn leicht identifizierbar zu machen, zum Beispiel `Anti_ransomware_backup.2022-12-20_1248` .
 
-Die Bedrohung wird eskaliert und mäßig, nachdem ONTAP einen Analysebericht ausgeführt hat und festgestellt hat, ob die Anomalie mit einem Ransomware-Profil übereinstimmt. Bedrohungen, die auf der niedrigen Ebene bleiben, werden protokolliert und im Abschnitt **Ereignisse** von System Manager sichtbar. Wenn die Angriffswahrscheinlichkeit mäßig ist, generiert ONTAP eine EMS-Benachrichtigung, in der Sie aufgefordert werden, die Bedrohung zu bewerten. ONTAP sendet keine Warnungen über niedrige Bedrohungen, jedoch beginnend mit ONTAP 9.14.1, können Sie xref:manage-parameters-task.html#modify-alerts[Ändern Sie die Einstellungen für Warnmeldungen]. Weitere Informationen finden Sie unter xref:respond-abnormal-task.html[Reagieren Sie auf ungewöhnliche Aktivitäten].
+Die Bedrohung wird eskaliert und mäßig, nachdem ONTAP einen Analysebericht ausgeführt hat und festgestellt hat, ob die Anomalie mit einem Ransomware-Profil übereinstimmt. Wenn die Angriffswahrscheinlichkeit mäßig ist, generiert ONTAP eine EMS-Benachrichtigung, in der Sie aufgefordert werden, die Bedrohung zu bewerten. ONTAP sendet keine Warnungen über niedrige Bedrohungen, jedoch beginnend mit ONTAP 9.14.1, können Sie xref:manage-parameters-task.html#modify-alerts[Ändern Sie die Einstellungen für Warnmeldungen]. Weitere Informationen finden Sie unter xref:respond-abnormal-task.html[Reagieren Sie auf ungewöhnliche Aktivitäten].
 
-Sie können Informationen zu einer Bedrohung, unabhängig von der Ebene, im Abschnitt *Ereignisse* des System Managers oder mit dem Befehl anzeigen `security anti-ransomware volume show`.
+Sie können Informationen über moderate Bedrohungen im Abschnitt *Ereignisse* des System Managers oder mit dem Befehl anzeigen `security anti-ransomware volume show`. Ereignisse mit geringen Bedrohungen können auch mit dem Befehl in Versionen vor ONTAP 9.16.1 angezeigt werden `security anti-ransomware volume show`, die nicht über ARP/AI verfügen.
 
 Einzelne ARP-Snapshots werden zwei Tage aufbewahrt. Wenn mehrere ARP-Snapshots vorhanden sind, werden diese standardmäßig fünf Tage aufbewahrt. Ab ONTAP 9.11.1 können Sie die Aufbewahrungseinstellungen ändern. Weitere Informationen finden Sie unter xref:modify-automatic-shapshot-options-task.html[Ändern Sie die Optionen für Snapshots].
 
