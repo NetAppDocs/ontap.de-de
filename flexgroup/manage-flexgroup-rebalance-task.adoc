@@ -20,7 +20,7 @@ Die FlexGroup-Ausbalancierung hilft, die Kapazität neu zu verteilen, wenn Ungle
 Sie sollten sich bewusst sein, dass die FlexGroup-Ausbalancierung die Systemperformance beeinträchtigt, wenn große Mengen von Dateien im Rahmen eines einzelnen Ausbalancierungsereignisses oder durch mehrfache Ausbalancierungsereignisse aufgrund von mehrteiligen Inodes verschoben werden. Jede Datei, die im Rahmen eines Rebalancing-Ereignisses verschoben wurde, verfügt über 2 mehrteilige Inodes, die dieser Datei zugeordnet sind. Je größer die Anzahl der Dateien mit mehrteiligen Inodes als Prozentsatz der Gesamtzahl der Dateien in einem FlexGroup ist, desto größer ist die Auswirkung auf die Performance. Bestimmte Anwendungsfälle, wie z. B. die Konvertierung von FlexVol in FlexGroup, können zur Erzeugung einer Inode in mehreren Teilen führen.
 
 ====
-Rebalancing ist nur verfügbar, wenn auf allen Nodes im Cluster ONTAP 9.12.1 oder höher ausgeführt wird. Sie müssen die granulare Datenfunktionalität auf jedem FlexGroup Volume aktivieren, das die Ausbalancierung ausführt. Sobald diese Funktion aktiviert ist, können Sie nicht mehr auf ONTAP 9.11.1 und ältere Versionen zurücksetzen, es sei denn, Sie löschen dieses Volume oder stellen es aus einer Snapshot Kopie wieder her, die vor Aktivierung der Einstellung erstellt wurde.
+Rebalancing ist nur verfügbar, wenn auf allen Nodes im Cluster ONTAP 9.12.1 oder höher ausgeführt wird. Sie müssen die granulare Datenfunktionalität auf jedem FlexGroup Volume aktivieren, das die Ausbalancierung ausführt. Wenn diese Funktion aktiviert ist, können Sie nicht auf ONTAP 9.11.1 und frühere Versionen zurücksetzen, es sei denn, Sie löschen dieses Volume oder stellen es aus einem Snapshot wieder her, der vor Aktivierung der Einstellung erstellt wurde.
 
 Ab ONTAP 9.14.1 stellt ONTAP einen Algorithmus für das unterbrechungsfreie und proaktive Verschieben von Dateien in Volumes mit granularen Daten vor, die ohne Benutzerinteraktion aktiviert wurden. Der Algorithmus arbeitet in sehr spezifischen, gezielten Szenarien zur Behebung von Performance-Engpässen. Szenarien, in denen dieser Algorithmus funktionieren könnte, umfassen eine sehr hohe Schreiblast für einen bestimmten Satz von Dateien auf einem Knoten im Cluster oder eine ständig wachsende Datei in einem sehr heißen übergeordneten Verzeichnis.
 
@@ -43,15 +43,15 @@ Die Ausbalancierung mit der automatischen FlexGroup-Funktion zur Lastverteilung 
 +
 Die Dateiauswahl für die automatische Lastverteilung basiert auf den gespeicherten Blöcken. Die minimale Dateigröße, die für die Neuverteilung berücksichtigt wird, beträgt standardmäßig 100 MB (kann mit dem unten gezeigten Parameter min-file-size auf bis zu 20 MB konfiguriert werden) und die maximale Dateigröße beträgt 100 GB.
 
-* Dateien in Snapshot-Kopien
+* Dateien in Snapshots
 +
-Mit der Konfiguration der FlexGroup-Ausbalancierung lassen sich nur Dateien konfigurieren, die derzeit nicht in Snapshot Kopien vorhanden sind. Bei Start der Ausbalancierung wird eine Benachrichtigung angezeigt, wenn ein Snapshot Kopiervorgang zu jeder Zeit während eines Ausgleichs geplant wird.
+Sie können die FlexGroup-Ausbalancierung so konfigurieren, dass nur die zu verschiebenden Dateien berücksichtigt werden, die derzeit in keinem Snapshot vorhanden sind. Wenn die Neuverteilung gestartet wird, wird eine Benachrichtigung angezeigt, wenn ein Snapshot-Vorgang zu einem beliebigen Zeitpunkt während einer Ausbalancierung geplant wird.
 
 +
-Snapshot Kopien werden durch das Verschieben einer Datei eingeschränkt und werden gerade am Ziel erstellt. Ein Wiederherstellungsvorgang für Snapshot Kopien ist während der Dateiumverteilung nicht zulässig.
+Snapshots sind eingeschränkt, wenn eine Datei verschoben wird und am Ziel Framing durchgeführt wird. Ein Snapshot-Wiederherstellungsvorgang ist nicht zulässig, während eine Dateiumverteilung durchgeführt wird.
 
 +
-Alle nach der Aktivierung der Option erstellten Snapshot Kopien `granular-data` können nicht auf ein System mit ONTAP 9.11.1 und älteren Versionen repliziert werden, da ONTAP 9.11.1 und ältere Versionen keine mehrteiligen Inodes unterstützen.
+Jeder nach Aktivierung der Option erstellte Snapshot `granular-data` kann nicht auf ein System mit ONTAP 9.11.1 und früheren Versionen repliziert werden, da ONTAP 9.11.1 und frühere Versionen keine mehrteiligen Inodes unterstützen.
 
 * SnapMirror Betrieb
 +
@@ -59,11 +59,11 @@ Eine FlexGroup-Ausbalancierung sollte zwischen geplanten SnapMirror Vorgängen s
 
 * Storage-Effizienz für dateibasierte Komprimierung
 +
-Bei der Storage-Effizienz der dateibasierten Komprimierung wird die Datei dekomprimiert, bevor sie in das Ziel verschoben wird. Die Einsparungen durch die Komprimierung gehen also verloren. Die Einsparungen durch die Komprimierung werden wieder erreicht, nachdem ein manuell initiiertes Hintergrundscanner nach der Ausbalancierung auf dem FlexGroup Volume ausgeführt wird. Wenn jedoch eine Datei einer Snapshot Kopie auf einem beliebigen Volume zugeordnet ist, wird die Datei für die Komprimierung ignoriert.
+Bei der Storage-Effizienz der dateibasierten Komprimierung wird die Datei dekomprimiert, bevor sie in das Ziel verschoben wird. Die Einsparungen durch die Komprimierung gehen also verloren. Die Einsparungen durch die Komprimierung werden wieder erreicht, nachdem ein manuell initiiertes Hintergrundscanner nach der Ausbalancierung auf dem FlexGroup Volume ausgeführt wird. Wenn jedoch eine Datei mit einem Snapshot auf einem Volume verknüpft ist, wird die Datei für die Komprimierung ignoriert.
 
 * Deduplizierung
 +
-Das Verschieben deduplizierter Dateien kann zu einer erhöhten Gesamtauslastung des FlexGroup Volume führen. Während der Ausbalancierung von Dateien werden nur eindeutige Blöcke zum Ziel verschoben, wodurch diese Kapazität an der Quelle freigegeben wird. Gemeinsam genutzte Blöcke verbleiben auf der Quelle und werden zum Ziel kopiert. Zwar wird dadurch das Ziel erreicht, die genutzte Kapazität auf einer nahezu vollständigen Quellkomponente zu reduzieren, doch kann dies auch zu einer erhöhten Gesamtauslastung des FlexGroup Volume durch Kopien von gemeinsam genutzten Blöcken auf dem neuen Ziel führen. Dies kann auch beim Verschieben von Dateien, die Teil einer Snapshot-Kopie sind, möglich sein. Die Platzeinsparungen sind erst dann vollständig erkannt, wenn der Zeitplan für die Snapshot-Kopien neu berechnet wurde und es gibt keine Kopien der Dateien mehr in Snapshot-Kopien.
+Das Verschieben deduplizierter Dateien kann zu einer erhöhten Gesamtauslastung des FlexGroup Volume führen. Während der Ausbalancierung von Dateien werden nur eindeutige Blöcke zum Ziel verschoben, wodurch diese Kapazität an der Quelle freigegeben wird. Gemeinsam genutzte Blöcke verbleiben auf der Quelle und werden zum Ziel kopiert. Zwar wird dadurch das Ziel erreicht, die genutzte Kapazität auf einer nahezu vollständigen Quellkomponente zu reduzieren, doch kann dies auch zu einer erhöhten Gesamtauslastung des FlexGroup Volume durch Kopien von gemeinsam genutzten Blöcken auf dem neuen Ziel führen. Dies ist auch möglich, wenn Dateien, die Teil eines Snapshots sind, verschoben werden. Die Speicherersparnis wird erst vollständig erkannt, wenn sich der Snapshot-Zeitplan wiedergibt und es keine Kopien der Dateien mehr in Snapshots gibt.
 
 * FlexClone Volumes
 +
@@ -152,7 +152,7 @@ Optional können Sie die folgenden Optionen angeben:
 [-Start-Time <mm/dd/yyyy-00:00:00>] Startzeit und -Uhrzeit für Neuausgleich planen
 
 +
-[-exclude-Snapshots {true}] schließt Dateien aus, die in Snapshot-Kopien stecken
+[-exclude-Snapshots {true}] schließt Dateien aus, die in Snapshots stecken
 
 +
 Beispiel:
@@ -170,7 +170,7 @@ volume rebalance start -vserver vs0 -volume fg1
 
 == Ändern Sie die FlexGroup Ausgleichkonfigurationen
 
-Sie können eine FlexGroup Ausgleichkonfiguration ändern, um den Ungleichgewichtsschwellenwert zu aktualisieren, die Anzahl der gleichzeitigen Dateien verschiebt minimale Dateigröße, maximale Laufzeit und um Snapshot Kopien einzuschließen oder auszuschließen. Ab ONTAP 9.13.1 stehen Optionen zur Änderung Ihres FlexGroup Rebalancing-Zeitplans zur Verfügung.
+Sie können eine FlexGroup-Ausbalancierungskonfiguration ändern, um den Ungleichgewichtsschwellenwert, die Anzahl gleichzeitiger Dateiverschiebungen der minimalen Dateigröße, der maximalen Laufzeit und das ein- oder Ausschließen von Snapshots zu aktualisieren. Ab ONTAP 9.13.1 stehen Optionen zur Änderung Ihres FlexGroup Rebalancing-Zeitplans zur Verfügung.
 
 [role="tabbed-block"]
 ====
@@ -217,7 +217,7 @@ Sie können eine oder mehrere der folgenden Optionen angeben:
 [-Start-Time <mm/dd/yyyy-00:00:00>] Startzeit und -Uhrzeit für Neuausgleich planen
 
 +
-[-exclude-Snapshots {true}] schließt Dateien aus, die in Snapshot-Kopien stecken
+[-exclude-Snapshots {true}] schließt Dateien aus, die in Snapshots stecken
 
 
 
@@ -341,7 +341,7 @@ Beispiel für den Ausgleich von Instanzdetails:
     Minimum Imbalance Threshold per Constituent: 5%
     Maximum Concurrent File Moves per Constituent: 25
     Minimum File Size: 4KB
-    Exclude Files Stuck in Snapshot Copies: true
+    Exclude Files Stuck in snapshots: true
 ----
 
 

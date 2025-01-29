@@ -13,8 +13,6 @@ summary: Um nicht-Trunked-Client-Verbindungen in Trunked-Verbindungen zu konvert
 [role="lead"]
 Um nicht-Trunked-Client-Verbindungen in Trunked-Verbindungen zu konvertieren, müssen vorhandene Mounts auf Linux- und VMware-Clients mithilfe von Informationen zu LIFs abgehängt und neu gemountet werden.
 
-Wenn Sie Mount-Befehle auf den Clients eingeben, müssen Sie IP-Adressen für jede LIF in der Trunking-Gruppe eingeben.
-
 Erfahren Sie mehr über link:index.html#supported-clients["Unterstützte Clients"].
 
 
@@ -24,17 +22,25 @@ NOTE: Das Abhängen von VMware-Clients verursacht bei allen VMs auf dem Datenspe
 ====
 .Anforderungen für den Linux-Client
 --
-Für jede Verbindung in der Trunking-Gruppe ist ein separater Mount-Punkt erforderlich.
+Wenn Sie ONTAP 9.16.1 oder höher und Red hat Enterprise Linux Version 8.7 oder höher (für RHEL 8) oder 9.2 oder höher (für RHEL 9) als Linux-Client verwenden, ist für die Trunking-Gruppe nur ein Bereitstellungspunkt erforderlich. Mounten Sie die exportierten Volumes mit diesem Befehl. Verwenden Sie dazu die `trunkdiscovery` Option:
 
-Mounten Sie die exportierten Volumes mit Befehlen wie den folgenden:
+[source, cli]
+----
+mount <lif_ip>:<volume_name> </mount_path> -o trunkdiscovery,vers=4.1
+----
+Andernfalls ist für jede Verbindung in der Trunking-Gruppe ein separater Mount-Punkt erforderlich. Mounten Sie die exportierten Volumes mit Befehlen wie den folgenden mit der `max_connect` Option:
 
-`mount lif1_ip:/vol-test /mnt/test1 -o vers=4.1,max_connect=2`
+[source, cli]
+----
+mount <lif1_ip>:<volume_name> </mount_path1> -o vers=4.1,max_connect=16
+----
+[source, cli]
+----
+mount <lif2_ip>:<volume_name> </mount_path2> -o vers=4.1,max_connect=16
+----
+Der (`vers`Wert Version ) sollte `4.1` oder höher sein.
 
-`mount lif2_ip:/vol-test /mnt/test2 -o vers=4.1,max_connect=2`
-
-Der `vers` Wert sollte `4.1` oder höher sein.
-
-Der `max_connect` Wert sollte der Anzahl der Verbindungen in der Trunking-Gruppe entsprechen.
+Der `max_connect` Wert entspricht der Anzahl der Verbindungen in der Trunking-Gruppe.
 
 --
 .Anforderungen des VMware-Clients

@@ -2,31 +2,31 @@
 permalink: data-protection/preserve-snapshot-copy-primary-source-volume-task.html 
 sidebar: sidebar 
 keywords: ensure, snapshot, copy, mirror-vault, deployment 
-summary: Mit dem snapmirror Befehl „Snapshot owner create“ kann eine gekennzeichnete Snapshot Kopie auf dem sekundären System in einer Implementierung von Spiegelgewölbe beibehalten werden. So wird sichergestellt, dass eine gemeinsame Snapshot Kopie für die Aktualisierung der Vault-Beziehung vorhanden ist. 
+summary: Sie können den Befehl SnapMirror Snapshot-owner create verwenden, um einen gekennzeichneten Snapshot auf dem sekundären in einer Mirror-Vault-Bereitstellung beizubehalten. Dadurch wird sichergestellt, dass für die Aktualisierung der Vault-Beziehung ein gemeinsamer Snapshot vorhanden ist. 
 ---
-= Mit ONTAP wird eine gemeinsame Snapshot Kopie in einer Mirror-Vault-Implementierung sichergestellt
+= Mit ONTAP wird ein gemeinsamer Snapshot in einer Mirror-Vault-Implementierung sichergestellt
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können mit dem `snapmirror snapshot-owner create` Befehl eine beschriftete Snapshot Kopie auf dem sekundären in einer Mirror-Vault-Bereitstellung beibehalten. So wird sichergestellt, dass eine gemeinsame Snapshot Kopie für die Aktualisierung der Vault-Beziehung vorhanden ist.
+Mit dem Befehl können Sie `snapmirror snapshot-owner create` einen beschrifteten Snapshot auf dem sekundären in einer Mirror-Vault-Bereitstellung beibehalten. Dadurch wird sichergestellt, dass für die Aktualisierung der Vault-Beziehung ein gemeinsamer Snapshot vorhanden ist.
 
 .Über diese Aufgabe
-Wenn Sie eine Kombination aus Fan-out oder Kaskadierung verwenden, sollten Sie beachten, dass Updates fehlschlagen, wenn eine gemeinsame Snapshot-Kopie nicht auf den Quell- und Ziel-Volumes vorhanden ist.
+Wenn Sie eine kombinierte Mirror-Vault Fan-out- oder Kaskadenbereitstellung verwenden, sollten Sie beachten, dass Updates fehlschlagen, wenn kein gemeinsamer Snapshot auf den Quell- und Ziel-Volumes vorhanden ist.
 
-Dies ist in einer Spiegelungs-Fan-out- oder Kaskadenbereitstellung niemals ein Problem für die Spiegelbeziehung, da SnapMirror immer eine Snapshot Kopie des Quell-Volume erstellt, bevor sie die Aktualisierung durchführt.
+Das ist nie ein Problem für die Spiegelbeziehung in einer Fan-out- oder Kaskadenimplementierung, da SnapMirror vor der Aktualisierung immer einen Snapshot des Quell-Volumes erstellt.
 
-Es könnte ein Problem für die Vault-Beziehung sein, jedoch, da SnapMirror keine Snapshot Kopie des Quell-Volumes erstellt, wenn es eine Vault-Beziehung aktualisiert. Sie müssen den verwenden `snapmirror snapshot-owner create`, um sicherzustellen, dass es mindestens eine gemeinsame Snapshot-Kopie sowohl auf der Quelle als auch auf dem Ziel der Vault-Beziehung gibt.
+Es könnte jedoch ein Problem für die Vault-Beziehung sein, da SnapMirror keinen Snapshot des Quell-Volumes erstellt, wenn es eine Vault-Beziehung aktualisiert. Sie müssen den verwenden `snapmirror snapshot-owner create`, um sicherzustellen, dass es mindestens einen gemeinsamen Snapshot sowohl auf der Quelle als auch auf dem Ziel der Vault-Beziehung gibt.
 
 .Schritte
-. Weisen Sie auf dem Quell-Volume der beschrifteten Snapshot Kopie einen Eigentümer zu, die Sie erhalten möchten:
+. Weisen Sie dem beschrifteten Snapshot, den Sie beibehalten möchten, auf dem Quell-Volume einen Eigentümer zu:
 +
 `snapmirror snapshot-owner create -vserver <SVM> -volume <volume> -snapshot <snapshot> -owner <owner>`
 
 +
-Im folgenden Beispiel wird `ApplicationA` als Eigentümer der `snap1` Snapshot Kopie zugewiesen:
+Im folgenden Beispiel wird als Eigentümer des `snap1` Snapshots zugewiesen `ApplicationA`:
 
 +
 [listing]
@@ -38,7 +38,7 @@ clust1::> snapmirror snapshot-owner create -vserver vs1 -volume vol1
 +
 Alternativ können Sie auf die geplante Aktualisierung der Spiegelbeziehung warten.
 
-. Übertragen Sie die beschriftete Snapshot Kopie auf das Vault-Ziel:
+. Den beschrifteten Snapshot an das Vault-Ziel übertragen:
 +
 `snapmirror update -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ... -source-snapshot snapshot`
 
@@ -46,7 +46,7 @@ Alternativ können Sie auf die geplante Aktualisierung der Spiegelbeziehung wart
 Erfahren Sie mehr über `snapmirror update` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["ONTAP-Befehlsreferenz"^].
 
 +
-Im folgenden Beispiel wird die `snap1` Snapshot Kopie übertragen::
+Im folgenden Beispiel wird der Snapshot übertragen `snap1`::
 +
 --
 [listing]
@@ -54,17 +54,17 @@ Im folgenden Beispiel wird die `snap1` Snapshot Kopie übertragen::
 clust1::> snapmirror update -vserver vs1 -volume vol1
 -source-snapshot snap1
 ----
-Wenn die Tresor-Beziehung aktualisiert wird, bleibt die gekennzeichnete Snapshot-Kopie erhalten.
+Der beschriftete Snapshot wird beibehalten, wenn die Vault-Beziehung aktualisiert wird.
 
 --
 
 
-. Entfernen Sie auf dem Quell-Volume den Eigentümer aus der beschrifteten Snapshot Kopie:
+. Entfernen Sie auf dem Quell-Volume den Eigentümer aus dem beschrifteten Snapshot:
 +
 `snapmirror snapshot-owner delete -vserver _SVM_ -volume _volume_ -snapshot _snapshot_ -owner _owner_`
 
 +
-In den folgenden Beispielen wird `ApplicationA` als Eigentümer der `snap1` Snapshot Kopie entfernt:
+In den folgenden Beispielen wird als Eigentümer des `snap1` Snapshots entfernt `ApplicationA`:
 
 +
 [listing]
