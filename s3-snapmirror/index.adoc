@@ -138,3 +138,20 @@ Beim Erstellen neuer Buckets können Sie den Zugriff durch Erstellen von Benutze
 * link:../s3-config/create-s3-user-task.html["Erstellen eines S3-Benutzers (CLI)"]
 * link:../s3-config/create-modify-groups-task.html["S3-Gruppen erstellen oder ändern (CLI)"]
 
+
+
+
+== S3 Objektsperre und Versionierung mit SnapMirror S3 verwenden
+
+Sie können SnapMirror S3 für Objektsperre und Versionierung von aktivierten ONTAP Buckets verwenden. Es gibt einige Überlegungen:
+
+* Um einen Quell-Bucket mit aktivierter Objektsperre zu replizieren, muss für den Ziel-Bucket auch die Objektsperre aktiviert sein. Darüber hinaus muss sowohl für die Quelle als auch für das Ziel die Versionierung aktiviert sein. Dadurch werden Probleme beim Spiegeln von Löschungen zum Ziel-Bucket vermieden, wenn beide Buckets über unterschiedliche standardmäßige Aufbewahrungsrichtlinien verfügen.
+* S3 SnapMirror repliziert keine historischen Versionen von Objekten. Nur die aktuelle Version eines Objekts wird repliziert.
+
+
+Werden Objekte, für die ein Objekt gesperrt ist, auf einen Ziel-Bucket gespiegelt, bleibt die ursprüngliche Aufbewahrungszeit erhalten. Wenn entsperrte Objekte repliziert werden, übernehmen sie den Standardaufbewahrungszeitraum des Ziel-Buckets. Beispiel:
+
+* Bucket A hat eine Standardaufbewahrungsdauer von 30 Tagen und Bucket B hat eine Standardaufbewahrungsdauer von 60 Tagen. Objekte, die von Bucket A auf Bucket B repliziert wurden, behalten ihre 30-tägige Aufbewahrungsfrist bei, obwohl sie kleiner als die Standardaufbewahrungsfrist von Bucket B ist
+* Bucket A verfügt nicht über eine Standardaufbewahrungsdauer und Bucket B hat eine Standardaufbewahrungsdauer von 60 Tagen. Wenn entsperrte Objekte von Bucket A auf Bucket B repliziert werden, übernehmen sie die 60-Tage-Aufbewahrungsfrist. Wenn ein Objekt manuell in Bucket A gesperrt wird, behält es beim Replizieren in Bucket B seinen ursprünglichen Aufbewahrungszeitraum bei
+* Bucket A hat eine Standardaufbewahrungsdauer von 30 Tagen und Bucket B hat keine Standardaufbewahrungsdauer. Von Bucket A nach Bucket B replizierte Objekte behalten die Aufbewahrungsfrist von 30 Tagen bei.
+
