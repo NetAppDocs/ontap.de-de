@@ -1,0 +1,167 @@
+---
+permalink: san-config/configure-fc-adapters-initiator-target.html 
+sidebar: sidebar 
+keywords: configure, fc adapters, initiator mode, target mode, FC-NVMe, FC adapter speed 
+summary: Onboard FC-Adapter und einige FC-Erweiterungskarten können als Initiatoren oder Ziel-Ports konfiguriert werden. Andere FC-Erweiterungsadapter sind werkseitig als Initiatoren oder Ziele konfiguriert und können nicht geändert werden. 
+---
+= Konfigurieren Sie FC-Adapter
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Onboard FC-Adapter und einige FC-Erweiterungskarten können individuell als Initiatoren oder Ziel-Ports konfiguriert werden. Andere FC-Erweiterungsadapter sind werkseitig als Initiatoren oder Ziele konfiguriert und können nicht geändert werden. Zusätzliche FC-Ports sind auch über unterstützte UTA2-Karten verfügbar, die mit FC SFP+-Adaptern konfiguriert sind.
+
+Initiator-Ports können zur direkten Verbindung mit Back-End-Platten-Shelfs und möglicherweise mit fremden Storage-Arrays verwendet werden. Mit Zielports können nur Verbindungen zu FC-Switches hergestellt werden.
+
+Die Anzahl der für FC konfigurierten integrierten Ports und CNA/UTA2-Ports variiert je nach Modell des Controllers. Die unterstützten Target-Erweiterungsadapter variieren ebenfalls je nach Controller-Modell. Eine vollständige Liste der integrierten FC-Ports und der unterstützten Zielerweiterungsadapter für Ihr Controller-Modell finden Sie unterlink:https://hwu.netapp.com["NetApp Hardware Universe"^].
+
+
+
+== Konfigurieren Sie FC-Adapter für den Initiator-Modus
+
+Der Initiator-Modus wird verwendet, um die Ports mit Bandlaufwerken, Tape Libraries oder Storage von Drittanbietern mit FlexArray Virtualisierung oder dem Import fremder LUNs (Foreign LUN Import, FLI) zu verbinden.
+
+.Bevor Sie beginnen
+* LIFs auf dem Adapter müssen von allen Port-Sets, deren Mitglieder sie sind, entfernt werden.
+* Alle LIFs von jeder Storage Virtual Machine (SVM), die den zu ändernden physischen Port verwendet, müssen migriert oder zerstört werden, bevor sie die Persönlichkeit des physischen Ports von Ziel zu Initiator ändern.
+
+
+[NOTE]
+====
+NVMe/FC unterstützt Initiatormodus.
+
+====
+.Schritte
+. Entfernen Sie alle LIFs vom Adapter:
++
+[source, cli]
+----
+network interface delete -vserver _SVM_name_ -lif _lif_name_,_lif_name_
+----
+. Versetzen Sie Ihren Adapter in den Offline-Modus:
++
+[source, cli]
+----
+network fcp adapter modify -node _node_name_ -adapter _adapter_port_ -status-admin down
+----
++
+Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+
+. Ändern Sie den Adapter von Ziel zu Initiator:
++
+[source, cli]
+----
+system hardware unified-connect modify -t initiator _adapter_port_
+----
+. Booten Sie den Node neu, der den Adapter hostet, den Sie geändert haben.
+. Vergewissern Sie sich, dass die FC-Ports für Ihre Konfiguration im richtigen Status konfiguriert sind:
++
+[source, cli]
+----
+system hardware unified-connect show
+----
+. Versetzen Sie den Adapter wieder in den Online-Modus:
++
+[source, cli]
+----
+node run -node _node_name_ storage enable adapter _adapter_port_
+----
+
+
+
+
+== Konfigurieren Sie FC-Adapter für den Zielmodus
+
+Der Zielmodus wird verwendet, um die Ports mit FC-Initiatoren zu verbinden.
+
+Mit diesen Schritten werden FC-Adapter für das FC-Protokoll und das FC-NVMe-Protokoll konfiguriert. Jedoch unterstützen nur bestimmte FC-Adapter FC-NVMe. Im link:https://hwu.netapp.com["NetApp Hardware Universe"^] finden Sie eine Liste mit Adaptern, die das FC-NVMe-Protokoll unterstützen.
+
+.Schritte
+. Versetzen Sie den Adapter in den Offline-Modus:
++
+[source, cli]
+----
+node run -node _node_name_ storage disable adapter _adapter_name_
+----
++
+Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+
+. Ändern Sie den Adapter von Initiator zu Ziel:
++
+[source, cli]
+----
+system node hardware unified-connect modify -t target -node _node_name_ adapter _adapter_name_
+----
+. Booten Sie den Node neu, der den Adapter hostet, den Sie geändert haben.
+. Vergewissern Sie sich, dass der Zielport die richtige Konfiguration hat:
++
+[source, cli]
+----
+network fcp adapter show -node _node_name_
+----
+. Schalten Sie Ihren Adapter online:
++
+[source, cli]
+----
+network fcp adapter modify -node _node_name_ -adapter _adapter_port_ -state up
+----
+
+
+
+
+== Konfigurieren Sie die FC-Adaptergeschwindigkeit
+
+Sie sollten die Zielportgeschwindigkeit des Adapters so konfigurieren, dass sie mit der Geschwindigkeit des Geräts übereinstimmt, zu dem die Verbindung hergestellt wird, anstatt die Autonegotiation zu verwenden. Ein Port, der auf die Autonegotiation festgelegt ist, kann nach einer Übernahme/Rückgabe oder einer anderen Unterbrechung länger dauern, bis die Verbindung wiederhergestellt ist.
+
+.Über diese Aufgabe
+Da diese Aufgabe alle Storage Virtual Machines (SVMs) und alle LIFs in einem Cluster umfasst, müssen Sie den `-home-port` `-home-lif` Umfang dieses Vorgangs mit den Parametern und begrenzen. Wenn Sie diese Parameter nicht verwenden, gilt der Vorgang für alle LIFs im Cluster, die möglicherweise nicht wünschenswert wären.
+
+.Bevor Sie beginnen
+Alle LIFs, die diesen Adapter als Home-Port verwenden, müssen offline sein.
+
+.Schritte
+. Versetzen Sie alle LIFs auf diesem Adapter in den Offline-Modus:
++
+[source, cli]
+----
+network interface modify -vserver * -lif * { -home-node node1 -home-port 0c } -status-admin down
+----
+. Versetzen Sie den Adapter in den Offline-Modus:
++
+[source, cli]
+----
+network fcp adapter modify -node node1 -adapter 0c -state down
+----
++
+Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+
+. Bestimmen Sie die maximale Geschwindigkeit für den Port-Adapter:
++
+[source, cli]
+----
+fcp adapter show -instance
+----
++
+Sie können die Adaptergeschwindigkeit nicht über die Höchstgeschwindigkeit hinaus ändern.
+
+. Ändern Sie die Adaptergeschwindigkeit:
++
+[source, cli]
+----
+network fcp adapter modify -node node1 -adapter 0c -speed 16
+----
+. Versetzen Sie den Adapter in den Online-Modus:
++
+[source, cli]
+----
+network fcp adapter modify -node node1 -adapter 0c -state up
+----
+. Versetzen Sie alle LIFs am Adapter in den Online-Modus:
++
+[source, cli]
+----
+network interface modify -vserver * -lif * { -home-node node1 -home-port 0c } -status-admin up
+----
+

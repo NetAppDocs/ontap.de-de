@@ -11,36 +11,18 @@ summary: Eine FC-, FC-NVMe- oder FCoE-Zone ist eine logische Gruppierung von ein
 
 
 [role="lead"]
-Eine FC-, FC-NVMe- oder FCoE-Zone ist eine logische Gruppierung von einem oder mehreren Ports in einer Fabric. Damit Geräte sich gegenseitig sehen können, eine Verbindung herstellen, Sitzungen miteinander erstellen und kommunizieren können, müssen beide Ports eine gemeinsame Zonenmitgliedschaft aufweisen. Das Einzel-Initiator-Zoning wird empfohlen.
+Eine FC-, FC-NVMe- oder FCoE-Zone ist eine logische Gruppierung von einem oder mehreren Ports in einer Fabric. Damit Geräte einander sehen, verbinden, Sitzungen miteinander erstellen und kommunizieren können, müssen beide Ports Mitglieder derselben Zone sein.
+
+Zoning erhöht die Sicherheit, indem es den Zugriff und die Konnektivität auf Endpunkte begrenzt, die gemeinsam eine Zone nutzen. Ports, die sich nicht in derselben Zone befinden, können nicht miteinander kommunizieren. Dadurch wird _Crosstalk_ zwischen Initiator-HBAs reduziert oder eliminiert. Sollten Konnektivitätsprobleme auftreten, hilft Zoning dabei, Probleme auf einen bestimmten Port-Satz zu isolieren und dadurch die Lösungszeit zu verkürzen.
+
+Zoning reduziert die Anzahl der verfügbaren Pfade zu einem bestimmten Port und verringert die Anzahl der Pfade zwischen einem Host und dem Speichersystem. Beispielsweise haben einige Multipathing-Lösungen des Host-Betriebssystems eine Begrenzung für die Anzahl der Pfade, die sie verwalten können. Zoning kann die Anzahl der für den Host sichtbaren Pfade verringern, sodass die Pfade zum Host nicht die vom Host-Betriebssystem zulässige Höchstzahl überschreiten.
 
 
 
-== Gründe für das Zoning
+== World Wide Name-basiertes Zoning
 
-* Das Zoning reduziert oder beseitigt _Crosstalk_ zwischen Initiator-HBAs.
-+
-Dies geschieht sogar in kleinen Umgebungen und ist eines der besten Argumente für die Implementierung des Zoning. Die durch das Zoning erstellten logischen Fabric-Teilbereiche eliminieren etwaige Crosstalk-Probleme.
+Beim Zoning auf Basis des World Wide Name (WWN) werden die WWNs der Mitglieder der Zone angegeben. Obwohl das WWNN-Zoning (World Wide Node Name) bei einigen Switch-Anbietern möglich ist, müssen Sie beim Zoning in ONTAP das WWPN-Zoning (World Wide Port Name) verwenden.
 
-* Zoning reduziert die Anzahl der verfügbaren Pfade zu einem bestimmten FC-, FC-NVMe- oder FCoE-Port und reduziert die Anzahl der Pfade zwischen einem Host und einer bestimmten LUN, die sichtbar ist.
-+
-Beispielsweise haben einige Multipathing-Lösungen des Host-Betriebssystems eine Begrenzung für die Anzahl der Pfade, die sie verwalten können. Zoning kann die Anzahl der Pfade reduzieren, die ein Multipathing-Treiber für das Betriebssystem sieht. Wenn auf einem Host keine Multipathing-Lösung installiert ist, müssen Sie überprüfen, ob nur ein Pfad zu einer LUN sichtbar ist, indem Sie entweder die Zoneneinteilung in der Fabric oder eine Kombination aus Selective LUN Mapping (SLM) und Portsätze in der SVM verwenden.
+Das WWPN-Zoning ist erforderlich, um einen spezifischen Port richtig zu definieren und um NPIV effektiv zu nutzen. FC-Switches sollten mit den WWPNs der logischen Schnittstellen (LIFs) des Ziels abgegrenzt werden, nicht mit den WWPNs der physischen Ports des Node. Die WWPNs der physischen Ports beginnen mit „`50`“, und die WWPNs der LIFs beginnen mit „`20`“.
 
-* Zoning erhöht die Sicherheit, indem es den Zugriff und die Konnektivität auf Endpunkte begrenzt, die gemeinsam eine Zone nutzen.
-+
-Ports, die keine gemeinsamen Zonen haben, können nicht miteinander kommunizieren.
-
-* Zoning verbessert die SAN-Zuverlässigkeit, indem es auftretende Probleme isoliert, und sorgt dafür, dass sich die Problemlösungszeit verringert, indem es den problematischen Speicherplatz einschränkt.
-
-
-
-
-== Empfehlungen für das Zoning
-
-* Sie sollten das Zoning jederzeit implementieren, wenn vier oder mehr Hosts mit einem SAN verbunden sind oder SLM nicht auf den Nodes mit einem SAN implementiert wird.
-* Obwohl das World Wide Node Name Zoning mit einigen Switch-Anbietern möglich ist, ist das World Wide Port Name Zoning erforderlich, um einen bestimmten Port ordnungsgemäß zu definieren und NPIV effektiv zu verwenden.
-* Sie sollten die Zonengröße begrenzen und dabei die Verwaltbarkeit wahren.
-+
-Mehrere Zonen können sich überlappen, was die Größe verringert. Idealerweise wird eine Zone pro Host oder Host-Cluster definiert.
-
-* Verwenden Sie das Einzel-Initiator-Zoning, um Crosstalk zwischen Initiator-HBAs zu eliminieren.
-
+Das WWPN Zoning bietet Flexibilität, da der Zugriff nicht davon bestimmt wird, wo das Gerät physisch mit der Fabric verbunden ist. Sie können ein Kabel von einem Port in den anderen umstecken, ohne dass die Zonen neu konfiguriert werden müssen.
