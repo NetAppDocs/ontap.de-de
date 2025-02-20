@@ -20,7 +20,7 @@ Ab ONTAP 9.15.1 können Sie zwischen Typen von SnapMirror Active Sync-Schutz kon
 
 == Konvertieren in eine symmetrische aktiv/aktiv-Beziehung
 
-Sie können eine aktive SnapMirror-Synchronisierungsbeziehung mit asynchronem Schutz konvertieren, um symmetrische aktiv/aktiv-Vorgänge zu verwenden.
+Sie können eine aktive SnapMirror-Synchronisierungsbeziehung mit asymmetrischem Schutz konvertieren, um symmetrische aktiv/aktiv-Vorgänge zu verwenden.
 
 .Bevor Sie beginnen
 * Auf beiden Clustern muss ONTAP 9.15.1 oder höher ausgeführt werden.
@@ -106,9 +106,17 @@ NOTE: Stellen Sie sicher, dass die Initiatorgruppe keine Zuordnungen für nicht 
 +
 `SiteB::> lun mapping delete -vserver <svm_name> -igroup <igroup> -path <>`
 
-. Ändern Sie am primären Standort die Initiatorkonfiguration für vorhandene Hosts, um den proximalen Pfad für Initiatoren auf dem lokalen Cluster festzulegen.
+. Legen Sie auf dem primären Standort die Berechtigungsebene auffolgende Einstellung fest `advanced`:
 +
-`SiteA::> igroup initiator add-proximal-vserver -vserver <svm_name> -initiator <host> -proximal-vserver <server>`
+`SiteA::> set -privilege advanced`
+
+. Ändern Sie die Initiatorkonfiguration für vorhandene Hosts, um den proximalen Pfad für Initiatoren auf dem lokalen Cluster festzulegen.
++
+`SiteA::*> igroup initiator add-proximal-vserver -vserver <svm_name> -initiator <host> -proximal-vserver <server>`
+
++
+
+NOTE: Nachdem Sie diesen Schritt durchgeführt haben, können Sie die Berechtigungsebene wieder auf „admin“ setzen.
 
 . Fügen Sie eine neue Initiatorgruppe und einen neuen Initiator für die neuen Hosts hinzu und legen Sie die Host-Nähe für die Host-Affinität zu ihrem lokalen Standort fest. Ennable-igroup-Replikation zur Replikation der Konfiguration und Invertierung der Hostlokalität auf dem Remote-Cluster.
 +
@@ -131,18 +139,6 @@ SiteA::> igroup initiator add-proximal-vserver -vserver vsA -initiator host2 -pr
 `snapmirror show -destination-path <destination_path>`
 
 . Wenn sich die vorhandenen Hosts lokal zum primären Cluster befinden, fügen Sie den Host zum zweiten Cluster hinzu, und stellen Sie die Verbindung mit dem entsprechenden Zugriff auf jedes Cluster her.
-. Löschen Sie am sekundären Standort die LUN-Zuordnungen der Initiatorgruppen, die Remote-Hosts zugeordnet sind.
-+
-
-NOTE: Stellen Sie sicher, dass die Initiatorgruppe keine Zuordnungen für nicht replizierte LUNs enthält.
-
-+
-`SiteB::> lun mapping delete -vserver <svm_name> -igroup <igroup> -path <>`
-
-. Ändern Sie am primären Standort die Initiatorkonfiguration für vorhandene Hosts, um den proximalen Pfad für Initiatoren auf dem lokalen Cluster festzulegen.
-+
-`SiteA::> igroup initiator add-proximal-vserver -vserver <svm_name> -initiator <host> -proximal-vserver <server>`
-
 . Fügen Sie am sekundären Standort eine neue Initiatorgruppe und einen neuen Initiator für die neuen Hosts hinzu und legen Sie die Host-Nähe für die Host-Affinität zum lokalen Standort fest. Ordnen Sie die LUNs der Initiatorgruppe zu.
 +
 ``
