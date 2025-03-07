@@ -2,20 +2,23 @@
 permalink: disks-aggregates/relocate-aggregate-ownership-task.html 
 sidebar: sidebar 
 keywords: relocate, aggregate, ownership, local tier 
-summary: 'Sie können die Eigentumsrechte einer lokalen Tier (Aggregat) nur zwischen den Nodes in einem HA-Paar ändern.' 
+summary: Sie können die Eigentümerschaft eines lokalen Tiers nur zwischen den Nodes innerhalb eines HA-Paars ändern. 
 ---
-= Verschieben des Eigentums einer lokalen Ebene (Aggregat) innerhalb eines HA-Paars
+= Verschieben Sie die Eigentümerschaft einer lokalen ONTAP Tier innerhalb eines HA-Paars
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können die Eigentumsrechte an lokalen Tiers (Aggregaten) zwischen den Nodes in einem HA-Paar ändern, ohne dass der Service von den lokalen Tiers unterbrochen wird.
+Die Eigentümerschaft lokaler Tiers kann zwischen den Nodes in einem HA-Paar geändert werden, ohne den Service von den lokalen Tiers zu unterbrechen.
+
+
+NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um eine „_Local Tier_“ zu beschreiben. Unabhängig von Ihrer ONTAP-Version verwendet die ONTAP CLI den Begriff _Aggregate_. Weitere Informationen zu lokalen Ebenen finden Sie unter link:../disks-aggregates/index.html["Festplatten und lokale Tiers"].
 
 Beide Nodes in einem HA-Paar sind physisch mit den Festplatten oder Array-LUNs des jeweils anderen verbunden. Jede Festplatte oder Array-LUN befindet sich im Besitz eines der Nodes.
 
-Eigentumsrechte an allen Festplatten oder Array-LUNs innerhalb einer lokalen Ebene (Aggregat) ändern sich vorübergehend von einem Knoten zum anderen, wenn eine Übernahme erfolgt. Allerdings können lokale Schichten Verlagerung Operationen auch dauerhaft ändern das Eigentum (z. B. wenn für die Lastverteilung getan). Die Eigentümerschaft ändert sich ohne Prozesse von Datenkopieerstellung oder physische Verschiebung der Festplatten oder Array LUNs.
+Alle Festplatten oder Array-LUNs innerhalb einer lokalen Tier ändern sich vorübergehend von einem Node auf den anderen, wenn ein Takeover eintritt. Allerdings können lokale Schichten Verlagerung Operationen auch dauerhaft ändern das Eigentum (z. B. wenn für die Lastverteilung getan). Die Eigentümerschaft ändert sich ohne Prozesse von Datenkopieerstellung oder physische Verschiebung der Festplatten oder Array LUNs.
 
 .Über diese Aufgabe
 * Da die Einschränkungen der Volume-Anzahl während des lokalen Tier-Versetzens programmatisch validiert werden, ist eine manuelle Überprüfung nicht erforderlich.
@@ -40,17 +43,17 @@ Dazu können folgende Vorgänge zählen:
 
 * Wenn Sie über eine MetroCluster-Konfiguration verfügen, sollten Sie keine lokale Tier-Verschiebung initiieren, während Disaster-Recovery-Vorgänge (_Switchover_, _healing_ oder _switback_) ausgeführt werden.
 * Wenn Sie über eine MetroCluster-Konfiguration verfügen und eine lokale Tier-Verschiebung auf einer Switched-over-lokalen Tier initiieren, kann der Vorgang fehlschlagen, da die Anzahl der Volumes des DR-Partners nicht mehr beträgt.
-* Sie sollten keine Verlagerung lokaler Ebenen auf Aggregate initiieren, die beschädigt sind oder Wartungsarbeiten durchlaufen.
+* Sie sollten keine Verlagerung der lokalen Ebene auf lokalen Ebenen initiieren, die beschädigt sind oder Wartungsarbeiten durchlaufen.
 * Vor dem Starten der Verschiebung der lokalen Tier sollten Sie alle Core Dumps auf den Quell- und Ziel-Nodes speichern.
 
 
 .Schritte
-. Überprüfen Sie anhand der Aggregate auf dem Node, welche Aggregate sich verschieben lassen, und stellen Sie sicher, dass sie online und in einem guten Zustand sind:
+. Zeigen Sie die lokalen Tiers auf dem Node an, um zu bestätigen, welche lokalen Tiers verschoben werden sollen, und stellen Sie sicher, dass sie online und in gutem Zustand sind:
 +
 `storage aggregate show -node _source-node_`
 
 +
-Mit dem folgenden Befehl werden sechs Aggregate auf den vier Nodes im Cluster angezeigt. Alle Aggregate sind online. Node1 und Node3 bilden ein HA-Paar, und Node2 und Node4 bilden ein HA-Paar.
+Der folgende Befehl zeigt sechs lokale Tiers auf den vier Nodes im Cluster. Alle lokalen Ebenen sind online. Node1 und Node3 bilden ein HA-Paar, und Node2 und Node4 bilden ein HA-Paar.
 
 +
 [listing]
@@ -72,12 +75,12 @@ aggr_5     239.0GB   239.0GB    0% online       4 node4  raid_dp,
                                                          normal
 6 entries were displayed.
 ----
-. Geben Sie den Befehl aus, um die Aggregat-Verschiebung zu starten:
+. Geben Sie den Befehl ein, um die Verlagerung der lokalen Ebene zu starten:
 +
 `storage aggregate relocation start -aggregate-list _aggregate-1_, _aggregate-2_... -node _source-node_ -destination _destination-node_`
 
 +
-Mit dem folgenden Befehl werden die Aggregate aggr_1 und aggr_2 von Node1 nach Node3 verschoben. Node3 ist HA-Partner von Node1. Die Aggregate können nur innerhalb des HA-Paars verschoben werden.
+Mit dem folgenden Befehl werden die lokalen Ebenen aggr_1 und aggr_2 von Node1 zu Node3 verschoben. Node3 ist HA-Partner von Node1. Die lokalen Tiers können nur innerhalb des HA-Paars verschoben werden.
 
 +
 [listing]
@@ -86,12 +89,12 @@ cluster::> storage aggregate relocation start -aggregate-list aggr_1, aggr_2 -no
 Run the storage aggregate relocation show command to check relocation status.
 node1::storage aggregate>
 ----
-. Den Fortschritt der Aggregatverschiebung überwachen mit dem `storage aggregate relocation show` Befehl:
+. Überwachen Sie den Fortschritt der Verlagerung der lokalen Ebene mit dem `storage aggregate relocation show` folgenden Befehl:
 +
 `storage aggregate relocation show -node _source-node_`
 
 +
-Mit dem folgenden Befehl werden die Fortschritte der Aggregate angezeigt, die in Node3 verschoben werden:
+Der folgende Befehl zeigt den Fortschritt der lokalen Ebenen an, die in Knoten 3 verschoben werden:
 
 +
 [listing]
@@ -106,6 +109,6 @@ node1
 node1::storage aggregate>
 ----
 +
-Nach Abschluss der Verschiebung zeigt die Ausgabe dieses Befehls jedes Aggregat mit einem Versetzungsstatus von „`DOne`“ an.
+Wenn die Verlagerung abgeschlossen ist, zeigt die Ausgabe dieses Befehls jede lokale Ebene mit dem Standortstatus „`Fertig`“ an.
 
 

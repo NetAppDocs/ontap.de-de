@@ -2,16 +2,19 @@
 permalink: disks-aggregates/determine-flash-pool-candidacy-cache-size-task.html 
 sidebar: sidebar 
 keywords: flash pool, candidacy, optimal cache size, local tier, aggregate 
-summary: 'Vor dem Konvertieren einer vorhandenen lokalen Tier (Aggregat) in einen lokalen Flash Pool Tier können Sie feststellen, ob die lokale Ebene I/O-gebunden ist und die beste Flash Pool Cache Größe für Ihren Workload und Ihr Budget. Außerdem können Sie überprüfen, ob die Größe des Cache einer vorhandenen lokalen Flash Pool-Tier korrekt ist.' 
+summary: Bevor Sie eine vorhandene lokale Tier in eine lokale Flash Pool Tier umwandeln, können Sie feststellen, ob die lokale Tier I/O-gebunden ist und welche Flash Pool Cache-Größe für Ihren Workload und Ihr Budget am besten geeignet ist. Außerdem können Sie überprüfen, ob die Größe des Cache einer vorhandenen lokalen Flash Pool-Tier korrekt ist. 
 ---
-= Flash Pool-Kandidaten und optimale Cache-Größe bestimmen
+= Ermittlung der Flash Pool Kandidatur und der optimalen Cache-Größe in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Vor dem Konvertieren einer vorhandenen lokalen Tier (Aggregat) in einen lokalen Flash Pool Tier können Sie feststellen, ob die lokale Ebene I/O-gebunden ist und die beste Flash Pool Cache Größe für Ihren Workload und Ihr Budget. Außerdem können Sie überprüfen, ob die Größe des Cache einer vorhandenen lokalen Flash Pool-Tier korrekt ist.
+Bevor Sie eine vorhandene lokale Tier in eine lokale Flash Pool Tier umwandeln, können Sie feststellen, ob die lokale Tier I/O-gebunden ist und welche Flash Pool Cache-Größe für Ihren Workload und Ihr Budget am besten geeignet ist. Außerdem können Sie überprüfen, ob die Größe des Cache einer vorhandenen lokalen Flash Pool-Tier korrekt ist.
+
+
+NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um eine „_Local Tier_“ zu beschreiben. Unabhängig von Ihrer ONTAP-Version verwendet die ONTAP CLI den Begriff _Aggregate_. Weitere Informationen zu lokalen Ebenen finden Sie unter link:../disks-aggregates/index.html["Festplatten und lokale Tiers"].
 
 .Bevor Sie beginnen
 Sie sollten ungefähr wissen, wann die lokale Ebene, die Sie analysieren, seine Spitzenlast erlebt.
@@ -21,15 +24,15 @@ Sie sollten ungefähr wissen, wann die lokale Ebene, die Sie analysieren, seine 
 +
 `set advanced`
 
-. Wenn Sie herausfinden müssen, ob ein vorhandenes lokales Tier (Aggregat) ein guter Kandidat für die Konvertierung in ein Flash Pool Aggregat wäre, bestimmen Sie, wie stark die Festplatten im Aggregat während einer Spitzenzeiten ausgelastet sind und wie sich das auf die Latenz auswirkt:
+. Wenn Sie herausfinden möchten, ob eine bestehende lokale Tier geeignet für die Konvertierung in eine lokale Flash Pool Tier wäre, ermitteln Sie, wie stark die Festplatten in der lokalen Tier während einer Spitzenlastperiode ausgelastet sind und wie sich dies auf die Latenz auswirkt:
 +
 `statistics show-periodic -object disk:raid_group -instance _raid_group_name_ -counter disk_busy|user_read_latency -interval 1 -iterations 60`
 
 +
-Sie können entscheiden, ob die Reduzierung der Latenz durch das Hinzufügen von Flash Pool Cache für dieses Aggregat sinnvoll ist.
+Sie können entscheiden, ob die Reduzierung der Latenz durch das Hinzufügen von Flash Pool Cache für diese lokale Tier sinnvoll ist.
 
 +
-Mit dem folgenden Befehl werden die Statistiken für die erste RAID-Gruppe des Aggregats „`aggr1`“ angezeigt:
+Der folgende Befehl zeigt die Statistiken für die erste RAID-Gruppe der lokalen Ebene „`aggr1`“:
 
 +
 `statistics show-periodic -object disk:raid_group -instance /aggr1/plex0/rg0 -counter disk_busy|user_read_latency -interval 1 -iterations 60`
@@ -39,14 +42,14 @@ Mit dem folgenden Befehl werden die Statistiken für die erste RAID-Gruppe des A
 `storage automated-working-set-analyzer start -node _node_name_ -aggregate _aggr_name_`
 
 +
-AWA beginnt mit dem Erfassen von Workload-Daten für die Volumes, die mit dem angegebenen Aggregat verbunden sind.
+AWA beginnt mit dem Erfassen von Workload-Daten für die Volumes, die der angegebenen lokalen Tier zugeordnet sind.
 
 . Erweiterten Modus beenden:
 +
 `set admin`
 
 +
-AWA laufen lassen, bis ein oder mehrere Intervalle der Spitzenlast aufgetreten sind. AWA sammelt Workload-Statistiken für die Volumes, die mit dem angegebenen Aggregat verbunden sind, und analysiert Daten für eine Dauer von bis zu einer rollenden Woche. Wenn Sie AWA für mehr als eine Woche ausführen, werden nur Daten gemeldet, die von der letzten Woche erfasst wurden. Die Schätzungen der Cache-Größe basieren auf den höchsten Lasten, die während der Datenerfassung zu beobachten sind. Die Last muss über den gesamten Zeitraum der Datenerfassung nicht hoch sein.
+AWA laufen lassen, bis ein oder mehrere Intervalle der Spitzenlast aufgetreten sind. AWA sammelt Workload-Statistiken für die Volumes, die der angegebenen lokalen Ebene zugeordnet sind, und analysiert Daten für eine Dauer von bis zu einer rollierenden Woche. Wenn Sie AWA für mehr als eine Woche ausführen, werden nur Daten gemeldet, die von der letzten Woche erfasst wurden. Die Schätzungen der Cache-Größe basieren auf den höchsten Lasten, die während der Datenerfassung zu beobachten sind. Die Last muss über den gesamten Zeitraum der Datenerfassung nicht hoch sein.
 
 . Erweiterten Modus aufrufen:
 +
