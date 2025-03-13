@@ -1,0 +1,73 @@
+---
+permalink: flexcache-hot-spot/flexcache-hotspot-remediation-architecture.html 
+sidebar: sidebar 
+keywords: hotspot, FlexCache, hdfa, problem, solution, ONTAP 
+summary: Erfahren Sie, wie das Architekturdesign mit hochdichtem FlexCache zur Beseitigung von Hotspots beiträgt. 
+---
+= Architektur einer Lösung zur Behebung von ONTAP FlexCache-Hotspots
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Untersuchen Sie zur Beseitigung von Hotspots die zugrunde liegenden Ursachen von Engpässen, warum FlexCache mit automatischer Bereitstellung nicht ausreicht und die technischen Details, die für eine effektive Entwicklung einer FlexCache Lösung erforderlich sind. Durch das Verständnis und die Implementierung von High-Density-FlexCache-Arrays (HDSA) können Sie die Performance optimieren und Engpässe bei High-Demand-Workloads beseitigen.
+
+
+
+== Engpassverständnis
+
+Im Folgenden <<Figure-1,Bild>> wird ein typisches Hotspotting-Szenario mit einer Datei dargestellt. Das Volume ist eine FlexGroup mit einer einzelnen Komponente pro Node, und die Datei befindet sich auf Node 1.
+
+Wenn Sie alle Netzwerkverbindungen der NAS-Clients auf verschiedene Nodes im Cluster verteilen, wird der Engpass auf der CPU weiterhin so verursacht, dass die Volume-Affinität dort bereitgestellt wird, wo sich die Hot File befindet. Außerdem führen Sie Cluster-Netzwerkverkehr (Ost-West-Datenverkehr) zu den Anrufen von Clients ein, die mit anderen Knoten als dem Speicherort der Datei verbunden sind. Der Overhead für Ost-West-Datenverkehr ist normalerweise klein, aber bei hochperformanten Computing-Workloads zählt jedes Bit.
+
+.Abbildung 1: FlexGroup-Hotspot-Szenario mit einer einzigen Datei
+image:flexcache-hotspot-hdfa-flexgroup.png["Abbildung 1: FlexGroup-Hotspot-Szenario mit einer einzigen Datei"]
+
+
+
+== Warum ist eine FlexCache mit automatischer Bereitstellung nicht die Lösung
+
+Um Hotspotting zu beheben, beseitigen Sie den CPU-Engpass und vorzugsweise auch den Ost-West-Verkehr. FlexCache kann Ihnen bei ordnungsgemäßer Einrichtung helfen.
+
+Im folgenden Beispiel wird FlexCache automatisch mit System Manager, BlueXP  oder standardmäßigen CLI-Argumenten bereitgestellt. <<Figure-1,Abbildung 1>> Und <<Figure-2,Abbildung 2>> der erste Eindruck ist gleich: Beide sind NAS-Container mit vier Nodes und einer Komponente. Der einzige Unterschied ist, dass der NAS-Container von Abbildung 1 ein FlexGroup ist, der NAS-Container von Abbildung 2 ein FlexCache. Die einzelnen Abbildungen stellen denselben Engpass dar: Die CPU des Node 1 zur Volume-Affinität, die den Zugriff auf die Hot File ermöglicht, und der Ost-West-Traffic, der zu der Latenz beiträgt. Eine automatisch bereitgestellte FlexCache hat den Engpass nicht beseitigt.
+
+.Abbildung 2: FlexCache-Szenario mit automatischer Bereitstellung
+image:flexcache-hotspot-hdfa-1x4x1.png["Abbildung 2: FlexCache-Szenario mit automatischer Bereitstellung"]
+
+
+
+== Anatomie eines FlexCache
+
+Um eine FlexCache für die Behebung von Hotspots effektiv zu entwickeln, müssen Sie einige technische Details zu FlexCache verstehen.
+
+FlexCache ist immer ein spärlicher FlexGroup. Ein FlexGroup besteht aus mehreren FlexVols. Diese FlexVols werden FlexGroup-Komponenten genannt. In einem Standard-FlexGroup-Layout gibt es eine oder mehrere Komponenten pro Node im Cluster. Die Bestandteile werden unter einer Abstraktionsschicht „zusammengenäht“ und dem Client als einzelner großer NAS-Container präsentiert. Wenn eine Datei in eine FlexGroup geschrieben wird, bestimmen Ingest Heuristics, auf welcher Komponente die Datei gespeichert werden soll. Es kann sich um eine Komponente handeln, die die NAS-Verbindung des Clients enthält, oder um einen anderen Node. Der Standort ist irrelevant, da alles unter der Abstraktionsebene läuft und für den Kunden unsichtbar ist.
+
+Wenden wir nun dieses Verständnis von FlexGroup auf FlexCache an. Da FlexCache auf einer FlexGroup basiert, verfügen Sie standardmäßig über eine einzelne FlexCache mit Komponenten auf allen Nodes im Cluster, wie in dargestellt.<<Figure-1,Abbildung 1>> In den meisten Fällen ist das eine großartige Sache. Sie nutzen alle Ressourcen in Ihrem Cluster.
+
+Für die Behebung von Hot Files ist dies jedoch aufgrund der zwei Engpässe nicht ideal: CPU für eine einzelne Datei und Ost-West-Datenverkehr. Wenn Sie eine FlexCache mit Komponenten auf jedem Node für eine Hot File erstellen, bleibt diese Datei nur auf einer der Komponenten gespeichert. Das bedeutet, es gibt eine CPU, die den gesamten Zugriff auf die Hot File bedienen kann. Sie möchten auch die Menge des Ost-West-Verkehrs begrenzen, die erforderlich ist, um die Hot File zu erreichen.
+
+Die Lösung besteht aus einer Reihe von FlexCaches mit hoher Dichte.
+
+
+
+== Anatomie eines hochdichten FlexCache
+
+Eine High-Density FlexCache (HDF) verfügt über Komponenten auf so wenigen Knoten, wie die Kapazitätsanforderungen für die zwischengespeicherten Daten zulassen. Das Ziel besteht darin, dass Ihr Cache auf einem einzigen Knoten verwendet wird. Wenn Kapazitätsanforderungen das unmöglich machen, können stattdessen nur Komponenten auf wenigen Nodes verwendet werden.
+
+Ein Cluster mit 24 Nodes könnte beispielsweise drei FlexCaches mit hoher Dichte aufweisen:
+
+* Einer, der die Nodes 1 bis 8 umfasst
+* Eine Sekunde, die die Nodes 9 bis 16 umfasst
+* Ein Drittel, der die Knoten 17 bis 24 umfasst
+
+
+Diese drei HDFS würden ein High-Density-FlexCache-Array (HDFA) bilden. Wenn die Dateien gleichmäßig in jedem HDF verteilt sind, besteht die Chance, dass die vom Client angeforderte Datei lokal an der Front-End-NAS-Verbindung gespeichert ist. Wenn 12 HDFS nur zwei Nodes umfassen, ergibt sich eine Wahrscheinlichkeit von 50 %, dass die Datei lokal gespeichert wird. Wenn Sie die HDF auf einen einzelnen Knoten reduzieren und 24 davon erstellen können, wird sichergestellt, dass die Datei lokal ist.
+
+Diese Konfiguration beseitigt den gesamten Ost-West-Datenverkehr und bietet, was am wichtigsten ist, 24 CPUs/Volume-Affinitäten für den Zugriff auf die Hot File.
+
+.Was kommt als Nächstes?
+link:flexcache-hotspot-remediation-hdfa-examples.html["Entscheiden Sie sich für die FlexCache Array-Dichte"]
+
+.Verwandte Informationen
+link:../volume-admin/index.html["Dokumentation zu FlexGroup und TRs"]
