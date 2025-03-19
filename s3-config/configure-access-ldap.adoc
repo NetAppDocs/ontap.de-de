@@ -30,7 +30,7 @@ Stellen Sie vor der Konfiguration von LDAP-Gruppen und der Aktivierung des fast-
 
 
 
-== Konfigurieren Sie den S3-Zugriff für externe Verzeichnisdienste
+== Konfigurieren Sie den S3-Zugriff für LDAP
 
 . Geben Sie LDAP als _Name Service-Datenbank_ der SVM für die Gruppe und Passwort für LDAP an:
 +
@@ -91,23 +91,49 @@ NOTE: Der S3-Client fordert möglicherweise einen geheimen Schlüssel an. In Erm
 
 
 
-=== Ressourcenauthentifizierung für Active Directory für Benutzer ohne UID und GID
+=== Authentifizierungsmethode ist nsswitch und LDAP ist aktiviert Beispiel:
+
+[listing]
+----
+$curl -siku <user>:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user>,"<key_time_to_live>":"PT6H3M"}'
+----
+
+NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM. Wenn Sie Benutzern erlauben möchten, eigene Schlüssel zu generieren, müssen Sie ihrer Rolle HTTP-Berechtigungen hinzufügen, um Curl zu verwenden. Diese Berechtigung wird zusätzlich zu den S3-API-Berechtigungen gewährt.
+
+
+
+== Konfigurieren Sie den S3-Zugriff für Active Directory- oder CIFS-Server
 
 Wenn die in der Bucket-Policy-Anweisung angegebene nasgroup oder die Benutzer, die Teil der nasgroup sind, keine UID und keine GID festgelegt haben, schlagen die Suchen fehl, wenn diese Attribute nicht gefunden werden. Active Directory verwendet SID, nicht UID. Wenn SID-Einträge nicht der UID zugeordnet werden können, müssen die erforderlichen Daten an ONTAP übertragen werden.
 
 Verwenden Sie dazu, link:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["Erstellung von vserver Active Directory"]damit sich die SVM bei Active Directory authentifizieren kann und die erforderlichen Benutzer- und Gruppeninformationen abrufen kann.
 
+Alternativ können Sie verwendenlink:..authentication/enable-ad-users-groups-access-cluster-svm-task.html["cifs vserver erstellen"], um einen SMB-Server in einer Active Directory-Domäne zu erstellen.
+
 Um Suchfehler zu vermeiden, empfiehlt NetApp die Verwendung vertrauenswürdiger Domänen für die Ressourcenautorisierung im UPN-Format: `nasgroup/group@trusted_domain.com`
 
 
 
-=== Um die Benutzerzugriffsschlüssel für vertrauenswürdige Domänenbenutzer zu generieren, wenn LDAP fast BIND nicht verwendet wird
+=== Generieren Sie Schlüssel, wenn die Authentifizierungsmethode Domain ist und vertrauenswürdige Domänen in Active Directory konfiguriert sind
 
 Verwenden Sie den `s3/services/<svm_uuid>/users` Endpunkt mit Benutzern, die im UPN-Format angegeben sind. Beispiel:
 
 [listing]
 ----
-$curl -siku FQDN\\user:<user_name> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn](https://github.com/fqdn)>,"<key_time_to_live>":"PT6H3M"}'
+$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user@fqdn>,"<key_time_to_live>":"PT6H3M"}'
 ----
 
-NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM.
+NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM. Wenn Sie Benutzern erlauben möchten, eigene Schlüssel zu generieren, müssen Sie ihrer Rolle HTTP-Berechtigungen hinzufügen, um Curl zu verwenden. Diese Berechtigung wird zusätzlich zu den S3-API-Berechtigungen gewährt.
+
+
+
+=== Generieren Sie Schlüssel, wenn die Authentifizierungsmethode Domain ist und keine vertrauenswürdigen Domänen vorhanden sind:
+
+(Dies ist möglich, wenn LDAP deaktiviert ist oder Benutzer ohne POSIX-Benutzer, bei denen UID und GID nicht konfiguriert sind.)
+
+[listing]
+----
+$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn]>,"<key_time_to_live>":"PT6H3M"}'
+----
+
+NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM. Wenn Sie Benutzern erlauben möchten, eigene Schlüssel zu generieren, müssen Sie ihrer Rolle HTTP-Berechtigungen hinzufügen, um Curl zu verwenden. Diese Berechtigung wird zusätzlich zu den S3-API-Berechtigungen gewährt. Sie müssen einem Benutzernamen nur den optionalen Domänenwert (@fqdn) hinzufügen, wenn keine vertrauenswürdigen Domänen vorhanden sind.
