@@ -24,7 +24,7 @@ NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um e
 
 Verfügt die lokale Ziel-Tier einer Volume-Verschiebung nicht über eine verbundene Cloud-Tier, werden die Daten des in der Cloud-Tier gespeicherten Quell-Volumes in die lokale Tier der lokalen Ziel-Tier geschrieben.
 
-Ab ONTAP 9.8 verwendet FabricPool, wenn ein Volume link:determine-data-inactive-reporting-task.html["Berichterstellung für inaktive Daten"]aktiviert ist, die Heatmap des Volumes, um kalte Daten sofort in die Warteschlange einzureihen, um mit dem Tiering zu beginnen, sobald es auf das Zielaggregat geschrieben wird.
+Ab ONTAP 9.8 verwendet FabricPool, wenn ein Volume link:determine-data-inactive-reporting-task.html["Berichterstellung für inaktive Daten"]aktiviert ist, die Heatmap des Volumes, um kalte Daten sofort in die Warteschlange einzureihen, um mit dem Tiering zu beginnen, sobald sie auf die lokale Ziel-Tier geschrieben werden.
 
 Vor ONTAP 9.8 wird durch das Verschieben eines Volumes auf eine andere lokale Tier die Inaktivitätsdauer von Blöcken auf der lokalen Tier zurückgesetzt. Ein Volume mit der Tiering-Richtlinie für automatisches Volume mit Daten auf der lokalen Tier, das 20 Tage inaktiv, aber noch nicht gestaffelt war, hat beispielsweise die Temperatur der Daten nach einer Volume-Verschiebung auf 0 Tage zurückgesetzt.
 
@@ -32,14 +32,16 @@ Vor ONTAP 9.8 wird durch das Verschieben eines Volumes auf eine andere lokale Ti
 
 == Optimierte Verschiebung von Volumes
 
-Ab ONTAP 9.6 werden die Daten des im Bucket gespeicherten Quell-Volume nicht zurück auf die lokale Tier verschoben, wenn die lokale Ziel-Tier einer Volume-Verschiebung denselben Bucket verwendet. Diese optimierte Volume-Verschiebung führt zu einer erheblichen Netzwerkeffizienz.
+Ab ONTAP 9.6 werden die Daten des im Bucket gespeicherten Quell-Volume nicht zurück auf die lokale Tier verschoben, wenn die lokale Ziel-Tier einer Volume-Verschiebung denselben Bucket verwendet. Tiering-Daten bleiben im Ruhezustand, und nur heiße Daten müssen von einer lokalen Tier in eine andere verschoben werden. Diese optimierte Volume-Verschiebung führt zu einer erheblichen Netzwerkeffizienz.
+
+Nicht optimierte Volume-Verschiebungen generieren zusätzlichen Netzwerk- und Computing-Datenverkehr (Lese-/Schreibvorgänge und Schreibvorgänge/Puts). Dadurch steigen die Anforderungen an das ONTAP-Cluster und den Objektspeicher, was möglicherweise die Kosten durch Tiering auf öffentliche Objektspeicher in die Höhe treibt.
 
 [NOTE]
 ====
 Einige Konfigurationen sind nicht mit optimierten Volume-Verschiebungen kompatibel:
 
 * Tiering-Richtlinie wird während der Volume-Verschiebung geändert
-* Quell- und Ziel-Aggregate mit unterschiedlichen Verschlüsselungsschlüsseln
+* Lokale Quell- und Ziel-Tiers mit unterschiedlichen Verschlüsselungsschlüsseln
 * FlexClone Volumes
 * Übergeordnete FlexClone Volumes
 * MetroCluster (unterstützt optimierte Volume-Verschiebungen in ONTAP 9.8 und höher)
@@ -52,6 +54,16 @@ Verfügt die lokale Tier einer Volume-Verschiebung über eine angeschlossene Clo
 Durch das Schreiben von Daten in die lokale Tier wird zunächst die Performance der Volume-Verschiebung verbessert und die Umstellungszeit verkürzt. Wird bei der Verschiebung eines Volumes keine Tiering-Richtlinie angegeben, verwendet das Ziel-Volume die Tiering-Richtlinie des Quell-Volume.
 
 Wird bei der Volume-Verschiebung eine andere Tiering-Richtlinie angegeben, wird das Ziel-Volume mit der angegebenen Tiering-Richtlinie erstellt und die Volume-Verschiebung nicht optimiert.
+
+
+
+=== Volume-Metadaten
+
+Unabhängig davon, ob eine Volume-Verschiebung optimiert wird, speichert ONTAP Informationen über den Speicherort aller Daten, einschließlich lokaler und Tiering-Daten. Wenn ein Volume von einer lokalen Ebene auf eine andere verschoben wird, muss diese Information ebenfalls in die lokale Ziel-Tier verschoben werden. Diese Metadaten bleiben immer auf der lokalen Tier, doch kann dies je nach Menge der Tiering-Daten dazu führen, dass der Volume-Verschiebungsprozess mehr dauert als erwartet.
+
+Ein Beispiel ist die optimierte Verschiebung von Volumes mit 300 TB. Das bedeutet, dass 300 TB weniger kalte Daten nicht von einer lokalen Tier zu einer anderen verschoben werden müssen (oder 300 TB Lesezugriffe und 300 TB Schreibvorgänge in den Objektspeicher auslösen). Es bedeutet aber, dass die mit 300 TB an Daten verbundenen Metadaten (~15 TB an Daten in diesem Beispiel) auf die lokale Ziel-Tier geschrieben werden müssen.
+
+Es ist wichtig zu wissen, dass der durch den Befehl angegebene „Durchsatz“ `volume move show` keinen Durchsatz im Hinblick auf die Daten darstellt, die aus der Cloud-Tier verschoben werden, sondern dass die Metadaten lokal aktualisiert werden.
 
 
 NOTE: In einer SVM-DR-Beziehung müssen Quell- und Ziel-Volumes dieselbe Tiering-Richtlinie verwenden.
