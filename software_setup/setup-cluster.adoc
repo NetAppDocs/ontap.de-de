@@ -1,0 +1,217 @@
+---
+sidebar: sidebar 
+permalink: software_setup/setup-cluster.html 
+keywords: install, installing, cluster, set up, setup, configure, disk, data ports, guided setup, local tiers, aggregate, vserver, volume, configuring ONTAP on a new cluster, configuring a new cluster, assign a node-management IP address, node, DNS server, host name, hostname, NTP server, synchronize time, create a local tier, configure protocol, SSD, provision storage, add LUN, add volume, add namespace, volume, vserver, configure ONTAP on a new cluster, configuration 
+summary: System Manager bietet einen einfachen und einfachen Workflow zur Einrichtung des Clusters und der Konfiguration des Storage. 
+---
+= Erstellen Sie ein ONTAP-Cluster und verbinden Sie Nodes
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+NetApp empfiehlt, zum Erstellen neuer Cluster System Manager zu verwenden. System Manager bietet einen einfachen und einfachen Workflow für die Cluster-Einrichtung. Die Verwendung der ONTAP-Befehlszeilenschnittstelle (CLI) ist nur erforderlich, wenn Sie ONTAP 9.7 oder eine frühere Version in einer MetroCluster-Konfiguration ausführen oder wenn Sie auf bestimmten Plattformen ein reines IPv6-Cluster konfigurieren müssen.
+
+.Über diese Aufgabe
+Dieses Verfahren gilt für FAS, AFF und aktuelle ASA Systeme. Wenn Sie über ein ASA r2-System (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30 oder ASA A20) verfügen, befolgen Sie  die Anweisungenlink:https://docs.netapp.com/us-en/asa-r2/install-setup/initialize-ontap-cluster.html["Diesen Schritten ausführen"^], um einen ONTAP-Cluster mit dem System Manager einzurichten. ASA r2 Systeme bieten eine vereinfachte ONTAP-Erfahrung speziell für reine SAN-Kunden.
+
+Ab ONTAP 9.13.1 können Sie während der ersten Cluster-Einrichtung mithilfe der ONTAP CLI Management-LIFs auf AFF A800- und FAS8700-Plattformen IPv6-Adressen zuweisen. Bei ONTAP-Versionen vor ONTAP 9.13.1 oder bei ONTAP 9.13.1 und höher auf anderen Plattformen sollten Sie System Manager verwenden, um das Cluster mit IPv4-Adressen zu erstellen. Nach dem Abschluss der Cluster-Einrichtung sollten Sie dann link:convert-ipv4-to-ipv6-task.html["Konvertieren in IPv6"] Adressen angeben.
+
+
+NOTE: System Manager unterstützt keine Bereitstellungen, für die IPv6-Netzwerke in ONTAP 9.6 und früheren Versionen erforderlich sind.
+
+.Bevor Sie beginnen
+* Sie sollten Ihr neues Speichersystem gemäß den Installations- und Setup-Anweisungen für Ihr Plattformmodell installiert, verkabelt und eingeschaltet haben.
++
+Siehe link:https://docs.netapp.com/us-en/ontap-systems/index.html["AFF und FAS Dokumentation"^].
+
+* link:gather_cluster_setup_information.html["Sammeln Sie die Informationen, die Sie benötigen"] Um die Cluster-Einrichtung abzuschließen.
+* Cluster-Netzwerkschnittstellen sollten für jeden Node des Clusters konfiguriert werden, um eine Kommunikation innerhalb des Clusters zu ermöglichen.
+* Wenn Sie IPv6 mithilfe der CLI konfigurieren, sollte IPv6 auf dem Base Management Controller (BMC) konfiguriert werden, damit Sie über SSH auf das System zugreifen können.
+
+
+.Schritte
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Weisen Sie eine Node-Management-IP-Adresse zu
++
+** Windows-Computer
++
+... Verbinden Sie Ihren Windows-Computer mit dem gleichen Subnetz wie die Controller.
++
+Dadurch wird Ihrem System automatisch eine Node-Management-IP-Adresse zugewiesen.
+
+... Öffnen Sie das Laufwerk *Network*, um die Knoten zu ermitteln.
+... Wählen Sie den Node aus, um den Einrichtungsassistenten für den Cluster zu starten.
+
+
+** Nicht-Windows-Computer
++
+... Schalten Sie alle Nodes ein, die Sie dem Cluster hinzufügen.
++
+Dies ist erforderlich, um die Erkennung für die Clustereinstellung zu aktivieren.
+
+... Stellt eine Verbindung mit der Konsole des ersten Node her.
++
+Der Node bootet, und dann startet der Cluster-Setup-Assistent auf der Konsole.
+
++
+[listing]
+----
+Welcome to the cluster setup wizard....
+----
+... Bestätigen Sie die AutoSupport-Anweisung.
++
+[listing]
+----
+Type yes to confirm and continue {yes}: yes
+----
++
+Standardmäßig ist AutoSupport aktiviert.
+
+... Befolgen Sie die Anweisungen auf dem Bildschirm, um dem Node eine Management-IP-Adresse zuzuweisen.
+... Geben Sie in einem Webbrowser die konfigurierte Node-Management-IP-Adresse ein: "https://node-management-IP"[].
++
+System Manager erkennt die im Cluster verbliebenen Nodes automatisch.
+
+
+
+
+
+. Geben Sie unter *Speichersystem initialisieren* den Cluster-Namen und das Admin-Passwort ein.
+. Geben Sie unter *Networking* die Cluster-Management-IP-Adresse, die Subnetzmaske und das Gateway ein.
+. Wenn Sie den Domain Name Service zum Auflösen von Hostnamen verwenden möchten, wählen Sie *Domain Name Service (DNS)* verwenden aus und geben Sie die DNS-Serverinformationen ein.
+. Wenn Sie das Network Time Protocol (NTP) verwenden möchten, um die Uhrzeiten im Cluster zu synchronisieren, wählen Sie unter *andere* *Use Time Services (NTP)* aus und geben Sie die NTP-Serverinformationen ein.
+. Wählen Sie *Senden*.
+
+
+--
+.CLI VON ONTAP
+--
+. Schalten Sie alle Nodes ein, die Sie dem Cluster hinzufügen.
++
+Dies ist erforderlich, um die Erkennung für das Cluster-Setup zu aktivieren.
+
+. Stellt eine Verbindung mit der Konsole des ersten Node her.
++
+Der Node bootet, und dann startet der Cluster-Setup-Assistent auf der Konsole.
+
++
+[listing]
+----
+Welcome to the cluster setup wizard....
+----
+. Bestätigen Sie die AutoSupport-Anweisung.
++
+[listing]
+----
+Type yes to confirm and continue {yes}: yes
+----
++
+Standardmäßig ist AutoSupport aktiviert.
+
+. Befolgen Sie die Anweisungen auf dem Bildschirm, um dem Node eine Management-IP-Adresse zuzuweisen.
++
+Ab ONTAP 9.13.1 können Sie IPv6-Adressen für Management-LIFs auf A800 und FAS8700 Plattformen zuweisen. Bei ONTAP Versionen vor 9.13.1 oder für 9.13.1 und höher auf anderen Plattformen müssen Sie IPv4-Adressen für die Management-LIFs zuweisen und nach dem Abschluss der Cluster-Einrichtung in IPv6 konvertieren.
+
+. Drücken Sie *Enter*, um fortzufahren.
++
+[listing]
+----
+Do you want to create a new cluster or join an existing cluster? {create, join}:
+----
+. Erstellen eines neuen Clusters:
++
+.. Eingabe `create`
+.. Übernehmen Sie die Systemstandards oder geben Sie Ihre eigenen Werte ein.
+.. Nachdem das Setup abgeschlossen ist, melden Sie sich beim Cluster an und überprüfen Sie, ob das Cluster aktiv ist und der erste Node ordnungsgemäß funktioniert: `cluster show`
++
+Das folgende Beispiel zeigt ein Cluster, in dem der erste Node (cluster1-01) sich in einem ordnungsgemäßen Zustand befindet und zur Teilnahme berechtigt ist:
+
++
+[listing]
+----
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+cluster1-01           true    true
+----
++
+Bei Bedarf können Sie mit dem `cluster setup` Befehl auf den Cluster-Setup-Assistenten zugreifen und jeden der Werte ändern, die Sie für den Admin oder die Node-SVM eingegeben haben.
+
+
+
+. Verbinden Sie einen Node mit dem Cluster:
++
+Sie können einem Node gleichzeitig dem Cluster beitreten. Sie müssen den Join-Vorgang für jeden Node abschließen, und der Node muss Teil des Clusters sein, bevor Sie mit dem Beitritt zum nächsten Node beginnen können.
+
++
+Wenn Sie eine FAS2720 mit 24 oder weniger NL-SAS-Laufwerken haben, sollten Sie überprüfen, ob der Standardwert für die Speicherkonfiguration auf aktiv/passiv eingestellt ist, um die Performance zu optimieren. Weitere Informationen finden Sie in der Dokumentation für link:../disks-aggregates/setup-active-passive-config-root-data-task.html["Einrichten einer aktiv-Passiv-Konfiguration auf Knoten mithilfe der Root-Daten-Partitionierung"].
+
++
+.. Melden Sie sich bei dem Node an, der dem Cluster hinzugefügt werden soll.
++
+Der Cluster-Setup-Assistent wird auf der Konsole gestartet.
+
++
+[listing]
+----
+Welcome to the cluster setup wizard....
+----
+.. Bestätigen Sie die AutoSupport-Anweisung.
++
+
+NOTE: Standardmäßig ist AutoSupport aktiviert.
+
+
+
++
+[listing]
+----
+Type yes to confirm and continue {yes}: yes
+----
++
+.. Befolgen Sie die Anweisungen auf dem Bildschirm, um dem Knoten eine IP-Adresse zuzuweisen.
++
+Ab ONTAP 9.13.1 können Sie IPv6-Adressen für Management-LIFs auf A800 und FAS8700 Plattformen zuweisen. Bei ONTAP Versionen vor 9.13.1 oder für 9.13.1 und höher auf anderen Plattformen müssen Sie IPv4-Adressen für die Management-LIFs zuweisen und nach dem Abschluss der Cluster-Einrichtung in IPv6 konvertieren.
+
+.. Drücken Sie *Enter*, um fortzufahren.
++
+[listing]
+----
+Do you want to create a new cluster or join an existing cluster? {create, join}:
+----
+.. Eingabe `join`
+.. Befolgen Sie die Anweisungen auf dem Bildschirm, um den Node einzurichten und dem Cluster beizutreten.
+.. Überprüfen Sie nach Abschluss der Einrichtung, ob der Node ordnungsgemäß funktioniert und für die Teilnahme am Cluster geeignet ist: `cluster show`
++
+Das folgende Beispiel zeigt einen Cluster, nachdem der zweite Node (cluster1-02) dem Cluster hinzugefügt wurde:
+
++
+[listing]
+----
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+cluster1-01           true    true
+cluster1-02           true    true
+----
+
+
+. Wiederholen Sie Schritt 7, um jeden verbleibenden Knoten zu verbinden.
+
+
+--
+====
+.Wie es weiter geht
+* Falls erforderlich, link:convert-ipv4-to-ipv6-task.html["Konvertierung von IPv4 zu IPv6"].
+* link:task_check_cluster_with_config_advisor.html["Führen Sie Active IQ Config Advisor aus, um Ihre Konfiguration zu validieren und auf häufige Konfigurationsfehler zu prüfen"].
+

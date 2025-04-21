@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: ontap, software, setup, synchronize, system, time, across, cluster 
 summary: Durch die Synchronisierung der Zeit wird sichergestellt, dass jeder Knoten im Cluster zur gleichen Zeit hat und dass CIFS- und Kerberos-Ausfälle verhindert werden. 
 ---
-= Synchronisieren Sie die Systemzeit über das Cluster hinweg
+= Synchronisieren der Systemzeit über ein ONTAP-Cluster hinweg
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -17,12 +17,18 @@ Ein NTP-Server (Network Time Protocol) sollte an Ihrem Standort eingerichtet wer
 
 Sie synchronisieren die Zeit über das Cluster, indem Sie das Cluster mit einem oder mehreren NTP-Servern verbinden.
 
-. Vergewissern Sie sich, dass Systemzeit und Zeitzone für jeden Node korrekt eingestellt sind.
+. Überprüfen Sie, ob für jeden Node die Systemzeit und -Zeitzone richtig eingestellt sind:
++
+[source, cli]
+----
+cluster date show
+----
 +
 Alle Nodes im Cluster sollten auf dieselbe Zeitzone eingestellt sein.
 
 +
-.. Verwenden Sie den Befehl Cluster date show, um das aktuelle Datum, die aktuelle Uhrzeit und die aktuelle Zeitzone für jeden Node anzuzeigen.
+Dieses Beispiel zeigt das Datum und die Zeitzone für jeden Node im Cluster.
+
 +
 [listing]
 ----
@@ -35,7 +41,12 @@ cluster1-03  01/06/2015 09:35:15 America/New_York
 cluster1-04  01/06/2015 09:35:15 America/New_York
 4 entries were displayed.
 ----
-.. Verwenden Sie den Befehl zum Ändern des Cluster-Datums, um das Datum oder die Zeitzone für alle Nodes zu ändern.
+. Ändern Sie das Datum oder die Zeitzone für alle Knoten:
++
+[source, cli]
+----
+cluster date modify
+----
 +
 In diesem Beispiel wird die Zeitzone für den Cluster auf GMT geändert:
 
@@ -44,15 +55,26 @@ In diesem Beispiel wird die Zeitzone für den Cluster auf GMT geändert:
 ----
 cluster1::> cluster date modify -timezone GMT
 ----
-
-
-. Verwenden Sie den Cluster Time-Service ntp-Server create Befehl, um das Cluster mit dem NTP-Server zu verknüpfen.
+. Ordnen Sie das Cluster Ihrem NTP-Server zu:
 +
-** Geben Sie den folgenden Befehl ein, um Ihren NTP-Server ohne symmetrische Authentifizierung einzurichten: `cluster time-service ntp server create -server server_name`
-** Geben Sie den folgenden Befehl ein, um den NTP-Server mit symmetrischer Authentifizierung einzurichten: `cluster time-service ntp server create -server server_ip_address -key-id key_id`
+Geben Sie den folgenden Befehl ein, um Ihren NTP-Server ohne symmetrische Authentifizierung einzurichten:
+
++
+[source, cli]
+----
+cluster time-service ntp server create -server <server_name>
+----
++
+Geben Sie den folgenden Befehl ein, um Ihren NTP-Server mit symmetrischer Authentifizierung einzurichten:
+
++
+[source, cli]
+----
+cluster time-service ntp server create -server <server_ip_address> -key-id <key_id>
+----
 +
 
-NOTE: Eine symmetrische Authentifizierung ist ab ONTAP 9.5 verfügbar. In ONTAP 9.4 oder früher steht sie nicht zur Verfügung.
+NOTE: Die symmetrische Authentifizierung ist ab ONTAP 9.5 verfügbar. In ONTAP 9.4 oder früher steht sie nicht zur Verfügung.
 
 +
 Es wird vorausgesetzt, dass für das Cluster DNS konfiguriert wurde. Wenn Sie kein DNS konfiguriert haben, müssen Sie die IP-Adresse des NTP-Servers angeben:
@@ -62,9 +84,15 @@ Es wird vorausgesetzt, dass für das Cluster DNS konfiguriert wurde. Wenn Sie ke
 ----
 cluster1::> cluster time-service ntp server create -server ntp1.example.com
 ----
+. Vergewissern Sie sich, dass das Cluster einem NTP-Server zugeordnet ist:
++
+[source, cli]
+----
+cluster time-service ntp server show
+----
++
+Dieses Beispiel zeigt, dass das Cluster dem NTP-Server ntp1.example.com zugeordnet ist.
 
-
-. Überprüfen Sie, ob das Cluster einem NTP-Server zugeordnet ist: `cluster time-service ntp server show`
 +
 [listing]
 ----
@@ -75,5 +103,82 @@ ntp1.example.com     auto
 ----
 
 
-.Verwandte Informationen
-link:../system-admin/index.html["Systemadministration"]
+
+
+== Befehle für das Managen der symmetrischen Authentifizierung auf NTP-Servern
+
+Ab ONTAP 9.5 wird das Network Time Protocol (NTP) Version 3 unterstützt. NTPv3 bietet eine symmetrische Authentifizierung mit SHA-1-Schlüsseln, die die Netzwerksicherheit erhöht.
+
+[cols="2*"]
+|===
+| Hier... | Befehl 
+
+
+ a| 
+Konfigurieren Sie einen NTP-Server ohne symmetrische Authentifizierung
+ a| 
+[source, cli]
+----
+cluster time-service ntp server create -server server_name
+----
+
+
+ a| 
+Konfigurieren Sie einen NTP-Server mit symmetrischer Authentifizierung
+ a| 
+[source, cli]
+----
+cluster time-service ntp server create -server server_ip_address -key-id key_id
+----
+
+
+ a| 
+Aktivieren Sie die symmetrische Authentifizierung für einen vorhandenen NTP-Server
+
+Ein vorhandener NTP-Server kann geändert werden, um die Authentifizierung durch Hinzufügen der erforderlichen Schlüssel-ID zu aktivieren
+ a| 
+[source, cli]
+----
+cluster time-service ntp server modify -server server_name -key-id key_id
+----
+
+
+ a| 
+Konfigurieren Sie einen freigegebenen NTP-Schlüssel
+ a| 
+[source, cli]
+----
+cluster time-service ntp key create -id shared_key_id -type shared_key_type -value shared_key_value
+----
+*Hinweis:* Freigeteilte Schlüssel werden mit einer ID bezeichnet. Die ID, der Typ und der Wert müssen auf dem Node und dem NTP-Server identisch sein
+
+
+
+ a| 
+Konfigurieren Sie einen NTP-Server mit einer unbekannten Schlüssel-ID
+ a| 
+[source, cli]
+----
+cluster time-service ntp server create -server server_name -key-id key_id
+----
+
+
+ a| 
+Konfigurieren Sie einen Server mit einer Schlüssel-ID, die nicht auf dem NTP-Server konfiguriert ist.
+ a| 
+[source, cli]
+----
+cluster time-service ntp server create -server server_name -key-id key_id
+----
+*Hinweis:* die Schlüssel-ID, der Typ und der Wert müssen mit der auf dem NTP-Server konfigurierten Schlüssel-ID, dem Typ und dem Wert übereinstimmen.
+
+
+
+ a| 
+Deaktivieren Sie die symmetrische Authentifizierung
+ a| 
+[source, cli]
+----
+cluster time-service ntp server modify -server server_name -authentication disabled
+----
+|===
