@@ -22,7 +22,7 @@ Falls Sie mehr Speicherplatz hinzufügen möchten, können Sie die kollektive Gr
 Wenn Sie die Performance verbessern möchten, können Sie das FlexGroup Volume erweitern. In den folgenden Situationen können Sie ein FlexGroup-Volume erweitern und neue Member-Volumes hinzufügen:
 
 * Dem Cluster wurden neue Nodes hinzugefügt.
-* Auf den vorhandenen Nodes wurden neue Aggregate erstellt.
+* Auf den vorhandenen Nodes wurden neue lokale Tiers (Aggregate) erstellt.
 * Die bestehenden Mitglied-Volumes des FlexGroup Volume haben die maximale FlexVol-Größe für die Hardware erreicht (100 TB oder 300 TB, falls link:../volumes/enable-large-vol-file-support-task.html["Unterstützung für große Volumes"]aktiviert). Daher kann die Größe des FlexGroup Volume nicht ohne Hinzufügen weiterer Mitglied-Volumes geändert werden.
 
 
@@ -55,12 +55,18 @@ Erweitern Sie das FlexGroup Volume durch Hinzufügen neuer Member Volumes (Kompo
 
 Der Standardwert des `-aggr-list-multiplier` Parameters ist 1.
 
-Um ein FlexGroup Volume für FabricPool in ONTAP 9.5 zu erweitern, müssen alle neuen Aggregate verwendet werden FabricPool.
+Bei der Erweiterung eines FlexGroup Volumes mit link:../fabricpool/index.html["FabricPool"]müssen alle lokalen Tiers (Aggregate) an denselben Cloud-Tier angebunden werden.
 
 |===
 
 
-Sofern möglich, sollten Sie die Kapazität eines FlexGroup Volume erhöhen. Wenn Sie ein FlexGroup-Volume erweitern müssen, sollten Sie Mitglieds-Volumes in denselben Vielfachen wie die Mitglieds-Volumes des vorhandenen FlexGroup-Volumes hinzufügen, um eine konsistente Performance zu gewährleisten. Wenn das vorhandene FlexGroup-Volume beispielsweise 16 Member Volumes mit acht Member Volumes pro Node enthält, können Sie das vorhandene FlexGroup-Volume um 8 oder 16 Member Volumes erweitern.
+Wenn bestehende Aggregate (lokale Tiers) oder Mitglied-Volumes ihre maximale Kapazität nicht erreicht haben (100 TB oder zwei Milliarden Dateien jeweils), ist es vorzuziehen, die Gesamtgröße des FlexGroup Volumes zu erhöhen, anstatt zusätzliche Mitglied-Volumes hinzuzufügen.
+
+Verwenden Sie die Volume-Erweiterung nur, wenn Sie keine Möglichkeit haben, die vorhandene Volume-Größe oder die Anzahl der Dateien zu erhöhen, oder wenn die FlexGroup auf neue Hardware erweitert wird. Um eine konsistente Leistung zu gewährleisten, muss allen Knoten die gleiche Anzahl an Mitgliedsvolumes hinzugefügt werden. Wenn ein vorhandenes FlexGroup-Volume beispielsweise 8 Mitglied-Volumes mit vier Mitglied-Volumes pro Node enthält, führt das Hinzufügen von zwei Mitgliedern pro Node zu 12 Mitglied-Volumes, sechs Mitglied-Volumes pro Node.
+
+Wenn Sie neue Mitglieder zu neuen Nodes hinzufügen, versuchen Sie, eine konsistente Anzahl von Mitglieds-Volumes pro Node wie in den vorhandenen Nodes beizubehalten. Wenn ein vorhandenes FlexGroup-Volume beispielsweise 8 Member Volumes mit vier Member Volumes pro Node enthält, müssen bei Erweiterung der FlexGroup-Volumes auf den neuen Node vier Member Volumes hinzugefügt werden, was zu einem FlexGroup-Volume mit 12 Mitgliedern führt.
+
+Das Hinzufügen neuer Mitglieder zu einem FlexGroup-Volume ändert die Ingest Heuristics, um die neuen, leeren Mitgliedervolumes zu bevorzugen und kann die Gesamtsystemleistung für neue Dateneinspeisung beeinflussen, bis die neuen Mitgliedervolumes mit bereits vorhandenen Mitgliedervolumes ausgeglichen werden.
 
 .Beispiele
 *Beispiel für die Erhöhung der Kapazität der bestehenden Mitgliedervolumes*
@@ -75,10 +81,10 @@ Wenn das FlexGroup-Volume 16 Mitglied-Volumes enthält, wird der Speicherplatz j
 
 *Beispiel für die Verbesserung der Performance durch Hinzufügen neuer Mitgliedervolumes*
 
-Im folgenden Beispiel wird gezeigt, wie zwei weitere Member Volumes zum FlexGroup Volume Volx hinzugefügt werden:
+Im folgenden Beispiel wird gezeigt, wie vier zusätzliche Mitglied-Volumes hinzugefügt werden, zwei zu jedem der zugrunde liegenden lokalen Tiers (Aggregate) zum FlexGroup-Volume fg1:
 
 [listing]
 ----
-cluster1::> volume expand -vserver vs1 -volume volX -aggr-list aggr1,aggr2
+cluster1::> volume expand -vserver svm1 -volume fg1 -aggr-list aggr1,aggr2 -aggr-list-multiplier 2
 ----
 Die Größe der neuen Mitgliedervolumes entspricht der der vorhandenen Mitgliedervolumes.
