@@ -31,8 +31,14 @@ Sie können eine vorhandene FlexClone-Datei oder eine FlexClone-LUN beim Erstell
 
 Wenn die maximale Split-Last des Node erreicht ist, stoppt der Node vorübergehend die Annahme `EBUSY` von Anforderungen zum Erstellen von FlexClone-Dateien und FlexClone-LUNs und gibt eine Fehlermeldung aus. Wenn die Split Load des Node unter das Maximum fällt, akzeptiert der Node Anfragen zur erneuten Erstellung von FlexClone Dateien und FlexClone LUNs. Sie sollten warten, bis der Node die Kapazität zum Erstellen der Klone hat, bevor Sie die Erstellungsanforderung erneut versuchen.
 
+Die FlexClone LUN übernimmt das Attribut für Platzreservierungen der übergeordneten LUN. Eine platzreservierte FlexClone LUN benötigt genauso viel Speicherplatz wie die reservierte übergeordnete LUN. Falls die FlexClone LUN nicht reserviert ist, muss das Volume über genügend Speicherplatz verfügen, um Änderungen am Klon gerecht zu werden.
+
 .Schritte
-. Erstellen Sie mit dem `volume file clone create` Befehl eine FlexClone-Datei oder eine FlexClone-LUN.
+. Wenn Sie eine LUN klonen, vergewissern Sie sich, dass die LUN nicht zugeordnet ist oder nicht auf geschrieben wird.
+. FlexClone-LUN oder -Datei erstellen:
++
+`volume file clone create -vserver _vserver_name_ -volume _volume_name_ -source-path _source_path_ -destination-path _destination_path_`
+
 +
 Das folgende Beispiel zeigt, wie Sie eine FlexClone-Datei file1_Clone der übergeordneten Datei file1_source im Volume vol1 erstellen können:
 
@@ -46,5 +52,45 @@ Erfahren Sie mehr über `volume file clone create` in der link:https://docs.neta
 
 
 
-.Verwandte Informationen
-link:../concepts/manual-pages.html["ONTAP-Befehlsreferenz"]
+
+
+== Erstellen Sie FlexClone LUNs aus einem Snapshot in einem Volume
+
+Sie können einen Snapshot in Ihrem Volume verwenden, um FlexClone Kopien Ihrer LUNs zu erstellen. Die FlexClone Kopien von LUNs sind sowohl lesbar als auch schreibbar.
+
+.Was Sie benötigen
+Eine FlexClone Lizenz muss installiert sein. Diese Lizenz ist in enthaltenlink:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"].
+
+.Über diese Aufgabe
+Die FlexClone LUN übernimmt das Attribut für Platzreservierungen der übergeordneten LUN. Eine platzreservierte FlexClone LUN benötigt genauso viel Speicherplatz wie die reservierte übergeordnete LUN. Falls die FlexClone LUN nicht reserviert ist, muss das Volume über genügend Speicherplatz verfügen, um Änderungen am Klon gerecht zu werden.
+
+.Schritte
+. Vergewissern Sie sich, dass die LUN nicht zugeordnet ist oder nicht in geschrieben wird.
+. Erstellen Sie einen Snapshot des Volumes, das die LUNs enthält:
++
+`volume snapshot create -vserver _vserver_name_ -volume _volume_name_ -snapshot _snapshot_name_`
+
++
+Sie müssen einen Snapshot (den Backing-Snapshot) der LUN erstellen, die Sie klonen möchten.
+
+. Erstellen Sie die FlexClone-LUN aus dem Snapshot:
++
+`volume file clone create -vserver _vserver_name_ -volume _volume_name_ -source-path _source_path_ -snapshot-name _snapshot_name_ -destination-path _destination_path_`
+
++
+Wenn die FlexClone-LUN für das automatische Löschen verfügbar sein soll, geben Sie Folgendes ein `-autodelete true`: . Wenn Sie diese FlexClone LUN in einem Volume mit Semi-Thick Provisioning erstellen, müssen Sie das automatische Löschen für alle FlexClone LUNs aktivieren.
+
+. Vergewissern Sie sich, dass die FlexClone LUN richtig ist:
++
+`lun show -vserver _vserver_name_`
+
++
+[listing]
+----
+
+Vserver Path                      State    Mapped    Type     Size
+------- ----------------------    -------- --------- -------- -------
+vs1     /vol/vol1/lun1_clone      online   unmapped windows   47.07MB
+vs1     /vol/vol1/lun1_snap_clone online   unmapped windows   47.07MB
+----
+
