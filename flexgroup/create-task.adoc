@@ -2,7 +2,7 @@
 permalink: flexgroup/create-task.html 
 sidebar: sidebar 
 keywords: create, flexgroup, volume, flex group, aggregate, fabricpool, fabric pool 
-summary: Sie können ein FlexGroup Volume erstellen, indem Sie manuell die Aggregate auswählen, auf denen das FlexGroup Volume erstellt werden muss. Anschließend wird die Anzahl der Komponenten für jedes Aggregat angegeben. 
+summary: 'Sie können ein FlexGroup Volume erstellen, indem Sie die lokalen Tiers (Aggregate), auf denen das FlexGroup Volume erstellt werden soll, manuell auswählen und dann die Anzahl der Mitglied-Volumes auf den einzelnen lokalen Tiers angeben.' 
 ---
 = Erstellen Sie ONTAP FlexGroup Volumes
 :allow-uri-read: 
@@ -11,33 +11,35 @@ summary: Sie können ein FlexGroup Volume erstellen, indem Sie manuell die Aggre
 
 
 [role="lead"]
-Sie können ein FlexGroup Volume erstellen, indem Sie manuell die Aggregate auswählen, auf denen das FlexGroup Volume erstellt werden muss. Anschließend wird die Anzahl der Komponenten für jedes Aggregat angegeben.
+Sie können ein FlexGroup Volume erstellen, indem Sie die lokalen Tiers (Aggregate), auf denen das FlexGroup Volume erstellt werden muss, manuell auswählen und dann die Anzahl der Mitglied-Volumes (Komponenten) für jede lokale Tier angeben.
+
+Alternativ können Sie ONTAP für das FlexGroup Volume wählenlink:provision-automatically-task.html["Automatische Bereitstellung"], indem Sie die lokalen Tiers auswählen und ONTAP die Anzahl der Mitglied-Volumes basierend auf Best Practices festlegen, um optimale Performance und Kapazität zu erzielen.
 
 .Über diese Aufgabe
-Für die Erstellung eines FlexGroup Volume müssen Sie den in den Aggregaten erforderlichen Speicherplatz kennen.
+Sie müssen sich des Speicherplatzes bewusst sein, der auf den lokalen Tiers für die Erstellung eines FlexGroup Volumes erforderlich ist.
 
 Wenn Sie ein FlexGroup Volume erstellen, müssen Sie die folgenden Richtlinien berücksichtigen, um mit einem FlexGroup Volume die besten Performance-Ergebnisse zu erzielen:
 
-* Ein FlexGroup Volume sollte nur Aggregate umfassen, die sich auf identischen Hardwaresystemen befinden.
+* Ein FlexGroup Volume sollte lokale Tiers verwenden, die sich auf identischen Hardwaresystemen befinden.
 +
 Der Einsatz identischer Hardwaresysteme ermöglicht eine vorhersehbare Performance für das gesamte FlexGroup Volume.
 
-* Ein FlexGroup Volume sollte Aggregate mit demselben Festplattentyp und RAID-Gruppenkonfigurationen umfassen.
+* Ein FlexGroup-Volume sollte über lokale Tiers mit demselben Festplattentyp und derselben RAID-Gruppenkonfiguration verteilt sein.
 +
-Um eine konsistente Performance zu erzielen, müssen alle Aggregate aus allen SSDs, HDDs oder allen hybriden Aggregaten bestehen. Außerdem sollten die Aggregate im FlexGroup Volume die gleiche Anzahl an Laufwerken und RAID-Gruppen aufweisen.
+Für eine konsistente Performance müssen Sie sicherstellen, dass alle lokalen Tiers aus allen SSDs, allen HDDs oder allen lokalen Flash Pool (Hybrid) Tiers bestehen. Außerdem sollten die lokalen Tiers über dieselbe Anzahl an Laufwerken und RAID-Gruppen im gesamten FlexGroup Volume verfügen.
 
 * Ein FlexGroup Volume kann Teile eines Clusters umfassen.
 +
 Ein FlexGroup Volume muss nicht so konfiguriert werden, dass er den gesamten Cluster umfasst, sondern kann daher die verfügbaren Hardware-Ressourcen besser nutzen.
 
-* Bei der Erstellung eines FlexGroup Volume ist es am besten, wenn die Aggregate, auf denen das FlexGroup Volume bereitgestellt wird, folgende Merkmale aufweisen:
+* Am besten ist es bei der Erstellung eines FlexGroup Volume zu beachten, ob die lokalen Tiers, auf denen das FlexGroup Volume implementiert ist, die folgenden Eigenschaften aufweisen:
 +
-** Ungefähr der gleiche freie Speicherplatz sollte über mehrere Aggregate verfügbar sein, besonders bei Thin Provisioning.
-** Etwa 3 Prozent des freien Speicherplatzes sollten nach der Erstellung des FlexGroup Volume für aggregierte Metadaten reserviert werden.
+** Der freie Speicherplatz sollte über mehrere lokale Tiers hinweg, insbesondere bei Thin Provisioning, ungefähr gleich viel verfügbar sein.
+** Ca. 3 Prozent des freien Speicherplatzes sollten nach der Erstellung des FlexGroup Volume für lokale Tier-Metadaten reserviert werden.
 
 
-* Bei FAS Systemen ist es am besten, zwei Aggregate pro Node zu verwenden. Und für AFF Systeme ist ein Aggregat pro Node für das FlexGroup Volume erforderlich.
-* Jedes FlexGroup Volume sollte mindestens acht Komponenten erstellen, die auf zwei oder mehr Aggregaten auf FAS Systemen und über ein oder mehrere Aggregate auf AFF Systemen verteilt sind.
+* Bei FAS Systemen sollten am besten zwei lokale Tiers pro Node vorhanden sein. Bei AFF Systemen muss ein lokaler Tier pro Node für das FlexGroup Volume vorhanden sein.
+* Sie sollten für jedes FlexGroup Volume mindestens acht Mitglieds-Volumes erstellen, die auf FAS Systemen über zwei oder mehr lokale Tiers verteilt sind, und auf AFF Systemen über einen oder mehrere lokale Tiers.
 
 
 .Bevor Sie beginnen
@@ -48,23 +50,21 @@ Weitere Informationen über Kapazitätsanalysen und Aktivitätsverfolgung finden
 
 
 .Schritte
-. Erstellen Sie das FlexGroup Volume: `volume create -vserver svm_name -volume flexgroup_name -aggr-list aggr1,aggr2,.. -aggr-list-multiplier constituents_per_aggr -size fg_size [–encrypt true] [-qos-policy-group qos_policy_group_name]`
+. Erstellen Sie das FlexGroup Volume: `volume create -vserver svm_name -volume flexgroup_name -aggr-list aggr1,aggr2,.. -aggr-list-multiplier constituents_per_aggr -size fg_size [–encrypt true] [-qos-policy-group qos_policy_group_name] [-granular-data advanced]`
 +
-** Der `-aggr-list` Parameter gibt die Liste mit Aggregaten an, die für FlexGroup Volume-Komponenten verwendet werden sollen.
+** Der `-aggr-list` Parameter gibt die Liste der lokalen Tiers an, die für Volumes mit FlexGroup-Mitgliedern verwendet werden sollen.
 +
-Jeder Eintrag in der Liste erstellt eine Komponente im angegebenen Aggregat. Sie können ein Aggregat mehrmals angeben, damit mehrere Komponenten auf dem Aggregat erstellt werden.
+Für eine konsistente Performance innerhalb des FlexGroup Volumes müssen alle lokalen Tiers denselben Festplattentyp und dieselbe RAID-Gruppen-Konfiguration verwenden.
 
-+
-Für eine konsistente Performance im FlexGroup Volume müssen alle Aggregate denselben Festplattentyp und dieselbe Konfiguration der RAID-Gruppen verwenden.
-
-** Der `-aggr-list-multiplier` Parameter gibt die Anzahl der Wiederholungen über die Aggregate an, die `-aggr-list` beim Erstellen eines FlexGroup Volume mit dem Parameter aufgelistet sind.
+** Der `-aggr-list-multiplier` Parameter gibt die Anzahl der Mitgliedsvolumes an, die auf jeder lokalen Tier erstellt werden, die mit dem Parameter aufgelistet `-aggr-list` ist.
 +
 Der Standardwert des `-aggr-list-multiplier` Parameters ist 4.
 
 ** Der `size` Parameter gibt die Größe des FlexGroup-Volumes in KB, MB, GB, TB oder PB an.
-** Ab ONTAP 9.5 können Sie FlexGroup Volumes für FabricPool erstellen, die nur alle SSD-Aggregate verwenden.
+** Ab ONTAP 9.16.1 können Sie  (`-granular-data advanced`in der CLI aktivierenlink:../enable-adv-capacity-flexgroup-task.html["Erweiterter Kapazitätsausgleich"]), um Daten über mehrere FlexGroup Member Volumes zu schreiben, wenn Dateien größer als 10 GB sind.
+** Ab ONTAP 9.5 können Sie FlexGroup Volumes mithilfe lokaler Tiers mit aktivierter FabricPool erstellen.
 +
-Zur Erstellung eines FlexGroup Volume für FabricPool `-aggr-list` müssen alle mit dem Parameter angegebenen Aggregate FabricPool sein.  `none`Für FabricPool muss die Volumengarantie immer auf festgelegt sein. Sie können auch die Tiering-Richtlinie und den minimalen Kühlzeitraum für das FlexGroup Volume festlegen.
+Um ein FlexGroup-Volume für FabricPool zu erstellen, muss für alle mit dem Parameter angegebenen lokalen Tiers `-aggr-list` FabricPool aktiviert sein. Bei Verwendung von FabricPool muss die Volume-Garantie immer auf festgelegt sein `none`. Sie können auch die Tiering-Richtlinie und den minimalen Kühlzeitraum für das FlexGroup Volume festlegen.
 
 +
 xref:../disks-aggregates/index.html[Festplatten- und Aggregatmanagement]
@@ -101,7 +101,7 @@ Do you want to continue? {y|n}: y
 ----
 
 
-Wenn Sie im vorherigen Beispiel das FlexGroup Volume für FabricPool erstellen möchten, müssen alle Aggregate (aggr1, aggr2 und aggr3) Aggregate in FabricPool sein. Mounten Sie das FlexGroup Volume über einen Verbindungspfad: `volume mount -vserver vserver_name -volume vol_name -junction-path junction_path`
+Wenn Sie im vorherigen Beispiel das FlexGroup-Volume für FabricPool erstellen möchten, muss auf allen lokalen Ebenen (aggr1, aggr2 und aggr3) FabricPool aktiviert sein. Mounten Sie das FlexGroup Volume über einen Verbindungspfad: `volume mount -vserver vserver_name -volume vol_name -junction-path junction_path`
 
 [listing]
 ----
