@@ -1,10 +1,10 @@
 ---
 permalink: data-protection/manage-snapshot-copy-reserve-concept.html 
 sidebar: sidebar 
-keywords: manage, snapshot, copy, reserve 
+keywords: manage, snapshot, copy, reserve, increase, protected files 
 summary: Die Snapshot-Reserve legt einen Prozentsatz des Speicherplatzes für Snapshots fest, standardmäßig fünf Prozent. Da Snapshots Speicherplatz im aktiven Dateisystem verwenden, wenn die Snapshot-Reserve erschöpft ist, möchten Sie die Snapshot-Reserve gegebenenfalls erhöhen. Alternativ können Sie Snapshots auch automatisch löschen, wenn die Reserve voll ist. 
 ---
-= Managen Sie die Übersicht über die Snapshot-Reserve
+= Erfahren Sie mehr über das Management der ONTAP Snapshot Reserve
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -12,3 +12,50 @@ summary: Die Snapshot-Reserve legt einen Prozentsatz des Speicherplatzes für Sn
 
 [role="lead"]
 Die _Snapshot Reserve_ legt einen Prozentsatz des Speicherplatzes für Snapshots beiseite, standardmäßig fünf Prozent. Da Snapshots Speicherplatz im aktiven Dateisystem verwenden, wenn die Snapshot-Reserve erschöpft ist, möchten Sie die Snapshot-Reserve gegebenenfalls erhöhen. Alternativ können Sie Snapshots auch automatisch löschen, wenn die Reserve voll ist.
+
+
+
+== Wann die Snapshot-Reserve erhöht werden soll
+
+Bei der Entscheidung, ob die Snapshot-Reserve erhöht werden soll, ist zu beachten, dass ein Snapshot nur Änderungen an Dateien seit dem letzten Snapshot aufzeichnet. Sie verbraucht nur dann Speicherplatz, wenn Blöcke im aktiven File-System geändert oder gelöscht werden.
+
+Das bedeutet, dass die Änderungsrate des Dateisystems der entscheidende Faktor bei der Bestimmung des Speicherplatzes ist, der von Snapshots verwendet wird. Unabhängig davon, wie viele Snapshots erstellt werden, benötigen sie keinen Speicherplatz, wenn sich das aktive Dateisystem nicht geändert hat.
+
+Bei einem FlexVol volume mit Datenbanktransaktionsprotokollen kann z. B. eine Snapshot-Reserve von bis zu 20 % zur Berücksichtigung der höheren Änderungsrate vorhanden sein. Sie möchten nicht nur mehr Snapshots erstellen, um die häufigeren Updates der Datenbank zu erfassen, sondern auch eine größere Snapshot-Reserve einsetzen, um den zusätzlichen Festplattenspeicher, den die Snapshots verbrauchen, zu bewältigen.
+
+[TIP]
+====
+Ein Snapshot besteht aus Zeigern auf Blöcke statt aus Kopien von Blöcken. Man kann sich einen Zeiger als „Anspruch“ auf einen Block vorstellen: ONTAP „hält“ den Block, bis der Snapshot gelöscht wird.
+
+====
+image:how-snapshots-consume-disk-space.gif["Von Snapshots verbrauchter Festplattenspeicher"]
+
+
+
+== Das Löschen von geschützten Dateien kann zu weniger Dateispeicherplatz führen als erwartet
+
+Ein Snapshot verweist auch nach dem Löschen der Datei, die den Block verwendet hat, auf einen Block. Dies erklärt, warum eine erschöpfte Snapshot-Reserve zu dem kontraintuitiven Ergebnis führen könnte, bei dem das Löschen eines gesamten Dateisystems zu weniger Speicherplatz führt als das Dateisystem belegt.
+
+Betrachten wir das folgende Beispiel. Vor dem Löschen von Dateien `df` sieht die Befehlsausgabe wie folgt aus:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 3000000 0       100%
+/vol/vol0/.snapshot 1000000 500000  500000   50%
+----
+Nach dem Löschen des gesamten Dateisystems und dem Erstellen eines Snapshots des Volumes generiert der `df` Befehl die folgende Ausgabe:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 2500000 500000   83%
+/vol/vol0/.snapshot 1000000 3500000 0       350%
+----
+Wie die Ausgabe zeigt, werden nun die gesamten 3 GB, die früher vom aktiven Dateisystem verwendet wurden, von Snapshots zusätzlich zu den 0.5 GB, die vor dem Löschen verwendet wurden, verwendet.
+
+Da der von den Snapshots verwendete Speicherplatz nun die Snapshot-Reserve überschreitet, überläuft der 2.5 GB "`spills`" Speicherplatz in den für aktive Dateien reservierten Speicherplatz, so dass Sie mit 0.5 GB freiem Speicherplatz für Dateien, wo Sie vernünftigerweise 3 GB erwartet haben.
+
+Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
