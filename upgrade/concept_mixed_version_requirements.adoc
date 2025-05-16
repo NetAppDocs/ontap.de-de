@@ -4,65 +4,197 @@ sidebar: sidebar
 keywords: ontap, upgrade, mixed, version, clusters, mixed-version nodes, requirements 
 summary: Ein ONTAP Cluster mit gemischten Versionen besteht aus Nodes, auf denen zwei verschiedene wichtige ONTAP Versionen ausgeführt werden, z. B. ONTAP 9.8 und 9.12.1. ONTAP-Cluster mit gemischter Version werden nur in bestimmten Szenarien unterstützt. 
 ---
-= Prüfen Sie vor einem Upgrade, ob ONTAP-Cluster verschiedener Versionen vorhanden sind
+= Überprüfen Sie die Kompatibilität der ONTAP-Versionen für Cluster mit gemischten Versionen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Ein ONTAP Cluster in einer gemischten Version besteht aus Nodes, auf denen für eine begrenzte Zeit zwei verschiedene wichtige ONTAP Versionen ausgeführt werden. Wenn ein Cluster beispielsweise derzeit aus Nodes besteht, auf denen ONTAP 9.8 und 9.12.1 ausgeführt werden, handelt es sich um ein Cluster mit unterschiedlichen Versionen. Gleiches gilt für ein Cluster mit verschiedenen Nodes, auf dem ONTAP 9.9.1 und 9.13.1 ausgeführt wird. NetApp unterstützt ONTAP Cluster gemischter Versionen für begrenzte Zeit und in bestimmten Szenarien.
+In einem ONTAP Cluster mit gemischten Versionen laufen auf den Nodes kurze Zeit zwei verschiedene wichtige ONTAP-Versionen. Beispielsweise ist ein Cluster mit Nodes mit ONTAP 9.8 und 9.12.1 oder ONTAP 9.9.1 und 9.13.1 ein Cluster mit gemischten Versionen. Cluster mit Nodes, die innerhalb derselben Version unterschiedliche Patch-Level ausführen, wie ONTAP 9.9.1P1 und 9.9.1P5, sind keine Cluster mit gemischten Versionen.
+
+
+NOTE: Cluster mit gemischten Versionen werden für Cloud Volumes ONTAP nicht unterstützt.
+
+NetApp unterstützt ONTAP Cluster gemischter Versionen für begrenzte Zeit und in bestimmten Szenarien.
 
 Im Folgenden finden Sie die häufigsten Szenarien, in denen ein ONTAP-Cluster einen gemischten Versionsstatus aufweist:
 
 * ONTAP Software-Upgrades in großen Clustern
-* ONTAP Software-Upgrades sind erforderlich, wenn einem Cluster neue Nodes hinzugefügt werden sollen
-
-
-Die Informationen gelten für ONTAP Versionen, die Systeme von NetApp Plattformen unterstützen, wie z. B. Systeme der AFF A-Serie und C-Serie, ASA und FAS sowie C-Series. Die Informationen gelten nicht für ONTAP Cloud-Versionen (9.x.0) wie z.B. 9.12.0.
-
-
-
-== Anforderungen für ONTAP Cluster gemischter Versionen
-
-Wenn Ihr Cluster einen gemischten Versionsstatus von ONTAP erhalten muss, müssen Sie wichtige Anforderungen und Einschränkungen beachten.
-
-* Ein Cluster kann zu einem bestimmten Zeitpunkt nicht mehr als zwei verschiedene Haupt-ONTAP-Versionen enthalten. Beispielsweise werden ONTAP 9.9.1 und 9.13.1 unterstützt, ONTAP 9.9.1, 9.12.1 und 9.13.1 nicht. Cluster mit Nodes, die im selben ONTAP Release unterschiedliche P- oder D-Patch-Level ausführen, z. B. ONTAP 9.9.1P1 und 9.9.1P5, gelten nicht als ONTAP Cluster mit gemischter Version.
-* Während sich das Cluster in einem Zustand mit gemischten Versionen befindet, sollten Sie keine Befehle eingeben, die den Cluster-Betrieb oder die Konfiguration verändern, außer diejenigen, die für das Upgrade oder die Datenmigration erforderlich sind. Beispielsweise sollten Aktivitäten wie (aber nicht beschränkt auf) LIF-Migration, geplante Storage-Failover-Vorgänge oder die Erstellung oder Löschung umfangreicher Objekte erst nach Abschluss des Upgrades und der Datenmigration durchgeführt werden.
-* Für einen optimalen Cluster-Betrieb sollte die Zeitspanne, während der sich das Cluster in einem Zustand gemischter Versionen befindet, so kurz wie möglich sein. Die maximale Dauer, für die ein Cluster den Status gemischter Versionen aufweisen kann, hängt von der niedrigsten ONTAP-Version im Cluster ab.
 +
-[cols="2*"]
+Das Upgrade aller Nodes in einem großen Cluster kann mehrere Tage oder Wochen dauern. Das Cluster wechselt in einen Zustand mit gemischter Version, bis alle Nodes aktualisiert werden.
+
+* ONTAP Software-Upgrades sind erforderlich, wenn einem Cluster neue Nodes hinzugefügt werden sollen
++
+Sie können dem Cluster entweder neue Nodes hinzufügen, um die Kapazität zu erweitern, oder während des kompletten Austauschen der Controller neue Nodes hinzufügen. In beiden Fällen müssen Sie unter Umständen den Status gemischter Versionen eingeben, um Ihre Daten von bestehenden Controllern zu den neuen Nodes in Ihrem neuen System zu migrieren.
+
+
+
+Für einen optimalen Cluster-Betrieb sollte die Zeitspanne, während der sich das Cluster in einem Zustand gemischter Versionen befindet, so kurz wie möglich sein. Die maximale Dauer, die ein Cluster für eine Unterstützung in einem gemischten Versionsstatus zur Verfügung stellt, hängt von der niedrigsten ONTAP-Version im Cluster ab.
+
+[cols="2"]
 |===
-| Wenn die niedrigste Version von ONTAP, die im Cluster mit gemischten Versionen ausgeführt wird, lautet: | Dann können Sie in einem gemischten Versionsstatus für maximal bleiben 
+| Wenn die niedrigste Version von ONTAP, die im Cluster mit gemischten Versionen läuft, ist... | Dann können Sie in einem gemischten Version Zustand bleiben für ein Maximum von... 
 
 
 | ONTAP 9.8 oder höher | 90 Tage 
 
 
-| ONTAP 9.7 oder niedriger | 7 Tage 
+| ONTAP 9.7 oder früher | 7 Tage 
 |===
-* Ab ONTAP 9.8 darf der Versionsunterschied zwischen den ursprünglichen und den neuen Nodes nicht größer als vier sein. Beispielsweise können in einem ONTAP Cluster mit gemischten Versionen die Nodes ONTAP 9.8 und 9.12.1 ausgeführt werden. Außerdem können dort auch Nodes mit ONTAP 9.9.1 und 9.13.1 ausgeführt werden. Es würde jedoch kein ONTAP Cluster mit gemischten Versionen und Nodes mit ONTAP 9.8 und 9.13.1 unterstützt.
-+
-Eine vollständige Liste der unterstützten Cluster gemischter Versionen finden Sie unter link:concept_upgrade_paths.html["Unterstützte Upgrade-Pfade"]. Alle _direct_ Upgrade-Pfade werden für Cluster mit gemischten Versionen unterstützt.
+Während sich das Cluster in einem Zustand mit gemischten Versionen befindet, sollten Sie keine Befehle eingeben, die den Cluster-Betrieb oder die Konfiguration verändern, außer diejenigen, die für das Upgrade oder die Datenmigration erforderlich sind. Beispielsweise sollten Aktivitäten wie (aber nicht beschränkt auf) LIF-Migration, geplante Storage-Failover-Vorgänge oder die Erstellung oder Löschung umfangreicher Objekte erst nach Abschluss des Upgrades und der Datenmigration durchgeführt werden.
 
 
 
+== Cluster mit gemischten Versionen werden von ONTAP Software-Upgrades unterstützt
+
+Sie können mit jeder beliebigen unterstützten ONTAP-Version einen gemischten Versionsstatus eingeben, der ein direktes Upgrade von Ihrer niedrigsten aktuellen Version ermöglicht. Wenn Sie beispielsweise ONTAP 9.11.1 ausführen, können Sie den Status einer gemischten Version mit Nodes eingeben, auf denen ONTAP 9.15.1 ausgeführt wird. Sie können keinen gemischten Versionsstatus mit Nodes aufrufen, die ONTAP 9.11.1 und ONTAP 9.16.1 ausführen. ONTAP 9.16.1 wird für direkte Upgrades von ONTAP 9.11.1 nicht unterstützt.
+
+Um ein Upgrade auf eine ONTAP-Version durchzuführen, die für ein direktes Upgrade von Ihrer aktuellen Version nicht unterstützt wird, müssen Sie ein mehrstufiges Upgrade durchführen. Bei einem mehrstufigen Upgrade geben Sie zuerst einen gemischten Versionsstatus mit der höchsten Version ein, die für ein direktes Upgrade von Ihrer aktuellen Version unterstützt wird. Sie führen dieses Upgrade durch und führen dann ein separates Upgrade auf Ihre Zielversion durch. Wenn die niedrigste aktuelle Version beispielsweise ONTAP 9.10.1 ist und Sie ein Upgrade auf ONTAP 9.16.1 durchführen möchten, geben Sie zuerst einen gemischten Versionsstatus ein, um alle Nodes auf ONTAP 9.14.1 zu aktualisieren. Anschließend führen Sie ein separates Upgrade von ONTAP 9.14.1 auf ONTAP 9.16.1 durch. Erfahren Sie mehr über link:concept_upgrade_paths.html#types-of-upgrade-paths["Mehrstufige Upgrades"] und link:concept_upgrade_paths.html#supported-upgrade-paths["Unterstützte Upgrade-Pfade"].
+
+Ein Cluster mit gemischten Versionen kann nur zwei wichtige ONTAP-Versionen enthalten. Sie können beispielsweise ein Cluster mit gemischten Versionen und Nodes mit ONTAP 9.13.1 und 9.15.1 oder mit Nodes mit ONTAP 9.13.1 und 9.16.1 verwenden. Sie können kein Cluster mit gemischten Versionen und Nodes mit ONTAP 9.13.1, 9.15.1 und 9.16.1 verwenden.
+
+[cols="25,25,50"]
+|===
+| Wenn Ihre aktuelle ONTAP Version… ist | Die ONTAP Zielversion lautet… | Der Status der gemischten Version für das Upgrade ist… 
 
 
-== Aktualisieren der ONTAP-Version eines großen Clusters
+| 9.15.1 | 9.16.1 | Unterstützt 
 
-Ein Szenario zur Eingabe des Clusterstatus gemischter Versionen umfasst das Upgrade der ONTAP-Version eines Clusters mit mehreren Nodes, um von den Funktionen zu profitieren, die in neueren Versionen von ONTAP 9 verfügbar sind. Wenn Sie beim Upgrade der ONTAP-Version eines größeren Clusters die Cluster-Version aktualisieren müssen, geben Sie für einen bestimmten Zeitraum beim Upgrade der einzelnen Nodes im Cluster den Cluster den Cluster-Status einer gemischten Version ein.
 
+.2+| 9.14.1 | 9.16.1 | Unterstützt 
+
+
+| 9.15.1 | Unterstützt 
+
+
+.3+| 9.13.1 | 9.16.1 | Unterstützt 
+
+
+| 9.15.1 | Unterstützt 
+
+
+| 9.14.1 | Unterstützt 
+
+
+.4+| 9.12.1 | 9.16.1 | Unterstützt 
+
+
+| 9.15.1 | Unterstützt 
+
+
+| 9.14.1 | Unterstützt 
+
+
+| 9.13.1 | Unterstützt 
+
+
+.5+| 9.11.1 | 9.16.1  a| 
+Nicht unterstützt
+
+
+
+| 9.15.1 | Unterstützt 
+
+
+| 9.14.1 | Unterstützt 
+
+
+| 9.13.1 | Unterstützt 
+
+
+| 9.12.1 | Unterstützt 
+
+
+.6+| 9.10.1 | 9.16.1  a| 
+Nicht unterstützt
+
+
+
+| 9.15.1  a| 
+Nicht unterstützt
+
+
+
+| 9.14.1 | Unterstützt 
+
+
+| 9.13.1 | Unterstützt 
+
+
+| 9.12.1 | Unterstützt 
+
+
+| 9.11.1 | Unterstützt 
+
+
+.7+| 9.9.1 | 9.16.1  a| 
+Nicht unterstützt
+
+
+
+| 9.15.1  a| 
+Nicht unterstützt
+
+
+
+| 9.14.1  a| 
+Nicht unterstützt
+
+
+
+| 9.13.1 | Unterstützt 
+
+
+| 9.12.1 | Unterstützt 
+
+
+| 9.11.1 | Unterstützt 
+
+
+| 9.10.1 | Unterstützt 
+
+
+.8+| 9,8 | 9.16.1  a| 
+Nicht unterstützt
+
+
+
+| 9.15.1  a| 
+Nicht unterstützt
+
+
+
+| 9.14.1  a| 
+Nicht unterstützt
+
+
+
+| 9.13.1  a| 
+Nicht unterstützt
+
+
+
+| 9.12.1 | Unterstützt 
+
+
+| 9.11.1 | Unterstützt 
+
+
+| 9.10.1  a| 
+Unterstützt
+
+
+
+| 9.9.1 | Unterstützt 
+|===
 
 
 == Hinzufügen neuer Nodes zu einem ONTAP Cluster
 
-Ein weiteres Szenario zur Eingabe des Clusterstatus gemischter Versionen umfasst das Hinzufügen neuer Nodes zum Cluster. Sie können dem Cluster entweder neue Nodes hinzufügen, um die Kapazität zu erweitern, oder während des kompletten Austauschen der Controller neue Nodes hinzufügen. In beiden Fällen müssen Sie die Migration Ihrer Daten von bestehenden Controllern auf die neuen Nodes in Ihrem neuen System ermöglichen.
+Wenn Sie dem Cluster neue Nodes hinzufügen möchten und für diese Nodes eine Mindestversion von ONTAP erforderlich ist, die später ist als die Version, die derzeit im Cluster ausgeführt wird, müssen Sie vor dem Hinzufügen der neuen Nodes alle unterstützten Software-Upgrades auf den vorhandenen Nodes im Cluster durchführen. Idealerweise aktualisieren Sie alle vorhandenen Nodes auf die Mindestversion von ONTAP, die von den Nodes benötigt wird, die Sie dem Cluster hinzufügen möchten. Ist dies jedoch nicht möglich, da einige Ihrer vorhandenen Nodes die neuere Version von ONTAP nicht unterstützen, müssen Sie im Rahmen des Upgrades für einen begrenzten Zeitraum einen gemischten Versionsstatus eingeben.
 
-Wenn Sie dem Cluster neue Nodes hinzufügen möchten und für diese Nodes eine Mindestversion von ONTAP erforderlich ist, die später ist als die Version, die derzeit im Cluster ausgeführt wird, müssen Sie vor dem Hinzufügen der neuen Nodes alle unterstützten Software-Upgrades auf den vorhandenen Nodes im Cluster durchführen.
-
-Idealerweise aktualisieren Sie alle vorhandenen Nodes auf die Mindestversion von ONTAP, die von den Nodes benötigt wird, die Sie dem Cluster hinzufügen möchten. Ist dies jedoch nicht möglich, da einige Ihrer vorhandenen Nodes die neuere Version von ONTAP nicht unterstützen, müssen Sie im Rahmen des Upgrades für einen begrenzten Zeitraum einen gemischten Versionsstatus eingeben. Falls Ihre neuen Controller nicht die für die Mindestanforderungen erforderliche ONTAP-Version unterstützen, sind folgende Nodes erforderlich:
-
+.Schritte
 . link:concept_upgrade_methods.html["Upgrade"] Die Nodes, die nicht die Mindestversion von ONTAP unterstützen, die von den neuen Controllern erforderlich ist, bis zur maximal unterstützten ONTAP-Version.
 +
 Wenn Sie beispielsweise eine FAS8080 mit ONTAP 9.5 haben und eine neue C-Series Plattform mit ONTAP 9.12.1 hinzufügen, sollten Sie die FAS8080 auf ONTAP 9.8 aktualisieren (dies ist die maximale ONTAP Version, die unterstützt wird).
