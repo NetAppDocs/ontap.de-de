@@ -34,6 +34,8 @@ Vor ONTAP 9.8 wird durch das Verschieben eines Volumes auf eine andere lokale Ti
 
 Ab ONTAP 9.6 werden die Daten des im Bucket gespeicherten Quell-Volume nicht zurück auf die lokale Tier verschoben, wenn die lokale Ziel-Tier einer Volume-Verschiebung denselben Bucket verwendet. Tiering-Daten bleiben im Ruhezustand, und nur heiße Daten müssen von einer lokalen Tier in eine andere verschoben werden. Diese optimierte Volume-Verschiebung führt zu einer erheblichen Netzwerkeffizienz.
 
+Beispielsweise bedeutet eine optimierte Volumeverschiebung von 300 TB, dass zwar 300 TB kalte Daten von einer lokalen Ebene auf eine andere verschoben werden, dies jedoch keine Lese- und Schreibvorgänge von 300 TB im Objektspeicher auslöst.
+
 Nicht optimierte Volume-Verschiebungen generieren zusätzlichen Netzwerk- und Computing-Datenverkehr (Lese-/Schreibvorgänge und Schreibvorgänge/Puts). Dadurch steigen die Anforderungen an das ONTAP-Cluster und den Objektspeicher, was möglicherweise die Kosten durch Tiering auf öffentliche Objektspeicher in die Höhe treibt.
 
 [NOTE]
@@ -59,11 +61,15 @@ Wird bei der Volume-Verschiebung eine andere Tiering-Richtlinie angegeben, wird 
 
 === Volume-Metadaten
 
-Unabhängig davon, ob eine Volume-Verschiebung optimiert wird, speichert ONTAP Informationen über den Speicherort aller Daten, einschließlich lokaler und Tiering-Daten. Wenn ein Volume von einer lokalen Ebene auf eine andere verschoben wird, muss diese Information ebenfalls in die lokale Ziel-Tier verschoben werden. Diese Metadaten bleiben immer auf der lokalen Tier, doch kann dies je nach Menge der Tiering-Daten dazu führen, dass der Volume-Verschiebungsprozess mehr dauert als erwartet.
+Unabhängig davon, ob eine Volume-Verschiebung optimiert ist, speichert ONTAP eine erhebliche Menge an Metadaten über Standort, Speichereffizienz, Berechtigungen, Nutzungsmuster usw. aller Daten, sowohl lokal als auch in Tiering-Ebenen. Metadaten verbleiben immer auf der lokalen Ebene und werden nicht in Tiering-Ebenen gespeichert. Wenn ein Volume von einer lokalen Ebene auf eine andere verschoben wird, muss diese Information ebenfalls in die lokale Ziel-Tier verschoben werden.
 
-Ein Beispiel ist die optimierte Verschiebung von Volumes mit 300 TB. Das bedeutet, dass 300 TB weniger kalte Daten nicht von einer lokalen Tier zu einer anderen verschoben werden müssen (oder 300 TB Lesezugriffe und 300 TB Schreibvorgänge in den Objektspeicher auslösen). Es bedeutet aber, dass die mit 300 TB an Daten verbundenen Metadaten (~15 TB an Daten in diesem Beispiel) auf die lokale Ziel-Tier geschrieben werden müssen.
 
-Es ist wichtig zu wissen, dass der durch den Befehl angegebene „Durchsatz“ `volume move show` keinen Durchsatz im Hinblick auf die Daten darstellt, die aus der Cloud-Tier verschoben werden, sondern dass die Metadaten lokal aktualisiert werden.
+
+=== Dauer
+
+Das Verschieben von Volumes nimmt immer noch einige Zeit in Anspruch und man sollte davon ausgehen, dass das Verschieben eines optimierten Volumes ungefähr genauso lange dauert wie das Verschieben einer gleichen Menge nicht gestaffelter Daten.
+
+Es ist wichtig zu verstehen, dass der „Durchsatz“, der von der  `volume move show` Der Befehl stellt nicht den Durchsatz im Hinblick auf die aus der Cloud-Ebene verschobenen Daten dar, sondern die lokal aktualisierten Volumendaten.
 
 
 NOTE: In einer SVM-DR-Beziehung müssen Quell- und Ziel-Volumes dieselbe Tiering-Richtlinie verwenden.
