@@ -2,7 +2,7 @@
 permalink: upgrade/remove-ems-lif-service-task.html 
 sidebar: sidebar 
 keywords: ontap, upgrade, after, post, ems, event, management, system, lifs, messages, not, delivered 
-summary: Nach dem Upgrade von ONTAP 9.7 oder einer früheren Version auf 9.8 oder höher müssen Sie bei Verwendung von EMS möglicherweise den EMS-LIF-Dienst aus bestimmten Richtlinien für den Netzwerkdienst entfernen. 
+summary: Wenn Sie EMS verwenden, müssen Sie nach dem Upgrade von ONTAP 9.7 oder früher auf 9.8 oder höher möglicherweise den EMS-LIF-Dienst aus bestimmten Netzwerkdienstrichtlinien entfernen. 
 ---
 = Entfernen Sie den EMS LIF-Dienst nach einem ONTAP-Upgrade von den Netzwerkdienstrichtlinien
 :allow-uri-read: 
@@ -11,14 +11,16 @@ summary: Nach dem Upgrade von ONTAP 9.7 oder einer früheren Version auf 9.8 ode
 
 
 [role="lead"]
-Wenn Sie vor dem Upgrade von ONTAP 9.7 oder einer früheren Version auf ONTAP 9.8 oder neuer EMS-Nachrichten (Event Management System) eingerichtet haben, werden Ihre EMS-Nachrichten nach der Aktualisierung möglicherweise nicht zugestellt.
+Wenn Sie vor dem Upgrade von ONTAP 9.7 oder früher auf ONTAP 9.8 oder höher Event Management System-Nachrichten (EMS) eingerichtet haben, werden Ihre EMS-Nachrichten nach dem Upgrade möglicherweise nicht zugestellt.
 
-Während des Upgrades wird Management-ems, der EMS-LIF-Dienst, zu allen bestehenden Service-Richtlinien hinzugefügt. Dadurch können EMS-Nachrichten von einem der LIFs gesendet werden, die mit einer der Service-Richtlinien verknüpft sind. Wenn das ausgewählte LIF nicht auf das Ziel der Ereignisbenachrichtigung zugreifen kann, wird die Meldung nicht ausgegeben.
+Während des Upgrades  `management-ems` , der EMS-LIF-Dienst, wird zu allen vorhandenen Servicerichtlinien in Administrator- und System-SVMs hinzugefügt. Dadurch können EMS-Nachrichten von allen mit den Servicerichtlinien verknüpften LIFs gesendet werden. Wenn das ausgewählte LIF nicht auf das Ziel der Ereignisbenachrichtigung zugreifen kann, wird die Meldung nicht ausgegeben.
 
-Um dies zu verhindern, sollten Sie nach dem Upgrade den EMS-LIF-Dienst aus den Netzwerkdienstpolices entfernen, die keine Erreichbarkeit des Ziels bieten.
+Um dies zu verhindern, sollten Sie nach dem Upgrade den EMS-LIF-Dienst aus den Netzwerkdienstrichtlinien entfernen, die keine Erreichbarkeit des Ziels bieten.
+
+link:../networking/lifs_and_service_policies96.html#service-policies-for-system-svms["Erfahren Sie mehr über ONTAP LIFs und Servicerichtlinien"].
 
 .Schritte
-. Identifizieren Sie die LIFs und zugehörigen Netzwerk-Service-Richtlinien, über die EMS-Meldungen gesendet werden können:
+. Identifizieren Sie die LIFs und zugehörigen Netzwerkdienstrichtlinien, über die EMS-Nachrichten gesendet werden können:
 +
 [source, cli]
 ----
@@ -28,15 +30,11 @@ network interface show -fields service-policy -services management-ems
 [listing]
 ----
 vserver        lif            service-policy
--------------- ------------ ------------------
-cluster-1      cluster_mgmt
-                                      default-management
-cluster-1      node1-mgmt
-                                      default-management
-cluster-1      node2-mgmt
-                                      default-management
-cluster-1      inter_cluster
-                                      default-intercluster
+-------------- ------------   ------------------
+cluster-1      cluster_mgmt   default-management
+cluster-1      node1-mgmt     default-management
+cluster-1      node2-mgmt     default-management
+cluster-1      inter_cluster  default-intercluster
 4 entries were displayed.
 ----
 . Überprüfen Sie jede LIF auf Verbindung zum EMS-Ziel:
@@ -64,7 +62,7 @@ no answer from 10.10.10.10
 ----
 set advanced
 ----
-. Entfernen Sie für die LIFs, die nicht über diese verfügen, den Management-ems LIF-Service aus den entsprechenden Service-Richtlinien:
+. Für die LIFs, die nicht erreichbar sind, entfernen Sie die  `management-ems` LIF-Dienst aus den entsprechenden Servicerichtlinien:
 +
 [source, cli]
 ----
@@ -80,6 +78,3 @@ Erfahren Sie mehr über `network interface service-policy remove-service` in der
 network interface show -fields service-policy -services management-ems
 ----
 
-
-.Verwandte Links
-link:../networking/lifs_and_service_policies96.html#service-policies-for-system-svms["LIFs und Service-Richtlinien in ONTAP 9.6 und höher"]
