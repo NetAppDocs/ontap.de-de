@@ -1,0 +1,194 @@
+---
+sidebar: sidebar 
+permalink: authentication/authentication-groups.html 
+keywords: oauth 2.0, oauth2, identity mapping, group uuid, group name, group mapping, external roles, role mapping, saml, entra, active directory, adfs, idp 
+summary: ONTAP bietet verschiedene Optionen zum Konfigurieren von Gruppen basierend auf Ihrem Autorisierungsserver oder SAML-IdP. Die Gruppen können dann Rollen zugeordnet werden, die von ONTAP zur Zugriffsbestimmung verwendet werden. 
+---
+= Arbeiten mit OAuth 2.0- oder SAML-IdP-Gruppen in ONTAP
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP bietet verschiedene Optionen zum Konfigurieren von Gruppen basierend auf Ihrem OAuth 2.0-Autorisierungsserver oder SAML-Identitätsanbieter (IdP). Die Gruppen können dann Rollen zugeordnet werden, die von ONTAP zur Zugriffsbestimmung verwendet werden.
+
+Ab ONTAP 9.17.1 können vom SAML-IdP bereitgestellte Gruppeninformationen ONTAP Rollen zugeordnet werden. Dadurch können Sie Benutzern Rollen basierend auf den im IdP definierten Gruppen zuweisen. Weitere Informationen finden Sie unter link:../system-admin/configure-saml-authentication-task.html["Konfigurieren Sie die SAML-Authentifizierung"]. Ab ONTAP 9.14.1 unterstützt ONTAP die Gruppennamenauthentifizierung für OAuth 2.0. Ab ONTAP 9.16.1 unterstützt ONTAP die OAuth 2.0-Gruppen-UUID-Authentifizierung und Rollenzuordnung. link:../authentication/overview-oauth2.html["Überblick über die Implementierung von ONTAP OAuth 2.0"] .
+
+
+
+== Wie Gruppen identifiziert werden
+
+Wenn Sie eine Gruppe auf einem Autorisierungsserver oder SAML-IdP konfigurieren, wird diese identifiziert und in einem OAuth 2.0-Zugriffstoken oder einer SAML-Assertion über einen Namen oder eine UUID übertragen. Bevor Sie ONTAP konfigurieren, müssen Sie wissen, wie Ihr Autorisierungsserver oder SAML-IdP mit Gruppen umgeht.
+
+
+NOTE: Wenn mehrere Gruppen in einem Zugriffstoken enthalten sind, versucht ONTAP, jede Gruppe zu verwenden, bis eine Übereinstimmung vorhanden ist.
+
+
+
+=== Gruppennamen
+
+Viele Autorisierungsserver und SAML-Identitätsanbieter, wie beispielsweise Active Directory Federation Service (ADFS), identifizieren und repräsentieren Gruppen anhand eines Namens. Hier sehen Sie ein Fragment eines von ADFS generierten JSON OAuth 2.0-Zugriffstokens, das mehrere Gruppen enthält. Siehe <<Verwalten von Gruppen mit Namen>> für weitere Informationen.
+
+[listing]
+----
+  ...
+  "sub": "User1_TestDev@NICAD5.COM",
+  "group": [
+    "NICAD5\\Domain Users",
+    "NICAD5\\Development Group",
+    "NICAD5\\Production Group"
+  ],
+  "apptype": "Confidential",
+  "appid": "3bff3b2b-8e40-44ba-7c11-d73c3b76e3e8",
+  ...
+----
+
+
+=== Gruppen-UUIDs
+
+Einige Autorisierungsserver und SAML-Identitätsanbieter, wie Microsoft Entra ID, identifizieren und repräsentieren Gruppen mithilfe einer UUID. Hier sehen Sie ein Fragment eines von Entra ID generierten OAuth 2.0-Zugriffstokens, das mehrere Gruppen enthält. Siehe <<Verwalten von Gruppen mit UUIDs>> für weitere Informationen.
+
+[listing]
+----
+  ...
+  "appid": "4aff4b4b-8e40-44ba-7c11-d73c3b76e3d7",
+  "appidacr": "1",
+  "groups": [
+    "8ea4c5b0-bcad-4e66-8f1e-cd395474a448",
+    "a8558fc2-a1b2-4cb7-cc41-59bd831840cc"],
+  "name": "admin007 with group membership",
+  ...
+----
+
+
+== Verwalten von Gruppen mit Namen
+
+Wenn Ihr Autorisierungsserver oder SAML-Identitätsanbieter Namen zur Identifizierung von Gruppen verwendet, müssen Sie sicherstellen, dass jede Gruppe für Ihren ONTAP Cluster definiert ist. Abhängig von Ihrer Sicherheitsumgebung ist die Gruppe möglicherweise bereits definiert.
+
+Hier ist ein Beispiel für einen CLI-Befehl zur Definition einer ONTAP Gruppe. Beachten Sie, dass eine benannte Gruppe aus dem Beispiel-Zugriffstoken verwendet wird. Sie benötigen die ONTAP Berechtigungsebene *admin*, um den Befehl ausführen zu können.
+
+.Beispiel
+[listing]
+----
+security login create -user-or-group-name "NICAD5\\Domain Users" -application http -authentication-method domain -role admin
+----
+Verwenden  `-authentication-method` `domain` oder  `nsswitch` für SAML IdP- und OAuth 2.0-Autorisierungsservergruppen.
+
+
+NOTE: Sie können diese Funktion auch über die ONTAP REST API konfigurieren. Weitere Informationen finden Sie im  https://docs.netapp.com/us-en/ontap-automation/["Dokumentation zur ONTAP Automatisierung"^] .
+
+
+
+== Verwalten von Gruppen mit UUIDs
+
+Wenn Ihr Autorisierungsserver oder SAML-Identitätsanbieter Gruppen mithilfe von UUID-Werten darstellt, müssen Sie vor der Verwendung einer Gruppe eine zweistufige Konfiguration durchführen. Ab ONTAP 9.16.1 stehen zwei Mapping-Funktionen zur Verfügung, die mit Entra ID getestet wurden. Entra ID für OAuth 2.0 wird ab ONTAP 9.16.1 und Entra ID für SAML ab ONTAP 9.17.1 unterstützt. Sie benötigen die ONTAP Berechtigungsebene *admin*, um die CLI-Befehle ausführen zu können.
+
+
+NOTE: Sie können diese Funktionen auch mit der ONTAP-REST-API konfigurieren. Erfahren Sie mehr in der https://docs.netapp.com/us-en/ontap-automation/["Dokumentation zur ONTAP Automatisierung"^].
+
+
+
+=== Ordnen Sie eine Gruppen-UUID einem Gruppennamen zu
+
+Wenn Sie einen Autorisierungsserver oder SAML-Identitätsanbieter verwenden, der Gruppen mithilfe von UUID-Werten darstellt, müssen Sie die Gruppen-UUIDs Gruppennamen zuordnen. Die wichtigsten ONTAP CLI-Operationen werden unten beschrieben.
+
+
+
+==== Erstellen
+
+Sie können eine neue Gruppenzuordnungskonfiguration mit dem  `security login group create` Befehl. Die Gruppen-UUID und der Name sollten mit der Konfiguration auf dem Autorisierungsserver oder SAML-IdP übereinstimmen. Erfahren Sie mehr über  `security login group create` im link:https://docs.netapp.com/us-en/ontap-cli/security-login-group-create.html["ONTAP-Befehlsreferenz"^] .
+
+.Parameter
+Die Parameter, die zum Erstellen einer Gruppenzuordnung verwendet werden, werden im Folgenden beschrieben.
+
+[cols="30,70"]
+|===
+| Parameter | Beschreibung 
+
+
+| `vserver` | Gibt optional den Namen der SVM (vServer) an, mit der die Gruppe verknüpft ist. Wenn sie nicht angegeben ist, ist die Gruppe dem ONTAP-Cluster zugeordnet. 
+
+
+| `name` | Der eindeutige Name der Gruppe, die ONTAP verwendet. 
+
+
+| `type` | Dieser Wert gibt den Identitätsanbieter an, von dem die Gruppe stammt. 
+
+
+| `uuid` | Gibt die universell eindeutige Kennung der Gruppe an, wie sie vom Autorisierungsserver oder SAML-IdP bereitgestellt wird. 
+|===
+Hier sehen Sie ein Beispiel für einen CLI-Befehl, der eine Gruppe für ONTAP definiert. Beachten Sie, dass eine UUID-Gruppe aus dem Beispiel-Zugriffstoken verwendet wird.
+
+.Beispiel
+[listing]
+----
+security login group create -vserver ontap-cls-1 -name IAM_Dev -type entra -uuid 8ea4c5b0-bcad-4e66-8f1e-cd395474a448
+----
+Nach dem Erstellen der Gruppe wird eine eindeutige schreibgeschützte Ganzzahl-ID für die Gruppe generiert.
+
+
+
+==== Zusätzliche CLI-Vorgänge
+
+Der Befehl unterstützt mehrere zusätzliche Vorgänge, darunter:
+
+* Anzeigen
+* Ändern
+* Löschen
+
+
+Sie können die Option verwenden `show`, um die eindeutige Gruppen-ID abzurufen, die für eine Gruppe generiert wurde. Erfahren Sie mehr über `show` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=show["ONTAP-Befehlsreferenz"^].
+
+
+
+=== Ordnen Sie eine Gruppen-UUID einer Rolle zu
+
+Wenn Sie einen Autorisierungsserver oder SAML-IdP verwenden, der Gruppen mithilfe von UUID-Werten darstellt, können Sie die Gruppe einer Rolle zuordnen. Weitere Informationen zur rollenbasierten Zugriffskontrolle in ONTAP finden Sie unter link:../authentication/manage-access-control-roles-concept.html["Erfahren Sie mehr über das Management von ONTAP-Zugriffskontrollrollen"]. Die wichtigsten ONTAP CLI-Operationen werden unten beschrieben. benötigen die ONTAP Berechtigungsebene *admin*, um die Befehle ausführen zu können.
+
+
+NOTE: Sie müssen zuerst <<Ordnen Sie eine Gruppen-UUID einem Gruppennamen zu,Ordnen Sie eine Gruppen-UUID einem Gruppennamen zu>> und rufen Sie die für die Gruppe generierte eindeutige Ganzzahl-ID ab. Sie benötigen die ID, um die Gruppe einer Rolle zuzuordnen.
+
+
+
+==== Erstellen
+
+Sie können eine neue Rollenzuordnung mit dem  `security login group role-mapping create` Befehl. Erfahren Sie mehr über  `security login group role-mapping create` im link:https://docs.netapp.com/us-en/ontap-cli/security-login-group-role-mapping-create.html["ONTAP-Befehlsreferenz"^] .
+
+.Parameter
+Im Folgenden werden die Parameter beschrieben, mit denen eine Gruppe einer Rolle zugeordnet werden kann.
+
+[cols="30,70"]
+|===
+| Parameter | Beschreibung 
+
+
+| `group-id` | Gibt die eindeutige ID an, die mit dem Befehl für die Gruppe generiert `security login group create` wurde. 
+
+
+| `role` | Der Name der ONTAP-Rolle, der die Gruppe zugeordnet ist. 
+|===
+.Beispiel
+[listing]
+----
+security login group role-mapping create -group-id 1 -role admin
+----
+
+
+==== Zusätzliche CLI-Vorgänge
+
+Der Befehl unterstützt mehrere zusätzliche Vorgänge, darunter:
+
+* Anzeigen
+* Ändern
+* Löschen
+
+
+Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
+
+.Verwandte Informationen
+* link:../authentication/oauth2-external-roles.html["Externe Rollenzuordnung"]
+

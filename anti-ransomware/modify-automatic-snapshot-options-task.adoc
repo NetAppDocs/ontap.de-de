@@ -2,16 +2,11 @@
 sidebar: sidebar 
 permalink: anti-ransomware/modify-automatic-snapshot-options-task.html 
 keywords: anti-ransomware, automatic, snapshot, suspected attack, vserver options, autonomous ransomware protection, arp 
-summary: Ändern Sie die Einstellungen für Autonomous Ransomware Protection Snapshots, die als Reaktion auf vermutete Ransomware-Angriffe automatisch generiert werden. 
+summary: Passen Sie die Erstellungs- und Aufbewahrungseinstellungen für Snapshots des autonomen Ransomware-Schutzes an, die automatisch als Reaktion auf potenzielle Ransomware-Bedrohungen generiert werden. 
 ---
-= Ändern Sie die Optionen für automatische ONTAP-Snapshots
-:hardbreaks:
-:toclevels: 1
+= Einstellungen für automatisch generierte ARP-Snapshots anpassen
 :allow-uri-read: 
-:toclevels: 1
-:nofooter: 
 :icons: font
-:linkattrs: 
 :imagesdir: ../media/
 
 
@@ -19,9 +14,7 @@ summary: Ändern Sie die Einstellungen für Autonomous Ransomware Protection Sna
 Ab ONTAP 9.11.1 können Sie die CLI verwenden, um die Aufbewahrungseinstellungen für ARP-Snapshots (Autonomous Ransomware Protection) zu steuern, die als Reaktion auf vermutete Ransomware-Angriffe automatisch generiert werden.
 
 .Bevor Sie beginnen
-Sie können nur ARP-Snapshot-Optionen auf einem Knoten SVM ändern und nicht auf anderem link:../system-admin/types-svms-concept.html["SVM-Typen"].
-
-Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
+Sie können ARP-Snapshot-Optionen nur auf einem link:../system-admin/types-svms-concept.html["Knoten-SVM"] und nicht auf anderen SVM-Typen.
 
 .Schritte
 . Zeigt alle aktuellen ARP-Snapshot-Einstellungen an:
@@ -46,23 +39,35 @@ options -option-name <arw_setting_name> -option-value <arw_setting_value>
 Die folgenden Einstellungen können geändert werden:
 
 +
-[cols="1,3"]
+
+NOTE: Einige der beschriebenen Befehle sind ab ONTAP 9.17.1 veraltet. Die in ONTAP 9.17.1 eingeführten Befehle unterstützen sowohl NAS- als auch SAN-Umgebungen.
+
++
+[cols="1,3,1"]
 |===
-| ARW-Einstellung | Beschreibung 
+| Einstellung | Beschreibung | Unterstützte Versionen 
 
 
 | `arw.snap.max.count`  a| 
-Gibt die maximale Anzahl von ARP-Snapshots an, die zu einem bestimmten Zeitpunkt in einem Volume vorhanden sein können. Ältere Kopien werden gelöscht, um sicherzustellen, dass die Gesamtzahl der ARP-Snapshots innerhalb dieser festgelegten Grenze liegt.
+Gibt die maximale Anzahl von ARP-Snapshots an, die gleichzeitig in einem Volume vorhanden sein können. Ältere Kopien werden gelöscht, um sicherzustellen, dass die Gesamtzahl der ARP-Snapshots innerhalb dieses Grenzwerts liegt.
+ a| 
+ONTAP 9.11.1 und höher
 
 
 
 | `arw.snap.create.interval.hours`  a| 
-Gibt das Intervall _in Stunden_ zwischen ARP-Snapshots an. Ein neuer ARP-Snapshot wird erstellt, wenn ein Data-Entropy-basierter Angriff vermutet wird und der zuletzt erstellte ARP-Snapshot älter als das angegebene Intervall ist.
+Gibt das Intervall in Stunden zwischen ARP-Snapshots an. Ein neuer ARP-Snapshot wird erstellt, wenn ein datenentropiebasierter Angriff vermutet wird und der zuletzt erstellte ARP-Snapshot älter als das angegebene Intervall ist.
+ a| 
+ONTAP 9.11.1 und höher
 
 
 
 | `arw.snap.normal.retain.interval.hours`  a| 
-Gibt die Dauer _in Stunden_ an, für die ein ARP-Snapshot aufbewahrt wird. Wenn ein ARP-Snapshot den Schwellenwert für die Aufbewahrung erreicht, werden alle anderen ARP-Snapshots vor dem Löschen erstellt.
+Gibt die Dauer in Stunden an, für die ein ARP-Snapshot aufbewahrt wird. Wenn ein ARP-Snapshot den Aufbewahrungsschwellenwert erreicht, wird er gelöscht.
+ a| 
+** ONTAP 9.11.1 bis ONTAP 9.16.1
+** Veraltet in ONTAP 9.17.1 und höher
+
 
 
 
@@ -71,27 +76,136 @@ Gibt die maximale Dauer _in Tagen_ an, für die ein ARP-Snapshot beibehalten wer
 
 
 NOTE: Das maximale Aufbewahrungsintervall für ARP-Snapshots wird ignoriert, wenn eine mäßige Bedrohung erkannt wird. Der als Antwort auf die Bedrohung erstellte ARP-Snapshot wird beibehalten, bis Sie auf die Bedrohung reagiert haben. Wenn Sie eine Bedrohung als „falsch positiv“ markieren, löscht ONTAP die ARP-Schnappschüsse für das Volume.
+ a| 
+** ONTAP 9.11.1 bis ONTAP 9.16.1
+** Veraltet in ONTAP 9.17.1 und höher
+
 
 
 
 | `arw.snap.create.interval.hours.post.max.count`  a| 
-Gibt das Intervall _in Stunden_ zwischen ARP-Snapshots an, wenn das Volume bereits die maximale Anzahl von ARP-Snapshots enthält. Wenn die maximale Anzahl erreicht ist, wird ein ARP-Snapshot gelöscht, um Platz für eine neue Kopie zu schaffen. Die neue ARP-Erstellungsgeschwindigkeit für Snapshots kann reduziert werden, um die ältere Kopie mit dieser Option beizubehalten. Wenn das Volume bereits die maximale Anzahl von ARP-Snapshots enthält, wird das in dieser Option angegebene Intervall für die nächste ARP-Snapshot-Erstellung anstelle von verwendet `arw.snap.create.interval.hours`.
+Gibt das Intervall in Stunden zwischen ARP-Snapshots an, wenn das Volume bereits die maximale Anzahl an ARP-Snapshots enthält. Sobald die maximale Anzahl erreicht ist, wird ein ARP-Snapshot gelöscht, um Platz für eine neue Kopie zu schaffen. Mit dieser Option kann die Geschwindigkeit der Erstellung neuer ARP-Snapshots reduziert werden, um die ältere Kopie beizubehalten. Wenn das Volume bereits die maximale Anzahl an ARP-Snapshots enthält, wird für die nächste ARP-Snapshot-Erstellung das in dieser Option angegebene Intervall verwendet, anstatt  `arw.snap.create.interval.hours` .
+ a| 
+** ONTAP 9.11.1 bis 9.16.1
+** Veraltet in ONTAP 9.17.1 und höher
 
 
 
-| `arw.snap.retain.hours.after.clear.suspect.false.alert` | Gibt an, wie viele Stunden ein ARP-Snapshot vorsorglich aufbewahrt wird, nachdem ein Angriffsvorfall vom Administrator als falsch positiv markiert wurde. Nach Ablauf dieser Aufbewahrungsfrist kann der Snapshot gemäß der in den Optionen definierten Standardaufbewahrungsdauer gelöscht werden.  `arw.snap.normal.retain.interval.hours` Und  `arw.snap.max.retain.interval.days` . 
 
+| `arw.snap.low.encryption.retain.duration.hours`  a| 
+Gibt die Aufbewahrungsdauer _in Stunden_ für ARP-Snapshots an, die während Zeiten geringer Verschlüsselungsaktivität erstellt wurden.
+ a| 
+** ONTAP 9.17.1 und höher
 
-| `arw.snap.retain.hours.after.clear.suspect.real.attack` | Gibt an, wie viele Stunden ein ARP-Snapshot vorsorglich aufbewahrt wird, nachdem ein Angriff vom Administrator als echter Angriff markiert wurde. Nach Ablauf dieser Aufbewahrungsfrist kann der Snapshot gemäß der in den Optionen definierten Standardaufbewahrungsdauer gelöscht werden.  `arw.snap.normal.retain.interval.hours` Und  `arw.snap.max.retain.interval.days` . 
-
-
-| `arw.surge.snap.interval.days`  a| 
-Gibt das Intervall _in Tagen_ zwischen ARP-Snapshots an, die als Reaktion auf I/O-Überspannungen erstellt wurden. ONTAP erzeugt eine ARP-Snapshot Überspannungskopie, wenn es einen Anstieg des IO-Verkehrs gibt und der letzte erstellte ARP-Snapshot ist älter als dieses angegebene Intervall. Mit dieser Option wird auch die Aufbewahrungsfrist _in Tag_ für einen ARP-Überspannungsabschuss festgelegt.
 
 
 
 | `arw.snap.new.extns.interval.hours`  a| 
-Diese Option gibt das Intervall _in Stunden_ zwischen den ARP-Snapshots an, die beim Erkennen einer neuen Dateierweiterung erstellt wurden. Ein neuer ARP-Snapshot wird erstellt, wenn eine neue Dateierweiterung beobachtet wird; der vorherige Snapshot, der bei der Beobachtung einer neuen Dateierweiterung erstellt wurde, ist älter als dieses angegebene Intervall. Bei einem Workload, der häufig neue Dateierweiterungen erstellt, hilft dieses Intervall bei der Kontrolle der Häufigkeit der ARP-Snapshots. Diese Option existiert unabhängig von `arw.snap.create.interval.hours`, was das Intervall für Daten-Entropie-basierte ARP-Snapshots angibt.
+Gibt das Intervall in Stunden zwischen den ARP-Snapshots an, die beim Erkennen einer neuen Dateierweiterung erstellt werden. Ein neuer ARP-Snapshot wird erstellt, wenn eine neue Dateierweiterung erkannt wird; der vorherige Snapshot, der beim Erkennen einer neuen Dateierweiterung erstellt wurde, ist älter als das angegebene Intervall. Bei einer Arbeitslast, die häufig neue Dateierweiterungen erstellt, hilft dieses Intervall, die Häufigkeit der ARP-Snapshots zu steuern. Diese Option existiert unabhängig von  `arw.snap.create.interval.hours` , das das Intervall für auf Datenentropie basierende ARP-Snapshots angibt.
+ a| 
+** ONTAP 9.11.1 bis ONTAP 9.16.1
+** Veraltet in ONTAP 9.17.1 und höher
+
+
+
+
+| `arw.snap.retain.hours.after.clear.suspect.false.alert`  a| 
+Gibt das Intervall in Stunden an, in dem ein ARP-Snapshot vorsorglich aufbewahrt wird, nachdem ein Angriffsvorfall vom Administrator als falsch positiv markiert wurde. Nach Ablauf dieser Aufbewahrungsfrist kann der Snapshot gemäß der in den Optionen definierten Standardaufbewahrungsdauer gelöscht werden.  `arw.snap.normal.retain.interval.hours` Und  `arw.snap.max.retain.interval.days` .
+ a| 
+** ONTAP 9.16.1 und höher
+
+
+
+
+| `arw.snap.retain.hours.after.clear.suspect.real.attack`  a| 
+Gibt das Intervall in Stunden an, in dem ein ARP-Snapshot vorsorglich aufbewahrt wird, nachdem ein Angriff vom Administrator als echter Angriff markiert wurde. Nach Ablauf dieser Aufbewahrungsfrist kann der Snapshot gemäß der in den Optionen definierten Standardaufbewahrungsdauer gelöscht werden.  `arw.snap.normal.retain.interval.hours` Und  `arw.snap.max.retain.interval.days` .
+ a| 
+** ONTAP 9.16.1 und höher
+
+
+
+
+| `arw.snap.surge.interval.days`  a| 
+Gibt das Intervall _in Tagen_ zwischen ARP-Snapshots an, die als Reaktion auf I/O-Überspannungen erstellt wurden. ONTAP erzeugt eine ARP-Snapshot Überspannungskopie, wenn es einen Anstieg des IO-Verkehrs gibt und der letzte erstellte ARP-Snapshot ist älter als dieses angegebene Intervall. Mit dieser Option wird auch die Aufbewahrungsfrist _in Tag_ für einen ARP-Überspannungsabschuss festgelegt.
+ a| 
+ONTAP 9.11.1 und höher
+
+
+
+| `arw.high.encryption.alert.enabled`  a| 
+Aktiviert Warnmeldungen bei hohen Verschlüsselungsstufen. Wenn diese Option auf  `on` (Standard) sendet ONTAP eine Warnung, wenn der Prozentsatz der Verschlüsselung den in  `arw.high.encryption.percentage.threshold` .
+ a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.high.encryption.percentage.threshold`  a| 
+Gibt den maximalen Verschlüsselungsgrad für ein Volume an. Überschreitet der Verschlüsselungsgrad diesen Schwellenwert, behandelt ONTAP die Erhöhung als Angriff und erstellt einen ARP-Snapshot.  `arw.high.encryption.alert.enabled` muss eingestellt werden auf  `on` damit diese Option wirksam wird.
+ a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.snap.high.encryption.retain.duration.hours`  a| 
+Gibt das Aufbewahrungsdauerintervall _in Stunden_ für Snapshots an, die während eines Ereignisses mit hohem Verschlüsselungsschwellenwert erstellt wurden.
+ a| 
+ONTAP 9.17.1 und höher
 
 |===
+. Wenn Sie ARP mit einer SAN-Umgebung verwenden, können Sie auch die folgenden Einstellungen für den Evaluierungszeitraum ändern:
++
+[cols="1,3,1"]
+|===
+| Einstellung | Beschreibung | Unterstützte Versionen 
+
+
+| `arw.block_device.auto.learn.threshold.min_value`  a| 
+Gibt den minimalen Prozentwert für den Verschlüsselungsschwellenwert während der automatischen Lernphase der Auswertung für Blockgeräte an.
+ a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.block_device.auto.learn.threshold.max_value`  a| 
+Gibt den maximalen Prozentwert für den Verschlüsselungsschwellenwert während der automatischen Lernphase der Auswertung für Blockgeräte an.
+ a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.block_device.evaluation.phase.min_hours` | Gibt das Mindestintervall _in Stunden_ an, in dem die Auswertungsphase ausgeführt werden muss, bevor der Verschlüsselungsschwellenwert festgelegt wird.  a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.block_device.evaluation.phase.max_hours`  a| 
+Gibt das maximale Intervall _in Stunden_ an, das die Auswertungsphase ausgeführt werden muss, bevor der Verschlüsselungsschwellenwert festgelegt wird.
+ a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.block_device.evaluation.phase.min_data_ingest_size_GB` | Gibt die Mindestmenge an Daten _in GB_ an, die während der Evaluierungsphase aufgenommen werden muss, bevor der Verschlüsselungsschwellenwert festgelegt wird.  a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.block_device.evaluation.phase.alert.enabled`  a| 
+Gibt an, ob Warnmeldungen für die Evaluierungsphase von ARP auf Blockgeräten aktiviert sind. Der Standardwert ist  `True` .
+ a| 
+ONTAP 9.17.1 und höher
+
+
+
+| `arw.block_device.evaluation.phase.alert.threshold`  a| 
+Gibt den Schwellenwertprozentsatz während der ARP-Evaluierungsphase auf Blockgeräten an. Wenn der Verschlüsselungsprozentsatz diesen Schwellenwert überschreitet, wird eine Warnung ausgelöst.
+ a| 
+ONTAP 9.17.1 und höher
+
+|===
+
+
+.Verwandte Informationen
+* link:index.html#threat-assessment-and-arp-snapshots["Bedrohungsbewertung und ARP-Snapshots"]
+* link:respond-san-entropy-eval-period.html["SAN-Entropie-Auswertungszeitraum"]
 

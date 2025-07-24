@@ -37,10 +37,10 @@ Für bestimmte Arten von Datenverkehr ist möglicherweise eine andere Option zur
 
 == Weiterentwicklung der ONTAP IPsec-Implementierung
 
-IPsec wurde erstmals mit ONTAP 9.8 eingeführt. Die Umsetzung hat sich wie unten beschrieben weiterentwickelt und verbessert.
+IPsec wurde erstmals mit ONTAP 9.8 eingeführt. Die Implementierung wurde in nachfolgenden ONTAP Versionen wie unten beschrieben weiterentwickelt.
 
-
-NOTE: Wenn eine Funktion, die mit einer bestimmten ONTAP Version eingeführt wird, wird sie auch in nachfolgenden Versionen unterstützt, sofern nicht anders angegeben.
+.ONTAP 9.17.1
+Die Unterstützung für IPsec-Hardware-Offload wird erweitert auf link:../networking/combine_physical_ports_to_create_interface_groups.html["Link-Aggregationsgruppen"] . link:../networking/ipsec-configure.html#define-the-security-policy-database-spd["Postquanten-Pre-Shared Keys (PPKs)"] werden für die IPsec-Pre-Shared Keys (PSK)-Authentifizierung unterstützt.
 
 .ONTAP 9.16.1
 Mehrere kryptografische Vorgänge, wie Verschlüsselungs- und Integritätsprüfungen, können auf eine unterstützte NIC-Karte verlagert werden. Weitere Informationen finden Sie unter <<IPsec-Hardware-Offload-Funktion>> .
@@ -49,7 +49,7 @@ Mehrere kryptografische Vorgänge, wie Verschlüsselungs- und Integritätsprüfu
 Die Unterstützung von IPsec-Front-End-Hostprotokollen ist in MetroCluster-IP- und MetroCluster-Fabric-Attached-Konfigurationen verfügbar. Die durch MetroCluster Cluster bereitgestellte IPsec-Unterstützung für Cluster ist auf Front-End-Host-Datenverkehr beschränkt und wird auf MetroCluster LIFs nicht unterstützt.
 
 .ONTAP 9.10.1
-Zusätzlich zu den vorab freigegebenen Schlüsseln (PSKs) können Zertifikate für die IPsec-Authentifizierung verwendet werden. Vor ONTAP 9.10.1 werden nur PSKs zur Authentifizierung unterstützt.
+Zusätzlich zu den PSKs können Zertifikate für die IPsec-Authentifizierung verwendet werden. Vor ONTAP 9.10.1 werden nur PSKs für die Authentifizierung unterstützt.
 
 .ONTAP 9.9.1
 Die von IPsec verwendeten Verschlüsselungsalgorithmen sind nach FIPS 140-2 validiert. Diese Algorithmen werden vom NetApp Cryptographic Module in ONTAP verarbeitet, das die FIPS 140-2-2-Validierung führt.
@@ -70,35 +70,39 @@ Wenn Sie ONTAP 9.16.1 oder höher verwenden, haben Sie die Möglichkeit, bestimm
 Vor der Verwendung der IPsec-Hardware-Offload-Funktion sollten Sie mehrere Anforderungen beachten.
 
 .Unterstützte Ethernet-Karten
-Sie müssen nur unterstützte Ethernet-Karten installieren und verwenden. Die folgenden Ethernet-Karten werden von ONTAP 9.16.1 auf den folgenden Plattformen unterstützt. Weitere Informationen zu den unterstützten Plattformen und Karten finden Sie imlink:https://hwu.netapp.com/["NetApp Hardware Universe"^].
+Sie dürfen nur unterstützte Ethernet-Karten installieren und verwenden. Die folgenden Ethernet-Karten werden ab ONTAP 9.16.1 unterstützt:
 
 * X50131A (2P, 40G/100G/200G/400G Ethernet-Controller)
-+
-Die X50131A-Karte wird auf den folgenden Plattformen unterstützt:
-
-+
-** ASA A1K
-** ASA A90
-** ASA A70
-** AFF A1K
-** AFF A90
-** AFF A70
-
-
 * X60132A (4p, 10G/25G Ethernet-Controller)
-+
-Die X60132A-Karte wird auf den folgenden Plattformen unterstützt:
-
-+
-** ASA A50
-** ASA A30
-** ASA A20
-** AFF A50
-** AFF A30
-** AFF A20
 
 
+ONTAP 9.17.1 fügt Unterstützung für die folgenden Ethernet-Karten hinzu:
 
+* X50135A (2p, 40G/100G Ethernet-Controller)
+* X60135A (2p, 40G/100G Ethernet-Controller)
+
+
+Die Karten X50131A und X50135A werden auf den folgenden Plattformen unterstützt:
+
+* ASA A1K
+* ASA A90
+* ASA A70
+* AFF A1K
+* AFF A90
+* AFF A70
+
+
+Die Karten X60132A und X60135A werden auf den folgenden Plattformen unterstützt:
+
+* ASA A50
+* ASA A30
+* ASA A20
+* AFF A50
+* AFF A30
+* AFF A20
+
+
+Sehen Sie sich die link:https://hwu.netapp.com/["NetApp Hardware Universe"^] für weitere Informationen zu den unterstützten Plattformen und Karten.
 
 .Umfang des Clusters
 Die IPsec-Hardware-Offload-Funktion ist global für den Cluster konfiguriert. Und so wird der Befehl beispielsweise `security ipsec config` auf alle Nodes im Cluster angewendet.
@@ -124,13 +128,15 @@ Sie müssen sicherstellen, dass der IPsec-Anti-Replay-Schutz auf Ihrem Client de
 Vor der Verwendung der IPsec-Hardware-Offload-Funktion sollten Sie mehrere Einschränkungen berücksichtigen.
 
 .IPv6
-IP-Version 6 wird für die IPsec-Hardware-Offload-Funktion nicht unterstützt. IPv6 wird nur mit der IPsec-Softwareimplementierung unterstützt.
+IPv6 wird für die IPsec-Hardware-Offload-Funktion nicht unterstützt. IPv6 wird nur mit der IPsec-Softwareimplementierung unterstützt.
 
 .Erweiterte Sequenznummern
 Die erweiterten IPsec-Sequenznummern werden von der Hardware-Offload-Funktion nicht unterstützt. Es werden nur die normalen 32-Bit-Sequenznummern verwendet.
 
 .Link-Aggregation
-Die IPsec-Hardware-Offload-Funktion unterstützt keine Link-Aggregation. Und so kann es nicht mit einer Schnittstelle oder Link Aggregation Group verwendet werden, wie sie über die Befehle an der ONTAP CLI administriert `network port ifgrp` wird.
+Ab ONTAP 9.17.1 können Sie die IPsec-Hardware-Offload-Funktion mit einem link:../networking/combine_physical_ports_to_create_interface_groups.html["Link-Aggregationsgruppe"] .
+
+Vor Version 9.17.1 unterstützt die IPsec-Hardware-Offload-Funktion keine Link-Aggregation. Sie kann nicht mit einer Schnittstelle oder Link-Aggregationsgruppe verwendet werden, die über das  `network port ifgrp` Befehle an der ONTAP CLI.
 
 
 

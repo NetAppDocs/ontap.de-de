@@ -13,29 +13,27 @@ summary: Erfahren Sie mehr über ARP-Benachrichtigungen in ONTAP und bestimmen S
 [role="lead"]
 Wenn Autonomous Ransomware Protection (ARP) abnormale Aktivitäten in einem geschützten Volume erkennt, wird eine Warnung ausgegeben. Sie sollten die Benachrichtigung bewerten, um festzustellen, ob die Aktivität akzeptabel ist (falsch positiv) oder ob ein Angriff schädlich erscheint. Nachdem Sie den Angriff kategorisiert haben, können Sie die Warnungen und Hinweise zu verdächtigen Dateien löschen.
 
-Wenn ONTAP eine Auffälligkeit feststellt, wird zudem ein Volume erstelltlink:index.html#threat-assessment-and-arp-snapshots["Ein ARP-Snapshot"], um den besten Recovery-Punkt zu erstellen. ARP-Snapshots werden standardmäßig zwei bis fünf Tage aufbewahrt.
-
-Wenn Sie einen Angriff kategorisieren, werden diese ARP-Snapshots entweder sofort gelöscht (ONTAP 9.15.1 und früher) oder für einen verkürzten Zeitraum aufbewahrt, der durch den Kategorisierungsvorgang eingeleitet wurde (ONTAP 9.16.1 und höher).
+Wenn Sie einen Angriff kategorisieren, werden ARP-Snapshots entweder sofort gelöscht (ONTAP 9.15.1 und früher) oder für einen durch den Kategorisierungsvorgang eingeleiteten verkürzten Zeitraum aufbewahrt (ONTAP 9.16.1 und höher).
 
 
-NOTE: Ab ONTAP 9.11.1 können Sie die  für ARP-Snapshots ändernxref:modify-automatic-snapshot-options-task.html[Aufbewahrungseinstellungen].
+NOTE: Ab ONTAP 9.11.1 können Sie die link:modify-automatic-snapshot-options-task.html["Aufbewahrungseinstellungen"] für ARP-Snapshots.
 
 .Über diese Aufgabe
-ARP zeigt eine Liste der verdächtigen Dateien an, wenn sie eine beliebige Kombination von hoher Datenentropie, abnormaler Volume-Aktivität mit Datenverschlüsselung und ungewöhnlichen Dateierweiterungen erkennt.
+ARP zeigt eine Liste verdächtiger Dateien an, wenn es eine Kombination aus hoher Datenentropie, anormaler Volume-Aktivität mit Datenverschlüsselung und ungewöhnlichen Dateierweiterungen erkennt. Ab ONTAP 9.17.1 für NAS- und SAN-Umgebungen werden Details zu Entropiespitzen auch auf der Anti-Ransomware-Seite im System Manager gemeldet.
 
-Wenn die ARP-Warnung ausgegeben wird, antworten Sie, indem Sie die Dateiaktivität auf zwei Arten festlegen:
+Wenn eine ARP-Warnmeldung ausgegeben wird, reagieren Sie, indem Sie die Aktivität auf eine der beiden folgenden Arten kennzeichnen:
 
 * *Falsch positiv*
 +
-Der identifizierte Dateityp wird für Ihren Workload erwartet und kann ignoriert werden.
+Der identifizierte Dateityp oder die Entropiespitze ist in Ihrer Arbeitslast zu erwarten und kann ignoriert werden.
 
 * *Potenzieller Ransomware-Angriff*
 +
-Der identifizierte Dateityp ist bei Ihrer Workload unerwartet und sollte als potenzieller Angriff behandelt werden.
+Der identifizierte Dateityp oder die Entropiespitze ist in Ihrer Arbeitslast unerwartet und sollte als potenzieller Angriff behandelt werden.
 
 
 
-In beiden Fällen wird die normale Überwachung nach der Aktualisierung und dem Löschen der Benachrichtigungen fortgesetzt. ARP zeichnet Ihre Bewertung im Bedrohungsprofil auf und verwendet Ihre Wahl zur Überwachung der nachfolgenden Dateiaktivitäten.
+Die normale Überwachung wird fortgesetzt, nachdem Sie Ihre Entscheidung aktualisiert und die ARP-Benachrichtigungen gelöscht haben. ARP zeichnet Ihre Bewertung im Bedrohungsbewertungsprofil auf und nutzt Ihre Auswahl zur Überwachung nachfolgender Dateiaktivitäten.
 
 Im Falle eines vermuteten Angriffs müssen Sie feststellen, ob es sich um einen Angriff handelt, darauf reagieren, wenn er der Fall ist, und geschützte Daten wiederherstellen, bevor Sie die Benachrichtigungen löschen. link:index.html#how-to-recover-data-in-ontap-after-a-ransomware-attack["Erfahren Sie mehr darüber, wie Sie nach einem Ransomware-Angriff wiederherstellen können"].
 
@@ -43,7 +41,7 @@ Im Falle eines vermuteten Angriffs müssen Sie feststellen, ob es sich um einen 
 NOTE: Wenn Sie ein gesamtes Volume wiederherstellen, müssen keine Hinweise gelöscht werden.
 
 .Bevor Sie beginnen
-ARP muss aktiv sein und sich nicht im Lernmodus befinden.
+ARP muss ein Volume aktiv schützen und darf sich nicht im Lern- oder Evaluierungsmodus befinden.
 
 .Schritte
 Sie können System Manager oder die ONTAP CLI verwenden, um auf anormale Aktivitäten zu reagieren.
@@ -52,33 +50,40 @@ Sie können System Manager oder die ONTAP CLI verwenden, um auf anormale Aktivit
 ====
 .System Manager
 --
-. Wenn Sie eine Benachrichtigung über „abnormale Aktivität“ erhalten, folgen Sie dem Link. Wechseln Sie alternativ zur Registerkarte *Sicherheit* in der Übersicht *Volumes*.
+. Wenn Sie eine Benachrichtigung über ungewöhnliche Aktivitäten erhalten, folgen Sie dem Link. Alternativ können Sie in der Übersicht „Volumes“ zur Registerkarte „Sicherheit“ navigieren.
 +
 Warnungen werden im Fenster *Übersicht* des Menüs *Ereignisse* angezeigt.
 
-. Wenn eine Meldung über die Erkennung von anormalen Volume-Aktivitäten angezeigt wird, zeigen Sie die vermuteten Dateitypen an.
+. Überprüfen Sie auf der Registerkarte *Sicherheit* den Bericht zu verdächtigen Dateitypen oder Entropiespitzen.
 +
-Wählen Sie auf der Registerkarte *Sicherheit* die Option aus, um die vermuteten Dateitypen zu überprüfen.
+** Untersuchen Sie bei verdächtigen Dateien jeden Dateityp im Dialogfeld *Verdächtige Dateitypen* und markieren Sie jeden einzeln.
+** Untersuchen Sie den Entropiebericht auf Entropiespitzen.
 
-. Prüfen Sie im Dialogfeld *vermutete Dateitypen* jeden Dateityp und markieren Sie ihn entweder als „falsch positiv“ oder „potentieller Ransomware-Angriff“.
+
+. Notieren Sie Ihre Antwort:
 +
 [cols="25,75"]
 |===
 
 
-| Wenn Sie diesen Wert ausgewählt haben... | Führen Sie diese Aktion durch... 
+| Wenn Sie diesen Wert auswählen... | Führen Sie diese Aktion durch... 
 
 
  a| 
 Falsch Positiv
  a| 
-.. Wählen Sie *Update* und *Suspect File Types löschen*, um Ihre Entscheidung aufzuzeichnen.
+.. Führen Sie einen der folgenden Schritte aus:
++
+*** Wählen Sie bei Dateitypwarnungen *Aktualisieren und verdächtige Dateitypen löschen*.
+*** Wählen Sie für Entropiespitzen *Als falsch positiv markieren*.
++
+Diese Aktionen löschen Warnhinweise zu verdächtigen Dateien oder Aktivitäten. ARP nimmt anschließend die normale Überwachung des Volumes wieder auf. Bei ONTAP 9.15.1 und früheren Versionen werden zugehörige ARP-Snapshots automatisch gelöscht, nachdem Sie verdächtige Dateitypen gelöscht haben. Bei ARP/AI in ONTAP 9.16.1 und neueren Versionen werden ARP-Snapshots nach einer durch die Kategorisierung ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
+
 +
 
 NOTE: Wenn Sie ab ONTAP 9.13.1 MAV zum Schutz Ihrer ARP-Einstellungen verwenden, werden Sie durch den Clear-Suspect-Vorgang aufgefordert, die Genehmigung eines oder mehrerer zusätzlicher Administratoren einzuholen. link:../multi-admin-verify/request-operation-task.html["Die Genehmigung muss von allen Administratoren eingeholt werden"] Der MAV-Genehmigungsgruppe zugeordnet oder der Vorgang schlägt fehl.
 
-+
-Mit dieser Aktion werden Warnmeldungen zu verdächtigen Dateien gelöscht. ARP setzt dann die normale Überwachung des Volume fort. Bei ONTAP 9.15.1 und früheren Versionen werden die ARP-Snapshots automatisch gelöscht, nachdem Sie vermutete Dateitypen gelöscht haben. Bei ARP/AI in ONTAP 9.16.1 und höher werden ARP-Snapshots nach einer durch den Kategorisierungsvorgang ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
+
 
 
 
@@ -87,11 +92,24 @@ Mit dieser Aktion werden Warnmeldungen zu verdächtigen Dateien gelöscht. ARP s
  a| 
 Möglicher Angriff Durch Ransomware
  a| 
-.. Reagieren Sie auf den Angriff und link:recover-data-task.html["Stellen Sie geschützte Daten wieder her"].
-.. Wählen Sie *Update* und *Suspect File Types löschen*, um Ihre Entscheidung zu erfassen und die normale ARP-Überwachung fortzusetzen.
+.. Reagieren Sie auf den Angriff:
++
+*** Markieren Sie bei Dateitypwarnungen ausgewählte Dateien als *Potenzieller Ransomware-Angriff* und link:recover-data-task.html["Stellen Sie geschützte Daten wieder her"] .
+*** Bei Entropiespitzen, die auf einen Angriff hinweisen, wählen Sie *Als potenziellen Ransomware-Angriff markieren* und link:recover-data-task.html["Stellen Sie geschützte Daten wieder her"] .
 
 
-Durch diese Aktion wird der Angriffsbericht gelöscht. Es gibt keine vermuteten Dateitypbenachrichtigungen, die gelöscht werden müssen, wenn Sie ein ganzes Volume wiederhergestellt haben. Bei ONTAP 9.15.1 und älteren Versionen werden die ARP-Snapshots nach der Wiederherstellung eines Volumes automatisch gelöscht. Bei ARP/AI in ONTAP 9.16.1 und höher werden ARP-Snapshots nach einer durch den Kategorisierungsvorgang ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
+.. Nachdem die Datenwiederherstellung abgeschlossen ist, protokollieren Sie Ihre Entscheidung und nehmen Sie die normale ARP-Überwachung wieder auf:
++
+*** Wählen Sie bei Dateitypwarnungen *Aktualisieren und verdächtige Dateitypen löschen*.
+*** Wählen Sie für Entropiespitzen *Als potenziellen Ransomware-Angriff markieren* und dann *Speichern und verwerfen*.
+
+
+
+
+
+NOTE: Es gibt keine Hinweise zu verdächtigen Dateitypen, die gelöscht werden müssen, wenn Sie ein ganzes Volume wiederhergestellt haben.
+
+Durch die Aufzeichnung Ihrer Entscheidung wird der Angriffsbericht gelöscht. Bei ONTAP 9.15.1 und früheren Versionen werden die ARP-Snapshots nach der Wiederherstellung eines Volumes automatisch gelöscht. Bei ARP/AI in ONTAP 9.16.1 und neueren Versionen werden ARP-Snapshots nach einer durch die Kategorisierung ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
 
 |===
 
@@ -114,8 +132,9 @@ Vserver Name: vs0
 Volume Name: vol1
 State: enabled
 Attack Probability: moderate
-Attack Timeline: 9/14/2021 01:03:23
+Attack Timeline: 5/12/2025 01:03:23
 Number of Attacks: 1
+Attack Detected By: encryption_percentage_analysis
 ....
 +
 Sie können auch EMS-Nachrichten überprüfen:
@@ -129,7 +148,7 @@ event log show -message-name callhome.arw.activity.seen
 +
 [source, cli]
 ----
-security anti-ransomware volume attack generate-report -vserver <svm_name> -volume <vol_name> -dest-path <[svm_name:]vol_name/[sub-dir-name]>
+security anti-ransomware volume attack generate-report -vserver <svm_name> -volume <vol_name> -dest-path <[svm_name]:[junction_path/sub_dir_name]>
 ----
 +
 Beispielbefehl:
@@ -149,34 +168,44 @@ Report "report_file_vs0_vol1_14-09-2021_01-21-08" available at path "vs0:vol1/"
 ----
 . Zeigt den Bericht auf einem Administrator-Client-System an. Beispiel:
 +
-....
+[listing]
+----
 cat report_file_vs0_vol1_14-09-2021_01-21-08
-....
-. Nehmen Sie eine der folgenden Aktionen auf Grundlage Ihrer Bewertung der Dateiendungen:
+----
+. Führen Sie basierend auf Ihrer Auswertung der Dateierweiterungen oder Entropiespitzen eine der folgenden Aktionen aus:
 +
 ** Falsch positiv
 +
-Führen Sie den folgenden Befehl aus, um Ihre Entscheidung aufzuzeichnen, und fügen Sie die neue Erweiterung zur Liste der zulässigen hinzu, und nehmen Sie die normale Überwachung des autonomen Ransomware-Schutzes wieder auf:
+Führen Sie einen der folgenden Befehle aus, um Ihre Entscheidung zu protokollieren und die normale Überwachung des autonomen Ransomware-Schutzes fortzusetzen:
 
++
+*** Für Dateierweiterungen:
 +
 [source, cli]
 ----
-anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive true
+anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension_identifiers>] -false-positive true
 ----
 +
 Verwenden Sie den folgenden optionalen Parameter, um nur bestimmte Erweiterungen als falsch-positive zu identifizieren:
 
 +
-*** `[-extension <text>, … ]`: Dateierweiterungen
-+
-Durch diesen `clear-suspect` Vorgang werden Warnmeldungen zu verdächtigen Dateien gelöscht. ARP setzt dann die normale Überwachung des Volume fort. Bei ONTAP 9.15.1 und früheren Versionen werden die ARP-Snapshots automatisch gelöscht, nachdem Sie vermutete Dateitypen gelöscht haben. Bei ARP/AI in ONTAP 9.16.1 und höher werden ARP-Snapshots nach einer durch den Kategorisierungsvorgang ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
+**** `[-extension <text>, … ]`: Dateierweiterungen
 
+
+*** Für Entropiespitzen:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive true
+----
 
 
 ** Möglicher Ransomware-Angriff
 +
-Reagieren Sie auf den Angriff und link:../anti-ransomware/recover-data-task.html["Wiederherstellen von Daten aus dem ARP-erstellten Backup-Snapshot"]. Nachdem die Daten wiederhergestellt sind, führen Sie den folgenden Befehl aus, um Ihre Entscheidung aufzuzeichnen und die normale ARP-Überwachung fortzusetzen:
+Reagieren Sie auf den Angriff und link:../anti-ransomware/recover-data-task.html["Wiederherstellen von Daten aus dem ARP-erstellten Backup-Snapshot"]. Nachdem die Daten wiederhergestellt wurden, führen Sie einen der folgenden Befehle aus, um Ihre Entscheidung zu protokollieren und die normale ARP-Überwachung fortzusetzen
 
++
+*** Für Dateierweiterungen:
 +
 [source, cli]
 ----
@@ -186,13 +215,21 @@ anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_nam
 Mit dem folgenden optionalen Parameter können Sie nur bestimmte Erweiterungen als potenzielle Ransomware identifizieren:
 
 +
-*** `[-extension <text>, … ]`: Dateierweiterung
+**** `[-extension <text>, … ]`: Dateierweiterung
+
+
+*** Für Entropiespitzen:
 +
-Durch diesen `clear-suspect` Vorgang wird der Angriffsbericht gelöscht. Es gibt keine vermuteten Dateitypbenachrichtigungen, die gelöscht werden müssen, wenn Sie ein ganzes Volume wiederhergestellt haben. Bei ONTAP 9.15.1 und älteren Versionen werden die ARP-Snapshots nach der Wiederherstellung eines Volumes automatisch gelöscht. Bei ARP/AI in ONTAP 9.16.1 und höher werden ARP-Snapshots nach einer durch den Kategorisierungsvorgang ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive false
+----
 
 
 
 
++
+Das  `clear-suspect` Der Vorgang löscht den Angriffsbericht. Es gibt keine Hinweise zu verdächtigen Dateitypen, die gelöscht werden müssen, wenn Sie ein ganzes Volume wiederhergestellt haben. Bei ONTAP 9.15.1 und früheren Versionen werden ARP-Snapshots automatisch gelöscht, nachdem Sie ein Volume wiederhergestellt oder ein verdächtiges Ereignis gelöscht haben. Bei ARP/AI in ONTAP 9.16.1 und höher werden ARP-Snapshots nach einer durch den Kategorisierungsvorgang ausgelösten verkürzten Aufbewahrungsfrist automatisch gelöscht.
 
 . Wenn Sie MAV verwenden und für einen erwarteten `clear-suspect` Vorgang zusätzliche Genehmigungen erforderlich sind, muss jeder Genehmiger der MAV-Gruppe:
 +
