@@ -17,7 +17,7 @@ Ab ONTAP 9.14.1 können Sie als ONTAP-Administrator benutzerdefinierte Rollen er
 Sie müssen für die Storage-VM einige Konfigurationsschritte durchführen, um die benutzerdefinierte Rolle zu erstellen und dem Benutzer zuzuweisen, der die API zur Schlüsselgenerierung nach dem Zugriff aktiviert.
 
 
-NOTE: Wenn LDAP deaktiviert ist, können Sie so konfigurieren, dass Benutzer Zugriffsschlüssel generieren könnenlink:configure-access-ldap.html["Active Directory und SMB mit domänenbasierter Authentifizierung"].
+NOTE: Wenn LDAP deaktiviert ist, können Sie link:configure-access-ldap.html["Konfigurieren externer Verzeichnisdienste für den ONTAP S3-Zugriff"] um Benutzern das Generieren von Zugriffsschlüsseln zu ermöglichen.
 
 .Bevor Sie beginnen
 Stellen Sie Folgendes sicher:
@@ -35,9 +35,14 @@ Stellen Sie Folgendes sicher:
 
 == Konfigurieren Sie Benutzer für die Generierung des Zugriffsschlüssels
 
+.Schritte
+[role="tabbed-block"]
+====
+.LDAP-Benutzer
+--
 . Geben Sie LDAP als _Name Service Database_ der Speicher-VM für die Gruppe und Passwort für LDAP an:
 +
-[listing]
+[source, cli]
 ----
 ns-switch modify -vserver <vserver-name> -database group -sources files,ldap
 ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
@@ -55,9 +60,9 @@ security login rest-role create -vserver svm-1 -role s3role -api "/api/protocols
 +
 Erfahren Sie mehr über `security login rest-role create` in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-rest-role-create.html["ONTAP-Befehlsreferenz"^].
 
-. Erstellen Sie eine LDAP-Benutzergruppe mit dem Befehl für die Sicherheitsanmeldung, und fügen Sie die neue benutzerdefinierte Rolle für den Zugriff auf den REST-API-Endpunkt des S3-Benutzers hinzu. Erfahren Sie mehr über `security login create` in der link:https://docs.netapp.com/us-en/ontap-cli//security-login-create.html["ONTAP-Befehlsreferenz"^].
+. Erstellen Sie eine LDAP-Benutzergruppe mit dem  `security login` und fügen Sie die neue benutzerdefinierte Rolle für den Zugriff auf den REST-API-Endpunkt des S3-Benutzers hinzu. Erfahren Sie mehr über  `security login create` im link:https://docs.netapp.com/us-en/ontap-cli//security-login-create.html["ONTAP-Befehlsreferenz"^] .
 +
-[listing]
+[source, cli]
 ----
 security login create -user-or-group-name <ldap-group-name> -application http -authentication-method nsswitch -role <custom-role-name> -is-ns-switch-group yes
 ----
@@ -77,16 +82,57 @@ Erfahren Sie mehr über `security login create` in der link:https://docs.netapp.
 
 
 
-Durch das Hinzufügen der benutzerdefinierten Rolle zur Domäne oder LDAP-Gruppe erhalten Benutzer in dieser Gruppe eingeschränkten Zugriff auf den ONTAP- `/api/protocols/s3/services/{svm.uuid}/users`Endpunkt. Durch Aufruf der API können die Benutzer der Domäne oder LDAP-Gruppe eigene Zugriffs- und geheime Schlüssel für den Zugriff auf den S3-Client generieren. Sie können die Schlüssel nur für sich selbst und nicht für andere Benutzer generieren.
+Das Hinzufügen der benutzerdefinierten Rolle zur LDAP-Gruppe ermöglicht Benutzern in dieser Gruppe einen eingeschränkten Zugriff auf die ONTAP  `/api/protocols/s3/services/{svm.uuid}/users` Endpunkt. Durch Aufrufen der API können die LDAP-Gruppenbenutzer ihre eigenen Zugriffs- und Geheimschlüssel für den Zugriff auf den S3-Client generieren. Sie können die Schlüssel nur für sich selbst und nicht für andere Benutzer generieren.
 
+--
+.Domänenbenutzer
+--
+. Erstellen Sie eine benutzerdefinierte Rolle mit Zugriff auf den S3-Benutzer-REST-API-Endpunkt:
+
+
+[source, cli]
+----
+security login rest-role create -vserver <vserver-name> -role <custom-role-name> -api "/api/protocols/s3/services/*/users" -access <access-type>
+----
+In diesem Beispiel  `s3-role` Rolle wird für Benutzer auf der Speicher-VM generiert  `svm-1` , dem alle Zugriffsrechte Lesen, Erstellen und Aktualisieren gewährt werden.
+
+[listing]
+----
+security login rest-role create -vserver svm-1 -role s3role -api "/api/protocols/s3/services/*/users" -access all
+----
+Erfahren Sie mehr über `security login rest-role create` in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-rest-role-create.html["ONTAP-Befehlsreferenz"^].
+
+. Erstellen Sie eine Domänenbenutzergruppe mit dem  `security login` und fügen Sie die neue benutzerdefinierte Rolle für den Zugriff auf den REST-API-Endpunkt des S3-Benutzers hinzu. Erfahren Sie mehr über  `security login create` im link:https://docs.netapp.com/us-en/ontap-cli//security-login-create.html["ONTAP-Befehlsreferenz"^] .
++
+[source, cli]
+----
+security login create -vserver <vserver-name> -user-or-group-name domain\<group-name> -application http -authentication-method domain -role <custom-role-name>
+----
++
+In diesem Beispiel die Domänengruppe  `domain\group1` entsteht in  `svm-1` und die benutzerdefinierte Rolle  `s3role` wird für den Zugriff auf den API-Endpunkt hinzugefügt.
+
++
+[listing]
+----
+security login create -user-or-group-name domain\group1 -application http -authentication-method domain -role s3role -vserver svm-1
+----
++
+Erfahren Sie mehr über `security login create` in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-create.html["ONTAP-Befehlsreferenz"^].
+
+
+
+Das Hinzufügen der benutzerdefinierten Rolle zur Domänengruppe ermöglicht Benutzern in dieser Gruppe einen eingeschränkten Zugriff auf die ONTAP  `/api/protocols/s3/services/{svm.uuid}/users` Endpunkt. Durch Aufrufen der API können die Domänengruppenbenutzer ihre eigenen Zugriffs- und Geheimschlüssel für den Zugriff auf den S3-Client generieren. Sie können die Schlüssel nur für sich selbst und nicht für andere Benutzer generieren.
+
+--
+====
 
 
 == Generieren Sie als S3- oder LDAP-Benutzer eigene Zugriffsschlüssel
 
 Ab ONTAP 9.14.1 können Sie eigene Zugriffs- und geheime Schlüssel für den Zugriff auf S3-Clients generieren, sofern Ihr Administrator Ihnen die Rolle zum Generieren eigener Schlüssel eingeräumt hat. Sie können Schlüssel nur für sich selbst generieren, indem Sie den folgenden ONTAP REST-API-Endpunkt verwenden.
 
-.HTTP-Methode und -Endpunkt
-Dieser REST-API-Aufruf verwendet die folgende Methode und den folgenden Endpunkt. Informationen zu den anderen Methoden dieses Endpunkts finden Sie in der Referenz https://docs.netapp.com/us-en/ontap-automation/reference/api_reference.html#access-a-copy-of-the-ontap-rest-api-reference-documentation["API-Dokumentation"].
+.Erstellen Sie einen S3-Benutzer und generieren Sie Schlüssel
+Dieser REST-API-Aufruf verwendet die folgende Methode und den folgenden Endpunkt. Weitere Informationen zu diesem Endpunkt finden Sie in der Referenz  https://docs.netapp.com/us-en/ontap-automation/reference/api_reference.html#access-a-copy-of-the-ontap-rest-api-reference-documentation["API-Dokumentation"] .
 
 [cols="25,75"]
 |===
@@ -95,6 +141,8 @@ Dieser REST-API-Aufruf verwendet die folgende Methode und den folgenden Endpunkt
 
 | POST | /API/Protokolle/s3/Services/{svm.uuid}/Benutzer 
 |===
+Verwenden Sie für Domänenbenutzer das folgende Format für den S3-Benutzernamen:  `user@fqdn` , Wo  `fqdn` ist der vollqualifizierte Domänenname der Domäne.
+
 .Beispiel für die Wellung
 [source, curl]
 ----
@@ -104,7 +152,7 @@ curl
 --include \
 --header "Accept: */*" \
 --header "Authorization: Basic $BASIC_AUTH"
---data '{"name":"_name_"}'
+--data '{"name":"user1@example.com"}'
 ----
 .Beispiel für eine JSON-Ausgabe
 [listing]
@@ -112,7 +160,7 @@ curl
 {
   "records": [
     {
-      "access_key": "Pz3SB54G2B_6dsXQPrA5HrTPcf478qoAW6_Xx6qyqZ948AgZ_7YfCf_9nO87YoZmskxx3cq41U2JAH2M3_fs321B4rkzS3a_oC5_8u7D8j_45N8OsBCBPWGD_1d_ccfq",
+      "access_key": "4KX07KF7ML8YNWY01JWG",
       "_links": {
         "next": {
           "href": "/api/resourcelink"
@@ -121,8 +169,48 @@ curl
           "href": "/api/resourcelink"
         }
       },
-      "name": "user-1",
-      "secret_key": "A20_tDhC_cux2C2BmtL45bXB_a_Q65c_96FsAcOdo14Az8V31jBKDTc0uCL62Bh559gPB8s9rrn0868QrF38_1dsV2u1_9H2tSf3qQ5xp9NT259C6z_GiZQ883Qn63X1"
+      "name": "user1@example.com",
+      "secret_key": "<secret_key_value>"
+    }
+  ],
+  "num_records": "1"
+}
+
+----
+.Schlüssel für einen S3-Benutzer neu generieren
+Wenn bereits ein S3-Benutzer vorhanden ist, können Sie dessen Zugriffs- und Geheimschlüssel neu generieren. Dieser REST-API-Aufruf verwendet die folgende Methode und den folgenden Endpunkt.
+
+[cols="25,75"]
+|===
+| HTTP-Methode | Pfad 
+
+
+| PATCH | /api/protocols/s3/services/{svm.uuid}/users/{name} 
+|===
+.Beispiel für die Wellung
+[source, curl]
+----
+curl
+--request PATCH \
+--location "https://$FQDN_IP /api/protocols/s3/services/{svm.uuid}/users/{name} " \
+--include \
+--header "Authorization: Basic $BASIC_AUTH" \
+--data '{"regenerate_keys":"True"}'
+----
+.Beispiel für eine JSON-Ausgabe
+[listing]
+----
+{
+  "records": [
+    {
+      "access_key": "DX12U609DMRVD8U30Z1M",
+      "_links": {
+        "self": {
+          "href": "/api/resourcelink"
+        }
+      },
+      "name": "user1@example.com",
+      "secret_key": "<secret_key_value>"
     }
   ],
   "num_records": "1"
