@@ -1,0 +1,43 @@
+= 
+:allow-uri-read: 
+
+
+SMB-Clients, die Windows verwenden, können einen schreibgeschützten Bit pro Datei festlegen. NFS-Clients legen kein Leserbit pro Datei fest, da NFS-Clients über keine Protokollvorgänge verfügen, die ein schreibgeschütztes Bit pro Datei verwenden.
+
+ONTAP kann ein schreibgeschütztes Bit auf einer Datei festlegen, wenn ein SMB-Client, der Windows verwendet, diese Datei erstellt. ONTAP kann auch ein schreibgeschütztes Bit festlegen, wenn eine Datei zwischen NFS-Clients und SMB-Clients gemeinsam genutzt wird. Für einige Software, die von NFS-Clients und SMB-Clients verwendet wird, ist die Aktivierung des Read-Only-Bits erforderlich.
+
+Damit ONTAP die entsprechenden Lese- und Schreibberechtigungen auf eine von NFS Clients und SMB Clients gemeinsam genutzte Datei vorhält, behandelt es das schreibgeschützte Bit gemäß den folgenden Regeln:
+
+* NFS behandelt jede Datei mit aktiviertem Read-Only-Bit, als ob keine Write-Berechtigungsbits aktiviert sind.
+* Wenn ein NFS-Client alle Write-Berechtigungsbits deaktiviert und mindestens eines dieser Bits zuvor aktiviert wurde, aktiviert ONTAP das schreibgeschützte Bit für diese Datei.
+* Wenn ein NFS-Client ein Schreibberechtigungs-Bit aktiviert, deaktiviert ONTAP das schreibgeschützte Bit für diese Datei.
+* Wenn das schreibgeschützte Bit für eine Datei aktiviert ist und ein NFS-Client versucht, Berechtigungen für die Datei zu ermitteln, werden die Berechtigungsbits für die Datei nicht an den NFS-Client gesendet. Stattdessen sendet ONTAP die Berechtigungsbits an den NFS-Client mit maskierten Schreibberechtigungs-Bits.
+* Wenn das schreibgeschützte Bit für eine Datei aktiviert ist und ein SMB-Client das schreibgeschützte Bit deaktiviert, aktiviert ONTAP das Schreibberechtigungsbit des Eigentümers für die Datei.
+* Dateien mit aktiviertem Read-Only-Bit sind nur als Root beschreibbar.
+
+
+Das Nur-Lese-Bit interagiert mit den ACL- und Unix-Modus-Bits auf folgende Weise:
+
+Wenn das Schreibschutzbit für eine Datei gesetzt ist:
+
+* An der ACL für diese Datei werden keine Änderungen vorgenommen. NFS-Clients sehen dieselbe ACL wie vor dem Setzen des Schreibschutzbits.
+* Alle Unix-Modusbits, die Schreibzugriff auf die Datei erlauben, werden ignoriert.
+* Sowohl NFS- als auch SMB-Clients können die Datei lesen, aber nicht ändern.
+* ACLs und UNIX-Modusbits werden zugunsten des Nur-Lese-Bits ignoriert. Das bedeutet, dass das Nur-Lese-Bit Änderungen verhindert, selbst wenn die ACL Schreibzugriff erlaubt.
+
+
+Wenn das Schreibschutzbit für eine Datei nicht gesetzt ist:
+
+* ONTAP bestimmt den Zugriff basierend auf den ACL- und UNIX-Modusbits.
++
+** Wenn entweder die ACL oder die UNIX-Modusbits den Schreibzugriff verweigern, können NFS- und SMB-Clients die Datei nicht ändern.
+** Wenn weder die ACL- noch die UNIX-Modus-Bits den Schreibzugriff verweigern, können NFS- und SMB-Clients die Datei ändern.
+
+
+
+
+[NOTE]
+====
+Änderungen an Dateiberechtigungen wirken sich unmittelbar auf SMB-Clients aus, wirken sich jedoch möglicherweise nicht unmittelbar auf NFS-Clients aus, wenn der NFS-Client das Caching von Attributen ermöglicht.
+
+====
