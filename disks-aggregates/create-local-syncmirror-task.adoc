@@ -1,0 +1,63 @@
+---
+permalink: disks-aggregates/create-local-syncmirror-task.html 
+sidebar: sidebar 
+keywords: ontap 9, create, aggregates, syncmirror, sync mirror, add, local tier 
+summary: Sie können SyncMirror aktivieren, wenn Sie manuell eine lokale Ebene erstellen, um Daten der lokalen Ebene synchron zu spiegeln. 
+---
+= Fügen Sie lokale ONTAP -Ebenen mit aktiviertem SyncMirror hinzu
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können SyncMirror aktivieren, wenn Sie manuell eine lokale Ebene erstellen, um Daten der lokalen Ebene synchron zu spiegeln.
+
+Erfahren Sie mehr über link:../concepts/mirrored-unmirrored-aggregates-concept.html["gespiegelte und ungespiegelte lokale Ebenen"] .
+
+.Bevor Sie beginnen
+* Der Cluster muss nur mit internem Speicher initialisiert werden.
+* Die Clustereinrichtung muss auf beiden Knoten abgeschlossen sein.
+
+
+.Über diese Aufgabe
+Bei diesem Verfahren werden auf jedem Clusterknoten gespiegelte lokale Datenebenen gleicher Größe erstellt, und jede lokale Ebene verfügt über eine Datenträgeranzahl von 44.
+
+.Schritte
+. Automatische Speicherzuweisung deaktivieren:
++
+`storage disk option modify -node * -autoassign off`
+
+. Bestätigen Sie, dass die automatische Zuweisung deaktiviert ist:
++
+`storage disk option show`
+
+. Befestigen Sie das Außenregal.
+. Weisen Sie jedem Knoten die externen Laufwerke zu und geben Sie dabei Pool 1 an:
++
+`storage disk assign -disk <disk ID> -owner <node name> -pool 1`
+
+. Spiegeln Sie die lokale Stammebene auf jedem Knoten:
++
+`storage aggregate mirror -aggregate <node1 root-aggr>`
+
++
+`storage aggregate mirror -aggregate <node2 root-aggr>`
+
++
+
+NOTE: Laufwerke in Pool 1 werden automatisch so partitioniert, dass sie mit denen in Plex 0 übereinstimmen.
+
+. Erstellen Sie auf Knoten 1 eine gespiegelte lokale Datenebene mit einer Datenträgeranzahl von 44.  Dadurch werden 22 Partitionen aus Pool 0 und 22 Partitionen aus Pool 1 ausgewählt.
++
+`storage aggregate create -node <node1 name> -aggregate <node1 aggr-name> -diskcount 44 -mirror true`
+
+. Erstellen Sie auf Knoten 2 eine gespiegelte lokale Datenebene mit einer Datenträgeranzahl von 44.  Dadurch werden 22 Partitionen aus Pool 0 und 22 Partitionen aus Pool 1 ausgewählt.
++
+`storage aggregate create -node <node2 name> -aggregate <node2 aggr-name> -diskcount 44 -mirror true`
+
+. Überprüfen Sie, ob lokale Ebenen gleicher Größe erfolgreich erstellt wurden:
++
+`storage aggregate show`
+
+
