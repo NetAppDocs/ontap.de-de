@@ -4,27 +4,35 @@ sidebar: sidebar
 keywords: considerations, changing, maximum number of files, allowed, flexvol volume, maximum, files, file 
 summary: FlexVol-Volumes weisen eine maximale Anzahl von Dateien auf, die sie enthalten können. Sie können dieses Maximum ändern, aber beachten Sie, wie sich dies auf das Volumen auswirkt. 
 ---
-= Die maximale Anzahl an Dateien, die für FlexVol-Volumes in ONTAP zulässig sind
+= Die standardmäßige und maximale Anzahl der für FlexVol -Volumes in ONTAP zulässigen Dateien
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-FlexVol-Volumes weisen eine maximale Anzahl von Dateien auf, die sie enthalten können. Sie können dieses Maximum ändern, aber bevor Sie dies tun, sollten Sie verstehen, wie diese Änderung das Volumen beeinflusst.
+FlexVol -Volumes können eine Standard- und eine Höchstanzahl von Dateien enthalten.  Wenn für Ihre Daten eine große Anzahl von Dateien erforderlich ist, können Sie die Anzahl der für den Benutzer sichtbaren Dateien auf einem Volume bis zu einem Maximalwert erhöhen.  Sie sollten die Einschränkungen und Vorbehalte verstehen, bevor Sie fortfahren.
 
-Wenn Ihre Daten eine große Anzahl von Dateien oder sehr große Verzeichnisse benötigen, können Sie die Kapazität von ONTAP Datei oder Verzeichnis erweitern. Sie sollten jedoch die Einschränkungen und Einschränkungen verstehen, bevor Sie fortfahren.
+Die Anzahl der für den Benutzer sichtbaren Dateien, die ein Volume enthalten kann, wird durch die verfügbare Inode-Kapazität für das Volume bestimmt.  Ein Inode ist eine Datenstruktur, die Informationen zu Dateien enthält.
 
-Die Anzahl der Dateien, die ein Volume enthalten kann, wird durch die Anzahl der Inodes bestimmt, die es hat. Eine_Inode_ ist eine Datenstruktur, die Informationen über Dateien enthält. Volumen haben sowohl private als auch öffentliche Inodes. Öffentliche Inodes werden für Dateien verwendet, die für den Benutzer sichtbar sind; private Inodes werden für Dateien verwendet, die intern von ONTAP verwendet werden. Sie können nur die maximale Anzahl öffentlicher Inodes für ein Volume ändern. Sie können die Anzahl der privaten Inodes nicht beeinflussen.
+ONTAP legt die Standard- und Höchstanzahl verfügbarer Inodes für ein neu erstelltes Volume basierend auf der Größe des Volumes automatisch wie folgt fest.
 
-ONTAP legt automatisch die maximale Anzahl an öffentlichen Inodes für ein neu erstelltes Volume auf Basis der Größe des Volumes fest: 1 Inode pro 32 KB Volume-Größe. Wenn die Größe eines Volumes erhöht wird, entweder direkt durch einen Administrator oder automatisch durch ONTAP über die Autosize-Funktion, erhöht ONTAP auch (bei Bedarf) die maximale Anzahl an öffentlichen Inodes, sodass es mindestens 1 Inode pro 32 KB Volume-Größe gibt, Bis das Volume ungefähr 680 GB erreicht.
+[cols="2,2"]
+|===
+| Standardanzahl von Inodes | Maximale Anzahl von Inodes 
 
-Bei Versionen von ONTAP vor 9.13.1 führt das erweitern des Volumes über 680 GB nicht automatisch zu mehr Inodes, da ONTAP nicht automatisch mehr als 21,251,126 Inodes erstellt. Wenn Sie mehr Dateien benötigen als die Standardanzahl für Volumes beliebiger Größe, können Sie mit dem Befehl Volume modify die maximale Anzahl von Inodes für das Volume erhöhen.
 
-Ab ONTAP 9.13.1 wächst die maximale Anzahl der Inodes weiter, so dass es eine Inode pro 32 KB Volume-Platz gibt, auch wenn das Volumen größer als 680 GB ist. Dieses Wachstum setzt sich fort, bis das Volumen die maximale Inode von 2,040,109,451 erreicht hat.
+| 1 pro 32 KB Datenträgergröße | 1 pro 4 KB Datenträgergröße 
+|===
+Wenn die Größe eines Volumes erhöht wird, entweder manuell durch einen Administrator oder automatisch durch die Autosize-Funktion von ONTAP, erhöht ONTAP (falls erforderlich) auch die Anzahl der verfügbaren Inodes, sodass mindestens 1 Inode pro 32 KB Volumegröße vorhanden ist, bis das Volume eine Größe von ungefähr 680 GB erreicht.
 
-Sie können auch die maximale Anzahl öffentlicher Inodes reduzieren. Die Verringerung der Anzahl der öffentlichen Inodes führt zu _not_ Änderungen des Speicherplatzes, der Inodes zugewiesen ist, verringert jedoch die maximale Menge an Speicherplatz, den die öffentliche Inode-Datei verbrauchen kann. Nachdem Speicherplatz für Inodes zugewiesen wurde, wird dieser nie wieder an das Volume zurückgegeben. Daher gibt eine Senkung der maximalen Anzahl von Inodes unter die Anzahl der aktuell zugewiesenen Inodes nicht den von den zugewiesenen Inodes verwendeten Speicherplatz zurück.
+In ONTAP 9.12.1 und früheren Versionen führt das Erstellen eines neuen Volumes oder die Größenänderung eines vorhandenen Volumes mit einer Größe von mehr als 680 GB nicht automatisch zu zusätzlicher Inode-Kapazität.  Wenn Sie mehr Dateien als die Standardanzahl für ein Volume beliebiger Größe benötigen, können Sie die `volume modify` Befehl, um die verfügbare Anzahl von Inodes für das Volume bis zum Maximum zu erhöhen.
+
+Ab ONTAP 9.13.1 wird beim Erstellen eines neuen Volumes oder beim Ändern der Größe eines vorhandenen Volumes die Standardanzahl der verfügbaren Inodes auf 1 Inode pro 32 KB Volume-Speicherplatz festgelegt, selbst wenn das Volume größer als 680 GB ist.  Dieses Verhältnis bleibt bestehen, bis das Volume das absolute Inode-Maximum von 2.040.109.451 erreicht.
+
+Sie können auch die verfügbare Anzahl an Inodes verringern.  Dadurch ändert sich nicht die den Inodes zugewiesene Speicherplatzmenge, es verringert jedoch die maximale Speicherplatzmenge, die die öffentliche Inode-Datei belegen kann.  Nachdem Speicherplatz für Inodes zugewiesen wurde, wird er nie wieder an das Volume zurückgegeben.  Daher ist es nicht möglich, die maximale Anzahl der Inodes unter die Anzahl der aktuell zugewiesenen Inodes zu senken.
 
 .Weitere Informationen
 * xref:display-file-inode-usage-task.html[Bestimmen der Datei- und Inode-Nutzung für ein Volume]
+* link:https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/FAQ_-_ONTAP_default_and_maximum_number_of_files_(inodes)["Knowledge Base-Artikel: FAQ – ONTAP -Standard- und Maximalanzahl von Dateien (Inodes)"]
 
