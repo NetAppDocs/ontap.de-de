@@ -205,12 +205,18 @@ CGroup: /system.slice/ontap_mediator.service
 
 
 
-== Deinstallieren Sie SCST manuell, um die Hostwartung durchzuführen
+== Durchführen von Host-Wartungsarbeiten
+
+Wenn die VM, auf der ONTAP Mediator ausgeführt wird, mit einem neueren Kernel aktualisiert werden muss, kann dies zu Kompatibilitätsproblemen mit den von ONTAP Mediator verwendeten SCST-Kernelmodulen führen.  In diesem Szenario empfiehlt NetApp , SCST manuell zu deinstallieren und neu zu installieren.
+
+
+
+=== Schritt 1: SCST manuell deinstallieren
 
 Um SCST zu deinstallieren, benötigen Sie das SCST tar-Paket, das für die installierte Version von ONTAP Mediator verwendet wird.
 
 .Schritte
-. Laden Sie das entsprechende SCST-Paket herunter (wie in der folgenden Tabelle gezeigt) und enttar es.
+. Laden Sie das entsprechende SCST-Paket herunter (wie in der folgenden Tabelle gezeigt) und extrahieren Sie es.
 +
 [cols="50,50"]
 |===
@@ -295,7 +301,13 @@ ONTAP Mediator 1.0
 Scst-3.3.0.tar.bz2
 
 |===
-. Geben Sie die folgenden Befehle im Verzeichnis „scst“ ein:
++
+.. Greifen Sie auf das Open Source-Paket zu überlink:https://scst.sourceforge.net/downloads.html["SCST Sourceforge-Downloads"^] .
+.. Wählen Sie *Freigegebene Versionen herunterladen*.
+.. Extrahieren Sie das Paket auf Ihre VM.
+
+
+. Führen Sie die folgenden Deinstallationsbefehle im `scst` Verzeichnis:
 +
 .. `systemctl stop mediator-scst`
 .. `make scstadm_uninstall`
@@ -309,11 +321,14 @@ Scst-3.3.0.tar.bz2
 
 
 
-== Installieren Sie SCST manuell, um die Hostwartung durchzuführen
+=== Schritt 2: SCST manuell installieren
 
-Um SCST manuell <<scst-bundle-table,Tabelle oben>>zu installieren, benötigen Sie das SCST tar-Paket, das für die installierte Version von ONTAP Mediator verwendet wird (siehe ).
+Um SCST manuell zu installieren, benötigen Sie das SCST-Tar-Bundle, das für die installierte Version von ONTAP Mediator verwendet wird (siehe<<scst-bundle-table,SCST-Tabelle>> ).
 
-. Geben Sie die folgenden Befehle im Verzeichnis „scst“ ein:
+
+NOTE: Führen Sie diesen Schritt aus, bevor Sie den ONTAP Mediator installieren.  Wenn die von Ihnen verwendete SCST-Version neuer ist als die mit dem ONTAP Mediator-Installationsprogramm gebündelte Version, überspringt das Installationsprogramm diesen Schritt.
+
+. Führen Sie die folgenden Installationsbefehle im `scst` Verzeichnis:
 +
 .. `make 2release`
 .. `make scst_install`
@@ -321,13 +336,25 @@ Um SCST manuell <<scst-bundle-table,Tabelle oben>>zu installieren, benötigen Si
 .. `make iscsi_install`
 .. `make scstadm_install`
 .. `depmod`
++
+[NOTE]
+====
+Wenn Sie eine Erstinstallation durchführen und ONTAP Mediator vorinstallieren möchten, führen Sie den folgenden Befehl aus, bevor Sie mit dem nächsten Schritt fortfahren:
+
+`mkdir -p /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys` .
+
+====
 .. `cp scst/src/certs/scst_module_key.der /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/`
 .. `patch /etc/init.d/scst < /opt/netapp/lib/ontap_mediator/systemd/scst.patch`
++
+
+NOTE: Wenn Sie eine Erstinstallation durchführen und SCST vor der Installation von ONTAP Mediator vorinstallieren möchten, können Sie diesen Schritt überspringen.  Das ONTAP Mediator-Installationsprogramm wendet während der Installation alle relevanten Patches auf die SCST-Komponenten an.
+
 
 
 . Wenn Secure Boot aktiviert ist, führen Sie vor dem Neustart optional die folgenden Schritte aus:
 +
-.. Bestimmen Sie jeden Dateinamen für die Module „scst_vdisk“, „scst“ und „iscsi_scst“:
+.. Bestimmen Sie jeden Dateinamen für die `scst_vdisk` , `scst` , Und `iscsi_scst` Module:
 +
 ....
 [root@localhost ~]# modinfo -n scst_vdisk
@@ -339,7 +366,7 @@ Um SCST manuell <<scst-bundle-table,Tabelle oben>>zu installieren, benötigen Si
 ....
 [root@localhost ~]# uname -r
 ....
-.. Signieren Sie jede Datei mit dem Kernel:
+.. Signieren Sie jede Moduldatei mit dem Kernel:
 +
 ....
 [root@localhost ~]# /usr/src/kernels/<KERNEL-RELEASE>/scripts/sign-file \sha256 \
@@ -347,7 +374,7 @@ Um SCST manuell <<scst-bundle-table,Tabelle oben>>zu installieren, benötigen Si
 /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der \
 _module-filename_
 ....
-.. Installieren Sie den richtigen Schlüssel mit der UEFI-Firmware.
+.. Installieren Sie den UEFI-Schlüssel mit der Firmware.
 +
 Anweisungen zur Installation des UEFI-Schlüssels finden Sie unter:
 
@@ -362,7 +389,7 @@ Der generierte UEFI-Schlüssel befindet sich unter:
 
 
 
-. Führen Sie einen Neustart durch:
+. Starten Sie das System neu:
 +
 `reboot`
 
