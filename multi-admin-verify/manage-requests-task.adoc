@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: multi-admin-verify/manage-requests-task.html 
 keywords: ontap, mav, multi, admin, multi admin verify, verification, administrator, protected, operation, rules, request, cluster, approve, rbac, manage, cli, system, manager 
-summary: 'Wenn Administratoren einer MAV-Genehmigungsgruppe (MAV-Administratoren) über eine Anfrage zur Ausführung eines ausstehenden Vorgangs benachrichtigt werden, müssen sie innerhalb eines festgelegten Zeitraums mit einer Genehmigungs- oder Veto-Nachricht (Ablauf der Genehmigung) antworten.' 
+summary: Wenn Administratoren in einer MAV-Genehmigungsgruppe über eine ausstehende Vorgangsanforderung benachrichtigt werden, müssen sie innerhalb einer festgelegten Zeit mit einer Genehmigung oder einem Veto reagieren. 
 ---
 = Management von Anforderungen für MAV-geschützte Vorgänge in ONTAP
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: 'Wenn Administratoren einer MAV-Genehmigungsgruppe (MAV-Administratoren
 
 
 [role="lead"]
-Wenn Administratoren einer MAV-Genehmigungsgruppe (MAV-Administratoren) über eine Anfrage zur Ausführung eines ausstehenden Vorgangs benachrichtigt werden, müssen sie innerhalb eines festgelegten Zeitraums mit einer Genehmigungs- oder Veto-Nachricht (Ablauf der Genehmigung) antworten. Wenn keine ausreichende Anzahl von Genehmigungen eingegangen ist, muss der Anfordernde die Anfrage löschen und eine andere erstellen.
+Wenn Administratoren in einer MAV-Genehmigungsgruppe (MAV-Administratoren) über eine ausstehende Anforderung zur Ausführung einer Operation benachrichtigt werden, müssen sie innerhalb einer festgelegten Zeit (Ablauf der Genehmigung) mit einer Genehmigungs- oder Vetonachricht antworten.  Wenn nicht genügend Genehmigungen eingehen, muss der Antragsteller die Anfrage löschen und eine neue stellen.
 
 .Über diese Aufgabe
 Genehmigungsanforderungen werden mit Indexnummern identifiziert, die in E-Mail-Nachrichten und Anzeigen der Anforderungswarteschlange enthalten sind.
@@ -35,15 +35,23 @@ Kommentar:: Kommentare, die mit der Anfrage verknüpft sind.
 Benutzer erlaubt:: Die Liste der Benutzer, für die der geschützte Vorgang ausgeführt werden kann, für den die Anforderung genehmigt wird. Wenn `users-permitted` leer ist, kann jeder Benutzer mit entsprechenden Berechtigungen den Vorgang ausführen.
 
 
-Alle abgelaufenen oder ausgeführten Anfragen werden gelöscht, wenn ein Limit von 1000 Anfragen erreicht wird oder wenn die abgelaufene Zeit länger als 8 Stunden für abgelaufene Anfragen ist. Vetos-Anträge werden gelöscht, sobald sie als abgelaufen markiert sind.
+.Löschung beantragen
+Beim Erstellen einer neuen Admin-Anfrage prüft das System eine bestehende Anfrage auf Löschung anhand der folgenden Kriterien:
+
+* Die Anfrage muss abgelaufen oder ausgeführt sein.
+* Wenn die Anfrage seit Ablauf der Genehmigung mehr als einen Tag zurückliegt, wird sie gelöscht.
+* Wenn mehr als 1000 Anfragen in der Tabelle vorhanden sind, wird eine ältere Anfrage gelöscht, um das Limit einzuhalten.
 
 
+Wenn die Anzahl der Anfragen nach dieser Bereinigung 1000 überschreitet, wird eine Warnung an die Administratoren ausgegeben.
 
-== System Manager Verfahren
-
+[role="tabbed-block"]
+====
+.System Manager
+--
 MAV-Administratoren erhalten E-Mail-Nachrichten mit Details der Genehmigungsanforderung, Ablauffrist anfordern und einen Link zum Genehmigen oder Ablehnen der Anfrage. Sie können über den Link in der E-Mail auf ein Genehmigungsdialogfeld zugreifen oder im System Manager zu *Events & Jobs>Requests* navigieren.
 
-Das Fenster *Requests* steht zur Verfügung, wenn die Multi-Admin-Überprüfung aktiviert ist und ausstehende Anfragen basierend auf der Anmelde-ID und der MAV-Rolle des Benutzers (Genehmiger oder nicht) angezeigt werden.
+Das Fenster *Anfragen* ist verfügbar, wenn die Multi-Admin-Verifizierung aktiviert ist. Es zeigt ausstehende Anfragen basierend auf der Anmelde-ID und der MAV-Rolle des Benutzers (Genehmiger oder nicht) an.
 
 * Betrieb
 * Index (Zahl)
@@ -60,11 +68,10 @@ Wird eine Anfrage von einem Genehmiger abgelehnt, sind keine weiteren Maßnahmen
 
 MAV-Administratoren verfügen in diesem Fenster über zusätzliche Steuerelemente. Sie können einzelne Vorgänge oder ausgewählte Gruppen von Operationen genehmigen, ablehnen oder löschen. Wenn der MAV-Administrator jedoch der anfragende Benutzer ist, kann er seine eigenen Anforderungen nicht genehmigen, ablehnen oder löschen.
 
-
-
-== CLI-Verfahren
-
-. Wenn Sie über ausstehende Anfragen per E-Mail benachrichtigt werden, notieren Sie die Indexnummer der Anfrage und den Ablauf der Genehmigung. Die Indexnummer kann auch mit den unten genannten Optionen *show* oder *show-exwaring* angezeigt werden.
+--
+.CLI
+--
+. Wenn Sie per E-Mail über ausstehende Anfragen benachrichtigt werden, notieren Sie sich die Indexnummer der Anfrage und den Ablaufzeitraum der Genehmigung.  Die Indexnummer kann auch mit den unten genannten Optionen *show* oder *show-pending* angezeigt werden.
 . Genehmigen oder Vereinen der Anfrage.
 +
 [cols="50,50"]
@@ -170,6 +177,8 @@ Required Approvers: 2
            Comment: -
    Users Permitted: -
 ----
+--
+====
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+multi-admin-verify["Sicherheit Multi-Admin-Verify"^]
 
