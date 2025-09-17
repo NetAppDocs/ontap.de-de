@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: dump, restore, file, write, system, data, disk 
 summary: Eine Dump-Wiederherstellung schreibt mithilfe eines vordefinierten Prozesses File-Systemdaten von Band auf Festplatte. 
 ---
-= Wie eine Dump-Wiederherstellung funktioniert
+= So funktioniert eine Dump-Wiederherstellung mit ONTAP NDMP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -47,3 +47,47 @@ ONTAP liest eine Datei vom Band, schreibt sie auf die Festplatte und setzt die B
 ONTAP wiederholt die Stufen 2 und 3, bis alle angegebenen Dateien vom Band kopiert werden.
 
 |===
+
+
+== Datentypen, die von der Dump-Engine wiederhergestellt werden
+
+Bei einem Ausfall oder einer Controller-Unterbrechung bietet die Dump Engine verschiedene Methoden für Sie, um alle von Ihnen gesicherten Daten wiederherzustellen – von einzelnen Dateien über Dateiattribute bis hin zu ganzen Verzeichnissen. Wenn man weiß, welche Datentypen vom Dump Engine wiederhergestellt werden können und wann welche Recovery-Methode verwendet werden kann, kann dies zur Minimierung der Ausfallzeiten beitragen.
+
+Sie können Daten einer Online-zugeordneten LUN wiederherstellen. Host-Applikationen können jedoch erst dann auf diese LUN zugreifen, wenn der Wiederherstellungsvorgang abgeschlossen ist. Nach Abschluss des Restore-Vorgangs sollte der Host-Cache der LUN-Daten gespeichert werden, um die Kohärenz mit den wiederhergestellten Daten zu gewährleisten.
+
+Die Dump-Engine kann die folgenden Daten wiederherstellen:
+
+* Inhalt von Dateien und Verzeichnissen
+* UNIX-Dateiberechtigungen
+* ACLs
++
+Wenn Sie eine Datei wiederherstellen, die nur UNIX-Dateiberechtigungen auf einen NTFS-qtree oder Datenträger hat, hat die Datei keine Windows NT-ACLs. Das Speichersystem verwendet nur die UNIX-Dateiberechtigungen auf dieser Datei, bis Sie eine Windows NT-ACL darauf erstellen.
+
++
+[NOTE]
+====
+Wenn Sie gesicherte ACLs von Storage-Systemen mit Data ONTAP 8.2 auf Storage-Systeme mit Data ONTAP 8.1.x und früher wiederherstellen, die ein ACE-Limit unter 1,024 haben, wird eine Standard-ACL wiederhergestellt.
+
+====
+* Qtree Informationen
++
+Qtree-Informationen werden nur verwendet, wenn ein qtree im Root-Verzeichnis eines Volume wiederhergestellt wird. Qtree-Informationen werden nicht verwendet, wenn ein qtree in einem niedrigeren Verzeichnis wiederhergestellt wird, `/vs1/vol1/subdir/lowerdir` z. B., und es hört auf, ein qtree zu sein.
+
+* Alle anderen Datei- und Verzeichnisattribute
+* Windows NT-Streams
+* LUNs
++
+** Eine LUN muss auf Volume-Ebene oder qtree Ebene wiederhergestellt werden, damit sie als LUN bleibt.
++
+Wenn es in einem Verzeichnis wiederhergestellt wird, wird es als Datei wiederhergestellt, da es keine gültigen Metadaten enthält.
+
+** Eine 7-Mode LUN wird als LUN auf einem ONTAP Volume wiederhergestellt.
+
+
+* Ein 7-Mode Volume kann auf einem ONTAP Volume wiederhergestellt werden.
+* VM-bezogene Dateien, die auf einem Ziel-Volume wiederhergestellt werden, übernehmen die VM-Ausrichten-Eigenschaften des Ziel-Volume.
+* Auf dem Ziel-Volume für einen Wiederherstellungsvorgang sind möglicherweise Dateien mit obligatorischen oder beratenden Sperren vorhanden.
++
+Während eines Wiederherstellungsvorgangs auf einem solchen Ziel-Volume, ignoriert die Dump-Engine diese Sperren.
+
+
