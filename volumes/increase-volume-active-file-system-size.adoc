@@ -1,0 +1,89 @@
+---
+permalink: volumes/increase-volume-active-file-system-size.html 
+sidebar: sidebar 
+keywords: increase, active, file system, volume, cpu offload, compression offload, dedicated offload processor, storage efficiency, compression 
+summary: Wenn Sie ein Volume von einer Plattform, die dedizierte Offload-Prozessor-Speichereffizienz _nicht_ unterstützt, auf eine Plattform verschieben, die dedizierte Offload-Speichereffizienz _unterstützt_, sollten Sie vor dem Verschieben des Volumes die Größe des aktiven Dateisystems des Volumes erhöhen, um zu verhindern, dass auf dem Volume der Speicherplatz ausgeht. 
+---
+= Erhöhen Sie das aktive Dateisystem eines ONTAP Volumes, bevor Sie von der adaptiven 8K-Komprimierung migrieren
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Plattformen, die adaptive 8K-Komprimierung unterstützen, sparen Platz auf der Lautstärkeebene.  AFF C-Series-Plattformen und Plattformen, die 32k-Komprimierung unterstützen, sparen Platz auf aggregierter Ebene.  Wenn Sie ein Volume von adaptiver 8k-Komprimierung auf eine AFF C-Series-Plattform oder auf eine Plattform mit 32k-Komprimierung migrieren, müssen Sie die Größe des aktiven Dateisystems des Volumes um die Einsparungen durch die 8k-Komprimierung erhöhen.  Dadurch wird verhindert, dass während der Volumeverschiebung der freie Speicherplatz auf dem Volume ausgeht.
+
+Die folgenden Systeme unterstützen die 32k-Komprimierung:
+
+[cols="2"]
+|===
+| Plattform | ONTAP-Version 
+
+
+ a| 
+* AFF A1K
+* AFF A90
+* AFF A70
+* FAS90
+* FAS70
+
+| 9.15.1 oder höher 
+
+
+ a| 
+* AFF A50
+* AFF A30
+
+| 9.16.1 oder höher 
+|===
+Erfahren Sie mehr über link:../concepts/builtin-storage-efficiency-concept.html["AFF und FAS Plattformen, die 32k-Komprimierung unterstützen"] .
+
+Siehe dielink:https://hwu.netapp.com/["Hardware Universe"^] für eine vollständige Liste der Plattformen der AFF C-Serie.
+
+.Über diese Aufgabe
+Führen Sie diese Schritte aus, wenn Sie Ihre Daten mithilfe einer Volume-Verschiebungsoperation migrieren.  Wenn Sie Ihre Daten mithilfe eines SnapMirror -Vorgangs migrieren, müssen Sie die Größe des aktiven Dateisystems nicht manuell erhöhen.  SnapMirror Zielvolumes verwenden standardmäßig die automatische Volume-Größenanpassung und es ist daher nicht zu erwarten, dass der Speicherplatz ausgeht, da die Komprimierungseinsparungen auf der Aggregatebene und nicht auf der Volumeebene erzielt werden.
+
+.Bevor Sie beginnen
+Wenn die logische Speicherplatzberichterstattung und -durchsetzung auf Ihrem Volume nicht aktiviert ist, können Sie sie optional aktivieren, indem Sie die `-is-space-reporting-logical` Und `-is-space-enforcement-logical` Parameter auf *true*.  Durch Aktivieren dieser Einstellungen vor der Volumeverschiebung können Sie besser beurteilen, ob Ihr Volume groß genug ist, um den Verlust an Komprimierungseinsparungen auf der Volumeebene auszugleichen, wenn Sie von der 8K-Komprimierung konvertieren.  Sie sollten diese Einstellungen auf dem Volume aktivieren.  Wenn Sie diese Einstellungen auf SVM-Ebene aktivieren, werden sie nur auf neu erstellte Volumes angewendet.
+
+.Schritte
+. Überprüfen Sie die aktuelle Größe und Snapshot-Reserve des Volumes:
++
+[source, cli]
+----
+volume show-space
+----
+. Überprüfen Sie die Speicherplatzersparnis durch die Komprimierung des Volumes:
++
+[source, cli]
+----
+volume show -vserver -volume -fields compression-space-saved
+----
+. Erhöhen Sie die aktive Dateisystemgröße des Volumes um den angezeigten Wert für `compression-space-saved` zuzüglich der Snapshot-Reserve.
++
+[source, cli]
+----
+volume size -vserver <vserver_name> -volume <volume_name> -new-size +<size>
+----
++
+.Beispiel
+Wenn ein Volume 100 GB groß ist und über eine Snapshot-Reserve von 20 % verfügt, dann ist das aktive Dateisystem 80 GB groß und die Snapshot-Reserve beträgt 20 GB.  Um das aktive Dateisystem um 20 GB zu erhöhen, müssen Sie der Gesamtgröße des Volumes 25 GB hinzufügen, d. h. 20 GB für das aktive Dateisystem und 5 GB (20 %) für die Snapshot-Reserve.
+
++
+[listing]
+----
+volume size -vserver svm1 -volume volx -size +20GB
+----
+. Überprüfen Sie, ob die Größe des Volumes zunimmt:
++
+[source, cli]
+----
+volume show -vserver <vserver_name> -volume <volume_name> -fields size
+----
+
+
+.Ergebnis
+Die Größe des aktiven Dateisystems Ihres Volumes wurde erhöht und Sie sind bereit, das Volume zu verschieben.
+
+.Was kommt als Nächstes?
+Führen Sie einenlink:move-volume-task.html["Volume-Verschiebung"] um Ihre Daten zu migrieren.

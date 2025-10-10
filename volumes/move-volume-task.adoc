@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: move, volume 
 summary: 'Verschieben einer FlexVol volume auf ein anderes Aggregat, einen anderen Node oder beides innerhalb derselben Storage Virtual Machine (SVM), um die Storage-Kapazität auszugleichen.' 
 ---
-= Verschieben Sie ein Volume
+= Verschieben eines ONTAP -Volumes
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -18,12 +18,32 @@ Wenn der Umstellungsvorgang innerhalb von 30 Sekunden nicht abgeschlossen wird, 
 
 Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
 
-.Schritte
-. Wenn Sie eine Datensicherung-Spiegelung verschieben und die Mirror-Beziehung nicht initialisiert haben, initialisieren Sie die Mirror-Beziehung mit dem `snapmirror initialize` Befehl. Erfahren Sie mehr über `snapmirror initialize` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
+.Bevor Sie beginnen
+* Wenn Sie ein Volume mit adaptiver 8K-Komprimierung auf eine der folgenden Plattformen verschieben, sollten Sielink:increase-volume-active-file-system-size.html["Erhöhen Sie die Größe des aktiven Dateisystems des Volumes"] bevor Sie das Volume verschieben.  Die Daten werden auf diesen Plattformen unterschiedlich komprimiert, sodass Speicherplatz auf aggregierter Ebene statt auf Volumeebene gespart wird.  Aufgrund dieses Unterschieds sollte die Größe des aktiven Dateisystems des Volumes um die 8-KB-Komprimierungseinsparung erhöht werden, um zu verhindern, dass während der Volumeverschiebung der Speicherplatz auf dem Volume ausgeht.
++
+** AFF und FAS Plattformen, die dedizierte Offload-Prozessor-Speichereffizienz unterstützen
++
+Erfahren Sie mehr über AFF und FAS Plattformen, dielink:../concepts/builtin-storage-efficiency-concept.html["dedizierte Offload-Prozessor-Speichereffizienz"] .
+
+** AFF C-Serie Plattformen
++
+Siehe dielink:https://hwu.netapp.com/["Hardware Universe"^] für eine vollständige Liste der Plattformen der C-Serie.
+
+
+
+* Wenn Sie einen Datenschutzspiegel verschieben und die Spiegelbeziehung nicht initialisiert haben, verwenden Sie die `snapmirror initialize` Befehl zum Initialisieren der Spiegelbeziehung. Erfahren Sie mehr über  `snapmirror initialize` im link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^] .
 +
 Beziehungen zur Datensicherungsspiegelung müssen initialisiert werden, bevor Sie ein Volume verschieben können.
 
-. Bestimmen Sie ein Aggregat, zu dem Sie das Volume mit dem `volume move target-aggr show` Befehl verschieben können.
+
+
+.Schritte
+. Bestimmen Sie ein Aggregat, auf das Sie das Volumen verschieben können:
++
+[source, cli]
+----
+volume move target-aggr show
+----
 +
 Das ausgewählte Aggregat muss über genügend Platz für das Volume verfügen, d. h. die verfügbare Größe ist größer als das zu bewegende Volume.
 
@@ -46,8 +66,21 @@ node12a_aggr4    10.36GB          hdd
 +
 Erfahren Sie mehr über `volume move target-aggr show` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-move-target-aggr-show.html["ONTAP-Befehlsreferenz"^].
 
-. Überprüfen Sie, ob das Volume in das vorgesehene Aggregat verschoben werden kann, indem Sie `volume move start -perform-validation-only` dazu mit dem Befehl eine Validierungspsprüfung durchführen. Erfahren Sie mehr über `volume move start` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-move-start.html["ONTAP-Befehlsreferenz"^].
-. Verschieben Sie den Volume mit dem `volume move start` Befehl.
+. Führen Sie eine Validierungsprüfung durch, um sicherzustellen, dass das Volume in das vorgesehene Aggregat verschoben werden kann:
++
+[source, cli]
+----
+volume move start -perform-validation-only
+----
++
+Erfahren Sie mehr über `volume move start` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-move-start.html["ONTAP-Befehlsreferenz"^].
+
+. Verschieben Sie die Lautstärke:
++
+[source, cli]
+----
+volume move start
+----
 +
 Mit dem folgenden Befehl wird das User_max Volume auf der vs2 SVM in das node12a_aggr3 Aggregat verschoben. Die Verschiebung wird als Hintergrundprozess ausgeführt.
 
@@ -57,7 +90,12 @@ Mit dem folgenden Befehl wird das User_max Volume auf der vs2 SVM in das node12a
 cluster1::> volume move start -vserver vs2 -volume user_max
 -destination-aggregate node12a_aggr3
 ----
-. Bestimmen Sie den Status des Verschiebungsvorgangs `volume move show` für das Volume mit dem Befehl.
+. Ermitteln Sie den Status des Volume-Verschiebevorgangs:
++
+[source, cli]
+----
+volume move show
+----
 +
 Das folgende Beispiel zeigt den Status einer Volume-Verschiebung, die die Replizierungsphase abgeschlossen hat und sich in der Umstellungsphase befindet:
 
@@ -75,6 +113,16 @@ Wenn das Volume nicht mehr in der `volume move show` Befehlsausgabe erscheint, i
 
 +
 Erfahren Sie mehr über `volume move show` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-move-show.html["ONTAP-Befehlsreferenz"^].
+
+. Optional können Sie die Komprimierungseinsparungen anzeigen:
++
+[source, cli]
+----
+volume show-footprint -vserver <SVM> -volume <volume_name>
+----
++
+
+NOTE: Zusätzliche Einsparungen auf aggregierter Ebene können durch einen Konvertierungsscan nach dem Prozess erzielt werden, der automatisch und kurz nach Abschluss der Volumeverschiebung ausgeführt wird.
 
 
 
