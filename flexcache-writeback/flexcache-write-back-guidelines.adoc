@@ -11,15 +11,15 @@ summary: Folgen Sie diesen Richtlinien, um eine optimale Leistung bei der Verwen
 
 
 [role="lead"]
-FlexCache Write-Back umfasst viele komplexe Interaktionen zwischen Ursprung und Cache. Um eine optimale Performance zu erzielen, sollten Sie sicherstellen, dass Ihre Umgebung diese Richtlinien befolgt. Diese Richtlinien basieren auf der neuesten größeren ONTAP-Version (ONTAP 9.15.1), die zum Zeitpunkt der Content-Erstellung verfügbar ist.
+FlexCache Write-Back beinhaltet viele komplexe Interaktionen zwischen dem Ursprungsserver und den Caches. Für eine optimale Leistung sollten Sie sicherstellen, dass Ihre Umgebung diesen Richtlinien entspricht. Diese Richtlinien basieren auf der zum Zeitpunkt der Inhaltserstellung aktuellsten ONTAP Hauptversion (ONTAP 9.17.1.).
 
 Als Best Practice sollten Sie Ihren Produktions-Workload in einer nicht-Produktionsumgebung testen. Das ist noch wichtiger, wenn Sie FlexCache Write-Back außerhalb dieser Richtlinien implementieren.
 
 Die folgenden Richtlinien wurden intern bei NetApp ausführlich getestet. Es wird *_stark_* empfohlen, dass Sie in ihnen bleiben. Andernfalls kann es zu unerwartetem Verhalten kommen.
 
-* ONTAP 9.15.1P5 bietet wesentliche Verbesserungen für die FlexCache Write-Back-Funktionen. Es wird *_stark_* empfohlen, dass Sie die aktuelle empfohlene Version nach 9.15.1P5 sowohl am Ursprung als auch im Cache-Cluster ausführen.
+* In ONTAP 9.17.1P1 wurden bedeutende Verbesserungen für FlexCache Write-Back eingeführt. Es wird *dringend* empfohlen, nach 9.17.1P1 sowohl auf dem Ursprungs- als auch auf dem Cache-Cluster die aktuell empfohlene Version auszuführen. Falls Sie die Codeline 9.17.1 nicht ausführen können, ist die neueste P-Version 9.16.1 die nächstempfohlene Version. ONTAP 9.15.1 enthält nicht alle notwendigen Korrekturen und Verbesserungen für FlexCache Write-Back und wird daher nicht für Produktionsworkloads empfohlen.
 * In ihrer aktuellen Version sollten die FlexCache Write-Back-Caches mit einer einzigen Komponente für das gesamte FlexCache Volume konfiguriert werden. FlexCaches mit mehreren Bestandteilen kann zu unerwünschtem Entfernen von Daten aus dem Cache führen.
-* Die Tests wurden für Dateien mit einer Größe von weniger als 100 GB und für WAN-Umgehungszeiten zwischen Cache und Ursprung von maximal 100 ms durchgeführt. Alle Workloads, die außerhalb dieser Grenzwerte liegen, können zu unerwarteten Performance-Merkmalen führen.
+* Die Tests wurden für Dateien mit einer Größe von weniger als 100 GB und WAN-Roundtrip-Zeiten zwischen Cache und Ursprungsserver von maximal 200 ms durchgeführt. Bei Arbeitslasten außerhalb dieser Grenzen kann es zu unerwarteten Leistungseigenschaften kommen.
 * Beim Schreiben in alternative SMB-Datenströme wird die Hauptdatei aus dem Cache entfernt. Alle schmutzigen Daten für die Hauptdatei müssen an den Ursprung gespült werden, bevor andere Vorgänge an dieser Datei stattfinden können. Der alternative Datenstrom wird auch an den Ursprung weitergeleitet.
 * Durch Umbenennen einer Datei wird die Datei aus dem Cache entfernt. Alle schmutzigen Daten für die Datei müssen an den Ursprung gespült werden, bevor andere Vorgänge an dieser Datei stattfinden können.
 * Derzeit können nur die folgenden Attribute für eine Datei auf dem schreibgeschützten FlexCache-Volume geändert oder festgelegt werden:
@@ -36,5 +36,7 @@ Alle anderen Attribute, die geändert oder gesetzt werden, werden an den Ursprun
 
 
 * Snapshots, die am Ursprung aufgenommen wurden, verursachen den Abruf aller ausstehenden schmutzigen Daten aus jedem Rückschreibungs-aktivierten Cache, der mit diesem Ursprungsvolume verbunden ist. Dies kann mehrere Wiederholungen des Vorgangs erfordern, wenn erhebliche Write-Back-Aktivitäten ausgeführt werden, da das Entfernen dieser fehlerhaften Dateien einige Zeit in Anspruch nehmen kann.
+* Opportunistische Sperren (Oplocks) für SMB-Schreibvorgänge werden auf FlexCache -Volumes mit aktiviertem Write-Back nicht unterstützt.
 * Der Ursprung muss unter 80% voll bleiben. Cache-Volumes erhalten keine exklusiven Sperrdelegationen, wenn nicht mindestens 20 % des Speicherplatzes im Ursprungs-Volume verbleiben. Aufrufe zu einem Write-Back-aktivierten Cache werden in dieser Situation an den Ursprung weitergeleitet. Dadurch wird verhindert, dass der Speicherplatz am Ursprung knapp wird, was dazu führen würde, dass schmutzige Daten in einem Cache mit aktivierter Rückschreibfunktion verwaist bleiben.
+* Niedrige Bandbreite und/oder verlustbehaftete Intercluster-Netzwerke können einen erheblichen negativen Einfluss auf die Write-Back-Performance von FlexCache haben. Es gibt zwar keine spezifische Bandbreitenanforderung, da diese stark von Ihrer Arbeitslast abhängt, es wird jedoch *dringend* empfohlen, die Funktionsfähigkeit der Intercluster-Verbindung zwischen dem/den Cache(s) und dem Ursprungsserver sicherzustellen.
 
