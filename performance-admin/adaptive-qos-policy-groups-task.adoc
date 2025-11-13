@@ -11,7 +11,7 @@ summary: Mithilfe einer anpassungsfähigen QoS-Richtliniengruppe können Sie die
 
 
 [role="lead"]
-Mithilfe einer Richtliniengruppe „_Adaptive QoS_“ können Sie eine Durchsatzobergrenze oder -Stellfläche automatisch skalieren und bei sich änderungsem Volume das Verhältnis von IOPS zu GB/s. Wenn Sie Hunderte oder Tausende Workloads in einer großen Implementierung managen, bedeutet dies einen enormen Vorteil.
+Sie können eine _adaptive QoS_-Richtliniengruppe verwenden, um eine Durchsatzobergrenze oder -untergrenze automatisch an die Volumengröße anzupassen und dabei das Verhältnis von IOPS zu TB/GB beizubehalten, wenn sich die Größe des Volumens ändert.  Das ist ein erheblicher Vorteil, wenn man Hunderte oder Tausende von Workloads in einer großen Implementierung verwaltet.
 
 .Bevor Sie beginnen
 * Sie müssen ONTAP 9.3 oder höher ausführen. Adaptive QoS-Richtliniengruppen sind ab ONTAP 9.3 verfügbar.
@@ -25,14 +25,14 @@ Adaptive QoS-Richtliniengruppen werden immer nicht gemeinsam genutzt: Die defini
 
 Das Verhältnis der Durchsatzbegrenzungen zum Storage-Objektgröße wird durch die Interaktion der folgenden Felder bestimmt:
 
-* `expected-iops` Ist das erwartete Minimum an IOPS pro zugewiesenem TB/GB.
+* `expected-iops`ist die minimale erwartete IOPS-Zahl pro zugewiesenem TB/GB.
 +
 [NOTE]
 ====
  `expected-iops` Garantiert nur auf AFF-Plattformen. `expected-iops` Eine Garantie für FabricPool ist nur dann gegeben, wenn die Tiering-Richtlinie auf „keine“ gesetzt ist und sich keine Blöcke in der Cloud befinden. `expected-iops` Garantiert für Volumes, die sich nicht in einer synchronen SnapMirror-Beziehung befinden.
 
 ====
-* `peak-iops` Ist die maximal mögliche IOPS pro zugewiesenem oder belegtem TB/GB.
+* `peak-iops`ist die maximal mögliche IOPS-Zahl pro zugewiesenem oder verwendetem TB/GB.
 * `expected-iops-allocation` Gibt an, ob zugewiesener Speicherplatz (Standard) oder belegter Speicherplatz für erwartete iops verwendet wird.
 +
 [NOTE]
@@ -47,6 +47,10 @@ Wenn Sie beispielsweise `expected-iops` 1,000 IOPS/TB festlegen und die Volume-G
 
 * `block-size` Gibt die Anwendungs-I/O-Blockgröße an. Der Standardwert ist 32K. Gültige Werte sind 8K, 16K, 32K, 64K, BELIEBIG. IRGENDWELCHE bedeutet, dass die Blockgröße nicht durchgesetzt wird.
 
+
+
+
+== Standardmäßige adaptive QoS-Richtliniengruppen
 
 In der folgenden Tabelle sind drei Adaptive QoS-Richtliniengruppen verfügbar. Sie können diese Richtliniengruppen direkt auf ein Volume anwenden.
 
@@ -88,37 +92,59 @@ In der folgenden Tabelle sind drei Adaptive QoS-Richtliniengruppen verfügbar. S
 75
 
 |===
-Sie können einer Richtliniengruppe kein Speicherobjekt zuweisen, wenn das zugehörige Objekt oder seine untergeordneten Objekte einer Richtliniengruppe angehören. In der folgenden Tabelle sind die Einschränkungen aufgeführt.
+
+
+== Einschränkungen bei der Zuweisung von Speicherobjektrichtliniengruppen
+
+In einigen Fällen können Sie ein Speicherobjekt keiner Richtliniengruppe zuordnen, wenn das enthaltende Objekt oder seine untergeordneten Objekte zu einer Richtliniengruppe gehören.
+
+Ab ONTAP 9.18.1 können Sie verschachtelte QoS-Richtlinien verwenden, die es ermöglichen, Richtliniengruppen sowohl dem übergeordneten Objekt, wie z. B. einer SVM, als auch dessen untergeordneten Objekten, wie z. B. einem Volume, zuzuweisen.  In einer Multi-Tenant-Umgebung ermöglichen verschachtelte QoS-Richtlinien den Administratoren, die QoS-Limits für SVMs auf die Volumes und Qtrees innerhalb der SVM aufzuteilen und die Speicherressourcen über verschiedene Rechenumgebungen hinweg auszugleichen, während gleichzeitig die Priorisierung geschäftskritischer Workloads ermöglicht wird.
+
+Verschachtelte QoS-Richtlinien werden für die folgenden Objektpaare unterstützt:
+
+* SVMs und FlexVol oder FlexGroup -Volumes, die von der SVM enthalten sind.
+* FlexVol oder FlexGroup Volumes und Qtrees innerhalb der Volumes.
+
+
+Bei verschachtelten QoS-Richtlinien wird die restriktivste anwendbare Richtlinie verwendet.
+
+Die Einschränkungen sind in der folgenden Tabelle aufgeführt.
 
 |===
-| Wenn Sie die folgende Zuordnung zuweisen: | Dann kann nicht zugewiesen werden... 
+| Wenn Sie die folgende Zuordnung zuweisen: | Dann können Sie die Richtlinie keiner Richtliniengruppe zuweisen... 
 
 
  a| 
 SVM einer Richtliniengruppe
  a| 
-Alle Storage-Objekte, die der SVM in einer Richtliniengruppe enthalten sind
+Alle im SVM enthaltenen Speicherobjekte.
+
+
+NOTE: Wenn Sie ONTAP 9.18.1 verwenden, können FlexVol und FlexGroup -Volumes, die in SVMs enthalten sind, einer Richtliniengruppe zugewiesen werden.
 
 
 
  a| 
 Volume zu einer Richtliniengruppe
  a| 
-Das Volume enthält SVM oder untergeordnete LUNs einer Richtliniengruppe
+Die SVM, die das Volume oder alle untergeordneten LUNs enthält.
+
+
+NOTE: Wenn Sie ONTAP 9.18.1 oder höher verwenden, kann die SVM, die das Volume enthält, einer Richtliniengruppe zugewiesen werden.  Zusätzlich können Qtrees in FlexVol oder FlexGroup -Volumes zugewiesen werden.
 
 
 
  a| 
 LUN einer Richtliniengruppe
  a| 
-Die LUN enthält Volume oder SVM zu einer Richtliniengruppe
+Das Volume oder SVM, das die LUNs enthält
 
 
 
  a| 
 Datei zu einer Richtliniengruppe
  a| 
-Die Datei mit Volume oder SVM in einer Richtliniengruppe
+Das Volume oder SVM, das die Datei enthält
 
 |===
 .Schritte

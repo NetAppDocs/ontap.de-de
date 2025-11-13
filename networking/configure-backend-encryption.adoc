@@ -1,0 +1,99 @@
+---
+sidebar: sidebar 
+permalink: networking/configure-backend-encryption.html 
+keywords: cluster network, encryption, TLS, data-in-flight, backend network 
+summary: Konfigurieren der Cluster-Netzwerkverschlüsselungseinstellungen 
+---
+= Konfigurieren der ONTAP Backend-Cluster-Netzwerkverschlüsselung
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.18.1 können Sie die Transport Layer Security (TLS)-Verschlüsselung für Daten während der Übertragung im Backend-Cluster-Netzwerk konfigurieren.  Diese Verschlüsselung schützt Kundendaten, die in ONTAP gespeichert sind, während der Übertragung zwischen ONTAP Knoten im Backend-Clusternetzwerk.
+
+.Über diese Aufgabe
+* Die Backend-Cluster-Netzwerkverschlüsselung ist standardmäßig deaktiviert.
+* Wenn die Verschlüsselung des Backend-Cluster-Netzwerks aktiviert ist, werden alle in ONTAP gespeicherten Kundendaten bei der Übertragung zwischen ONTAP Knoten im Backend-Cluster-Netzwerk verschlüsselt.  Bestimmte Netzwerkdaten im Cluster, wie z. B. Daten des Kontrollpfads, sind nicht verschlüsselt.
+* Standardmäßig verwendet die Backend-Cluster-Netzwerkverschlüsselung automatisch generierte Zertifikate für jeden Knoten im Cluster.  Du kannst<<Cluster-Netzwerkverschlüsselungszertifikate verwalten>> Auf jedem Knoten soll ein benutzerdefiniertes Zertifikat verwendet werden.
+
+
+.Bevor Sie beginnen
+* Sie müssen ONTAP Administrator sein. `admin` Berechtigungsstufe zum Ausführen der folgenden Aufgaben.
+* Auf allen Knoten im Cluster muss ONTAP 9.18.1 oder höher ausgeführt werden, um die Backend-Cluster-Netzwerkverschlüsselung zu aktivieren.
+
+
+
+
+== Verschlüsselung für die Cluster-Netzwerkkommunikation aktivieren oder deaktivieren
+
+.Schritte
+. Den aktuellen Verschlüsselungsstatus des Clusternetzwerks anzeigen:
++
+[source, cli]
+----
+security cluster-network show
+----
++
+Dieser Befehl zeigt den aktuellen Status der Cluster-Netzwerkverschlüsselung an:
+
++
+[source]
+----
+Cluster-1::*> security cluster-network show
+
+Enabled: true
+
+Mode: tls
+
+Status: READY
+----
+. Aktivieren oder Deaktivieren der TLS-Backend-Cluster-Netzwerkverschlüsselung:
++
+[source, cli]
+----
+security cluster-network modify -enabled <true|false>
+----
++
+Dieser Befehl aktiviert oder deaktiviert die verschlüsselte Kommunikation für Kundendaten, die sich während der Übertragung im Backend-Cluster-Netzwerk befinden.
+
+
+
+
+
+== Cluster-Netzwerkverschlüsselungszertifikate verwalten
+
+. Aktuelle Informationen zum Cluster-Netzwerkverschlüsselungszertifikat anzeigen:
++
+[source, cli]
+----
+security cluster-network certificate show
+----
++
+Dieser Befehl zeigt die aktuellen Informationen zum Cluster-Netzwerkverschlüsselungszertifikat an:
+
++
+[source]
+----
+security cluster-network certificate show
+Node                  Certificate Name                      CA
+--------------------- -----------------------------------   --------------
+node1                 -                                     Cluster-1_Root_CA
+node2                 -                                     Cluster-1_Root_CA
+node3                 google_issued_cert1                   Google_CA1
+node4                 google_issued_cert2                   Google_CA1
+----
++
+Für jeden Knoten im Cluster werden die Zertifikats- und Zertifizierungsstellennamen (CA-Namen) angezeigt.
+
+. Ändern des Clusternetzwerk-Verschlüsselungszertifikats für einen Knoten:
++
+[source, cli]
+----
+security cluster-network certificate modify -node <node_name> -name <certificate_name>
+----
++
+Dieser Befehl ändert das Clusternetzwerk-Verschlüsselungszertifikat für einen bestimmten Knoten.  Das Zertifikat muss vor Ausführung dieses Befehls installiert und von einer installierten Zertifizierungsstelle signiert werden.  Weitere Informationen zur Zertifikatsverwaltung finden Sie unterlink:../authentication/manage-certificates-sm-task.html["Managen Sie ONTAP Zertifikate mit System Manager"] Die  Wenn `-name` Wenn kein Zertifikat angegeben ist, wird das automatisch generierte Standardzertifikat verwendet.
+
+

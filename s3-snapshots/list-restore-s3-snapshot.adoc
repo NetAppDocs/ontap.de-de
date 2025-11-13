@@ -16,10 +16,17 @@ summary: Die ONTAP S3 Snapshot Funktion ermöglicht Ihnen das Anzeigen, Durchsuc
 
 
 [role="lead"]
-Mit der ONTAP S3 Snapshot Funktion können Sie die S3 Snapshot Inhalte für Ihre Buckets von S3 Clients anzeigen und durchsuchen. Außerdem können Sie ein einzelnes Objekt, einen Satz von Objekten oder einen ganzen Bucket auf einem S3-Client aus einem S3-Snapshot wiederherstellen.
+Ab ONTAP 9.16.1 können Sie S3-Snapshot-Daten für Ihre Buckets von S3-Clients aus anzeigen und durchsuchen.  Ab ONTAP 9.18.1 ist der S3-Snapshot-Bucket nativ über die ONTAP CLI zugänglich.  Darüber hinaus können Sie auf einem S3-Client aus einem S3-Snapshot ein einzelnes Objekt, eine Gruppe von Objekten oder einen ganzen Bucket wiederherstellen.
 
 .Bevor Sie beginnen
-Zum Anzeigen, Durchsuchen und Wiederherstellen von ONTAP S3-Snapshots in Ihren Buckets sollten die Snapshots erstellt worden sein und der S3-Basis-Bucket sollte über den S3-Protokoll-Client für Sie verfügbar sein.
+* Alle Knoten im Cluster müssen ONTAP 9.18.1 oder höher ausführen, bevor Sie die Wiederherstellung des Bucket-Snapshots nativ in der ONTAP -CLI durchführen können.  Ab ONTAP 9.18,1 ist der S3-Browser nicht mehr erforderlich, die Operationen werden aber weiterhin unterstützt.
+* Für einen bestimmten Bucket ist jeweils nur eine Snapshot-Wiederherstellung zulässig.
+
+
+.Über diese Aufgabe
+Ab ONTAP 9.16.1 bietet die ONTAP S3-Snapshot-Funktion grundlegende Snapshot-Funktionalität für ONTAP S3-Buckets, einschließlich der manuellen und geplanten Erstellung und Löschung von Snapshots, Snapshot-Richtlinien für S3-Buckets und des clientseitigen Durchsuchens von S3-Snapshots.
+
+Ab ONTAP 9.18.1 wird die native Wiederherstellung von ONTAP -Snapshots unterstützt, wodurch ONTAP Administratoren eine Point-in-Time-Wiederherstellungsfunktion erhalten, ohne einen S3-Browser verwenden zu müssen.  Im Snapshot wird nur die aktuelle Bucket-Version erfasst.  Der Versionsverlauf wird nicht erfasst und kann auch durch die Wiederherstellung des S3-Snapshots nicht wiederhergestellt werden.
 
 
 
@@ -35,9 +42,9 @@ Sie können die S3-Snapshot-Details anzeigen, vergleichen und Fehler identifizie
 vserver object-store-server bucket snapshot show
 ----
 +
-Sie können die Snapshot-Namen, Storage-VMs, Buckets, die Erstellungszeit und die S3-Snapshots anzeigen `instance-uuid`, die für alle Buckets im Cluster erstellt wurden.
+Sie können die Snapshot-Namen, Speicher-VMs, Buckets, Erstellungszeiten und Instanz-UUIDs der für alle Ihre Buckets im Cluster erstellten S3-Snapshots anzeigen.
 
-. Sie können auch einen Bucket-Namen angeben, um die Namen, die Erstellungszeit und alle für diesen spezifischen Bucket erstellten S3-Snapshots anzuzeigen `instance-uuid`.
+. Sie können auch einen Bucket-Namen angeben, um die Namen, Erstellungszeiten und Instanz-UUIDs aller für diesen spezifischen Bucket erstellten S3-Snapshots anzuzeigen.
 +
 [listing]
 ----
@@ -51,9 +58,9 @@ vserver object-store-server bucket snapshot show -vserver <svm_name> -bucket <bu
 
 Falls Ausfälle oder Probleme in Ihrer Umgebung auftreten, können Sie die Inhalte der S3-Bucket-Snapshots durchsuchen, um die Fehler zu identifizieren. Sie können auch die S3 Snapshots durchsuchen, um zu ermitteln, welche fehlerfreien Inhalte wiederhergestellt werden sollen.
 
-S3-Snapshots werden den S3-Clients als Snapshot-Buckets bereitgestellt. Der Snapshot-Bucket-Name ist als formatiert `<base_bucket_name>-s3snap-<snapshot_name>`. Sie können alle Snapshot-Buckets in einer Storage-VM mithilfe des `ListBuckets` S3-API-Vorgangs anzeigen.
+S3-Snapshots werden S3-Clients als Snapshot-Buckets präsentiert.  Der Name des Snapshot-Buckets hat folgendes Format: `<base_bucket_name>-s3snap-<snapshot_name>` Die  Sie können alle Snapshot-Buckets in einer Speicher-VM mithilfe von `ListBuckets` S3-API-Operation.
 
-Der S3-Snapshot-Bucket übernimmt die Zugriffsrichtlinien des Basis-Buckets und unterstützt nur schreibgeschützte Vorgänge. Wenn Sie über die Berechtigungen für den Zugriff auf den Basis-Bucket verfügen, können Sie auch schreibgeschützte S3-API-Vorgänge auf dem S3-Snapshot-Bucket ausführen, wie `GetObject` `GetObjectTagging` `ListObjects` z. B. `HeadObject` , , , , `ListObjectVersions`, `GetObjectAcl` und `CopyObject`.
+Der S3-Snapshot-Bucket erbt die Zugriffsrichtlinien des Basis-Buckets und unterstützt ausschließlich Leseoperationen.  Lösch- und Schreibvorgänge sind verboten.  Wenn Sie über Berechtigungen für den Zugriff auf den Basis-Bucket verfügen, können Sie auch schreibgeschützte S3-API-Operationen auf dem S3-Snapshot-Bucket durchführen, wie zum Beispiel `HeadObject` , `GetObject` , `GetObjectTagging` , `ListObjects` , `ListObjectVersions` , `GetObjectAcl` , Und `CopyObject` Die
 
 
 NOTE: Der `CopyObject` Vorgang wird auf einem S3-Snapshot-Bucket unterstützt, nur wenn es sich um einen Snapshot des Quell-Buckets handelt, und nicht, wenn es sich um das Storage-Ziel des Snapshots handelt.
@@ -62,16 +69,39 @@ Weitere Informationen zu diesen Vorgängen finden Sie unter link:../s3-config/on
 
 
 
-== Inhalte aus S3 Snapshots wiederherstellen
+== Einen Bucket aus S3-Snapshots mit ONTAP wiederherstellen
 
-Sie können einen Wiederherstellungsvorgang für einen S3-Client durchführen, um ein einzelnes Objekt, einen Satz von Objekten oder einen gesamten Bucket wiederherzustellen, indem Sie Inhalte aus einem Snapshot Bucket auf das ursprüngliche oder einen anderen Bucket kopieren. Sie können Snapshots durchsuchen, um festzustellen, welchen Snapshot-Inhalt Sie kopieren möchten.
+Ab ONTAP 9.18.1 können Sie mit der ONTAP CLI einen gesamten Bucket mithilfe eines ONTAP S3-Snapshots wiederherstellen.  Sie können nur die Version des Buckets wiederherstellen, die zum Zeitpunkt der Erstellung des ausgewählten Snapshots existierte.
 
-Mit dem Befehl können Sie den gesamten Bucket, Objekte mit einem Präfix oder ein einzelnes Objekt wiederherstellen `aws s3 cp`.
+.Schritte
+. Wählen Sie den Snapshot aus, den Sie zum Wiederherstellen des Buckets verwenden möchten:
++
+[listing]
+----
+vserver object-store-server bucket snapshot show
+----
+. Bucket wiederherstellen:
++
+[listing]
+----
+vserver object-store-server bucket snapshot restore start -vserver <storage VM name> -bucket <bucket name> -snapshot <snapshot name>
+----
+
+
+
+
+== Daten aus S3-Bucket-Snapshots mithilfe eines S3-Clients wiederherstellen
+
+Zusätzlich zur Wiederherstellung eines kompletten Buckets in ONTAP können Sie auch ein einzelnes Objekt, eine Gruppe von Objekten oder einen kompletten Bucket aus einem S3-Snapshot mithilfe eines S3-Clients wie S3cmd oder S3 Browser wiederherstellen.
+
+link:index.html#snapshots-on-versioned-and-non-versioned-buckets["Erfahren Sie mehr über versionierte und nicht versionierte Snapshots."]
+
+Sie können den gesamten Bucket, Objekte mit einem bestimmten Präfix oder ein einzelnes Objekt mithilfe der Funktion wiederherstellen. `aws s3 cp` Befehl.
 
 .Schritte
 . Erstellen Sie einen Snapshot des Basis-S3-Buckets.
 +
-[listing]
+[source, cli]
 ----
 vserver object-store-server bucket snapshot create -vserver <svm_name> -bucket <base_bucket_name> -snapshot <snapshot_name>
 ----
@@ -79,19 +109,19 @@ vserver object-store-server bucket snapshot create -vserver <svm_name> -bucket <
 +
 ** Stellen Sie einen gesamten Bucket wieder her. Verwenden Sie den Snapshot Bucket-Namen im Format `<base_bucket_name>-s3snap-<snapshot_name>`.
 +
-[listing]
+[source, cli]
 ----
 aws --endpoint http://<IP> s3 cp s3://<snapshot-bucket-name> s3://<base-bucket>  --recursive
 ----
 ** Wiederherstellen von Objekten in einem Verzeichnis mit dem Präfix `dir1`:
 +
-[listing]
+[source, cli]
 ----
 aws --endpoint http://<IP> s3 cp s3://<snapshot-bucket-name>/dir1 s3://<base_bucket_name>/dir1 --recursive
 ----
 ** Ein einzelnes Objekt mit dem Namen wiederherstellen `web.py`:
 +
-[listing]
+[source, cli]
 ----
 aws --endpoint http://<IP> s3 cp s3:// <snapshot-bucket-name>/web.py s3://<base_bucket_name>/web.py
 ----
