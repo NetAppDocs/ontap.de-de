@@ -1,0 +1,116 @@
+---
+permalink: pnfs/pnfs-use-cases-concept.html 
+sidebar: sidebar 
+keywords: tr-4063, pnfs, use cases, nconnect, session trunking, referrals, advanced capacity balancing, technical report 
+summary: pNFS kann mit verschiedenen ONTAP Funktionen wie nconnect, Session Trunking und erweitertem Kapazitätsausgleich verwendet werden, um Leistung und Flexibilität zu verbessern. 
+---
+= pNFS-Anwendungsfälle in ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+pNFS kann mit verschiedenen ONTAP -Funktionen verwendet werden, um die Leistung zu verbessern und zusätzliche Flexibilität für NFS-Workloads zu bieten.
+
+
+
+== pNFS mit nconnect
+
+Mit einigen neueren Clients und Servern wurde von NFS eine neue Mount-Option eingeführt, die es ermöglicht, mehrere TCP-Verbindungen unter Verwendung einer einzigen IP-Adresse bereitzustellen. Dies ermöglicht eine bessere Parallelisierung von Operationen, um Einschränkungen von NFS-Servern und -Clients zu umgehen und potenziell die Gesamtleistung bestimmter Workloads zu steigern. nconnect wird in ONTAP 9.8 und höher unterstützt, sofern der Client nconnect unterstützt.
+
+Bei Verwendung von nconnect mit pNFS werden die Verbindungen mithilfe der nconnect-Option über jedes vom NFS-Server angekündigte pNFS-Gerät parallelisiert. Wenn beispielsweise nconnect auf vier eingestellt ist und vier geeignete Schnittstellen für pNFS vorhanden sind, beträgt die Gesamtzahl der erstellten Verbindungen bis zu 16 pro Mountpunkt (4 nconnect x 4 IP-Adressen).
+
+.pNFS mit nconnect auf 4 eingestellt
+image::pNFS_fig_015.png[pNFS mit nconnect=4]
+
+link:../nfs-admin/ontap-support-nfsv41-concept.html["Erfahren Sie mehr über die ONTAP Unterstützung für NFSv4.1"]
+
+
+
+== pNFS mit NFSv4.1 Session Trunking
+
+NFSv4.1 Session-Trunking (https://datatracker.ietf.org/doc/html/rfc5661#section-2.10.5["RFC 5661, Abschnitt 2.10.5"^]) ist die Verwendung mehrerer TCP-Verbindungen zwischen einem Client und einem Server, um die Geschwindigkeit der Datenübertragung zu erhöhen. Die Unterstützung für NFSv4.1 Session Trunking wurde in ONTAP 9.14.1 hinzugefügt und muss mit Clients verwendet werden, die ebenfalls Session Trunking unterstützen.
+
+In ONTAP kann Session Trunking über mehrere Knoten in einem Cluster genutzt werden, um zusätzlichen Durchsatz und Redundanz über die Verbindungen hinweg zu gewährleisten.
+
+Session-Trunking kann auf verschiedene Arten eingerichtet werden:
+
+* *Automatische Erkennung über Mount-Optionen:* Session Trunking kann bei den meisten modernen NFS-Clients über Mount-Optionen eingerichtet werden (siehe Dokumentation Ihres Betriebssystemherstellers), die dem NFS-Server signalisieren, Informationen über Session Trunks an den Client zurückzusenden. Diese Informationen erscheinen über ein NFS-Paket als `fs_location4` Anruf.
++
+Die verwendete Mount-Option hängt von der Betriebssystemversion des Clients ab. Beispielsweise verwenden Ubuntu Linux-Varianten im Allgemeinen `max_connect=n` um zu signalisieren, dass ein Sitzungs-Trunk verwendet werden soll. In RHEL-Linux-Distributionen, `trunkdiscovery` Die Montageoption wird verwendet.
+
++
+.Ubuntu-Beispiel
+[listing]
+----
+mount -o vers=4.1,max_connect=8 10.10.10.10:/pNFS /mnt/pNFS
+----
++
+.RHEL-Beispiel
+[listing]
+----
+mount -o vers=4.1,trunkdiscovery 10.10.10.10:/pNFS /mnt/pNFS
+----
++
+
+NOTE: Wenn Sie versuchen zu verwenden `max_connect` Bei RHEL-Distributionen wird es stattdessen als nconnect behandelt, und Session Trunking funktioniert nicht wie erwartet.
+
+* *Manuelle Einrichtung:* Sie können Session-Trunking manuell einrichten, indem Sie jede einzelne IP-Adresse dem gleichen Exportpfad und Mountpunkt zuordnen. Wenn Sie beispielsweise zwei IP-Adressen auf demselben Knoten haben (10.10.10.10 und 10.10.10.11) für einen Exportpfad von `/pNFS`Sie führen den Mount-Befehl zweimal aus:
++
+[listing]
+----
+mount -o vers=4.1 10.10.10.10:/pNFS /mnt/pNFS
+mount -o vers=4.1 10.10.10.11:/pNFS /mnt/pNFS
+----
++
+Wiederholen Sie diesen Vorgang für alle Schnittstellen, die am Trunk teilnehmen sollen.
+
+
+
+
+NOTE: Jeder Knoten erhält seinen eigenen Sitzungsstrang. Trunks durchlaufen keine Knoten.
+
+
+NOTE: Bei Verwendung von pNFS sollten Sie ausschließlich Session Trunking _oder_ nconnect verwenden. Die Verwendung beider Methoden führt zu unerwünschtem Verhalten, beispielsweise dass nur die Metadatenserververbindung die Vorteile von nconnect nutzt, während die Datenserver eine einzige Verbindung verwenden.
+
+.NFSv4.1 Session Trunking in ONTAP
+image::pNFS_fig_016.png[NFSv4.1 Session Trunking in ONTAP]
+
+pNFS kann einen lokalen Pfad zu jedem teilnehmenden Knoten in einem Cluster bereitstellen, und in Verbindung mit Session Trunking kann pNFS einen Session Trunk pro Knoten nutzen, um den Durchsatz für den gesamten Cluster zu maximieren.
+
+image::pNFS_fig_017.png[NFSv4.1 Session Trunking mit pNFS in ONTAP]
+
+Wann `trunkdiscovery` Wird verwendet, wird ein zusätzlicher GETATTR-Aufruf (FS_Locations) für die aufgelisteten Session-Trunk-Schnittstellen auf dem NFS-Serverknoten genutzt, auf dem sich die Mount-Schnittstelle befindet. Sobald diese zurückgesendet sind, werden weitere Mounts an die zurückgesendeten Adressen vorgenommen. Dies lässt sich bei einer Paketerfassung während der Einbindung beobachten.
+
+.NFS-Sitzungstrunk-Erkennung während der Einbindung: Paketerfassung
+image::pNFS_fig_018.png[NFS-Sitzungstrunk-Erkennung während der Einbindung: Paketerfassung]
+
+link:../nfs-trunking/index.html["Erfahren Sie mehr über NFS-Trunking."]
+
+
+
+== pNFS- versus NFSv4.1-Überweisungen
+
+NFSv4.1-Verweise bieten eine Methode zur anfänglichen Umleitung des Mount-Pfads, die einen Client bei einer Mount-Anforderung zum Speicherort der Volumes leitet. NFSv4.1-Verweise funktionieren innerhalb einer einzelnen SVM. Diese Funktion versucht, die NFS-Einbindung auf einer Netzwerkschnittstelle zu lokalisieren, die sich auf demselben Knoten wie das Datenvolume befindet. Wird diese Schnittstelle oder dieses Volume auf einen anderen Knoten verschoben, während es an einen Client angebunden ist, dann ist der Datenpfad nicht mehr lokalisiert, bis eine neue Anbindung hergestellt wird.
+
+pNFS versucht nicht, einen Mount-Pfad zu lokalisieren. Stattdessen wird ein Metadatenserver mithilfe eines Mount-Pfads eingerichtet und der Datenpfad dann bei Bedarf dynamisch lokalisiert.
+
+NFSv4.1-Verweise können mit pNFS verwendet werden, diese Funktionalität ist jedoch nicht erforderlich. Die Aktivierung von Überweisungen mit pNFS wird keine merklichen Ergebnisse zeigen.
+
+link:../nfs-admin/enable-disable-nfsv4-referrals-task.html["NFSv4-Verweise aktivieren oder deaktivieren"]
+
+
+
+== Interaktion von pNFS mit fortschrittlichem Kapazitätsausgleich
+
+link:../flexgroup/enable-adv-capacity-flexgroup-task.html["Erweiterter Kapazitätsausgleich"] ONTAP schreibt Teile von Dateidaten über die einzelnen Volumes eines FlexGroup -Volumes (wird bei einzelnen FlexVol -Volumes nicht unterstützt). Wenn eine Datei größer wird, entscheidet ONTAP , die Daten in einen neuen Multipart-Inode auf einem anderen Teilvolume zu schreiben, das sich auf demselben Knoten oder auf einem anderen Knoten befinden kann. Schreib-, Lese- und Metadatenoperationen an diesen Multi-Inode-Dateien sind transparent und beeinträchtigen die Clients nicht. Durch eine fortschrittliche Kapazitätsverteilung wird das Raummanagement innerhalb der FlexGroup -Komponenten optimiert, was zu einer gleichmäßigeren Leistung führt.
+
+pNFS kann die Daten-E/A auf einen lokalen Netzwerkpfad umleiten, abhängig von den im NFS-Server gespeicherten Dateilayoutinformationen. Wenn eine einzelne große Datei in Teilen über mehrere Teilvolumes erstellt wird, die sich potenziell über mehrere Knoten im Cluster erstrecken können, kann pNFS in ONTAP dennoch lokalisierten Datenverkehr zu jedem Dateiteil bereitstellen, da ONTAP auch die Dateilayoutinformationen für alle Dateiteile verwaltet. Beim Lesen einer Datei wird die Datenpfadlokalität nach Bedarf geändert.
+
+.Erweiterter Kapazitätsausgleich mit pNFS
+image::pNFS_fig_019.png[Erweiterter Kapazitätsausgleich mit pNFS]
+
+.Verwandte Informationen
+* link:../flexgroup/supported-unsupported-config-concept.html["FlexGroup Volume-Konfiguration"]
+
