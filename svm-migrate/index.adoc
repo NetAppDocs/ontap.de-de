@@ -50,7 +50,7 @@ image:workflow_svm_migrate.gif["Workflow der SVM-Migration Auf diese Weise werde
 | AFF A-Series | ONTAP 9.10.1 und höher 
 |===
 
-NOTE: Bei der Migration von einem AFF Cluster zu einem FAS Cluster mit Hybridaggregaten versucht die automatische Volume-Platzierung, eine Zuordnung gleichartiger Aggregate durchzuführen.  Wenn der Quellcluster beispielsweise 60 Volumes hat, versucht die Volume-Platzierung, auf dem Zielcluster ein AFF -Aggregat zu finden, um die Volumes dort zu platzieren.  Wenn auf den AFF -Aggregaten nicht genügend Speicherplatz vorhanden ist, werden die Volumes auf Aggregaten mit Nicht-Flash-Festplatten platziert.
+NOTE: Bei der Migration von einem AFF Cluster zu einem FAS Cluster mit Hybridaggregaten versucht die automatische Volume-Platzierung, eine Zuordnung gleichartiger Aggregate durchzuführen. Wenn der Quellcluster beispielsweise 60 Volumes hat, versucht die Volume-Platzierung, ein AFF Aggregat auf dem Ziel zu finden, um die Volumes dort zu platzieren. Wenn auf den AFF -Aggregaten nicht genügend Speicherplatz vorhanden ist, werden die Volumes auf Aggregaten mit Nicht-Flash-Festplatten platziert.
 
 
 
@@ -119,23 +119,27 @@ Abhängig von der auf dem Cluster installierten ONTAP-Version muss das Netzwerk,
 
 Vor Beginn einer SVM-Migration müssen Sie die folgenden Voraussetzungen erfüllen:
 
-* Sie müssen ein Cluster-Administrator sein.
-* link:../peering/create-cluster-relationship-93-later-task.html["Die Quell- und Ziel-Cluster müssen aufeinander peered werden"].
-* Die Quell- und Ziel-Cluster müssen über SnapMirror Synchronous verfügenlink:../system-admin/install-license-task.html["Lizenz installiert"]. Diese Lizenz ist in enthaltenlink:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"].
-* Auf allen Knoten im Quellcluster muss ONTAP 9.10.1 oder höher ausgeführt werden. Informationen zur Unterstützung spezifischer ONTAP-Array-Controller finden Sie unter link:https://hwu.netapp.com/["Hardware Universe"^].
-* Auf allen Nodes im Quellcluster muss die gleiche ONTAP-Version ausgeführt werden.
-* Auf allen Nodes im Ziel-Cluster muss die gleiche ONTAP-Version ausgeführt werden.
-* Die ONTAP-Version des Ziel-Clusters muss sich mit der gleichen oder nicht mehr als zwei größeren neueren Versionen als das Quell-Cluster befinden.
-* Die Quell- und Ziel-Cluster müssen für den Zugriff auf Daten-LIFs dasselbe IP-Subnetz unterstützen.
-* Die Quell-SVM muss weniger als die enthaltenxref:Maximum supported volumes per SVM[Maximale Anzahl unterstützter Daten-Volumes für die Version].
-* Am Zielort muss ausreichend Platz für die Platzierung des Datenträgers vorhanden sein.
-* Der Onboard Key Manager oder die externe Schlüsselverwaltung muss auf Clusterebene auf dem Ziel konfiguriert werden, wenn die Quell-SVM verschlüsselte Volumes hat.
+* Sie sind ein Cluster-Administrator.
+* link:../peering/create-cluster-relationship-93-later-task.html["Die Quell- und Zielcluster sind miteinander verbunden."].
+* Die Quell- und Zielcluster verfügen über die SnapMirror -Synchronisierung. link:../system-admin/install-license-task.html["Lizenz installiert"]Die Diese Lizenz ist im Lieferumfang enthalten link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"]Die
+* Auf allen Knoten im Quellcluster läuft ONTAP 9.10.1 oder höher. Spezifische Unterstützung für ONTAP Array-Controller finden Sie unter link:https://hwu.netapp.com/["Hardware Universe"^]Die
+* Auf allen Knoten im Quellcluster läuft die gleiche ONTAP Version.
+* Auf allen Knoten im Zielcluster läuft die gleiche ONTAP Version.
+* Die ONTAP Version des Zielclusters ist gleich oder höchstens zwei Hauptversionen neuer als die des Quellclusters.
+* Die Quell- und Zielcluster unterstützen dasselbe IP-Subnetz für den Daten-LIF-Zugriff.
+* Die Quell-SVM enthält weniger als die xref:Maximum supported volumes per SVM[Maximale Anzahl unterstützter Daten-Volumes für die Version]Die
+* Am Zielort ist ausreichend Platz für die Volumenplatzierung vorhanden.
+* Der Onboard Key Manager oder die externe Schlüsselverwaltung wird auf Clusterebene auf dem Zielsystem konfiguriert, wenn die Quell-SVM verschlüsselte Volumes besitzt.
 +
-** In diesem Fall werden Schlüsselmanager, die auf SVM-Ebene in der Quelle konfiguriert wurden, nicht zum Ziel migriert. Das Ziel wird den Schlüsselmanager auf Clusterebene verwenden.
+** In diesem Fall werden die auf der SVM-Ebene auf dem Quellsystem konfigurierten Schlüsselmanager nicht auf das Zielsystem migriert. Das Ziel verwendet den Schlüsselmanager auf Clusterebene.
 
 
 * Wenn die Quelle über verschlüsselte Volumes verfügt und für NetApp Aggregate Encryption (NAE) konfiguriert ist, muss auch das Ziel für NAE konfiguriert sein.
 * Wenn Sie eine SVM zwischen einer nicht von MetroCluster stammenden Konfiguration und einer MetroCluster Konfiguration oder zwischen zwei MetroCluster Konfigurationen migrieren, stellen Sie sicher, dass Ihre Konfiguration die folgenden Anforderungen erfüllt:
++
+
+NOTE: Die Migration einer SVM zwischen dem lokalen Cluster und dem Partnercluster in einer MetroCluster -Konfiguration wird nicht unterstützt.
+
 +
 ** Die MetroCluster Quell- und Ziel-Cluster befinden sich in einem „normalen“ Zustand. Das bedeutet, dass sie sich nicht im Umschaltmodus oder im Zustand „Warten auf Switchback“ befinden können.
 ** Die MetroCluster Quell- und Ziel-Cluster durchlaufen keinen FC-zu-IP-Umstieg bzw. keine Hardwareaktualisierung.
@@ -159,12 +163,12 @@ Bei einer SVM-Migration sollte die CPU-Reserve von 30 % sowohl auf dem Quell-Clu
 
 == SVM-Vorgänge
 
-Sie sollten auf Vorgänge prüfen, die mit einer SVM-Migration in Konflikt stehen können:
+Prüfen Sie, ob Operationen mit einer SVM-Migration in Konflikt stehen könnten:
 
 * Es werden keine Failover-Vorgänge durchgeführt
 * WAFLIRON kann nicht ausgeführt werden
 * Der Fingerabdruck wird nicht ausgeführt
-* Das Verschieben, Rehosting, Klonen, Erstellen, Konvertieren oder Big-Data-Analysen wird nicht ausgeführt
+* Vol move, rehost, clone, create, convert oder analytics are not running
 * Auf dem Zielcluster wird keine SVM-Migration ausgeführt. Es ist jeweils nur eine SVM-Migration zulässig.
 
 
@@ -239,19 +243,20 @@ Die folgenden MetroCluster SVM Migrationen werden nicht für alle ONTAP Versione
 
 * Migrieren einer SVM zwischen zwei MetroCluster FC-Konfigurationen
 * Migration einer SVM zwischen einer nicht-MetroCluster-Konfiguration und einer MetroCluster FC-Konfiguration
+* Migration einer SVM zwischen dem lokalen Cluster und dem Partnercluster in derselben MetroCluster -Konfiguration.
 
 
 Siehe <<Voraussetzungen,Voraussetzungen>>, um eine SVM in einer MetroCluster-Konfiguration zu migrieren.
 
 
 
-| NetApp Aggregatverschlüsselung (NAE) | ONTAP 9.11.1 | NAE-Volumes müssen auf NAE-unterstützenden Zielen platziert werden. Wenn kein NAE-Ziel verfügbar ist, schlägt der Migrationsvorgang fehl. 
+| NetApp Aggregatverschlüsselung (NAE) | ONTAP 9.11.1 | NAE-Volumes müssen auf dem NAE-Unterstützungsziel platziert werden. Wenn kein NAE-Ziel verfügbar ist, schlägt die Migration fehl. 
 
 
 | NDMP-Konfigurationen | Nicht unterstützt |  
 
 
-| NetApp Volume Encryption (NVE) | ONTAP 9.10.1 | NVE-Volumes werden als NVE-Volumes am Ziel migriert. 
+| NetApp Volume Encryption (NVE) | ONTAP 9.10.1 | NVE-Volumes werden als NVE-Volumes auf dem Zielsystem migriert. 
 
 
 | Audit-Protokolle für NFS und SMB | ONTAP 9.13.1  a| 
@@ -305,7 +310,7 @@ Migrationen von KMUs sind mit Unterbrechungen verbunden und erfordern nach der M
 
 | Asynchrone Quelle von SnapMirror | ONTAP 9.11.1  a| 
 * Übertragungen können während des Großteil der Migration so normal auf FlexVol SnapMirror Beziehungen fortgesetzt werden.
-* Fortlaufende Transfers werden während der Umstellung abgebrochen und neue Transfers scheitern während der Umstellung und können erst nach Abschluss der Migration neu gestartet werden.
+* Laufende Überweisungen werden während der Umstellung abgebrochen, und neue Überweisungen schlagen während der Umstellung fehl. Sie können erst nach Abschluss der Migration neu gestartet werden.
 * Geplante Transfers, die während der Migration abgebrochen oder verpasst wurden, werden nach Abschluss der Migration nicht automatisch gestartet.
 +
 [NOTE]
