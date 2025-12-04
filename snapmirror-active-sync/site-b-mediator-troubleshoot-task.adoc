@@ -54,7 +54,37 @@ C1_cluster 			  1-80-000011           Unavailable    ok
 .Nutzen
 Erzwingen Sie ein Failover, um I/O von Standort B zu aktivieren, und stellen Sie dann eine RTO-Beziehung von Standort B zu Standort A auf Null ein. Führen Sie die folgenden Schritte aus, um ein erzwungenes Failover an Standort B durchzuführen
 
-. Heben Sie die Zuordnung aller LUNs, die der Konsistenzgruppe angehören, von Standort B. auf
+. Alle LUNs, die zur Konsistenzgruppe von Standort B gehören, müssen entfernt werden. Dies wird fehlschlagen, daher müssen Sie zuerst die igroup ändern, um die Replikations-Peer-SVM zu entfernen, und anschließend die LUN-Zuordnung löschen.
+
+
+Beispiel:
+
+[listing]
+----
+C1_cluster::> lun mapping show
+Vserver    Path                                      Igroup   LUN ID  Protocol
+---------- ----------------------------------------  -------  ------  --------
+vs0        /vol/cg1_lun/lun_1                        igroup1       0  mixed
+vs0        /vol/cg1_lun/lun_2                        igroup1       1  mixed
+2 entries were displayed.
+
+C1_cluster::> lun mapping delete -path /vol/cg1_lun/lun_5 -igroup igroup1
+Error: command failed: The peer cluster is unreachable and a SnapMirror
+       Mediator is not configured. The configuration is locked for replicated
+       objects in this Vserver peer relationship on both clusters. The only
+       supported configuration change is to manually disable replication on
+       both sides of the relationship, after which configuration changes are
+       supported.
+C1_cluster::> igroup modify -igroup igroup1 -replication-peer -
+
+C1_cluster::> lun mapping delete -path /vol/cg1_lun/lun_1 -igroup igroup1
+
+C1_cluster::> lun mapping show
+Vserver    Path                                      Igroup   LUN ID  Protocol
+---------- ----------------------------------------  -------  ------  --------
+vs0        /vol/cg1_lun/lun_2                        igroup1       1  mixed
+1 entries were displayed.
+----
 . Löschen Sie die SnapMirror Consistency Group-Beziehung mit der Force-Option.
 . Geben Sie den Befehl SnapMirror Break (`snapmirror break -destination_path _svm_:_volume_`) auf den Volumes der Consistency Group ein, um Volumes von DP in RW zu konvertieren, um I/O von Standort B zu aktivieren
 +
