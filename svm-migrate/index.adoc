@@ -130,6 +130,7 @@ Vor Beginn einer SVM-Migration müssen Sie die folgenden Voraussetzungen erfüll
 * Auf allen Knoten im Zielcluster läuft die gleiche ONTAP Version.
 * Die ONTAP Version des Zielclusters ist gleich oder höchstens zwei Hauptversionen neuer als die des Quellclusters.
 * Die Quell- und Zielcluster unterstützen dasselbe IP-Subnetz für den Daten-LIF-Zugriff.
+* Sowohl der Quell- als auch der Zielcluster müssen über mindestens eine Schnittstelle verfügen, die Zugriff auf alle Netzwerke der migrierenden SVMs hat, andernfalls schlägt die Migrationsvorprüfung fehl.
 * Die Quell-SVM enthält weniger als die xref:Maximum supported volumes per SVM[Maximale Anzahl unterstützter Daten-Volumes für die Version]Die
 * Am Zielort ist ausreichend Platz für die Volumenplatzierung vorhanden.
 * Der Onboard Key Manager oder die externe Schlüsselverwaltung wird auf Clusterebene auf dem Zielsystem konfiguriert, wenn die Quell-SVM verschlüsselte Volumes besitzt.
@@ -190,7 +191,26 @@ Weitere Informationen zur Interoperabilität der ONTAP Versionen zwischen einer 
 | Funktion | Release wird zuerst unterstützt | Kommentare 
 
 
+| Audit-Protokolle (NFS und SMB) | ONTAP 9.13.1  a| 
+[NOTE]
+====
+Bei einer lokalen SVM-Migration mit aktivierter Prüfung sollten Sie das Audit für die Quell-SVM deaktivieren und die Migration anschließend durchführen.
+
+====
+Vor der SVM-Migration:
+
+* link:../nas-audit/enable-disable-auditing-svms-task.html["Die Überwachungsprotokollierung muss auf dem Zielcluster aktiviert sein."]Die
+* link:../nas-audit/commands-modify-auditing-config-reference.html?q=audit+log+destination+path["Der Zielpfad des Überwachungsprotokolls von der Quell-SVM muss auf dem Ziel-Cluster erstellt werden"].
+
+
+
+
 | Autonomer Schutz Durch Ransomware | ONTAP 9.12.1 |  
+
+
+| Cloud-Instanzen | Nicht unterstützt  a| 
+Die Migration von SVMs zwischen lokalen Instanzen und der Cloud wird nicht unterstützt.
+
 
 
 | Cloud Volumes ONTAP | Nicht unterstützt |  
@@ -262,20 +282,6 @@ Siehe <<Voraussetzungen,Voraussetzungen>>, um eine SVM in einer MetroCluster-Kon
 | NetApp Volume Encryption (NVE) | ONTAP 9.10.1 | NVE-Volumes werden als NVE-Volumes auf dem Zielsystem migriert. 
 
 
-| Audit-Protokolle für NFS und SMB | ONTAP 9.13.1  a| 
-[NOTE]
-====
-Bei einer lokalen SVM-Migration mit aktivierter Prüfung sollten Sie das Audit für die Quell-SVM deaktivieren und die Migration anschließend durchführen.
-
-====
-Vor der SVM-Migration:
-
-* link:../nas-audit/enable-disable-auditing-svms-task.html["Die Umleitung des Überwachungsprotokolls muss auf dem Zielcluster aktiviert sein"].
-* link:../nas-audit/commands-modify-auditing-config-reference.html?q=audit+log+destination+path["Der Zielpfad des Überwachungsprotokolls von der Quell-SVM muss auf dem Ziel-Cluster erstellt werden"].
-
-
-
-
 | NFS v3, NFS v4.1 und NFS v4.2 | ONTAP 9.10.1 |  
 
 
@@ -291,6 +297,9 @@ Vor der SVM-Migration:
 | Onboard Key Manager (OKM) mit aktiviertem Common Criteria-Modus auf Quell-Cluster | Nicht unterstützt |  
 
 
+| ONTAP Select | Nicht unterstützt | Die Migration von SVMs zu oder von ONTAP Select Instanzen wird nicht unterstützt. 
+
+
 | Qtrees | ONTAP 9.14.1 |  
 
 
@@ -300,7 +309,7 @@ Vor der SVM-Migration:
 | S3 | Nicht unterstützt |  
 
 
-| SMB-Protokoll | ONTAP 9.12.1  a| 
+| SMB-Protokoll | ONTAP 9.12.1 Das SMB1-Protokoll wird jedoch nicht unterstützt.  a| 
 Migrationen von KMUs sind mit Unterbrechungen verbunden und erfordern nach der Migration eine Aktualisierung des Clients.
 
 
@@ -429,3 +438,10 @@ Die folgende Tabelle zeigt, welche Volume-Vorgänge innerhalb der migrierenden S
 
 | Datei aus Snapshot wiederherstellen | Zulässig | Zulässig | Nicht unterstützt 
 |===
+
+
+== Informationen nach der Migration
+
+* Nach der Migration verfügen lokale Snapshot-Richtlinien über die Erweiterung -MIG, was unter Umständen einige Automatisierungen beeinträchtigen kann. Sie sollten nach dieser Erweiterung suchen und die Richtlinien entsprechend umbenennen.
+* Für migrierte SnapMirror Zielvolumes muss eine Resynchronisierung durchgeführt werden, um den Schutz wiederherzustellen. Die Vault-Neusynchronisierung ist notwendig, da die Migration eine neue Basislinie zwischen den Migrations-SVMs erzeugt, die aktueller ist als die vorherige Basislinie des Vaults. Durch die Durchführung einer Resynchronisierung wird der Tresor reaktiviert, wodurch auch alle Daten gelöscht werden, die neuer als die aktuelle Tresor-Baseline sind, insbesondere der Snapshot, der während der Migration erstellt wurde.
+
