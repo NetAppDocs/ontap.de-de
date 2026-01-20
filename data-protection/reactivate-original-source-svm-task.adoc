@@ -30,22 +30,51 @@ NOTE: Schnelle Neusynchronisierung sorgt nicht für eine Aufrechterhaltung der S
 
 Bei diesem Verfahren wird vorausgesetzt, dass die Basis im ursprünglichen Quell-Volume intakt ist. Wenn die Baseline nicht intakt ist, müssen Sie die Beziehung zwischen dem Volume, das Sie Daten vom und dem ursprünglichen Quell-Volume bereitstellen, erstellen und initialisieren, bevor Sie den Vorgang durchführen.
 
-Ab ONTAP 9.8 können Sie mit System Manager im Notfall eine Quell-Storage-VM erneut aktivieren. Durch die Reaktivierung der Quell-Storage-VM wird die Ziel-Storage-VM angehalten und die Replizierung von der Quelle zum Ziel wird erneut aktiviert.
-
-Wenn Sie die Quell-Storage-VM mit System Manager reaktivieren, führt System Manager im Hintergrund die folgenden Vorgänge aus:
-
-* Erstellt eine Reverse-SVM-DR-Beziehung vom ursprünglichen Ziel zur ursprünglichen Quelle mithilfe von SnapMirror Resync
-* Beendet die Ziel-SVM
-* Aktualisiert die SnapMirror Beziehung
-* Bricht die SnapMirror Beziehung auf
-* Startet die ursprüngliche SVM neu
-* Gibt eine SnapMirror-Neusynchronisierung der ursprünglichen Quelle zurück zum ursprünglichen Ziel vor
-* Bereinigt die SnapMirror Beziehungen
-
+Ab ONTAP 9.8 können Sie mit dem System Manager eine Quellspeicher-VM nach einem Ausfall reaktivieren.
 
 .Schritte
-Diese Aufgabe sollten Sie mithilfe der ONTAP Befehlszeilenschnittstelle (CLI) ausführen.
+Diese Aufgabe können Sie mit dem System Manager oder der ONTAP Befehlszeilenschnittstelle (CLI) ausführen.
 
+[role="tabbed-block"]
+====
+.System Manager ONTAP 9.17.1 und höher
+--
+. Wählen Sie im Zielcluster die gewünschte Schutzbeziehung aus: Klicken Sie auf *Schutz > Replikation*.
+. Bewegen Sie den Mauszeiger über den Quellnamen, klicken Sie image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
+. Klicken Sie im Fenster *Reverse Resync Relationship* auf *Reverse Resync*.
++
+Die Beziehung verschwindet aus der *Replikationstabelle* und wird nun vom ursprünglichen Quellcluster verwaltet.
+
+. Klicken Sie im ursprünglichen Quellcluster auf *Schutz > Replikation* und überprüfen Sie, ob die umgekehrte Resynchronisierung abgeschlossen ist, indem Sie prüfen, ob der Status *Gespiegelt* anzeigt.
+. Navigieren Sie im ursprünglichen Zielcluster zu *Cluster > Storage VMs*.
+. Suchen Sie die Speicher-VM, bewegen Sie den Mauszeiger über den Namen der Speicher-VM und klicken Sie. image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Stopp*.
+. Klicken Sie im Fenster *Speicher-VM stoppen* auf *Stoppen*.
+. Navigieren Sie im Quellcluster zu *Schutz > Replikation* und suchen Sie die Speicher-VM, die Sie reaktivieren möchten. Bewegen Sie den Mauszeiger über den Namen der Speicher-VM und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Zielspeicher-VM aktivieren*.
+. Im Fenster *Ziel-Speicher-VM aktivieren* wählen Sie *Ziel-Speicher-VM aktivieren und Beziehung aufheben* und klicken Sie auf *Aktivieren*.
+. Wenn Sie zur Seite *Replikation* zurückkehren, bewegen Sie den Mauszeiger erneut über den Namen der Speicher-VM und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
+
+
+--
+.System Manager ONTAP 9.16.1 und früher
+--
+. Wählen Sie auf dem Zielcluster die gewünschte Schutzbeziehung aus: Klicken Sie auf *Schutz > Beziehungen*.
+. Bewegen Sie den Mauszeiger über den Quellnamen, klicken Sie image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
+. Klicken Sie im Fenster *Reverse Resync Relationship* auf *Reverse Resync*.
++
+Die Beziehung verschwindet aus der Tabelle *Relationships*, da sie nun vom ursprünglichen Quellcluster verwaltet wird.
+
+. Klicken Sie im ursprünglichen Quellcluster auf *Schutz > Beziehungen* und überprüfen Sie, ob die umgekehrte Resynchronisierung abgeschlossen ist, indem Sie prüfen, ob der Status als *Gespiegelt* angezeigt wird.
+. Navigieren Sie im ursprünglichen Zielcluster zu *Speicher > Speicher-VMs*.
+. Suchen Sie die Speicher-VM, bewegen Sie den Mauszeiger über den Namen der Speicher-VM und klicken Sie. image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Stopp*.
+. Klicken Sie im Fenster *Speicher-VM stoppen* auf *Stoppen*.
+. Suchen Sie im Quellcluster die Speicher-VM (die nun die Quell-SVM der umgekehrten Beziehung ist), bewegen Sie den Mauszeiger über den SVM-Namen und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Zielspeicher-VM aktivieren*.
+. Im Fenster *Ziel-Speicher-VM aktivieren* wählen Sie *Ziel-Speicher-VM aktivieren und Beziehung aufheben* und klicken Sie auf *Aktivieren*.
+. Wenn Sie zur Seite *Beziehungen* zurückkehren, bewegen Sie den Mauszeiger erneut über den Namen der Speicher-VM und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
+
+
+--
+.CLI
+--
 . Erstellen Sie aus der ursprünglichen SVM oder dem ursprünglichen Quell-Cluster eine Reverse-SVM-DR-Beziehung. Dabei verwenden Sie dieselbe Konfiguration, Richtlinie und dieselben Einstellungen wie für die ursprüngliche SVM-DR-Beziehung:
 +
 [source, cli]
@@ -254,6 +283,8 @@ cluster_dst::> snapmirror release -source-path svm_backup: -destination-path svm
 ----
 
 
+--
+====
 .Wie es weiter geht
 *  `snapmirror show`Überprüfen Sie mit dem Befehl, ob die SnapMirror Beziehung erstellt wurde.
 +
