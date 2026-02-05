@@ -1,0 +1,332 @@
+---
+permalink: flexcache/enable-flexcache-duality.html 
+sidebar: sidebar 
+keywords: flexcache, s3, nas, dual protocol, certificates, ontap 9.18.1 
+summary: Ab ONTAP 9.18.1 können Sie den S3-Zugriff auf NAS-FlexCache-Volumes aktivieren. Dadurch können Clients auf Daten, die in einem FlexCache-Volume gespeichert sind, zusätzlich zu den herkömmlichen NAS-Protokollen wie NFS und SMB auch über das S3-Protokoll zugreifen. Dies ist eine Kurzanleitung, wie Sie dies einrichten. 
+---
+= S3-Zugriff auf NAS-FlexCache-Volumes aktivieren
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.18.1 können Sie den S3-Zugriff auf NAS-FlexCache-Volumes aktivieren, auch als „Dualität“ bezeichnet. Dadurch können Clients auf Daten, die in einem FlexCache-Volume gespeichert sind, zusätzlich zu den herkömmlichen NAS-Protokollen wie NFS und SMB auch über das S3-Protokoll zugreifen. Sie können die folgenden Informationen verwenden, um die FlexCache-Dualität einzurichten.
+
+
+
+== Voraussetzungen
+
+Bevor Sie beginnen, müssen Sie die folgenden Voraussetzungen erfüllen:
+
+* Stellen Sie sicher, dass das S3-Protokoll und die gewünschten NAS-Protokolle (NFS, SMB oder beide) auf der SVM lizenziert und konfiguriert sind.
+* Überprüfen Sie, ob DNS und alle anderen erforderlichen Dienste konfiguriert sind.
+* Cluster und SVM Peered
+* FlexCache Volume erstellen
+* Data-lif erstellt
+
+
+
+NOTE: Eine ausführlichere Dokumentation zur FlexCache-Dualität finden Sie unter link:https://docs.netapp.com/us-en/ontap/s3-multiprotocol/index.html#how-s3-multiprotocol-support-works["ONTAP S3 Multiprotokollunterstützung"].
+
+
+
+== Schritt 1: Zertifikate erstellen und signieren
+
+Um den S3-Zugriff auf ein FlexCache-Volume zu aktivieren, müssen Sie Zertifikate für die SVM installieren, die das FlexCache-Volume hostet. In diesem Beispiel werden selbstsignierte Zertifikate verwendet, aber in einer Produktionsumgebung sollten Sie Zertifikate verwenden, die von einer vertrauenswürdigen Zertifizierungsstelle (CA) signiert sind.
+
+. [[anchor1-step]]Erstellen einer SVM-Root-CA:
++
+[source, cli]
+----
+security certificate create -vserver <svm> -type root-ca -common-name <arbitrary_name>
+----
+. [[anchor2-step]]Generieren Sie eine Zertifikatsignierungsanforderung:
++
+[source, cli]
+----
+security certificate generate-csr -common-name <dns_name_of_data_lif> -dns-name <dns_name_of_data_lif> -ipaddr <data_lif_ip>
+----
++
+Beispielausgabe:
+
++
+[listing]
+----
+-----BEGIN CERTIFICATE REQUEST-----
+MIICzjCCAbYCAQAwHzEdMBsGA1UEAxMUY2FjaGUxZy1kYXRhLm5hcy5sYWIwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCusJk075O8Uh329cHI6x+BaRS2
+w5wrqvzoYlidXtYmdCH3m1DDprBiAyfIwBC0/iU3Xd5NpB7nc1wK1CI2VEkrXGUg
+...
+vMIGN351+FgzLQ4X5lKfoMXCV70NqIakxzEmkTIUDKv7n9EVZ4b5DTTlrL03X/nK
++Bim2y2y180PaFB3NauZHTnIIzIc8zCp2IEqmFWyMDcdBjP9KS0+jNm4QhuXiM8F
+D7gm3g/O70qa5OxbAEal5o4NbOl95U0T0rwqTaSzFG0XQnK2PmA1OIwS5ET35p3Z
+dLU=
+-----END CERTIFICATE REQUEST-----
+----
++
+Beispiel für einen privaten Schlüssel:
+
++
+[listing]
+----
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCusJk075O8Uh32
+9cHI6x+BaRS2w5wrqvzoYlidXtYmdCH3m1DDprBiAyfIwBC0/iU3Xd5NpB7nc1wK
+1CI2VEkrXGUgwBtx1K4IlrCTB829Q1aLGAQXVyWnzhQc4tS5PW/DsQ8t7olZ9zEI
+...
+rXGEdDaqp7jQGNXUGlbxO3zcBil1/A9Hc6oalNECgYBKwe3PeZamiwhIHLy9ph7w
+dJfFCshsPalMuAp2OuKIAnNa9l6fT9y5kf9tIbskT+t5Dth8bmV9pwe8UZaK5eC4
+Svxm19jHT5QqloDaZVUmMXFKyKoqPDdfvcDk2Eb5gMfIIb0a3TPC/jqqpDn9BzuH
+TO02fuRvRR/G/HUz2yRd+A==
+-----END PRIVATE KEY-----
+----
++
+
+NOTE: Bewahren Sie eine Kopie Ihrer Zertifikatsanforderung und Ihres privaten Schlüssels für zukünftige Referenz auf.
+
+. [[anchor3-step]]Signieren Sie das Zertifikat:
++
+Das  `root-ca` ist diejenige, die Sie in <<anchor1-step,Erstellen Sie eine SVM-Root-CA>> erstellt haben.
+
++
+[source, cli]
+----
+certificate sign -ca <svm_root_ca> -ca-serial <svm_root_ca_sn> -expire-days 364 -format PEM -vserver <svm>
+----
+. Fügen Sie die in <<anchor2-step,Generieren Sie eine Zertifikatsignierungsanforderung>> generierte Zertifikatsignierungsanforderung (CSR) ein.
++
+Beispiel:
+
++
+[listing]
+----
+-----BEGIN CERTIFICATE REQUEST-----
+MIICzjCCAbYCAQAwHzEdMBsGA1UEAxMUY2FjaGUxZy1kYXRhLm5hcy5sYWIwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCusJk075O8Uh329cHI6x+BaRS2
+w5wrqvzoYlidXtYmdCH3m1DDprBiAyfIwBC0/iU3Xd5NpB7nc1wK1CI2VEkrXGUg
+...
+vMIGN351+FgzLQ4X5lKfoMXCV70NqIakxzEmkTIUDKv7n9EVZ4b5DTTlrL03X/nK
++Bim2y2y180PaFB3NauZHTnIIzIc8zCp2IEqmFWyMDcdBjP9KS0+jNm4QhuXiM8F
+D7gm3g/O70qa5OxbAEal5o4NbOl95U0T0rwqTaSzFG0XQnK2PmA1OIwS5ET35p3Z
+dLU=
+-----END CERTIFICATE REQUEST-----
+----
++
+Dadurch wird ein signiertes Zertifikat auf der Konsole ausgegeben, ähnlich wie im folgenden Beispiel.
+
++
+Beispiel für ein signiertes Zertifikat:
+
++
+[listing]
+----
+-----BEGIN CERTIFICATE-----
+MIIDdzCCAl+gAwIBAgIIGHolbgv5DPowDQYJKoZIhvcNAQELBQAwLjEfMB0GA1UE
+AxMWY2FjaGUtMTY0Zy1zdm0tcm9vdC1jYTELMAkGA1UEBhMCVVMwHhcNMjUxMTIx
+MjIxNTU4WhcNMjYxMTIwMjIxNTU4WjAfMR0wGwYDVQQDExRjYWNoZTFnLWRhdGEu
+...
+qS7zhj3ikWE3Gp9s+QijKWXx/0HDd1UuGqy0QZNqNm/M0mqVnokJNk5F4fBFxMiR
+1o63BxL8xGIRdtTCjjb2Gq2Wj7EClUw6CykEkxAcVk+XrRtArGkNtcYdtHfUsKVE
+wswvv0rNydrNnWhJLhSl8TW5Tex+OMyTXgk9/3K8kB0mAMrtxxYjt8tm+gztkivf
+J0eo1uDJhaNxqwEZRzFyGaa4k1+56oFzRfTc
+-----END CERTIFICATE-----
+----
+. Kopieren Sie das Zertifikat für den nächsten Schritt.
+. Installieren Sie das Serverzertifikat auf der SVM:
++
+[source, cli]
+----
+certificate install -type server -vserver <svm> -cert-name flexcache-duality
+----
+. Fügen Sie das signierte Zertifikat von <<anchor3-step,Signieren Sie das Zertifikat>> ein.
++
+Beispiel:
+
++
+[listing]
+----
+Please enter Certificate: Press <Enter> [twice] when done
+-----BEGIN CERTIFICATE-----
+MIIDdzCCAl+gAwIBAgIIGHolbgv5DPowDQYJKoZIhvcNAQELBQAwLjEfMB0GA1UE
+AxMWY2FjaGUtMTY0Zy1zdm0tcm9vdC1jYTELMAkGA1UEBhMCVVMwHhcNMjUxMTIx
+MjIxNTU4WhcNMjYxMTIwMjIxNTU4WjAfMR0wGwYDVQQDExRjYWNoZTFnLWRhdGEu
+bmFzLmxhYjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK6wmTTvk7xS
+...
+qS7zhj3ikWE3Gp9s+QijKWXx/0HDd1UuGqy0QZNqNm/M0mqVnokJNk5F4fBFxMiR
+1o63BxL8xGIRdtTCjjb2Gq2Wj7EClUw6CykEkxAcVk+XrRtArGkNtcYdtHfUsKVE
+wswvv0rNydrNnWhJLhSl8TW5Tex+OMyTXgk9/3K8kB0mAMrtxxYjt8tm+gztkivf
+J0eo1uDJhaNxqwEZRzFyGaa4k1+56oFzRfTc
+-----END CERTIFICATE-----
+----
+. Fügen Sie den privaten Schlüssel, der in <<anchor2-step,Generieren Sie eine Zertifikatsignierungsanforderung>> generiert wurde, ein.
++
+Beispiel:
+
++
+[listing]
+----
+Please enter Private Key: Press <Enter> [twice] when done
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCusJk075O8Uh32
+9cHI6x+BaRS2w5wrqvzoYlidXtYmdCH3m1DDprBiAyfIwBC0/iU3Xd5NpB7nc1wK
+1CI2VEkrXGUgwBtx1K4IlrCTB829Q1aLGAQXVyWnzhQc4tS5PW/DsQ8t7olZ9zEI
+W/gaEIajgpXIwGNWZ+weKQK+yoolxC+gy4IUE7WvnEUiezaIdoqzyPhYq5GC4XWf
+0johpQugOPe0/w2nVFRWJoFQp3ZP3NZAXc8H0qkRB6SjaM243XV2jnuEzX2joXvT
+wHHH+IBAQ2JDs7s1TY0I20e49J2Fx2+HvUxDx4BHao7CCHA1+MnmEl+9E38wTaEk
+NLsU724ZAgMBAAECggEABHUy06wxcIk5hO3S9Ik1FDZV3JWzsu5gGdLSQOHRd5W+
+...
+rXGEdDaqp7jQGNXUGlbxO3zcBil1/A9Hc6oalNECgYBKwe3PeZamiwhIHLy9ph7w
+dJfFCshsPalMuAp2OuKIAnNa9l6fT9y5kf9tIbskT+t5Dth8bmV9pwe8UZaK5eC4
+Svxm19jHT5QqloDaZVUmMXFKyKoqPDdfvcDk2Eb5gMfIIb0a3TPC/jqqpDn9BzuH
+TO02fuRvRR/G/HUz2yRd+A==
+-----END PRIVATE KEY-----
+----
+. Geben Sie die Zertifikate der Zertifizierungsstellen (CA) ein, die die Zertifikatskette des Serverzertifikats bilden.
++
+Dies beginnt mit dem ausstellenden CA-Zertifikat des Serverzertifikats und kann bis zum Root-CA-Zertifikat reichen.
+
++
+[listing]
+----
+Do you want to continue entering root and/or intermediate certificates {y|n}: n
+
+You should keep a copy of the private key and the CA-signed digital certificate for future reference.
+
+The installed certificate's CA and serial number for reference:
+CA: cache-164g-svm-root-ca
+serial: 187A256E0BF90CFA
+----
+. Ermitteln Sie den öffentlichen Schlüssel für die SVM-Root-CA:
++
+[source, cli]
+----
+security certificate show -vserver <svm> -common-name <root_ca_cn> -ca <root_ca_cn> -type root-ca -instance
+
+-----BEGIN CERTIFICATE-----
+MIIDgTCCAmmgAwIBAgIIGHokTnbsHKEwDQYJKoZIhvcNAQELBQAwLjEfMB0GA1UE
+AxMWY2FjaGUtMTY0Zy1zdm0tcm9vdC1jYTELMAkGA1UEBhMCVVMwHhcNMjUxMTIx
+MjE1NTIzWhcNMjYxMTIxMjE1NTIzWjAuMR8wHQYDVQQDExZjYWNoZS0xNjRnLXN2
+bS1yb290LWNhMQswCQYDVQQGEwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+...
+DoOL7vZFFt44xd+rp0DwafhSnLH5HNhdIAfa2JvZW+eJ7rgevH9wmOzyc1vaihl3
+Ewtb6cz1a/mtESSYRNBmGkIGM/SFCy5v1ROZXCzF96XPbYQN4cW0AYI3AHYBZP0A
+HlNzDR8iml4k9IuKf6BHLFA+VwLTJJZKrdf5Jvjgh0trGAbQGI/Hp2Bjuiopkui+
+n4aa5Rz0JFQopqQddAYnMuvcq10CyNn7S0vF/XLd3fJaprH8kQ==
+-----END CERTIFICATE-----
+----
++
+
+NOTE: Dies ist erforderlich, um den Client so zu konfigurieren, dass er den von der SVM-Root-CA signierten Zertifikaten vertraut. Der öffentliche Schlüssel wird in der Konsole ausgegeben. Kopieren und speichern Sie den öffentlichen Schlüssel. Die Werte in diesem Befehl sind die gleichen wie die, die Sie in <<anchor1-step,Erstellen Sie eine SVM-Root-CA>> eingegeben haben.
+
+
+
+
+
+== Schritt 2: Konfigurieren Sie den S3-Server
+
+. S3-Protokollzugriff aktivieren:
++
+[source, cli]
+----
+vserver show -vserver <svm> -fields allowed-protocols
+----
++
+
+NOTE: S3 ist auf SVM-Ebene standardmäßig zulässig.
+
+. Eine vorhandene Richtlinie klonen:
++
+[source, cli]
+----
+network interface service-policy clone -vserver <svm> -policy default-data-files -target-vserver <svm> -target-policy <any_name>
+----
+. Fügen Sie S3 zur geklonten Richtlinie hinzu:
++
+[source, cli]
+----
+network interface service-policy add-service -vserver <svm> -policy <any_name> -service data-s3-server
+----
+. Fügen Sie die neue Richtlinie der Daten-LIF hinzu:
++
+[source, cli]
+----
+network interface modify -vserver <svm> -lif <data_lif> -service-policy duality
+----
++
+
+NOTE: Die Änderung der Dienstrichtlinie eines bestehenden LIF kann zu Störungen führen. Dazu muss das LIF heruntergefahren und anschließend mit einem Listener für den neuen Dienst neu gestartet werden. TCP  sich davon zwar schnell erholen, dennoch sollten mögliche Auswirkungen beachtet werden.
+
+. Erstellen Sie den S3-Objektspeicherserver auf der SVM:
++
+[source, cli]
+----
+vserver object-store-server create -vserver <svm> -object-store-server <dns_name_of_data_lif> -certificate-name flexcache-duality
+----
+. S3-Funktionalität auf dem FlexCache-Volume aktivieren:
++
+Die `flexcache config` Option `-is-s3-enabled` muss auf `true` gesetzt werden, bevor Sie einen Bucket erstellen können. Sie müssen außerdem die Option `-is-writeback-enabled` auf `false` setzen.
+
++
+Der folgende Befehl ändert eine bestehende FlexCache:
+
++
+[source, cli]
+----
+flexcache config modify -vserver <svm> -volume <fcache_vol> -is-writeback-enabled false -is-s3-enabled true
+----
+. Erstellen Sie einen S3-Bucket:
++
+[source, cli]
+----
+vserver object-store-server bucket create -vserver <svm> -bucket <bucket_name> -type nas -nas-path <flexcache_junction_path>
+----
+. Erstellen Sie eine Bucket-Richtlinie:
++
+[source, cli]
+----
+vserver object-store-server bucket policy add-statement -vserver <svm> -bucket <bucket_name> -effect allow
+----
+. Erstellen Sie einen S3-Benutzer:
++
+[source, cli]
+----
+vserver object-store-server user create -user <user> -comment ""
+----
++
+Beispielausgabe:
+
++
+[listing]
+----
+    Vserver: <svm>>
+       User: <user>>
+ Access Key: WCOT7...Y7D6U
+ Secret Key: 6143s...pd__P
+    Warning: The secret key won't be displayed again. Save this key for future use.
+----
+. Schlüssel für den Root-Benutzer neu generieren:
++
+[source, cli]
+----
+vserver object-store-server user regenerate-keys -vserver <svm> -user root
+----
++
+Beispielausgabe:
+
++
+[listing]
+----
+    Vserver: <svm>>
+       User: root
+ Access Key: US791...2F1RB
+ Secret Key: tgYmn...8_3o2
+    Warning: The secret key won't be displayed again. Save this key for future use.
+----
+
+
+
+
+== Schritt 3: Client einrichten
+
+Es gibt viele S3-Clients. Ein guter Ausgangspunkt ist die AWS CLI. Weitere Informationen finden Sie unter link:https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html["Installation der AWS CLI"^].
