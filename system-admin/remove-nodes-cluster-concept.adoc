@@ -61,12 +61,17 @@ IMPORTANT: Führen Sie keine Vorgänge wie `cluster remove-node` , `cluster unjo
 ** ONTAP 9 4 und höher: `cluster remove-node -skip-last-low-version-node-check`
 
 
-* Wenn Sie die Verbindung zu 2 Nodes von einem 4-Node-Cluster aufheben, wird Cluster-HA auf den beiden verbleibenden Nodes automatisch aktiviert.
+* Wenn Sie zwei Knoten aus einem vier-Knoten-Cluster entfernen, wird Cluster HA automatisch auf den beiden verbleibenden Knoten aktiviert.
 
 
+[NOTE]
+====
+Alle System- und Benutzerdaten von allen mit dem Knoten verbundenen Festplatten müssen für die Benutzer unzugänglich gemacht werden, bevor ein Knoten aus dem Cluster entfernt wird.
 
-NOTE: Alle System- und Benutzerdaten von allen Laufwerken, die mit dem Knoten verbunden sind, müssen für Benutzer unzugänglich gemacht werden, bevor ein Knoten aus dem Cluster entfernt wird. Wenn ein Node nicht ordnungsgemäß von einem Cluster entfernt wurde, wenden Sie sich an den NetApp Support, um Hilfe bei Optionen zur Recovery zu erhalten.
+Falls ein Knoten fälschlicherweise aus einem Cluster entfernt wurde, wenden Sie sich an den NetApp Support, um Unterstützung bei den Wiederherstellungsoptionen zu erhalten.
 
+====
+[[disable-ha]]
 .Schritte
 . Ändern Sie die Berechtigungsebene in erweitert:
 +
@@ -74,21 +79,35 @@ NOTE: Alle System- und Benutzerdaten von allen Laufwerken, die mit dem Knoten ve
 ----
 set -privilege advanced
 ----
-. Überprüfen Sie, ob auf einem Node auf dem Cluster Epsilon gespeichert ist:
+. Identifizieren Sie den Knoten im Cluster, der epsilon hat:
 +
 [source, cli]
 ----
-cluster show -epsilon true
+cluster show
 ----
-. Wenn auf einem Node im Cluster Epsilon gespeichert ist und der Node nicht verbunden wird, verschieben Sie Epsilon zu einem Node, dessen Verknüpfung nicht aufgehoben wird:
 +
-.. Verschieben Sie Epsilon vom Node, der nicht verbunden werden soll
+Im folgenden Beispiel hält "node0" derzeit epsilon:
+
++
+[listing]
+----
+cluster::*>
+Node                 Health  Eligibility  Epsilon
+-------------------- ------- ------------ ------------
+node0                true    true         true
+node1                true    true         false
+node2                true    true         false
+node3                true    true         false
+----
+. [[epsilon-true]]Wenn der Knoten, den Sie entfernen, Epsilon enthält:
++
+.. Verschiebe epsilon von dem Knoten, den du entfernst:
 +
 [source, cli]
 ----
-cluster modify -node <name_of_node_to_be_unjoined> -epsilon false
+cluster modify -node <name_of_node_to_be_removed> -epsilon false
 ----
-.. Epsilon auf einen Node verschieben, der nicht verbunden werden soll:
+.. Verschieben Sie epsilon auf einen Knoten, den Sie nicht entfernen:
 +
 [source, cli]
 ----
@@ -105,7 +124,7 @@ cluster ring show
 +
 Der Master-Knoten ist der Knoten, der Prozesse wie, , `vldb`, `vifmgr` `bcomd` und `crs` enthält `mgmt`.
 
-. Wenn der Knoten, den Sie entfernen möchten, der aktuelle Master-Knoten ist, aktivieren Sie den anderen Knoten im Cluster, der als Master-Knoten ausgewählt werden soll:
+. Wenn der Knoten, den Sie entfernen, der aktuelle Master-Knoten ist, aktivieren Sie einen anderen Knoten im Cluster, damit er als Master-Knoten gewählt werden kann:
 +
 .. Machen Sie den aktuellen Master-Node zur Teilnahme am Cluster nicht berechtigt:
 +
@@ -114,12 +133,16 @@ Der Master-Knoten ist der Knoten, der Prozesse wie, , `vldb`, `vifmgr` `bcomd` u
 cluster modify -node <node_name> -eligibility false
 ----
 +
-Der Knoten wird als fehlerhaft markiert, bis die Berechtigung wiederhergestellt ist. Wenn der Master-Knoten nicht mehr als Master geeignet ist, wird einer der verbleibenden Knoten vom Cluster-Quorum zum neuen Master gewählt.
+Der Knoten wird als fehlerhaft markiert, bis die Eignung wiederhergestellt ist. Wenn der Master-Knoten seine Eignung verliert, wird einer der verbleibenden Knoten vom Cluster-Quorum zum neuen Master gewählt.
 
 +
+[NOTE]
+====
+Wenn Sie diesen Schritt auf dem ersten Knoten eines HA-Paares durchführen, sollten Sie nur diesen Knoten als nicht geeignet markieren. Ändern Sie nicht den Status des HA-Partners.
 
-NOTE: Wenn Sie diesen Schritt am ersten Knoten eines HA-Paares durchführen, sollten Sie nur diesen Knoten als nicht geeignet markieren. Ändern Sie den Status des HA-Partners nicht. Wenn der Partnerknoten als neuer Master ausgewählt wird, müssen Sie überprüfen, ob er Epsilon enthält, bevor Sie ihn für ungültig erklären. Dies geschieht, wenn Sie diese Schritte wiederholen, um den Partnerknoten zu entfernen.
+Wenn der Partnerknoten als neuer Master ausgewählt wird, müssen Sie überprüfen, ob er Epsilon hält, bevor Sie ihn für nicht berechtigt erklären. Wenn der Partnerknoten Epsilon hält, müssen Sie Epsilon auf einen anderen, im Cluster verbleibenden Knoten verschieben, bevor Sie ihn für nicht berechtigt erklären. Sie tun dies, wenn Sie diese Schritte wiederholen, um den Partnerknoten zu entfernen.
 
+====
 .. Machen Sie den vorherigen Master-Knoten wieder zur Teilnahme am Cluster berechtigt:
 +
 [source, cli]
@@ -128,8 +151,8 @@ cluster modify -node <node_name> -eligibility true
 ----
 
 
-. Melden Sie sich bei der Remote-Node-Management-LIF oder der Cluster-Management-LIF auf einem anderen Node an als dem, der entfernt wird.
-. Entfernen des Node aus dem Cluster:
+. Melden Sie sich bei der Remote-Knotenverwaltungs-LIF oder der Clusterverwaltungs-LIF auf einem Knoten an, den Sie nicht aus dem Cluster entfernen.
+. Entfernen Sie die Knoten aus dem Cluster:
 +
 |===
 | Für diese ONTAP-Version... | Befehl 
@@ -168,7 +191,7 @@ Das System informiert Sie über Folgendes:
 
 +
 ** Außerdem müssen Sie den Failover-Partner des Node aus dem Cluster entfernen.
-** Nachdem der Node entfernt wurde und bevor er einem Cluster erneut beitreten kann, müssen Sie die Startmenü-Option (4) Clean Configuration verwenden und alle Festplatten oder Optionen (9) Configure Advanced Drive Partitioning initialisieren, um die Konfiguration des Node zu löschen und alle Festplatten zu initialisieren.
+** Nachdem der Node entfernt wurde und bevor er wieder einem Cluster beitreten kann, müssen Sie die Bootmenüoption *(4) Clean configuration and initialize all disks* oder die Option *(9) Configure Advanced Drive Partitioning* verwenden, um die Konfiguration des Node zu löschen und alle Datenträger zu initialisieren.
 +
 Wenn die Bedingungen angegeben sind, die Sie vor dem Entfernen des Node berücksichtigen müssen, wird eine Fehlermeldung generiert. Beispielsweise könnte die Meldung angeben, dass der Node über gemeinsam genutzte Ressourcen verfügt, die Sie entfernen müssen, oder dass sich der Node in einer Cluster HA-Konfiguration oder in einer Storage-Failover-Konfiguration befindet, die Sie deaktivieren müssen.
 
@@ -179,21 +202,21 @@ Wenn der Knoten der Quorum-Master ist, verliert der Cluster kurz und kehrt dann 
 
 . Wenn eine Fehlermeldung auf Fehlerbedingungen hinweist, beheben Sie diese Bedingungen und führen Sie den `cluster remove-node` `cluster unjoin` Befehl oder erneut aus.
 +
-Der Node wird automatisch neu gebootet, wenn er erfolgreich aus dem Cluster entfernt wurde.
+Der Knoten startet nach erfolgreicher Entfernung aus dem Cluster automatisch neu.
 
 . Löschen Sie bei einer Neuzuordnung des Node die Node-Konfiguration und initialisieren Sie alle Festplatten:
 +
 .. Drücken Sie während des Bootens Strg-C, um das Boot-Menü anzuzeigen, wenn Sie dazu aufgefordert werden.
-.. Wählen Sie die Startmenüoption (4) Konfiguration bereinigen und initialisieren Sie alle Festplatten.
+.. Wählen Sie die Bootmenü-Option *(4) Konfiguration bereinigen und alle Festplatten initialisieren*.
 
 
-. Zurück zur Administrator-Berechtigungsebene:
+. [[return-admin]]Zurück zur Administrator-Berechtigungsstufe:
 +
 [source, cli]
 ----
 set -privilege admin
 ----
-. Wiederholen Sie die vorherigen Schritte, um den Failover-Partner aus dem Cluster zu entfernen.
+. Wiederholen Sie die Schritte <<disable-ha,1>> bis <<return-admin,9>>, um den Failover-Partner aus dem Cluster zu entfernen.
 
 
 .Verwandte Informationen
