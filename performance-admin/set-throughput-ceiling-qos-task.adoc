@@ -2,20 +2,21 @@
 permalink: performance-admin/set-throughput-ceiling-qos-task.html 
 sidebar: sidebar 
 keywords: setting, throughput, ceiling, qos 
-summary: 'Das Feld für den maximalen Durchsatz kann für eine Richtliniengruppe verwendet werden, um eine Durchsatzgrenze für Storage-Objekt-Workloads (QoS max.) zu definieren. Sie können die Richtliniengruppe anwenden, wenn Sie das Speicherobjekt erstellen oder ändern.' 
+summary: Ein QoS-Maximum oder eine Durchsatzbegrenzung garantiert, dass der Durchsatz einer Arbeitslast unabhängig von konkurrierenden Arbeitslasten eine maximale Anzahl von IOPS oder MBps bzw. IOPS und MBps nicht überschreitet. Legen Sie eine Durchsatzbegrenzung fest, um zu verhindern, dass weniger kritische Arbeitslasten übermäßig viele Leistungsressourcen verbrauchen und die Leistung kritischeren Arbeitslasten beeinträchtigen. 
 ---
-= Legen Sie mit QoS in ONTAP eine Durchsatzobergrenze fest
+= Legen Sie mit ONTAP QoS-Richtliniengruppen eine Durchsatzobergrenze fest.
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
+Ein QoS-Maximum oder eine Durchsatzbegrenzung garantiert, dass der Durchsatz einer Arbeitslast unabhängig von konkurrierenden Arbeitslasten eine maximale Anzahl von IOPS oder MBps bzw. IOPS und MBps nicht überschreitet. Legen Sie eine Durchsatzbegrenzung fest, um zu verhindern, dass weniger kritische Arbeitslasten übermäßig viele Leistungsressourcen verbrauchen und die Leistung kritischeren Arbeitslasten beeinträchtigen.
+
 Über das `max-throughput` Feld für eine Richtliniengruppe können Sie eine Durchsatzobergrenze für Storage-Objekt-Workloads definieren (QoS max). Sie können die Richtliniengruppe anwenden, wenn Sie das Speicherobjekt erstellen oder ändern.
 
 .Bevor Sie beginnen
-* Zum Erstellen einer Richtliniengruppe müssen Sie ein Cluster-Administrator sein.
-* Zum Anwenden einer Richtliniengruppe auf eine SVM müssen Sie ein Cluster-Administrator sein.
+* Sie müssen Cluster-Administrator sein, um eine Richtliniengruppe zu erstellen und eine Richtliniengruppe auf eine SVM anzuwenden.
 
 
 .Über diese Aufgabe
@@ -38,8 +39,10 @@ Wenn Sie eine Decke und ein Boden für denselben Workload festlegen, können Sie
 .Schritte
 . Erstellen einer Richtliniengruppe:
 +
-`qos policy-group create -policy-group _policy_group_ -vserver _SVM_ -max-throughput _number_of_iops_|Mb/S|iops,Mb/S -is-shared true|false`
-
+[source, cli]
+----
+qos policy-group create -policy-group <policy_group> -vserver <SVM> -max-throughput <number_of_iops_|Mb/S|iops,Mb/S> -is-shared <true|false>
+----
 +
 Erfahren Sie mehr über `qos policy-group create` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html["ONTAP-Befehlsreferenz"^].
 
@@ -47,7 +50,7 @@ Erfahren Sie mehr über `qos policy-group create` in der link:https://docs.netap
 Sie können die `qos policy-group modify` Durchsatzdecken mit dem Befehl anpassen.
 
 +
-Mit dem folgenden Befehl wird die Gruppe für gemeinsam genutzte Richtlinien `pg-vs1` mit einem maximalen Durchsatz von 5,000 IOPS erstellt:
+Das folgende Beispiel erstellt die gemeinsam genutzte Richtliniengruppe `pg-vs1` mit einem maximalen Durchsatz von 5.000 IOPS:
 
 +
 [listing]
@@ -55,7 +58,7 @@ Mit dem folgenden Befehl wird die Gruppe für gemeinsam genutzte Richtlinien `pg
 cluster1::> qos policy-group create -policy-group pg-vs1 -vserver vs1 -max-throughput 5000iops -is-shared true
 ----
 +
-Mit dem folgenden Befehl wird die nicht gemeinsam genutzte Richtliniengruppe `pg-vs3` mit einem maximalen Durchsatz von 100 IOPS und 400 KB/s erstellt:
+Das folgende Beispiel erstellt die nicht gemeinsam genutzte Richtliniengruppe `pg-vs3` mit einem maximalen Durchsatz von 100 IOPS und 400 Kb/S:
 
 +
 [listing]
@@ -63,7 +66,7 @@ Mit dem folgenden Befehl wird die nicht gemeinsam genutzte Richtliniengruppe `pg
 cluster1::> qos policy-group create -policy-group pg-vs3 -vserver vs3 -max-throughput 100iops,400KB/s -is-shared false
 ----
 +
-Mit dem folgenden Befehl wird die nicht gemeinsam genutzte Richtliniengruppe `pg-vs4` ohne Durchsatzbegrenzung erstellt:
+Das folgende Beispiel erstellt die nicht gemeinsam genutzte Richtliniengruppe `pg-vs4` ohne Durchsatzbegrenzung:
 
 +
 [listing]
@@ -75,13 +78,15 @@ Erfahren Sie mehr über `qos policy-group modify` in der link:https://docs.netap
 
 . Anwenden einer Richtliniengruppe auf eine SVM, Datei, Volume oder LUN:
 +
-`_storage_object_ create -vserver _SVM_ -qos-policy-group _policy_group_`
+[source, cli]
+----
+vserver create -vserver <SVM> -qos-policy-group <policy_group>
+----
++
+Sie können den  `vserver modify` Befehl verwenden, um eine andere Richtliniengruppe auf das Speicherobjekt anzuwenden.
 
 +
-Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^]. Sie können mit dem `_storage_object_ modify` Befehl eine andere Richtliniengruppe auf das Speicherobjekt anwenden.
-
-+
-Der folgende Befehl wendet Policy Group `pg-vs1` auf SVM an `vs1`:
+Im folgenden Beispiel wird die Richtliniengruppe `pg-vs1` auf SVM `vs1` angewendet:
 
 +
 [listing]
@@ -89,7 +94,7 @@ Der folgende Befehl wendet Policy Group `pg-vs1` auf SVM an `vs1`:
 cluster1::> vserver create -vserver vs1 -qos-policy-group pg-vs1
 ----
 +
-Die folgenden Befehle wenden Policy Group `pg-app` auf die Volumes `app1` und `app2`an:
+Die folgenden Beispiele wenden die Richtliniengruppe `pg-app` auf die Volumes `app1` und `app2` an:
 
 +
 [listing]
@@ -103,8 +108,10 @@ cluster1::> volume create -vserver vs2 -volume app2 -aggregate aggr1 -qos-policy
 ----
 . Überwachung der Richtliniengruppenleistung:
 +
-`qos statistics performance show`
-
+[source, cli]
+----
+qos statistics performance show
+----
 +
 Erfahren Sie mehr über `qos statistics performance show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-performance-show.html["ONTAP-Befehlsreferenz"^].
 
@@ -115,7 +122,7 @@ Monitoring der Performance über das Cluster Verwenden Sie kein Tool auf dem Hos
 
 ====
 +
-Mit dem folgenden Befehl wird die Performance der Richtliniengruppe angezeigt:
+Das folgende Beispiel zeigt die Performance von Richtliniengruppen:
 
 +
 [listing]
@@ -130,8 +137,10 @@ _System-Background         30           0KB/s        0ms
 ----
 . Monitoring der Workload-Performance:
 +
-`qos statistics workload performance show`
-
+[source, cli]
+----
+qos statistics workload performance show
+----
 +
 [NOTE]
 ====
@@ -139,7 +148,7 @@ Monitoring der Performance über das Cluster Verwenden Sie kein Tool auf dem Hos
 
 ====
 +
-Mit dem folgenden Befehl wird die Workload-Performance angezeigt:
+Das folgende Beispiel zeigt die Arbeitslastleistung:
 
 +
 [listing]
@@ -157,9 +166,6 @@ _Scan_Backgro..   5688       20            0KB/s        0ms
 Erfahren Sie mehr über `qos statistics workload performance show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-performance-show.html["ONTAP-Befehlsreferenz"^].
 
 +
-[NOTE]
-====
 Sie können mit dem `qos statistics workload latency show` Befehl detaillierte Latenzstatistiken für QoS-Workloads anzeigen. Erfahren Sie mehr über `qos statistics workload latency show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["ONTAP-Befehlsreferenz"^].
 
-====
 
