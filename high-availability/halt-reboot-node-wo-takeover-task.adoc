@@ -32,8 +32,12 @@ Sie halten einen Node in einem Cluster mit zwei Nodes an oder starten neu, ohne 
 
 
 .Schritte
-. Überprüfen Sie, ob sich beide Nodes in gutem Zustand befinden:
-`cluster show`
+. Überprüfen Sie, ob beide Knoten fehlerfrei sind:
++
+[source, cli]
+----
+cluster show
+----
 +
 Für beide Nodes `true` wird in der `Health` Spalte angezeigt.
 
@@ -49,15 +53,23 @@ node2        true     true
 +
 Erfahren Sie mehr über `cluster show` in der link:https://docs.netapp.com/us-en/ontap-cli/cluster-show.html["ONTAP-Befehlsreferenz"^].
 
-. Migrieren Sie alle LIFs vom Node, den Sie zum Partner-Node anhalten oder neu booten.
-`network interface migrate-all -node _node_name_`
+. Migrieren Sie alle LIFs von dem Knoten, den Sie anhalten oder neu starten möchten, auf den Partnerknoten:
++
+[source, cli]
+----
+network interface migrate-all -node <node_name>
+----
 +
 Erfahren Sie mehr über `network interface migrate-all` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-migrate-all.html["ONTAP-Befehlsreferenz"^].
 
-. Wenn auf dem Node unterbrochen oder neu gebootet werden soll, gibt es Aggregate, die Sie beim Ausfall des Nodes online halten möchten, verschieben Sie sie auf den Partner-Node. Anderenfalls fahren Sie mit dem nächsten Schritt fort.
+. Wenn sich auf dem Knoten Aggregate befinden, die Sie beim Anhalten oder Neustarten des Knotens online halten möchten, verschieben Sie diese auf den Partnerknoten.
 +
-.. Zeigen Sie die Aggregate auf dem Node an, den Sie beenden oder neu booten.
-`storage aggregates show -node _node_name_`
+.. Zeigen Sie die Aggregate auf dem Knoten, den Sie anhalten oder neu starten werden, an:
++
+[source, cli]
+----
+storage aggregates show -node <node_name>
+----
 +
 Beispielsweise ist node1 der Node, der angehalten oder neu gebootet werden wird:
 
@@ -79,8 +91,12 @@ test2_aggr  2.18TB    2.18TB    0% online       7 node1    raid_dp,
                                                                 normal
 4 entries were displayed.
 ----
-.. Verschieben Sie die Aggregate auf den Partner-Node:
-`storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
+.. Verschieben Sie die Aggregate auf den Partnerknoten:
++
+[source, cli]
+----
+storage aggregate relocation start -node <node_name> -destination <node_name> -aggregate-list <aggregate_name>
+----
 +
 Zum Beispiel werden die Aggregate aggr1, aggr2 und test2_aggr von node1 auf node2 verschoben:
 
@@ -89,39 +105,106 @@ Zum Beispiel werden die Aggregate aggr1, aggr2 und test2_aggr von node1 auf node
 
 
 
-. Deaktivieren von Cluster-HA:
-`cluster ha modify -configured false`
+. Cluster-HA deaktivieren:
 +
-Der ausgegebene Ausgang bestätigt, dass HA deaktiviert ist: `Notice: HA is disabled`
+[source, cli]
+----
+cluster ha modify -configured false
+----
++
+Wenn Cluster-HA deaktiviert ist, wird Epsilon automatisch auf Knoten 1 verschoben. Die Rückgabe bestätigt, dass HA deaktiviert ist: `Notice: HA is disabled`
 
 +
 
 NOTE: Dieser Vorgang deaktiviert nicht das Storage-Failover.
 
-. Stoppen oder booten Sie neu und hemmen Sie die Übernahme des Ziel-Nodes mithilfe des entsprechenden Befehls:
+. Wenn der anzuhaltende oder neu zu startende Knoten Knoten 1 ist, verschieben Sie Epsilon zu Knoten 2:
 +
-** `system node halt -node _node_name_ -inhibit-takeover true`
-** `system node reboot -node _node_name_ -inhibit-takeover true`
+.. Legen Sie die Berechtigungsebene auf erweitert fest:
++
+[source, cli]
+----
+set -privilege advanced
+----
+.. Überprüfen Sie, ob Knoten 2 intakt und für Epsilon geeignet ist:
++
+[source, cli]
+----
+cluster show
+----
+.. Entfernen Sie Epsilon von Knoten 1:
++
+[source, cli]
+----
+cluster modify -node <node1_name> -epsilon false
+----
+.. Weisen Sie Knoten 2 Epsilon zu:
++
+[source, cli]
+----
+cluster modify -node <node2_name> -epsilon true
+----
+.. Überprüfen Sie, ob Epsilon auf Knoten 2 ist:
++
+[source, cli]
+----
+cluster show
+----
+
+
+. Anhalten oder Neustarten und Übernahme des Zielknotens verhindern:
++
+[cols="1h,1h"]
+|===
+
+
+ a| 
+Den Node anhalten, ohne eine Übernahme einzuleiten:
+ a| 
+[source, cli]
+----
+system node halt -node _node_name_ -inhibit-takeover true
+----
+
+
+ a| 
+Starten Sie den Knoten neu, ohne die Übernahme einzuleiten:
+ a| 
+[source, cli]
+----
+system node reboot -node _node_name_ -inhibit-takeover true
+----
+|===
 +
 
 NOTE: In der Ausgabe des Befehls wird eine Warnung angezeigt, in der Sie gefragt werden, ob Sie fortfahren möchten, geben Sie `y`.
 
-
-
-. Vergewissern Sie sich, dass der Node, der noch online ist, sich in einem ordnungsgemäßen Zustand befindet (bei einem Ausfall des Partners):
-`cluster show`
+. Überprüfen Sie, ob sich der noch online befindliche Knoten in einem fehlerfreien Zustand befindet (während der Partner ausgefallen ist):
++
+[source, cli]
+----
+cluster show
+----
 +
 Für den Online-Knoten `true` wird in der `Health` Spalte angezeigt.
 
 +
 
-NOTE: In der Ausgabe des Befehls finden Sie eine Warnung, dass für die Cluster-HA nicht konfiguriert ist. Sie können die Warnung derzeit ignorieren.
+NOTE: In der Ausgabe des Befehls wird eine Warnung angezeigt, dass Cluster HA nicht konfiguriert ist. Sie können die Warnung ignorieren.
 
 . Führen Sie die Aktionen durch, die zum Anhalten oder Neustarten des Knotens erforderlich sind.
-. Starten Sie den Offline-Node von der Loader-Eingabeaufforderung aus:
-`boot_ontap`
-. Überprüfen Sie, ob sich beide Nodes in gutem Zustand befinden:
-`cluster show`
+. Starten Sie den offline geschalteten Node über die LOADER-Eingabeaufforderung:
++
+[source, cli]
+----
+boot_ontap
+----
+. Überprüfen Sie, ob beide Knoten fehlerfrei sind:
++
+[source, cli]
+----
+cluster show
+----
 +
 Für beide Nodes `true` wird in der `Health` Spalte angezeigt.
 
@@ -129,23 +212,43 @@ Für beide Nodes `true` wird in der `Health` Spalte angezeigt.
 
 NOTE: In der Ausgabe des Befehls finden Sie eine Warnung, dass für die Cluster-HA nicht konfiguriert ist. Sie können die Warnung derzeit ignorieren.
 
-. Cluster-HA erneut aktivieren:
-`cluster ha modify -configured true`
-. Wenn Sie Aggregate zu einem früheren Zeitpunkt in diesem Verfahren zum Partner-Node verschoben haben, verschieben Sie sie zurück in den Home Node, fahren Sie andernfalls mit dem nächsten Schritt fort:
-`storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
+. Cluster-HA wieder aktivieren:
++
+[source, cli]
+----
+cluster ha modify -configured true
+----
+. Wenn Sie zuvor in diesem Verfahren Aggregate auf den Partnerknoten verschoben haben, verschieben Sie sie zurück auf ihren Heimatknoten.
++
+[source, cli]
+----
+storage aggregate relocation start -node <node_name> -destination <node_name> -aggregate-list <aggregate_name>
+----
 +
 So werden beispielsweise die Aggregate aggr1, aggr2 und test2_aggr von Node node2 auf Node node1 verschoben:
 `storage aggregate relocation start -node _node2_ -destination _node1_ -aggregate-list _aggr1_,_aggr2_,_test2_aggr_`
 
 . Zurücksetzen von LIFs auf ihre Home Ports:
 +
-.. Anzeigen von LIFs, die nicht zu Hause sind:
-`network interface show -is-home false`
+.. LIFs anzeigen, die nicht zu Hause sind:
++
+[source, cli]
+----
+network interface show -is-home false
+----
 +
 Erfahren Sie mehr über `network interface show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
 
 .. Wenn keine Home-LIFs wurden, die nicht vom ausgefallenen Node migriert wurden, vergewissern Sie sich, dass sie vor dem Zurücksetzen geschützt sind.
-.. Wenn dies sicher ist, stellen Sie alle LIFs nach Hause zurück.  `network interface revert *` + Erfahren Sie mehr über `network interface revert` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-revert.html["ONTAP-Befehlsreferenz"^].
+.. Wenn es sicher ist, tun Sie dies und setzen Sie alle LIFs auf ihre Ausgangsposition zurück.
++
+[source, cli]
+----
+ network interface revert *
+----
++
+Erfahren Sie mehr über `network interface revert` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-revert.html["ONTAP-Befehlsreferenz"^].
+
 
 
 

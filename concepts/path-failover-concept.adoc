@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: path failover 
 summary: 'Es bestehen wichtige Unterschiede beim Management des Pfad-Failover in NAS- und SAN-Topologien durch ONTAP. Eine NAS-LIF migriert nach einem Linkausfall automatisch zu einem anderen Netzwerk-Port. Eine SAN LIF lässt sich nicht migrieren (es sei denn, Sie verschieben sie manuell nach dem Ausfall). Stattdessen wird mithilfe von Multipathing-Technologie auf dem Host Datenverkehr zu einer anderen logischen Schnittstelle umgeleitet – auf derselben SVM, jedoch auf einen anderen Netzwerkport.' 
 ---
-= Pfad-Failover – Übersicht
+= Erfahren Sie mehr über das ONTAP Path-Failover-Management
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -12,3 +12,50 @@ summary: 'Es bestehen wichtige Unterschiede beim Management des Pfad-Failover in
 
 [role="lead"]
 Es bestehen wichtige Unterschiede beim Management des Pfad-Failover in NAS- und SAN-Topologien durch ONTAP. Eine NAS-LIF migriert nach einem Linkausfall automatisch zu einem anderen Netzwerk-Port. Eine SAN LIF lässt sich nicht migrieren (es sei denn, Sie verschieben sie manuell nach dem Ausfall). Stattdessen wird durch Multipathing-Technologie auf dem Host Datenverkehr zu einer anderen LIF umgeleitet, auf derselben SVM jedoch der Zugriff auf einen anderen Netzwerkport.
+
+
+
+== Failover VON NAS-Pfaden
+
+Eine NAS-LIF migriert automatisch zu einem noch intakten Netzwerk-Port, nachdem ein Verbindungsausfall auf seinem aktuellen Port auftritt. Der Port, zu dem die LIF migriert, muss Mitglied der _Failover Group_ für die LIF sein. Die Richtlinie „_Failover Group_ schließt die Failover-Ziele für eine Daten-LIF zu Ports auf dem Node, der die Daten und deren HA-Partner besitzt.
+
+Zur administrativen Bequemlichkeit erstellt ONTAP für jede _Broadcast-Domäne_ in der Netzwerkarchitektur eine Failover-Gruppe. Broadcast-Domänen-Ports gruppieren sich, die zum gleichen Layer-2-Netzwerk gehören. Wenn Sie beispielsweise VLANs zur Trennung des Datenverkehrs nach Abteilung (Engineering, Marketing, Finanzen usw.) verwenden, definiert jedes VLAN eine separate Broadcast-Domäne. Die mit der Broadcast-Domäne verbundene Failover-Gruppe wird bei jedem Hinzufügen oder Entfernen eines Broadcast-Domain-Ports automatisch aktualisiert.
+
+Es ist fast immer eine gute Idee, eine Broadcast-Domain zum Definieren einer Failover-Gruppe zu verwenden, um sicherzustellen, dass die Failover-Gruppe aktuell bleibt. Gelegentlich möchten Sie jedoch eine Failover-Gruppe definieren, die nicht mit einer Broadcast-Domäne verknüpft ist. So kann es beispielsweise sein, dass LIFs ein Failover nur für Ports in einem Teilbereich der in der Broadcast-Domäne definierten Ports durch LIFs gewünscht werden.
+
+image:nas-lif-migration.gif["Diagramm der LIF-Migration nach Verbindungsausfall an einem Port"]
+
+|===
+
+
+ a| 
+*_Subnetze_*
+
+Ein_Subnetz_ behält einen Block von IP-Adressen in einer Broadcast-Domäne vor. Diese Adressen gehören zum gleichen Layer-3-Netzwerk und werden Ports in der Broadcast-Domäne zugewiesen, wenn Sie eine LIF erstellen. In der Regel ist es einfacher und weniger fehleranfällig, einen Subnetznamen anzugeben, wenn Sie eine LIF-Adresse definieren, als eine IP-Adresse und Netzwerkmaske anzugeben.
+
+|===
+
+
+== Failover VON SAN-Pfaden
+
+Ein SAN-Host verwendet ALUA (Asymmetric Logical Unit Access) und MPIO (Multipath I/O), um den Datenverkehr auf eine übrig gebliebene LIF nach einem Link-Ausfall zu umleiten. Vordefinierte Pfade bestimmen die möglichen Routen zur von der SVM servierten LUN.
+
+In einer SAN-Umgebung werden Hosts als _Initiatoren_ von Anfragen an LUN _Targets angesehen._ MPIO ermöglicht mehrere Pfade von Initiatoren zu Zielen. ALUA identifiziert die direktesten Pfade, genannt _optimierte Pfade._
+
+Sie konfigurieren normalerweise mehrere optimierte Pfade zu LIFs auf dem eigenen Node der LUN und mehrere nicht optimierte Pfade zu LIFs auf seinem HA-Partner. Wenn ein Port auf dem entsprechenden Node ausfällt, wird der Host Datenverkehr zu den noch intakten Ports leiten. Wenn alle Ports ausfallen, leitet der Host den Datenverkehr über die nicht optimierten Pfade weiter.
+
+ONTAP Selective LUN Map (SLM) beschränkt standardmäßig die Anzahl der Pfade vom Host auf eine LUN. Auf eine neu erstellte LUN ist nur über Pfade zu dem Node zugegriffen werden kann, der der LUN oder seinem HA-Partner gehört. Sie können den Zugriff auf eine LUN ebenfalls einschränken, indem Sie LIFs für den Initiator in einem _Port Set_ konfigurieren.
+
+image:san-host-rerouting.gif["Beispiel für ein san-Pfad-Failover"]
+
+|===
+
+
+ a| 
+*_Volumes in SAN-Umgebungen verschieben_*
+
+Standardmäßig beschränkt ONTAP _Selective LUN Map (SLM)_ die Anzahl der Pfade von einem SAN-Host auf eine LUN. Auf eine neu erstellte LUN ist nur über Pfade zum Node zugegriffen werden kann, der der Eigentümer der LUN oder seines HA-Partners ist, die „_Reporting Nodes_“ für die LUN.
+
+Das heißt, wenn Sie ein Volume auf einen Node auf einem anderen HA-Paar verschieben, müssen Sie der LUN-Zuordnung Berichterstellungs-Nodes für das Ziel-HA-Paar hinzufügen. Sie können dann die neuen Pfade in Ihrem MPIO-Setup festlegen. Nach Abschluss der Verschiebung des Volumes können Sie die Reporting-Nodes für das HA-Quellpaar aus der Zuordnung löschen.
+
+|===
