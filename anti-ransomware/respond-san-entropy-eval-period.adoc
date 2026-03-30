@@ -1,21 +1,63 @@
 ---
 sidebar: sidebar 
 permalink: anti-ransomware/respond-san-entropy-eval-period.html 
-keywords: ransomware, arp, san, mode, switch, active, learning, entropy, autonomous ransomware protection 
+keywords: ransomware, arp, block, san, nas, mode, switch, active, learning, entropy, autonomous ransomware protection 
 summary: Ab ONTAP 9.17.1 erfordert ARP eine Evaluierungsphase, um festzustellen, ob die Entropieniveaus des SAN-Volumes für den Schutz vor Ransomware geeignet sind. 
 ---
-= Erfahren Sie mehr über den ONTAP ARP-Evaluierungszeitraum für SAN-Volumes
+= Erfahren Sie mehr über den ONTAP ARP/AI-Evaluierungszeitraum für Blockgeräte-Workloads
 :allow-uri-read: 
 
 
 [role="lead"]
-Ab ONTAP 9.17.1 benötigt ARP einen Evaluierungszeitraum, um festzustellen, ob die Entropiewerte von SAN-Volume-Workloads für den Schutz vor Ransomware geeignet sind. Sobald ARP auf einem SAN-Volume aktiviert ist, überwacht und schützt ARP/AI das Volume während des Evaluierungszeitraums aktiv und ermittelt gleichzeitig einen optimalen Verschlüsselungsschwellenwert.  Erkennungen und Warnungen können während der Evaluierungsphase anhand eines konservativen Schwellenwerts erfolgen, während die Basisschwellenwerte festgelegt werden. ARP unterscheidet zwischen geeigneten und ungeeigneten Workloads im ausgewerteten SAN-Volume und legt, wenn die Workloads als schutzwürdig eingestuft werden, automatisch einen Verschlüsselungsschwellenwert basierend auf den Statistiken des Evaluierungszeitraums fest.
+Ab ONTAP 9.17.1 benötigt ARP/AI eine Evaluierungsphase, um festzustellen, ob die Entropiewerte von Blockgeräte-Workloads für den Schutz vor Ransomware geeignet sind. Zu diesen Workloads gehören SAN-LUNs und virtuelle Hypervisor-Festplatten (zum Beispiel VMware-Festplatten in NFS-Datenspeichern und ab ONTAP 9.17.1P5 Hyper-V, KVM und OpenStack virtuelle Festplatten), die in ONTAP-Volumes gespeichert sind. Nachdem ARP auf einem geeigneten Volume aktiviert wurde, überwacht und schützt ARP/AI das Volume während der Evaluierungsphase aktiv und ermittelt gleichzeitig einen optimalen Verschlüsselungsschwellenwert. Erkennungen und Warnungen können während der Evaluierungsphase mit einem konservativen Schwellenwert erfolgen, während die Basisschwellenwerte im Laufe mehrerer Tage festgelegt werden. ARP unterscheidet zwischen geeigneten und ungeeigneten Workloads im evaluierten Volume und legt, falls die Workloads als schutzfähig eingestuft werden, automatisch einen Verschlüsselungsschwellenwert basierend auf Statistiken der Evaluierungsphase fest.
+
+
+
+== Unterstützte Workloads und Anwendbarkeit der Evaluierung
+
+Die Evaluierungsfrist für Blockgeräte gilt in den folgenden Szenarien:
+
+* *SAN-Volumes*
++
+** LUN-basierte Workloads, die Hosts oder Hypervisoren als Blockgeräte bereitgestellt werden.
+
+
+* *NAS-Volumes, die virtuelle Hypervisor-Festplatten enthalten, werden von ONTAP automatisch erkannt*
++
+** Unterstützte Hypervisoren sind VMware, Hyper-V, KVM und OpenStack-virtuelle Festplatten, die in NFS- oder SMB-Datenspeichern gespeichert sind.
+
+
+
+
+Innerhalb dieser Volumes:
+
+* Der Auswertungszeitraum _ist_ anwendbar auf Angriffe, die anhand von Entropieänderungen innerhalb des Gastdateisystems der virtuellen Festplatte erkannt werden (zum Beispiel Ransomware, die auf Dateien innerhalb des Gastbetriebssystems operiert, die einer LUN oder virtuellen Festplatte zugeordnet sind).
+* Der Auswertungszeitraum _ist nicht_ anwendbar auf Angriffe, die anhand von Entropie- und Dateierweiterungsänderungen erkannt werden, die direkt an den virtuellen Festplattendateien vom Hypervisor-Host vorgenommen werden (zum Beispiel Ransomware, die direkt auf  `.vmdk` Dateien von einem ESXi NFS-Datenspeicher-Mountpunkt arbeitet). Diese Direct-to-Disk-Angriffe verwenden einen anderen Erkennungspfad, der nicht vom Auswertungszeitraum für Blockgeräte abhängt.
+
+
+
+
+== Versionsunterstützung für Blockgeräte- und Hypervisor-Erkennung
+
+* *ONTAP 9.17.1*
++
+** Führt die Blockgeräte-Evaluierungsperiode für SAN-Volumes ein.
+** Ermöglicht die Erkennung von ARP/AI-Angriffen innerhalb von SAN LUNs und innerhalb von VMware-Virtual-Disks, die in ONTAP NFS-Datenspeichern gespeichert sind.
+
+
+* *ONTAP 9.17.1P5 und höher*
++
+** Erweitert die ARP/AI-Blockgeräteerkennung auf virtuelle Hypervisor-Festplatten wie Hyper-V, KVM und OpenStack.
+** Wendet die gleiche Logik und die gleichen Schwellenwerte für die Auswertung von Blockgeräten auf diese zusätzlichen Hypervisor-Workloads an, wenn sie von ONTAP erkannt werden.
+
+
+
 
 
 
 == Entropiebewertung verstehen
 
-Das System erfasst kontinuierlich Verschlüsselungsstatistiken in 10-Minuten-Intervallen. Während der Auswertung werden außerdem kontinuierlich alle vier Stunden ARP-periodische Snapshots erstellt.  Wenn der Verschlüsselungsprozentsatz innerhalb eines Intervalls den für dieses Volume ermittelten optimalen Verschlüsselungsschwellenwert überschreitet, wird eine Warnung ausgelöst, ein `Anti_ransomware_attack_backup` Es wird ein Snapshot erstellt und die Snapshot-Aufbewahrungszeit wird für alle regelmäßigen ARP-Snapshots erhöht.
+Während der Evaluierungsphase sammelt das System kontinuierlich Verschlüsselungsstatistiken in 10-Minuten-Intervallen von unterstützten Blockgeräte- und Hypervisor-Workloads. ARP-Periodensnapshots werden ebenfalls kontinuierlich alle vier Stunden erstellt. Wenn der Verschlüsselungsprozentsatz innerhalb eines Intervalls den für dieses Volume identifizierten optimalen Verschlüsselungsschwellenwert überschreitet, wird eine Warnung ausgelöst, ein `Anti_ransomware_attack_backup` Snapshot erstellt und die Aufbewahrungszeit bei allen periodischen ARP-Snapshots erhöht.
 
 .Bestätigen Sie, dass der Testzeitraum aktiv ist
 Sie können bestätigen, dass die Auswertung aktiv ist, indem Sie den folgenden Befehl ausführen und einen Status von `evaluation_period`. Wenn ein Band nicht zur Evaluierung berechtigt ist, wird der Evaluierungsstatus nicht angezeigt.
@@ -77,7 +119,7 @@ vs0         lun1              96-100%         0               0
 
 == Geeignete Arbeitslasten und adaptive Schwellenwerte
 
-Die Auswertung endet mit einem der folgenden Ergebnisse:
+Die Auswertung endet mit einem der folgenden Ergebnisse sowohl für SAN LUN-Workloads als auch für Hypervisor-Virtual-Disks, die mittels Blockgeräteerkennung ausgewertet wurden:
 
 * *Die Arbeitslast ist für ARP geeignet. * ARP setzt den adaptiven Schwellenwert automatisch auf über 10 % des im Evaluierungszeitraum beobachteten maximalen Verschlüsselungsgrads. ARP sammelt außerdem fortlaufend Statistiken und erstellt regelmäßig ARP-Snapshots.
 * *Die Arbeitslast ist für ARP ungeeignet.* ARP setzt den adaptiven Schwellenwert automatisch auf den maximalen Verschlüsselungsgrad, der während des Evaluierungszeitraums erreicht wurde. ARP sammelt weiterhin Statistiken und erstellt regelmäßig ARP-Snapshots. Das System empfiehlt jedoch, ARP auf dem Volume zu deaktivieren.
