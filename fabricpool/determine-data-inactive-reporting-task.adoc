@@ -2,7 +2,7 @@
 permalink: fabricpool/determine-data-inactive-reporting-task.html 
 sidebar: sidebar 
 keywords: determining, how, much, data, volume, inactive, using, data reporting, fabricpool 
-summary: Da Sie feststellen, wie viele Daten in einem Volume inaktiv sind, können Sie die Storage-Tiers nutzen. Anhand von Informationen in Berichten für inaktive Daten können Sie entscheiden, welches Aggregat für FabricPool verwendet werden soll, ob ein Volume in die FabricPool verschoben werden soll oder ob die Tiering-Richtlinie eines Volumes geändert werden soll. 
+summary: 'Die Meldung inaktiver Daten (IDR) ist ein hervorragendes Werkzeug, um die Menge inaktiver (kalter) Daten zu ermitteln, die aus einer lokalen Ebene ausgelagert werden können.' 
 ---
 = Analyse inaktiver ONTAP-Daten mit Berichten zu inaktiven Daten
 :allow-uri-read: 
@@ -11,26 +11,47 @@ summary: Da Sie feststellen, wie viele Daten in einem Volume inaktiv sind, könn
 
 
 [role="lead"]
-Da Sie feststellen, wie viele Daten in einem Volume inaktiv sind, können Sie die Storage-Tiers nutzen. Anhand von Informationen in Berichten für inaktive Daten können Sie entscheiden, welches Aggregat für FabricPool verwendet werden soll, ob ein Volume in die FabricPool verschoben werden soll oder ob die Tiering-Richtlinie eines Volumes geändert werden soll.
+Die Meldung inaktiver Daten (IDR) ist ein hervorragendes Werkzeug, um die Menge inaktiver (kalter) Daten zu ermitteln, die aus einer lokalen Ebene ausgelagert werden können.
+
+Standardmäßig verwendet IDR eine 31-tägige Abkühlphase, um zu bestimmen, welche Daten als inaktiv gelten. Die Menge der kalten Daten, die ausgelagert werden, hängt von den auf den Volumes festgelegten Tiering-Richtlinien ab. In Versionen vor ONTAP 9.8 verwendete IDR eine feste 31-tägige Abkühlphase.
 
 .Bevor Sie beginnen
-Sie müssen ONTAP 9.4 oder höher ausführen, um die Funktion zur Berichterstellung inaktiver Daten verwenden zu können.
+**ONTAP 9.4**
+
+* IDR ist standardmäßig auf allen FabricPool Aggregaten aktiviert.
+* IDR kann auf Nicht-FabricPool-SSD-Aggregaten aktiviert werden.
+
+
+**ONTAP 9.6**
+
+* IDR ist standardmäßig auf allen Nicht-FabricPool SSD-Aggregaten aktiviert.
+* IDR kann auf Nicht-FabricPool HDD-Aggregaten aktiviert werden.
+
+
+**ONTAP 9.8**
+
+* Die IDR-Kühlperiode kann über die Einstellung volume-tiering-minimum-cooling-days angepasst werden.
+
 
 .Über diese Aufgabe
-* Berichte über inaktive Daten werden auf einigen Aggregaten nicht unterstützt.
-+
-Inaktive Datenberichte können nicht aktiviert werden, wenn FabricPool nicht aktiviert werden kann, einschließlich der folgenden Instanzen:
+* IDR meldet inaktive Daten, die ausgelagert werden können, nicht jedoch inaktive Daten, die bereits ausgelagert wurden. Wenn FabricPool aktiviert ist und inaktive Daten ausgelagert wurden, werden sie nicht mehr von IDR gemeldet.
 
+
+[NOTE]
+====
+Obwohl IDR auf allen SSD-Aggregaten (ONTAP 9.6 und höher) standardmäßig aktiviert ist, wird IDR automatisch deaktiviert und die Kühltage auf null zurückgesetzt, sobald eine Client-Workload 90 % der Systemressourcen benötigt. In diesem Fall wird IDR nicht automatisch wieder aktiviert.
+
+Um zu vermeiden, dass der automatische Prozess IDR abschaltet, um Ressourcen für andere Workloads freizugeben, aktivieren Sie -is-inactive-data-reporting-enabled manuell auf true.
+
+====
+* Inaktive Datenberichterstattung, wenn FabricPool nicht aktiviert werden kann, einschließlich der folgenden Fälle:
 +
 ** Root-Aggregate
+** Aggregate, die Volumes mit einer anderen Speicherplatzzusage als „keine“ enthalten. (Thick-Provisioned Volumes werden nicht unterstützt.)
 ** MetroCluster Aggregate mit ONTAP Versionen vor 9.7
 ** Flash Pool (hybride Aggregate oder SnapLock Aggregate)
 
 
-* Berichte für inaktive Daten sind standardmäßig auf Aggregaten aktiviert, bei denen die anpassungsfähige Komprimierung für alle Volumes aktiviert ist.
-* Die Berichterstellung für inaktive Daten ist auf allen SSD-Aggregaten in ONTAP 9.6 standardmäßig aktiviert.
-* Berichte für inaktive Daten sind standardmäßig auf FabricPool Aggregaten in ONTAP 9.4 und ONTAP 9.5 aktiviert.
-* Sie können inaktive Datenberichte auf nicht-FabricPool-Aggregaten über die ONTAP-CLI einschließlich HDD-Aggregaten aktivieren. Dies beginnt mit ONTAP 9.6.
 
 
 
