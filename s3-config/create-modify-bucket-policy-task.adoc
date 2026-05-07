@@ -23,6 +23,8 @@ Sie können neue Anweisungen für neue Benutzer und Gruppen hinzufügen oder die
 
 Benutzer- und Gruppenberechtigungen können bei Erstellung des Buckets oder nach Bedarf später zugewiesen werden. Sie können auch die Bucket-Kapazität und die QoS-Richtliniengruppenzuweisung ändern.
 
+Ab ONTAP 9.19.1 können Sie Bedingungen verwenden, um bedingte Schreibvorgänge beim Hochladen von Objekten und bedingte Löschvorgänge beim Löschen von Objekten zu erzwingen. Bedingte Schreib- und Löschvorgänge ermöglichen es, das Überschreiben oder unbeabsichtigte Löschen von Objekten zu verhindern.
+
 Wenn Sie ab ONTAP 9.9.1 die Objekt-Tagging-Funktionalität des AWS-Clients mit dem ONTAP S3-Server unterstützen möchten, `GetObjectTagging` `PutObjectTagging` `DeleteObjectTagging` müssen die Aktionen, und über die Bucket- oder Gruppenrichtlinien erlaubt sein.
 
 Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
@@ -115,6 +117,12 @@ Im folgenden Beispiel wird eine Bucket-Policy-Anweisung für den Objektspeicher-
 [listing]
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
+----
+Ab ONTAP 9.19.1 können Sie Bedingungen verwenden, um bedingte Schreibvorgänge für Objekt-Uploads und bedingte Löschvorgänge für Objekt-Löschungen zu erzwingen. Das folgende Beispiel erstellt eine Bucket-Richtlinienbedingung, um bedingte Schreibvorgänge für bucket1 zu erzwingen:
+
+[listing]
+----
+cluster::> vserver object-store-server bucket policy-statement-condition create -vserver vs0 -bucket buck1 -index 1 -operator Null -s3-if-match true
 ----
 Ab ONTAP 9.14.1 können Sie Variablen für eine Bucket-Richtlinie angeben. Im folgenden Beispiel wird eine Policy-Anweisung für Server-Buckets für die Storage-VM `svm1` und `bucket1` erstellt und `${aws:username}` als Variable für eine Policy-Ressource angegeben. Wenn die Richtlinie ausgewertet wird, wird die Richtlinienvariable durch den Benutzernamen für den Anforderungskontext ersetzt, und die Richtlinienaktion kann wie für diesen Benutzer konfiguriert ausgeführt werden. Wenn beispielsweise die folgende Richtlinienanweisung bewertet wird, `${aws:username}` wird sie durch den Benutzer ersetzt, der den S3-Vorgang ausführt. Wenn ein Benutzer `user1` den Vorgang durchführt, erhält dieser Benutzer Zugriff auf `bucket1` AS `bucket1/user1/*`.
 

@@ -14,7 +14,7 @@ summary: Erstellen Sie eine SVM, um Daten an Clients bereitzustellen.
 
 
 [role="lead"]
-Sie müssen eine SVM erstellen, um Daten für die Clients bereitzustellen.
+Eine Storage Virtual Machine (SVM) ist eine logische Einheit, die physische Ressourcen abstrahiert. Eine SVM stellt Daten für Clients und Hosts von einem oder mehreren Volumes über eine oder mehrere logische Netzwerkschnittstellen (LIFs) bereit. Sie müssen eine SVM erstellen, um Daten für Clients bereitzustellen.
 
 .Bevor Sie beginnen
 * Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
@@ -22,6 +22,10 @@ Sie müssen eine SVM erstellen, um Daten für die Clients bereitzustellen.
 +
 Wenn Sie eine Hyper-V oder SQL Server über SMB-Lösung auf dieser SVM implementieren möchten, sollten Sie NTFS Sicherheitsstil für das Root-Volume verwenden. Volumes, die Hyper-V-Dateien oder SQL-Datenbankdateien enthalten, müssen zum Zeitpunkt ihrer Erstellung auf NTFS-Schutz gesetzt werden. Indem Sie den Sicherheitsstil des Root-Volumes auf NTFS einstellen, stellen Sie sicher, dass Sie nicht versehentlich UNIX- oder Daten-Volumes im gemischten Sicherheitsstil erstellen.
 
+
+
+.Über diese Aufgabe
+* Ab ONTAP 9.19.1 unterstützen AFF-Systeme Aktiv/Aktiv-Multipathing mit automatischem LIF-Failover auf SVM-Ebene in SAN-Umgebungen. Sie müssen Aktiv/Aktiv-Multipathing auf AFF-Systemen aktivieren, wenn Sie die Storage-VM erstmals erstellen.
 * Ab ONTAP 9.13.1 können Sie die maximale Kapazität für eine Storage-VM festlegen. Sie können außerdem Warnmeldungen konfigurieren, wenn sich die SVM einem Kapazitätsschwellenwert nähert. Weitere Informationen finden Sie unter xref:../volumes/manage-svm-capacity.html[Management der SVM-Kapazität].
 
 
@@ -32,265 +36,131 @@ Wenn Sie eine Hyper-V oder SQL Server über SMB-Lösung auf dieser SVM implement
 Sie können mit System Manager eine Storage-VM erstellen.
 
 .Schritte
-. Wählen Sie *Storage VMs* aus.
-. Klicken Sie auf image:icon_add.gif["Symbol hinzufügen"] , um eine Storage-VM zu erstellen.
+. Im System Manager wählen Sie *Storage VMs* aus.
+. Wählen Sie image:icon_add.gif["Symbol hinzufügen"], um eine Storage-VM zu erstellen.
 . Benennen Sie die Storage-VM.
-. Wählen Sie das Zugriffsprotokoll:
+. Wählen Sie das Zugriffsprotokoll aus, das Sie für die SVM aktivieren möchten, und füllen Sie die erforderlichen Felder für die Konfiguration aus.
 +
-** SMB/CIFS, NFS
-** ISCSI
-** FC
-** NVMe
+Die auszufüllenden Felder variieren je nach dem von Ihnen gewählten Zugriffsprotokoll.
+
 +
-... Wenn Sie *SMB/CIFS* aktivieren wählen, führen Sie die folgende Konfiguration aus:
-
-
-
-
-
-
+[cols="1,1"]
 |===
+| Zugriffsprotokoll | Konfigurationsfelder 
 
 
-| Feld oder Kontrollkästchen aktivieren | Beschreibung 
+| SMB/CIFS  a| 
+** Administratorname
+** Passwort
+** Servername
+** Active Directory-Domäne
+** Organisationseinheit
++
+Der Standardwert für die Organisationseinheit innerhalb der Active Directory-Domäne, die dem SMB/CIFS-Server zugeordnet ist, ist „CN=Computers“. Dies kann geändert werden.
 
+** Verschlüsselung der Daten beim Zugriff auf die Freigaben in der Storage-VM
++
+Verschlüsselt Daten mithilfe von SMB 3.0, um unberechtigten Dateizugriff auf die Freigaben in der SMB/CIFS-Speicher-VM zu verhindern.
 
- a| 
-Administratorname
- a| 
-Geben Sie den Administratorbenutzernamen für die SMB/CIFS Storage VM an.
-
-
-
- a| 
-Passwort
- a| 
-Geben Sie das Administratorpasswort für die SMB/CIFS Storage-VM an.
-
-
-
- a| 
-Servername
- a| 
-Geben Sie den Servernamen für die SMB/CIFS-Storage-VM an.
-
-
-
- a| 
-Active Directory-Domäne
- a| 
-Geben Sie die Active Directory-Domäne an, die für die Benutzerauthentifizierung für die SMB/CIFS-Storage-VM verwendet werden soll.
-
-
-
- a| 
-Organisationseinheit
- a| 
-Geben Sie die Organisationseinheit innerhalb der Active Directory-Domäne an, die mit dem SMB/CIFS-Server verknüpft ist. „CN=Computer“ ist der Standardwert, der geändert werden kann.
-
-
-
- a| 
-Verschlüsselung der Daten beim Zugriff auf die Freigaben in der Storage-VM
- a| 
-Aktivieren Sie dieses Kontrollkästchen, um Daten mit SMB 3.0 zu verschlüsseln, um unberechtigten Dateizugriff auf Freigaben in der SMB/CIFS-Storage-VM zu verhindern.
-
-
-
- a| 
-Domänen
- a| 
-Fügen Sie die für die SMB/CIFS-Storage-VM aufgeführten Domänen hinzu, entfernen oder neu anordnen.
-
-
-
- a| 
-Name Server
- a| 
-Fügen Sie die Namensserver für die SMB/CIFS-Speicher-VM hinzu, entfernen Sie sie oder ordnen Sie sie neu an.
-
-
-
- a| 
-Standardsprache
- a| 
+** Domänen
+** Name Server
+** Standardsprache
++
 Gibt die Standardeinstellung für die Sprachcodierung der Storage-VM und ihrer Volumes an. Verwenden Sie die CLI, um Einstellungen für einzelne Volumes innerhalb einer Storage VM zu ändern.
 
-
-
- a| 
-Netzwerkschnittstelle
- a| 
-Wählen Sie für jede für die Speicher-VM konfigurierte Netzwerkschnittstelle ein vorhandenes Subnetz aus (falls mindestens ein Subnetz vorhanden ist) oder geben Sie *ohne Subnetz* an und füllen Sie die Felder *IP-Adresse* und *Subnetzmaske* aus. Wenn nützlich, aktivieren Sie das Kontrollkästchen *Verwenden Sie dieselbe Subnetzmaske und dasselbe Gateway für alle der folgenden Schnittstellen*. Sie können zulassen, dass das System automatisch den Home-Port auswählen oder den Port, den Sie verwenden möchten, manuell aus der Liste auswählen.
-
-
-
- a| 
-Administratorkonto verwalten
- a| 
-Aktivieren Sie dieses Kontrollkästchen, wenn Sie das Storage-VM-Administratorkonto verwalten möchten. Wenn diese Option ausgewählt ist, geben Sie den Benutzernamen und das Passwort an, bestätigen Sie das Passwort und geben Sie an, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
-
-|===
-. Wenn Sie *NFS aktivieren* wählen, führen Sie die folgende Konfiguration aus:
-
-
-|===
-
-
-| Feld oder Kontrollkästchen aktivieren | Beschreibung 
-
-
- a| 
-Kontrollkästchen Zugriff auf NFS-Clients zulassen
- a| 
-Wählen Sie dieses Kontrollkästchen aus, wenn alle Volumes, die auf der NFS Storage-VM erstellt wurden, den Root-Volume-Pfad „/“ zum Mounten und Traverse verwenden sollten. Fügen Sie der Exportrichtlinie „Standard“ Regeln hinzu, um unterbrechungsfreie Mount Traversal zu ermöglichen.
-
-
-
- a| 
-Regeln
- a| 
-Klicken Sie hier, image:icon_add.gif["Symbol hinzufügen"] um Regeln zu erstellen.
-
-* Client-Spezifikation: Geben Sie die Hostnamen, IP-Adressen, Netzgruppen oder Domänen an.
-* Zugangsprotokolle: Wählen Sie eine Kombination der folgenden Optionen:
+** Netzwerkschnittstelle
 +
-** SMB/CIFS
-** FlexCache
-** NFS
+Wählen Sie für jede Netzwerkschnittstelle, die Sie für die Speicher-VM konfigurieren, ein vorhandenes Subnetz aus (sofern mindestens eines vorhanden ist) oder geben Sie *Ohne Subnetz* an und füllen Sie die Felder *IP Address* und *Subnet Mask* aus.
+
+
+
+
+
+| NFS  a| 
+** NFS-Client-Zugriff zulassen
 +
-*** NFSv3
-*** NFSv4
+Wählen Sie diese Option, wenn alle auf der NFS-Speicher-VM erstellten Volumes den Root-Volume-Pfad "/" zum Mounten und Durchlaufen verwenden sollen.
 
-
-
-
-* Zugriffsdetails: Geben Sie für jeden Benutzertyp die Zugriffsebene an, entweder schreibgeschützt, Lesen/Schreiben oder Superuser. Folgende Benutzertypen sind verfügbar:
 +
-** Alle
-** Alle (als anonymer Benutzer)
-** UNIX
-** Kerberos 5
-** Kerberos 5i
-** Kerberos 5p
-** NTLM
+Fügen Sie der Exportrichtlinie „default“ Regeln hinzu, um ein ununterbrochenes Mount-Traversal zu ermöglichen.
+
+** Regeln
++
+Wählen Sie image:icon_add.gif["Symbol hinzufügen"] aus, um Regeln zu erstellen, und geben Sie für jede Regel die folgenden Informationen an:
+
++
+*** Kundenspezifikation
++
+Geben Sie die Hostnamen, IP-Adressen, Netzgruppen oder Domänen an.
+
+*** Zugriffsprotokolle
++
+Sie können eine oder mehrere der verfügbaren Optionen auswählen.
 
 
 
+** Zugangsdaten
++
+Legen Sie für jeden Benutzertyp die Zugriffsebene als Nur-Lesen, Lesen/Schreiben oder Superuser fest.
 
-Speichern Sie die Regel.
-
-
-
- a| 
-Standardsprache
- a| 
+** Standardsprache
++
 Gibt die Standardeinstellung für die Sprachcodierung der Storage-VM und ihrer Volumes an. Verwenden Sie die CLI, um Einstellungen für einzelne Volumes innerhalb einer Storage VM zu ändern.
 
-
-
- a| 
-Netzwerkschnittstelle
- a| 
-Wählen Sie für jede für die Speicher-VM konfigurierte Netzwerkschnittstelle ein vorhandenes Subnetz aus (falls mindestens ein Subnetz vorhanden ist) oder geben Sie *ohne Subnetz* an und füllen Sie die Felder *IP-Adresse* und *Subnetzmaske* aus. Wenn nützlich, aktivieren Sie das Kontrollkästchen *Verwenden Sie dieselbe Subnetzmaske und dasselbe Gateway für alle der folgenden Schnittstellen*. Sie können zulassen, dass das System automatisch den Home-Port auswählen oder den Port, den Sie verwenden möchten, manuell aus der Liste auswählen.
+** Netzwerkschnittstelle
++
+Wählen Sie für jede Netzwerkschnittstelle, die Sie für die Speicher-VM konfigurieren, ein vorhandenes Subnetz aus (sofern mindestens eines vorhanden ist) oder geben Sie *Ohne Subnetz* an und füllen Sie die Felder *IP Address* und *Subnet Mask* aus.
 
 
 
- a| 
-Administratorkonto verwalten
- a| 
-Aktivieren Sie dieses Kontrollkästchen, wenn Sie das Storage-VM-Administratorkonto verwalten möchten. Wenn diese Option ausgewählt ist, geben Sie den Benutzernamen und das Passwort an, bestätigen Sie das Passwort und geben Sie an, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
-
-|===
-. Wenn Sie *iSCSI* aktivieren wählen, führen Sie die folgende Konfiguration aus:
 
 
-|===
+| iSCSI oder NVMe/TCP  a| 
+** Netzwerkschnittstelle
++
+Wählen Sie für jede Netzwerkschnittstelle, die Sie für die Speicher-VM konfigurieren, ein vorhandenes Subnetz aus (sofern mindestens eines vorhanden ist) oder geben Sie *Ohne Subnetz* an und füllen Sie die Felder *IP Address* und *Subnet Mask* aus.
 
+** Symmetrisches Aktiv/Aktiv-Multipathing
++
+Diese Option ist ab ONTAP 9.19.1 auf AFF und ASA-Systemen verfügbar. Sie aktiviert Aktiv/Aktiv-Multipathing für alle SAN-Protokolle. Wenn ausgewählt, kann diese Einstellung später nicht mehr geändert werden.
 
-| Feld oder Kontrollkästchen aktivieren | Beschreibung 
++
+Wenn Sie möchten, dass Netzwerkpfade im Falle eines Knotenausfalls automatisch auf den HA-Partner umgeschaltet werden, gehen Sie wie folgt vor:
 
-
- a| 
-Netzwerkschnittstelle
- a| 
-Wählen Sie für jede für die Speicher-VM konfigurierte Netzwerkschnittstelle ein vorhandenes Subnetz aus (falls mindestens ein Subnetz vorhanden ist) oder geben Sie *ohne Subnetz* an und füllen Sie die Felder *IP-Adresse* und *Subnetzmaske* aus. Wenn nützlich, aktivieren Sie das Kontrollkästchen *Verwenden Sie dieselbe Subnetzmaske und dasselbe Gateway für alle der folgenden Schnittstellen*. Sie können zulassen, dass das System automatisch den Home-Port auswählen oder den Port, den Sie verwenden möchten, manuell aus der Liste auswählen.
++
+*** Wählen Sie für AFF-Systeme *Symmetrisches Aktiv/Aktiv-Multipathing aktivieren*.
+*** Wählen Sie für ASA-Systeme *Aktivieren für SCSI- und NVMe-Protokolle*.
 
 
 
- a| 
-Administratorkonto verwalten
- a| 
-Aktivieren Sie dieses Kontrollkästchen, wenn Sie das Storage-VM-Administratorkonto verwalten möchten. Wenn diese Option ausgewählt ist, geben Sie den Benutzernamen und das Passwort an, bestätigen Sie das Passwort und geben Sie an, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
 
-|===
-. Wenn Sie *FC aktivieren* wählen, führen Sie die folgende Konfiguration aus:
+
+
+| FC oder NVMe/FC  a| 
+** Konfigurieren Sie FC-Ports
 
 
 |===
+. Wenn Sie das Administratorkonto der Speicher-VM verwalten möchten, wählen Sie *Administratorkonto verwalten*
++
+Wenn Sie diese Option auswählen, geben Sie das Kennwort für das *vsadmin*-Konto an und teilen Sie mit, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
+
++
+Ab ONTAP 9.19.1 können SVM-Administratoren ihre SVMs über das neue SVM-Dashboard verwalten und überwachen. Verwenden Sie die SVM-Management-IP-Adresse und die *vsadmin*-Anmeldeinformationen, um auf das SVM-Dashboard zuzugreifen.
+
++
+Wenn diese Option ausgewählt ist, können Sie das Kennwort für das *vsadmin*-Konto festlegen und das Kästchen *Netzwerkschnittstelle für Storage-VM-Management hinzufügen* auswählen.
+
++
+Geben Sie für die SVM-Management-Netzwerkschnittstelle Folgendes an:
+
++
+** Knoten
+** IP-Adresse
+** Subnetzmaske
 
 
-| Feld oder Kontrollkästchen aktivieren | Beschreibung 
-
-
- a| 
-Konfigurieren Sie FC-Ports
- a| 
-Wählen Sie die Netzwerkschnittstellen der Nodes aus, die in die Storage-VM einbezogen werden sollen. Es werden zwei Netzwerkschnittstellen pro Node empfohlen.
-
-
-
- a| 
-Administratorkonto verwalten
- a| 
-Aktivieren Sie dieses Kontrollkästchen, wenn Sie das Storage-VM-Administratorkonto verwalten möchten. Wenn diese Option ausgewählt ist, geben Sie den Benutzernamen und das Passwort an, bestätigen Sie das Passwort und geben Sie an, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
-
-|===
-. Wenn Sie *NVMe/FC* aktivieren wählen, führen Sie die folgende Konfiguration aus:
-
-
-|===
-
-
-| Feld oder Kontrollkästchen aktivieren | Beschreibung 
-
-
- a| 
-Konfigurieren Sie FC-Ports
- a| 
-Wählen Sie die Netzwerkschnittstellen der Nodes aus, die in die Storage-VM einbezogen werden sollen. Es werden zwei Netzwerkschnittstellen pro Node empfohlen.
-
-
-
- a| 
-Administratorkonto verwalten
- a| 
-Aktivieren Sie dieses Kontrollkästchen, wenn Sie das Storage-VM-Administratorkonto verwalten möchten. Wenn diese Option ausgewählt ist, geben Sie den Benutzernamen und das Passwort an, bestätigen Sie das Passwort und geben Sie an, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
-
-|===
-. Wenn Sie *NVMe/TCP* aktivieren wählen, führen Sie die folgende Konfiguration aus:
-
-
-|===
-
-
-| Feld oder Kontrollkästchen aktivieren | Beschreibung 
-
-
- a| 
-Netzwerkschnittstelle
- a| 
-Wählen Sie für jede für die Speicher-VM konfigurierte Netzwerkschnittstelle ein vorhandenes Subnetz aus (falls mindestens ein Subnetz vorhanden ist) oder geben Sie *ohne Subnetz* an und füllen Sie die Felder *IP-Adresse* und *Subnetzmaske* aus. Wenn nützlich, aktivieren Sie das Kontrollkästchen *Verwenden Sie dieselbe Subnetzmaske und dasselbe Gateway für alle der folgenden Schnittstellen*. Sie können zulassen, dass das System automatisch den Home-Port auswählen oder den Port, den Sie verwenden möchten, manuell aus der Liste auswählen.
-
-
-
- a| 
-Administratorkonto verwalten
- a| 
-Aktivieren Sie dieses Kontrollkästchen, wenn Sie das Storage-VM-Administratorkonto verwalten möchten. Wenn diese Option ausgewählt ist, geben Sie den Benutzernamen und das Passwort an, bestätigen Sie das Passwort und geben Sie an, ob Sie eine Netzwerkschnittstelle für das Storage-VM-Management hinzufügen möchten.
-
-|===
-. Speichern Sie die Änderungen.
+. Wählen Sie *Speichern*.
 
 
 --
@@ -301,8 +171,10 @@ Verwenden Sie die ONTAP-CLI zum Erstellen eines Subnetzes.
 .Schritte
 . Legen Sie fest, welche Aggregate sich eignen, um das SVM-Root-Volume zu enthalten.
 +
-`storage aggregate show -has-mroot false`
-
+[source, cli]
+----
+storage aggregate show -has-mroot false
+----
 +
 Sie müssen ein Aggregat auswählen, das mindestens 1 GB freien Speicherplatz hat, um das Root-Volume zu enthalten. Wenn Sie beabsichtigen, NAS-Prüfungen auf der SVM zu konfigurieren, müssen Sie mindestens 3 GB zusätzlichen freien Speicherplatz auf dem Root-Aggregat haben, wobei der zusätzliche Speicherplatz verwendet wird, um das Auditing-Staging-Volume zu erstellen, wenn die Prüfung aktiviert ist.
 
@@ -313,20 +185,28 @@ NOTE: Wenn NAS-Auditing bereits auf einer vorhandenen SVM aktiviert ist, wird da
 . Notieren Sie den Namen des Aggregats, auf dem Sie das SVM Root-Volume erstellen möchten.
 . Wenn Sie beim Erstellen der SVM eine Sprache angeben und den zu verwendenden Wert nicht kennen, identifizieren und notieren Sie den Wert der Sprache, die Sie angeben möchten:
 +
-`vserver create -language ?`
-
+[source, cli]
+----
+vserver create -language ?
+----
 . Wenn Sie beim Erstellen der SVM eine Snapshot-Richtlinie angeben und den Namen der Richtlinie nicht kennen, führen Sie die verfügbaren Richtlinien auf, und identifizieren und notieren Sie den Namen der zu verwendenden Snapshot-Richtlinie:
 +
-`volume snapshot policy show -vserver _vserver_name_`
-
+[source, cli]
+----
+volume snapshot policy show -vserver _vserver_name_
+----
 . Wenn Sie beim Erstellen der SVM eine Kontingentrichtlinie angeben und den Namen der Richtlinie nicht kennen, führen Sie die verfügbaren Richtlinien aus und identifizieren und notieren Sie den Namen der zu verwendenden Kontingentrichtlinie:
 +
-`volume quota policy show -vserver _vserver_name_`
-
+[source, cli]
+----
+volume quota policy show -vserver _vserver_name_
+----
 . SVM erstellen:
 +
-`vserver create -vserver _vserver_name_ -aggregate _aggregate_name_ ‑rootvolume _root_volume_name_ -rootvolume-security-style {unix|ntfs|mixed} [-ipspace _IPspace_name_] [-language <language>] [-snapshot-policy _snapshot_policy_name_] [-quota-policy _quota_policy_name_] [-comment _comment_]`
-
+[source, cli]
+----
+vserver create -vserver _vserver_name_ -aggregate _aggregate_name_ ‑rootvolume _root_volume_name_ -rootvolume-security-style {unix|ntfs|mixed} [-ipspace _IPspace_name_] [-language <language>] [-snapshot-policy _snapshot_policy_name_] [-quota-policy _quota_policy_name_] [-comment _comment_]
+----
 +
 ....
 vserver create -vserver vs1 -aggregate aggr3 -rootvolume vs1_root ‑rootvolume-security-style ntfs -ipspace ipspace1 -language en_US.UTF-8
@@ -336,9 +216,15 @@ vserver create -vserver vs1 -aggregate aggr3 -rootvolume vs1_root ‑rootvolume-
 
 . Vergewissern Sie sich, dass die SVM-Konfiguration richtig ist.
 +
-`vserver show -vserver vs1`
-
+[source, cli]
+----
+vserver show -vserver vs1
+----
 +
+In diesem Beispiel erstellt der Befehl im IPspace „ipspac1“ die SVM mit dem Namen „vs1“. Das Root-Volume heißt „vs1_Root“ und wird auf aggr3 mit NTFS-Sicherheitsstil erstellt.
+
+
+
 ....
 Vserver: vs1
 Vserver Type: data
@@ -365,11 +251,6 @@ Config Lock: false
 IPspace Name: ipspace1
 Is Vserver Protected: false
 ....
-+
-In diesem Beispiel erstellt der Befehl im IPspace „ipspac1“ die SVM mit dem Namen „vs1“. Das Root-Volume heißt „vs1_Root“ und wird auf aggr3 mit NTFS-Sicherheitsstil erstellt.
-
-
-
 --
 ====
 

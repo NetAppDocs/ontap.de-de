@@ -14,7 +14,6 @@ summary: Mithilfe einer adaptiven QoS-Richtliniengruppe lässt sich eine Durchsa
 Sie können eine _adaptive QoS_-Richtliniengruppe verwenden, um eine Durchsatzobergrenze oder -untergrenze automatisch an die Volumengröße anzupassen und dabei das Verhältnis von IOPS zu TB/GB beizubehalten, wenn sich die Größe des Volumens ändert.  Das ist ein erheblicher Vorteil, wenn man Hunderte oder Tausende von Workloads in einer großen Implementierung verwaltet.
 
 .Bevor Sie beginnen
-* Sie müssen ONTAP 9.3 oder höher ausführen.
 * Zum Erstellen einer Richtliniengruppe müssen Sie ein Cluster-Administrator sein.
 * Das Speicherobjekt, das Sie der Richtliniengruppe hinzufügen möchten, muss Mitglied einer nicht-adaptiven Richtliniengruppe sein
 +
@@ -25,25 +24,44 @@ Ein Speicherobjekt kann Mitglied einer adaptiven Richtliniengruppe oder einer ni
 
 
 .Über diese Aufgabe
-Adaptive QoS-Richtliniengruppen werden immer nicht gemeinsam genutzt: Die definierte Durchsatzdecke oder -Etage wird für jeden Workload der Mitglieder einzeln angewendet.
-
-Das Verhältnis der Durchsatzbegrenzungen zum Storage-Objektgröße wird durch die Interaktion der folgenden Felder bestimmt:
-
-* `expected-iops`ist die minimale erwartete IOPS-Zahl pro zugewiesenem TB/GB.
+* Adaptive QoS-Richtliniengruppen werden immer nicht gemeinsam genutzt: Die definierte Durchsatzdecke oder -Etage wird für jeden Workload der Mitglieder einzeln angewendet.
+* Adaptive und nicht-adaptive QoS-Richtliniengruppen werden standardmäßig automatisch aktiviert, um die Durchsatzobergrenze einer Arbeitslast für eine Dauer von 1 Sekunde um 50 % zu erhöhen, um kurzfristigen Anforderungen an eine höhere Leistung zu entsprechen. Ab ONTAP 9.19.1 können Sie diese Standardeinstellungen ändern. In ONTAP 9.18.1 und früher können diese Einstellungen nicht geändert werden.
 +
-[NOTE]
-====
- `expected-iops` ist nur auf AFF-Plattformen für Volumes garantiert, die sich nicht in einer SnapMirror synchronen Beziehung befinden.  `expected-iops` ist für FabricPool nur garantiert, wenn die Tiering-Policy auf „none“ gesetzt ist und keine Blöcke in der Cloud sind.
+Nutzen Sie die folgenden Optionen, um die Standardeinstellungen zu ändern:
 
-====
-* `peak-iops`ist die maximal mögliche IOPS-Zahl pro zugewiesenem oder verwendetem TB/GB.
-* `expected-iops-allocation`Gibt an, ob zugewiesener Speicherplatz (die Standardeinstellung) oder belegter Speicherplatz für expected-iops verwendet wird. `expected-iops-allocation is available beginning with ONTAP 9.5.`
-* `peak-iops-allocation` Gibt an, ob zugewiesener oder genutzter Speicherplatz (Standard) für verwendet wird `peak-iops`.
-*  `absolute-min-iops` Ist die absolute Mindestanzahl an IOPS. Sie können dieses Feld mit sehr kleinen Speicherobjekten verwenden. Es überschreibt sowohl `peak-iops` und/oder `expected-iops` wenn `absolute-min-iops` größer als der berechnete ist `expected-iops`.
++
+[cols="3"]
+|===
+| Option | Beschreibung | Standardeinstellung 
+
+
+ a| 
+`burst-percent`
+| Steigerung des Durchsatzes in Prozent | 50% 
+
+
+ a| 
+`burst duration`
+| Dauer der Durchsatzsteigerung in Sekunden | 1 Sekunde 
+
+
+ a| 
+`burst-iops`
+| Maximale Anzahl von IOPs oberhalb der Durchsatzgrenze für die angegebene Burst-Dauer | 0 
+|===
+* Das Verhältnis der Durchsatzbegrenzungen zum Storage-Objektgröße wird durch die Interaktion der folgenden Felder bestimmt:
++
+** `expected-iops`ist die minimale erwartete IOPS-Zahl pro zugewiesenem TB/GB.
+** `peak-iops`ist die maximal mögliche IOPS-Zahl pro zugewiesenem oder verwendetem TB/GB.
+** `expected-iops-allocation`Gibt an, ob für expected-iops der zugewiesene Speicherplatz (Standard) oder der verwendete Speicherplatz verwendet wird.
+** `peak-iops-allocation` Gibt an, ob zugewiesener oder genutzter Speicherplatz (Standard) für verwendet wird `peak-iops`.
+**  `absolute-min-iops` Ist die absolute Mindestanzahl an IOPS. Sie können dieses Feld mit sehr kleinen Speicherobjekten verwenden. Es überschreibt sowohl `peak-iops` und/oder `expected-iops` wenn `absolute-min-iops` größer als der berechnete ist `expected-iops`.
 +
 Wenn Sie beispielsweise `expected-iops` 1,000 IOPS/TB festlegen und die Volume-Größe weniger als 1 GB beträgt, `expected-iops` wird als Berechnung ein fraktionaler IOP berechnet. Der berechnete `peak-iops` Anteil wird noch kleiner sein. Sie können dies vermeiden, indem Sie `absolute-min-iops` einen realistischen Wert einstellen.
 
-* `block-size` Gibt die Anwendungs-I/O-Blockgröße an. Der Standardwert ist 32K. Gültige Werte sind 8K, 16K, 32K, 64K, BELIEBIG. IRGENDWELCHE bedeutet, dass die Blockgröße nicht durchgesetzt wird.
+** `block-size` Gibt die Anwendungs-I/O-Blockgröße an. Der Standardwert ist 32K. Gültige Werte sind 8K, 16K, 32K, 64K, BELIEBIG. IRGENDWELCHE bedeutet, dass die Blockgröße nicht durchgesetzt wird.
+
+
 
 
 .Schritte
@@ -51,7 +69,7 @@ Wenn Sie beispielsweise `expected-iops` 1,000 IOPS/TB festlegen und die Volume-G
 +
 [source, cli]
 ----
-qos adaptive-policy-group create -policy group _policy_group_ -vserver _SVM_ -expected-iops _number_of_iops_/TB|GB -peak-iops _number_of_iops_/TB|GB -expected-iops-allocation-space|used-space -peak-iops-allocation allocated-space|used-space -absolute-min-iops _number_of_iops_ -block-size 8K|16K|32K|64K|ANY
+qos adaptive-policy-group create -policy group <policy_group> -vserver <SVM> -expected-iops <number_of_iops>/TB|GB -peak-iops <number_of_iops>/TB|GB -expected-iops-allocation-space|used-space -peak-iops-allocation allocated-space|used-space -absolute-min-iops <number_of_iops> -block-size 8K|16K|32K|64K|ANY
 ----
 +
 Erfahren Sie mehr über `qos adaptive-policy-group create` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-adaptive-policy-group-create.html["ONTAP-Befehlsreferenz"^].
@@ -74,7 +92,7 @@ cluster1::> qos adaptive-policy-group create -policy group adpg-app1 -vserver vs
 +
 [source, cli]
 ----
-volume create -vserver SVM -volume _volume_ -aggregate _aggregate_ -size _number_of_ TB|GB -qos-adaptive-policy-group _policy_group_
+volume create -vserver SVM -volume <volume_name> -aggregate <aggregate> -size <number_of_ TB|GB> -qos-adaptive-policy-group<_policy_group>
 ----
 +
 Erfahren Sie mehr über `volume create` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-create.html["ONTAP-Befehlsreferenz"^].

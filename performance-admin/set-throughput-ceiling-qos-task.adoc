@@ -13,14 +13,40 @@ summary: Ein QoS-Maximum oder eine Durchsatzbegrenzung garantiert, dass der Durc
 [role="lead"]
 Ein QoS-Maximum oder eine Durchsatzbegrenzung garantiert, dass der Durchsatz einer Arbeitslast unabhängig von konkurrierenden Arbeitslasten eine maximale Anzahl von IOPS oder MBps bzw. IOPS und MBps nicht überschreitet. Legen Sie eine Durchsatzbegrenzung fest, um zu verhindern, dass weniger kritische Arbeitslasten übermäßig viele Leistungsressourcen verbrauchen und die Leistung kritischeren Arbeitslasten beeinträchtigen.
 
-Über das `max-throughput` Feld für eine Richtliniengruppe können Sie eine Durchsatzobergrenze für Storage-Objekt-Workloads definieren (QoS max). Sie können die Richtliniengruppe anwenden, wenn Sie das Speicherobjekt erstellen oder ändern.
+Sie können die Durchsatzobergrenze beim Erstellen einer QoS-Richtliniengruppe festlegen oder warten, bis Sie Ihre Arbeitslasten überwachen, um sie anzugeben.
+
+link:guarantee-throughput-qos-task.html["Erfahren Sie mehr über Durchsatzgrenzen"].
 
 .Bevor Sie beginnen
-* Sie müssen Cluster-Administrator sein, um eine Richtliniengruppe zu erstellen und eine Richtliniengruppe auf eine SVM anzuwenden.
+* Sie müssen Cluster-Administrator sein, um eine Richtliniengruppe zu erstellen und sie auf eine SVM anzuwenden.
 
 
 .Über diese Aufgabe
-* Ab ONTAP 9.4 können Sie mithilfe einer Richtliniengruppe „_non-shared_ QoS“ angeben, dass die definierte Durchsatzobergrenze für jeden einzelnen Mitglied-Workload gilt. Andernfalls wird die Richtliniengruppe „_shared“:_ der Gesamtdurchsatz der der Richtliniengruppe zugewiesenen Workloads darf die angegebene Obergrenze nicht überschreiten.
+* Adaptive und nicht-adaptive QoS-Richtliniengruppen werden standardmäßig automatisch aktiviert, um die Durchsatzobergrenze einer Arbeitslast für eine Dauer von 1 Sekunde um 50 % zu erhöhen, um kurzfristigen Anforderungen an eine höhere Leistung zu entsprechen. Ab ONTAP 9.19.1 können Sie diese Standardeinstellungen ändern. In ONTAP 9.18.1 und früher können diese Einstellungen nicht geändert werden.
++
+Nutzen Sie die folgenden Optionen, um die Standardeinstellungen zu ändern:
+
++
+[cols="3"]
+|===
+| Option | Beschreibung | Standardeinstellung 
+
+
+ a| 
+`burst-percent`
+| Steigerung des Durchsatzes in Prozent | 50% 
+
+
+ a| 
+`burst duration`
+| Dauer der Durchsatzsteigerung in Sekunden | 1 Sekunde 
+
+
+ a| 
+`burst-iops`
+| Maximale Anzahl von IOPs oberhalb der Durchsatzgrenze für die angegebene Burst-Dauer | 0 
+|===
+* Sie können eine _nicht gemeinsam genutzte_ QoS-Richtliniengruppe verwenden, um festzulegen, dass die definierte Durchsatzobergrenze für jede einzelne Mitglieds-Workload gilt. Andernfalls ist die Richtliniengruppe _gemeinsam genutzt_: Der Gesamtdurchsatz der der Richtliniengruppe zugewiesenen Workloads darf die angegebene Obergrenze nicht überschreiten.
 +
 Legen Sie `-is-shared=false` für den `qos policy-group create` Befehl fest, um eine nicht freigegebene Richtliniengruppe anzugeben.
 
@@ -82,9 +108,6 @@ Erfahren Sie mehr über `qos policy-group modify` in der link:https://docs.netap
 ----
 vserver create -vserver <SVM> -qos-policy-group <policy_group>
 ----
-+
-Sie können den  `vserver modify` Befehl verwenden, um eine andere Richtliniengruppe auf das Speicherobjekt anzuwenden.
-
 +
 Im folgenden Beispiel wird die Richtliniengruppe `pg-vs1` auf SVM `vs1` angewendet:
 
@@ -163,9 +186,40 @@ _USERSPACE_APPS     14       55        10.92KB/s   236.00us
 _Scan_Backgro..   5688       20            0KB/s        0ms
 ----
 +
+Nachfolgend ein Beispiel für die Ausgabe einer Arbeitslast mit max-throughput auf 2000 IOPS und burst-percent auf 25 für eine Burst-Dauer von 5 Sekunden.
+
++
+[listing]
+----
+cluster1::> qos statistics workload performance show -workload test_vol_nfs_pct25-wid54260
+
+Workload	                ID	    IOPS
+--------------------------- -----   ----
+test_vol_nfs_pct25-wid54260	54260	2564
+-total-	-	                        3704
+test_vol_nfs_pct25-wid54260	54260	2527
+-total-	-	                        3105
+test_vol_nfs_pct25-wid54260	54260	2550
+-total-	-	                        3445
+test_vol_nfs_pct25-wid54260	54260	2476
+-total-	-	                        3460
+test_vol_nfs_pct25-wid54260	54260	2479
+-total-	-	                        3511
+test_vol_nfs_pct25-wid54260	54260	1996
+-total-	-	                        2197
+test_vol_nfs_pct25-wid54260	54260	2068
+-total-	-	                        2057
+test_vol_nfs_pct25-wid54260	54260	2087
+-total-	-	                        3119
+
+----
++
 Erfahren Sie mehr über `qos statistics workload performance show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-performance-show.html["ONTAP-Befehlsreferenz"^].
 
 +
-Sie können mit dem `qos statistics workload latency show` Befehl detaillierte Latenzstatistiken für QoS-Workloads anzeigen. Erfahren Sie mehr über `qos statistics workload latency show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["ONTAP-Befehlsreferenz"^].
+Mit dem  `qos statistics workload latency show`Befehl können Sie detaillierte Latenzstatistiken für QoS-Workloads anzeigen.
+
++
+Erfahren Sie mehr über  `qos statistics workload latency show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["ONTAP-Befehlsreferenz"^].
 
 

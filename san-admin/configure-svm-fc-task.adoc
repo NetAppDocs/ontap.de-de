@@ -13,11 +13,13 @@ summary: Um eine Storage Virtual Machine für FC zu konfigurieren, müssen Sie L
 [role="lead"]
 Um eine Storage Virtual Machine (SVM) für FC zu konfigurieren, müssen Sie LIFs für die SVM erstellen und diesen LIFs das FC-Protokoll zuweisen.
 
-.Bevor Sie beginnen
-Sie müssen über eine FC-Lizenz (link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["Im Lieferumfang von ONTAP One enthalten"]) verfügen und diese muss aktiviert sein. Wenn die FC-Lizenz nicht aktiviert ist, scheinen die LIFs und SVMs online zu sein, der Betriebsstatus lautet jedoch `down`. Der FC-Service muss aktiviert sein, damit Ihre LIFs und SVMs funktionsfähig sind. Zum Hosten der Initiatoren müssen Sie das einzelne Initiator-Zoning für alle FC-LIFs in der SVM verwenden.
-
 .Über diese Aufgabe
 NetApp unterstützt mindestens eine FC-LIF pro Node für jede SVM, die Daten über das FC-Protokoll bereitstellt. Sie müssen zwei LIFs pro Node und zwei Fabrics verwenden, wobei eine LIF pro Node angeschlossen ist. Dies sorgt für Redundanz auf Node-Ebene und in der Fabric.
+
+.Bevor Sie beginnen
+* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Sie müssen über eine FC-Lizenz (link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["Im Lieferumfang von ONTAP One enthalten"]) verfügen und diese muss aktiviert sein. Wenn die FC-Lizenz nicht aktiviert ist, scheinen die LIFs und SVMs online zu sein, der Betriebsstatus lautet jedoch `down`. Der FC-Service muss aktiviert sein, damit Ihre LIFs und SVMs funktionsfähig sind. Zum Hosten der Initiatoren müssen Sie das einzelne Initiator-Zoning für alle FC-LIFs in der SVM verwenden.
+
 
 .Schritte
 [role="tabbed-block"]
@@ -32,18 +34,21 @@ Konfigurieren Sie eine Storage VM für iSCSI mit ONTAP System Manager (9.7 und h
 
 
  a| 
-. Klicken Sie im System Manager auf *Storage > Storage VMs* und dann auf *Hinzufügen*.
+. Im System Manager wählen Sie *Storage > Storage VMs* und anschließend *Add*.
 . Geben Sie einen Namen für die Storage-VM ein.
 . Wählen Sie * FC* für das *Zugriffsprotokoll*.
-. Klicken Sie auf *FC aktivieren*. + die FC-Ports werden automatisch zugewiesen.
-. Klicken Sie Auf *Speichern*.
+. Wählen Sie *FC aktivieren*.
++
+Die FC-Ports werden automatisch zugewiesen.
+
+. Wählen Sie *Speichern*.
 
  a| 
-. Klicken Sie im System Manager auf *Storage > Storage VMs*.
-. Klicken Sie auf die zu konfigurierende Speicher-VM.
-. Klicken Sie auf die Registerkarte *Einstellungen* und dann auf image:icon_gear.gif["Aktionssymbol"] neben dem FC-Protokoll.
-. Klicken Sie auf *FC aktivieren* und geben Sie die IP-Adresse und die Subnetzmaske für die Netzwerkschnittstelle ein. + die FC-Ports werden automatisch zugewiesen.
-. Klicken Sie Auf *Speichern*.
+. Wählen Sie in System Manager *Storage > Storage VMs* aus.
+. Wählen Sie die Storage-VM aus, die Sie konfigurieren möchten.
+. Wählen Sie auf der Registerkarte *Einstellungen* und anschließend image:icon_gear.gif["Aktionssymbol"] neben dem FC-Protokoll aus.
+. Wählen Sie *FC aktivieren* und geben Sie die IP-Adresse und Subnetzmaske für die Netzwerkschnittstelle ein. + Die FC-Ports werden automatisch zugewiesen.
+. Wählen Sie *Speichern*.
 
 
 |===
@@ -52,24 +57,32 @@ Konfigurieren Sie eine Storage VM für iSCSI mit ONTAP System Manager (9.7 und h
 --
 . FC-Service für die SVM aktivieren:
 +
-`vserver fcp create -vserver _vserver_name_ -status-admin up`
-
+[source, cli]
+----
+vserver fcp create -vserver <vserver_name> -status-admin up
+----
 . Erstellen Sie zwei LIFs für die SVMs auf jedem Node, der FC-Services bereitstellt:
 +
 ** Für ONTAP 9.6 und höher:
 +
-`network interface create -vserver _vserver_name_ -lif _lif_name_ -service-policy default-data-blocks -data-protocol fcp -home-node _node_name_ -home-port _port_name_ -status-admin up`
-
+[source, cli]
+----
+network interface create -vserver <vserver_name> -lif <lif_name> -data-protocol fcp -service-policy default-data-fcp -home-node <node_name> -home-port <port_name> -address <ip_address> -netmask <netmask> -status-admin up
+----
 ** Für ONTAP 9.5 und früher:
 +
-`network interface create -vserver _vserver_name_ -lif _lif_name_ -role data -data-protocol fcp -home-node _node_name_ -home-port _port_`
-
+[source, cli]
+----
+network interface create -vserver <vserver_name>_ -lif <lif_name> -role data -data-protocol fcp -home-node <node_name> -home-port <port_name>
+----
 
 
 . Überprüfen Sie, ob Ihre LIFs erstellt wurden und ob ihr Betriebsstatus lautet `online`:
 +
-`network interface show -vserver _vserver_name_ _lif_name_`
-
+[source, cli]
+----
+network interface show -vserver <vserver_name> <lif_name>
+----
 +
 Erfahren Sie mehr über `network interface show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
 
@@ -78,7 +91,4 @@ Erfahren Sie mehr über `network interface show` in der link:https://docs.netapp
 --
 ====
 .Verwandte Informationen
-* https://mysupport.netapp.com/site/global/dashboard["NetApp Support"^]
-* https://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^]
-* xref:lifs-cluster-concept.adoc[Überlegungen zu LIFs in Cluster-SAN-Umgebungen]
-
+link:manage-lifs-all-san-protocols-concept.html["Erfahren Sie mehr über ONTAP LIFs für SAN-Umgebungen"].

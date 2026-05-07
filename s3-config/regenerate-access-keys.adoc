@@ -2,7 +2,7 @@
 permalink: s3-config/regenerate-access-keys.html 
 sidebar: sidebar 
 keywords: regenerate, s3, access keys, secret keys 
-summary: Schlüssel für den Zugriff auf S3-Clients können neu generiert und ihre Gültigkeit geändert werden. 
+summary: Schlüssel für den Zugriff auf S3-Clients können neu generiert und ihre Gültigkeit geändert werden, oder es kann ein zweiter Zugriffsschlüssel generiert oder entfernt werden. 
 ---
 = Regenerieren Sie ONTAP S3-Schlüssel und ändern Sie deren Aufbewahrungsdauer
 :hardbreaks:
@@ -12,20 +12,25 @@ summary: Schlüssel für den Zugriff auf S3-Clients können neu generiert und ih
 
 
 [role="lead"]
-Zugriffsschlüssel und geheime Schlüssel werden automatisch während der Erstellung von Benutzern generiert, um den S3-Client-Zugriff zu ermöglichen. Sie können Schlüssel für einen Benutzer neu generieren, wenn ein Schlüssel abgelaufen ist oder kompromittiert wurde.
+Zugriffsschlüssel und geheime Schlüssel werden bei der Benutzererstellung automatisch generiert, um den S3-Clientzugriff zu ermöglichen. Sie können Schlüssel für einen Benutzer neu generieren, falls ein Schlüssel abgelaufen oder kompromittiert wurde. Ab ONTAP 9.19.1 können Sie außerdem einen zweiten Zugriffsschlüssel für einen S3-Benutzer generieren oder entfernen, damit dieser auf S3-Ressourcen zugreifen kann, wenn sein ursprünglicher Zugriffsschlüssel abläuft.
 
 Informationen zur Generierung von Zugriffsschlüsseln finden Sie unter link:../s3-config/create-s3-user-task.html["Erstellen eines S3-Benutzers"].
+
+
+
+== Einen S3-Zugriffsschlüssel neu generieren
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Klicken Sie auf *Storage > Storage VMs* und wählen Sie dann die Speicher-VM aus.
-. Klicken Sie im Register *Einstellungen* auf image:icon_pencil.gif["Symbol bearbeiten"] die Kachel *S3*.
+. Wählen Sie *Storage > Storage VMs* aus und wählen Sie dann die Storage VM aus.
+. Wählen Sie im Reiter *Einstellungen* image:icon_pencil.gif["Symbol bearbeiten"] in der Kachel *S3* aus.
 . Überprüfen Sie auf der Registerkarte *Users*, ob kein Zugriffsschlüssel vorhanden ist oder der Schlüssel für den Benutzer abgelaufen ist.
-. Wenn Sie den Schlüssel neu generieren müssen, klicken Sie neben dem Benutzer auf image:icon_kabob.gif["Symbol für Menüoptionen"] *Schlüssel neu generieren*.
-. Generierte Schlüssel sind standardmäßig für eine unbestimmte Zeit gültig. Ab 9.14.1 können Sie die Aufbewahrungsfrist ändern, nach der die Schlüssel automatisch ablaufen. Geben Sie den Aufbewahrungszeitraum in Tagen, Stunden, Minuten oder Sekunden ein.
-. Klicken Sie Auf *Speichern*. Der Schlüssel wird neu generiert. Jede Änderung der Schlüsselaufbewahrungsfrist tritt unmittelbar in Kraft.
+. Falls Sie den Schlüssel neu generieren müssen, wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] neben dem Benutzer und klicken Sie anschließend auf *Schlüssel neu generieren*.
+. Generierte Schlüssel haben standardmäßig den Gültigkeitswert 0 und laufen nie ab. Ab ONTAP 9.14.1 können Sie die Aufbewahrungsdauer anpassen, nach deren Ablauf die Schlüssel automatisch verfallen. Geben Sie die Aufbewahrungsdauer in Tagen, Stunden, Minuten oder Sekunden ein.
+. Ab ONTAP 9.19.1 können Benutzer einen zweiten Zugriffsschlüssel besitzen. Falls der Benutzer über einen zweiten Zugriffsschlüssel verfügt, wählen Sie den Zugriffsschlüssel zur Regenerierung aus. Sie können beide Zugriffsschlüssel zur Regenerierung auswählen.
+. Wählen Sie *Speicher > Speicher-VMs* und dann die Speicher-VM aus. *Speichern*. Der Schlüssel wird neu generiert. Alle Änderungen an der Schlüsselaufbewahrungsdauer werden sofort wirksam.
 . Laden Sie den Zugriffsschlüssel und den geheimen Schlüssel herunter, oder speichern Sie ihn. Sie werden für den Zugriff von S3-Clients benötigt.
 
 
@@ -33,13 +38,125 @@ Informationen zur Generierung von Zugriffsschlüsseln finden Sie unter link:../s
 .CLI
 --
 . Regenerieren Sie Zugriff und geheime Schlüssel für einen Benutzer `vserver object-store-server user regenerate-keys`, indem Sie den Befehl ausführen.
-. Generierte Schlüssel sind standardmäßig für unbegrenzte Zeit gültig. Ab 9.14.1 können Sie die Aufbewahrungsfrist ändern, nach der die Schlüssel automatisch ablaufen. Sie können den Aufbewahrungszeitraum in diesem Format hinzufügen: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W` Wenn Sie beispielsweise einen Aufbewahrungszeitraum von einem Tag, zwei Stunden, drei Minuten und vier Sekunden eingeben möchten, geben Sie den Wert als ein `P1DT2H3M4S`.
+. Standardmäßig sind generierte Schlüssel unbegrenzt gültig. Ab ONTAP 9.14.1 können Sie deren Aufbewahrungsdauer ändern, nach deren Ablauf die Schlüssel automatisch verfallen. Sie können die Aufbewahrungsdauer in folgendem Format hinzufügen: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W` Wenn Sie beispielsweise eine Aufbewahrungsdauer von einem Tag, zwei Stunden, drei Minuten und vier Sekunden festlegen möchten, geben Sie den Wert wie folgt ein `P1DT2H3M4S`.
+. Ab ONTAP 9.19.1 können Sie, falls der Benutzer über mehrere Zugriffsschlüssel verfügt, auswählen, welcher Schlüssel neu generiert werden soll. Die Angabe des Schlüssels erfolgt in folgendem Format: `[-key-id {1..2}]`
++
+** Wenn keine Schlüssel-ID angegeben werden muss, wird Schlüssel 1 neu generiert.
+** Um Schlüssel 1 anzugeben, geben Sie den Wert als  `-key-id 1` ein.
+** Um Schlüssel 2 anzugeben, geben Sie den Wert als  `-key-id 2` ein.
+** Um die Schlüssel 1 und 2 anzugeben, geben Sie den Wert wie folgt ein  `-key-id 1 2`. Um beispielsweise Schlüssel 1 neu zu generieren:
 +
 [listing]
 ----
-vserver object-store-server user regenerate-keys -vserver svm_name -user user -key-time-to-live 0
+vserver object-store-server user regenerate-keys -vserver svm_name -user user -key-id 1 -key-time-to-live 0
+----
+
+
+. Speichern Sie den Zugriff und die geheimen Schlüssel. Sie werden für den Zugriff von S3-Clients benötigt.
+
+
+--
+====
+
+
+== Generieren Sie einen zweiten S3-Zugriffsschlüssel
+
+Ab ONTAP 9.19.1 können Sie einen zweiten Zugriffsschlüssel für einen Benutzer generieren.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wählen Sie *Storage > Storage VMs* aus und wählen Sie dann die Storage VM aus.
+. Wählen Sie *Storage > Storage VMs* und anschließend die Storage-VM aus. *Storage > Storage VMs* und anschließend die Storage-VM auswählen.
+. Wählen Sie im Reiter *Einstellungen* image:icon_pencil.gif["Symbol bearbeiten"] in der Kachel *S3* aus.
+. Im Reiter *Benutzer* wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] neben dem Benutzer die Option *Weiteren Schlüssel hinzufügen*.
+. Generierte Schlüssel haben standardmäßig den Gültigkeitswert 0 und laufen nie ab. Ab ONTAP 9.14.1 können Sie die Aufbewahrungsdauer anpassen, nach deren Ablauf die Schlüssel automatisch verfallen. Geben Sie die Aufbewahrungsdauer in Tagen, Stunden, Minuten oder Sekunden ein.
+. Wählen Sie *Speicher > Speicher-VMs* und anschließend die gewünschte Speicher-VM aus. *Hinzufügen*. Der zweite Schlüssel wird generiert. Die angegebene Aufbewahrungsfrist für den Schlüssel tritt sofort in Kraft.
+. Laden Sie den Zugriffsschlüssel und den geheimen Schlüssel herunter, oder speichern Sie ihn. Sie werden für den Zugriff von S3-Clients benötigt.
+
+
+--
+.CLI
+--
+. Generieren Sie zweite Zugriffs- und geheime Schlüssel für einen Benutzer, indem Sie den  `vserver object-store-server user regenerate-keys` Befehl ausführen.
+. Standardmäßig sind generierte Schlüssel unbegrenzt gültig. Ab ONTAP 9.14.1 können Sie deren Aufbewahrungsdauer ändern, nach deren Ablauf die Schlüssel automatisch verfallen. Sie können die Aufbewahrungsdauer in folgendem Format hinzufügen: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W` Wenn Sie beispielsweise eine Aufbewahrungsdauer von einem Tag, zwei Stunden, drei Minuten und vier Sekunden festlegen möchten, geben Sie den Wert wie folgt ein `P1DT2H3M4S`.
+. Ab ONTAP 9.19.1 können Sie einen zweiten Zugriffsschlüssel in diesem Format generieren: `[-key-id 2]`
++
+Beispiel:
+
++
+[listing]
+----
+vserver object-store-server user regenerate-keys -vserver svm_name -user user -key-id 2 -key-time-to-live 0
 ----
 . Speichern Sie den Zugriff und die geheimen Schlüssel. Sie werden für den Zugriff von S3-Clients benötigt.
+
+
+--
+====
+
+
+== S3-Zugriffsschlüssel anzeigen
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wählen Sie *Storage > Storage VMs* aus und wählen Sie dann die Storage VM aus.
+. Wählen Sie im Reiter *Einstellungen* image:icon_pencil.gif["Symbol bearbeiten"] in der Kachel *S3* aus.
+. Überprüfen Sie auf der Registerkarte *Benutzer*, ob es keine zweiten Zugriffsschlüssel für die S3-Benutzer gibt.
+
+
+--
+.CLI
+--
+Zugriffs- und geheime Schlüssel eines Benutzers können durch Ausführen des  `vserver object-store-server user show` Befehls angezeigt werden.
+
+Beispiel:
+
+[listing]
+----
+vserver object-store-server user show -vserver svm_name -user user
+----
+--
+====
+
+
+== Einen S3-Zugriffsschlüssel entfernen
+
+Ab ONTAP 9.19.1 können Sie einen der Zugriffsschlüssel eines Benutzers entfernen. Um beide Schlüssel eines Benutzers zu löschen, muss der Benutzer gelöscht werden.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wählen Sie *Storage > Storage VMs* aus und wählen Sie dann die Storage VM aus.
+. Wählen Sie im Reiter *Einstellungen* image:icon_pencil.gif["Symbol bearbeiten"] in der Kachel *S3* aus.
+. Im Reiter *Benutzer* wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] neben dem Benutzer die Option *Weiteren Schlüssel hinzufügen*.
+. Wählen Sie *Schlüssel 1 entfernen* oder *Schlüssel 2 entfernen* aus.
+. Wählen Sie *Speichern*. Der ausgewählte Schlüssel wird entfernt.
+. Laden Sie den Zugriffsschlüssel und den geheimen Schlüssel herunter, oder speichern Sie ihn. Sie werden für den Zugriff von S3-Clients benötigt.
+
+
+--
+.CLI
+--
+. Entfernen Sie die Zugriffs- und geheimen Schlüssel eines Benutzers, indem Sie den  `vserver object-store-server user delete-keys` Befehl ausführen.
+. Sie können den zu entfernenden Schlüssel auswählen, indem Sie den Schlüssel in diesem Format angeben: `[-key-id {1..2}]`
++
+** Besitzt der Benutzer nur einen Schlüssel, muss keine Schlüssel-ID angegeben werden.
+** Um Schlüssel 1 anzugeben, geben Sie den Wert als  `-key-id 1` ein.
+** Um Schlüssel 2 anzugeben, geben Sie den Wert als  `-key-id 2` ein.
+** Wird keine Schlüssel-ID angegeben, löscht der Befehl standardmäßig Schlüssel 2.
+** Um beide Schlüssel zu löschen, löschen Sie den Benutzer. Zum Beispiel:
++
+[listing]
+----
+vserver object-store-server user delete-keys -vserver svm_name -user user -key-id 2
+----
+
+
 
 
 --

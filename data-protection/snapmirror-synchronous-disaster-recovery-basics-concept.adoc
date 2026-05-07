@@ -172,6 +172,9 @@ Die folgende Tabelle zeigt die Funktionen, die von SnapMirror Synchronous und de
 | Disaster Recovery für SVM | ONTAP 9,6 | * Eine synchrone SnapMirror Quelle kann auch eine Disaster-Recovery-Quelle der SVM sein, zum Beispiel eine Fan-out-Konfiguration mit SnapMirror Synchronous als ein Bein und SVM Disaster Recovery als der andere. * Eine synchrone SnapMirror-Quelle kann kein Disaster-Recovery-Ziel für SVM sein, da SnapMirror Synchronous die Kaskadierung einer Datensicherungsquelle nicht unterstützt. Sie müssen die synchrone Beziehung freigeben, bevor Sie eine SVM-Disaster-Recovery-Flip-Resynchronisierung im Ziel-Cluster durchführen. * Ein synchroner SnapMirror-Zielort kann keine SVM-Disaster-Recovery-Quelle sein, da die SVM-Disaster-Recovery keine Replikation von DP-Volumes unterstützt. Eine Flip-Resynchronisierung der synchronen Quelle würde eine Disaster Recovery der SVM mit Ausnahme des DP-Volumes im Ziel-Cluster zur Folge haben. 
 
 
+| link:../snaplock/snapshot-lock-concept.html["Manipulationssichere Snapshots"^] | ONTAP 9.19.1 | Die Ablaufzeit kann nur bei der Erstellung von Snapshots festgelegt werden. Sie können die Ablaufzeit für bereits vorhandene Snapshots weder festlegen noch verlängern. 
+
+
 | Bandbasierte Wiederherstellung des Quell-Volumes | ONTAP 9.13.1 |  
 
 
@@ -195,7 +198,6 @@ Die folgenden Funktionen werden bei synchronen SnapMirror-Beziehungen nicht unte
 * LUNs mit gemischten SAN- und NVMe-Zugriffs sowie NVMe Namespaces werden nicht auf demselben Volume oder derselben SVM unterstützt.
 * SnapCenter
 * SnapLock Volumes
-* Manipulationssichere Snapshots
 * Tape Backup oder Wiederherstellung mithilfe von Dump und SMTape auf dem Ziel-Volume
 * Durchsatzboden (QoS Min.) für Quell-Volumes
 * Volume SnapRestore
@@ -222,8 +224,43 @@ Bei SnapMirror-synchronen Beziehungen überprüft das System automatisch den Bez
 
 Wenn `OutofSync` im StructSync-Modus für eine synchrone SnapMirror-Beziehung der Beziehungsstatus lautet, werden alle I/O-Vorgänge zum primären Volume angehalten. Der `OutofSync` Status der synchronen SnapMirror-Beziehung im synchronen Modus stellt keine Unterbrechung für das primäre Volume dar, und I/O-Vorgänge sind auf dem primären Volume zulässig.
 
+
+
+== Geplante Snapshot-Replikation
+
+Ab ONTAP 9.19.1 können Sie den SnapMirror Policy-Parameter `-sync-snapshot-replication-mode` im erweiterten Berechtigungsmodus verwenden, um geplante Snapshots zum SnapMirror Ziel zu replizieren. Die Replikation geplanter Snapshots bietet Symmetrie zwischen den primären und sekundären Volumes in einer SnapsMirror synchronen Beziehung.
+
+.Voraussetzungen
+* Sie müssen Cluster- oder SVM-Administrator sein
+* Sie müssen sich im erweiterten Berechtigungsmodus befinden
+* Sie müssen eine benutzerdefinierte SnapMirror-Richtlinie konfigurieren, die den Parameter  `-sync-snapshot-replication-mode` verwendet und die Option  `sched_created` enthält.
++
+** Systemdefinierte Richtlinien können nicht geändert werden. Sie müssen eine neue Richtlinie erstellen und die Beziehung neu herstellen.
+** Änderungen an benutzerdefinierten Richtlinien erfordern eine Resynchronisierung (Quiesce gefolgt von Resume), um bei bestehenden Beziehungen wirksam zu werden.
+
+
+
+
+Der Parameter akzeptiert folgende Optionen:
+
+* `none`- Deaktiviert die Replikation von nicht-SnapMirror synchronen Snapshots
+* `application_created`- repliziert von der Anwendung erstellte Snapshots
+* `sched_created` - repliziert geplante Snapshots
+* `sm_created` - repliziert von SnapMirror asynchron (Fanout-Leg) erstellte Snapshots
+* Eine durch Kommas getrennte Liste von Typen: `application_created`, `sched_created` und `sm_created`.
+
+
+Der Parameter wird erst wirksam, wenn der Beziehungsstatus `InSync` ist. Nicht aufgeführte Snapshot-Typen werden nur auf dem primären Volume gespeichert.
+
+
+NOTE: Das Erstellen von Snapshots auf SnapMirror synchronen Volumes kann die Benutzer-I/O-Latenz erhöhen. Es wird empfohlen, Snapshot-Zeitpläne mit einer Frequenz von mehr als 30 Minuten zu verwenden.
+
 .Verwandte Informationen
 * https://www.netapp.com/pdf.html?item=/media/17174-tr4733pdf.pdf["Technischer Bericht 4733 zu NetApp: Synchrone Konfiguration mit SnapMirror und Best Practices"^]
+* link:https://docs.netapp.com/us-en/ontap-cli//volume-snapshot-create.html["Volume-Snapshot erstellen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/volume-snapshot-delete.html["Volume-Snapshot löschen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/volume-snapshot-modify.html["Volume Snapshot ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/volume-snapshot-rename.html["Volume-Snapshot umbenennen"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["Snapmirror-Pause"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-quiesce.html["Snapmirror-Ruhezustand"^]
 
