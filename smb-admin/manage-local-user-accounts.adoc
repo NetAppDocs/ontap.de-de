@@ -1,0 +1,202 @@
+---
+permalink: smb-admin/manage-local-user-accounts.html 
+sidebar: sidebar 
+keywords: modify, local, user, account, change, exist, name, description, enable, disable, rename, compromise, administrative, modify local user accounts 
+summary: Sie können ein lokales Benutzerkonto aktivieren, um den Zugriff auf SVM-Daten über SMB zu ermöglichen, oder das Konto deaktivieren, um den Zugriff zu verhindern. Sie können das Konto auch bearbeiten, um den vollständigen Namen, die Beschreibung oder den Aktivierungsstatus des Benutzers zu aktualisieren. Bei Bedarf können Sie das Konto aus administrativen Gründen umbenennen, beispielsweise bei einem kompromittierten Benutzernamen. Sie können außerdem die lokalen Gruppen anzeigen, denen ein Benutzer angehört, was hilft, den Datei- und Ordnerzugriff zu ermitteln und Zugriffsprobleme zu beheben. 
+---
+= Lokale ONTAP SMB-Benutzerkonten verwalten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Sie können ein lokales Benutzerkonto aktivieren, um den Zugriff auf SVM-Daten über SMB zu ermöglichen, oder das Konto deaktivieren, um den Zugriff zu verhindern. Sie können das Konto auch bearbeiten, um den vollständigen Namen, die Beschreibung oder den Aktivierungsstatus des Benutzers zu aktualisieren. Bei Bedarf können Sie das Konto aus administrativen Gründen umbenennen, beispielsweise bei einem kompromittierten Benutzernamen. Sie können außerdem die lokalen Gruppen anzeigen, denen ein Benutzer angehört, was hilft, den Datei- und Ordnerzugriff zu ermitteln und Zugriffsprobleme zu beheben.
+
+|===
+| Ihr Ziel ist | Geben Sie den Befehl ein... 
+
+
+ a| 
+Ändern Sie das Passwort des lokalen Benutzers
+ a| 
+`vserver cifs users-and-groups local-user set-password -vserver <SVM_name> -user-name <user_name>`
+
+
+
+ a| 
+Aktivieren oder deaktivieren Sie das lokale Benutzerkonto
+ a| 
+`vserver cifs users-and-groups local-user modify -vserver <SVM_name> -user-name <user_name> -is-account-disabled {true|false}`
+
+
+
+ a| 
+Anzeigen detaillierter Kontoinformationen für einen Benutzer
+ a| 
+`vserver cifs users-and-groups local-user show -instance -vserver <SVM_name> -user-name <user_name>`
+
+
+
+ a| 
+Zeigt Informationen zur lokalen Benutzermitgliedschaft für einen bestimmten lokalen Benutzer an
+ a| 
+`vserver cifs users-and-groups local-user show-membership -user-name <user_name>`
+
+
+
+ a| 
+Zeigen Sie lokale Benutzermitgliedungsinformationen für die lokale Gruppe an, von der dieser lokale Benutzer Mitglied ist
+ a| 
+`vserver cifs users-and-groups local-user show-membership -membership _group_name_`
+
+
+
+ a| 
+Anzeigen von Informationen zur Benutzermitgliedschaft für lokale Benutzer, die einer bestimmten SVM (Storage Virtual Machine) zugeordnet sind
+ a| 
+`vserver cifs users-and-groups local-user show-membership -vserver <SVM_name>`
+
+
+
+ a| 
+Anzeige detaillierter Informationen für alle lokalen Benutzer auf einer angegebenen SVM
+ a| 
+`vserver cifs users-and-groups local-user show-membership -instance -vserver <SVM_name>`
+
+
+
+ a| 
+Informationen über alle Benutzer auf der Storage Virtual Machine (SVM) anzeigen
+ a| 
+`vserver cifs users-and-groups local-user show -vserver <SVM_name>`
+
+
+
+ a| 
+Ändern Sie die Beschreibung des lokalen Benutzers
+ a| 
+`vserver cifs users-and-groups local-user modify -vserver <SVM_name> -user-name <user_name> -description text`
+
+Enthält die Beschreibung ein Leerzeichen, so muss sie in doppelte Anführungszeichen gesetzt werden.
+
+
+
+ a| 
+Ändern Sie den vollständigen Namen des lokalen Benutzers
+ a| 
+`vserver cifs users-and-groups local-user modify -vserver <SVM_name> -user-name <user_name> -full-name text`
+
+Enthält der vollständige Name ein Leerzeichen, so muss er in doppelte Anführungszeichen gesetzt werden.
+
+
+
+ a| 
+Benennen Sie das lokale Benutzerkonto um
+ a| 
+`vserver cifs users-and-groups local-user rename -vserver <SVM_name> -user-name <user_name> -new-user-name <new_user_name>`
+
+Bei der Umbenennung eines lokalen Benutzers muss der neue Benutzername weiterhin mit demselben CIFS-Server wie der alte Benutzername verknüpft bleiben.
+
+|===
+.Beispiel
+Im folgenden Beispiel wird der lokale Benutzer „`CIFS_SERVER\sue`“ als „`CIFS_SERVER\sue_New`“ auf der Storage Virtual Machine (SVM, früher Vserver genannt) vs1 umbenannt:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user rename -user-name CIFS_SERVER\sue -new-user-name CIFS_SERVER\sue_new -vserver vs1
+----
+.Beispiel
+Das folgende Beispiel zeigt Informationen über alle lokalen Benutzer auf SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1
+Vserver  User Name                   Full Name     Description
+-------- --------------------------- ------------- -------------
+vs1      CIFS_SERVER\Administrator   James Smith   Built-in administrator account
+vs1      CIFS_SERVER\sue             Sue   Jones
+----
+.Beispiel
+Im folgenden Beispiel wird das Passwort für den lokalen Benutzer „`CIFS_SERVER\sue`“ festgelegt, der mit der Storage Virtual Machine (SVM, früher unter dem Namen „Vserver“ bekannt) vs1 verknüpft ist:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user set-password -user-name CIFS_SERVER\sue -vserver vs1
+
+Enter the new password:
+Confirm the new password:
+----
+.Beispiel
+Im folgenden Beispiel werden die Mitgliedsinformationen für alle lokalen Benutzer auf SVM vs1 angezeigt; Benutzer „`CIFS_SERVER\Administrator`“ ist Mitglied der Gruppe „`BUILTIN\Administrators`“ und „`CIFS_SERVER\sue`“ ist Mitglied der Gruppe „`CIFS_SERVER\g1`“:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user show-membership -vserver vs1
+Vserver    User Name                    Membership
+---------- ---------------------------- ------------------------
+vs1        CIFS_SERVER\Administrator    BUILTIN\Administrators
+           CIFS_SERVER\sue              CIFS_SERVER\g1
+----
+.Verwandte Informationen
+* Erfahren Sie mehr über `vserver cifs` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=vserver+cifs["ONTAP-Befehlsreferenz"^].
+* xref:enable-disable-password-complexity-local-users-task.adoc[Konfigurieren der Kennwortkomplexität für lokale Benutzer]
+* xref:display-server-security-settings-task.adoc[Informationen zu den Sicherheitseinstellungen des Servers anzeigen]
+
+
+
+
+== Löschen Sie lokale ONTAP SMB-Benutzerkonten
+
+Sie können lokale Benutzerkonten von Ihrer Storage Virtual Machine (SVM) löschen, wenn diese nicht mehr für die lokale SMB-Authentifizierung am CIFS-Server oder zur Bestimmung der Zugriffsrechte auf den Daten auf Ihrer SVM benötigt werden.
+
+.Über diese Aufgabe
+Beachten Sie beim Löschen lokaler Benutzer Folgendes:
+
+* Das Dateisystem wird nicht verändert.
++
+Windows-Sicherheitsdeskriptoren für Dateien und Verzeichnisse, die auf diesen Benutzer verweisen, werden nicht angepasst.
+
+* Alle Verweise auf lokale Benutzer werden aus den Mitgliedschafts- und Berechtigungsdatenbanken entfernt.
+* Bekannte Standardbenutzer wie Administrator können nicht gelöscht werden.
+
+
+.Schritte
+. Ermitteln Sie den Namen des lokalen Benutzerkontos, das Sie löschen möchten:
++
+[source, cli]
+----
+vserver cifs users-and-groups local-user show -vserver <SVM_name>
+----
+. Löschen Sie den lokalen Benutzer:
++
+[source, cli]
+----
+vserver cifs users-and-groups local-user delete -vserver <SVM_name> -user-name <user_name>
+----
+. Überprüfen Sie, ob das Benutzerkonto gelöscht wurde:
++
+[source, cli]
+----
+vserver cifs users-and-groups local-user show -vserver <SVM_name>
+----
+
+
+Im folgenden Beispiel wird der lokale Benutzer „`CIFS_SERVER\sue`“ gelöscht, der mit SVM vs1 verknüpft ist:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1
+Vserver  User Name                   Full Name      Description
+-------- --------------------------- -------------- -------------
+vs1      CIFS_SERVER\Administrator   James Smith    Built-in administrator account
+vs1      CIFS_SERVER\sue             Sue   Jones
+
+
+cluster1::> vserver cifs users-and-groups local-user delete -vserver vs1 -user-name CIFS_SERVER\sue
+
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1
+Vserver      User Name                   Full Name      Description
+-------- --------------------------- -------------- -------------
+vs1      CIFS_SERVER\Administrator   James Smith    Built-in administrator account
+----

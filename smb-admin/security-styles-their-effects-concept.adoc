@@ -17,36 +17,43 @@ Es ist wichtig zu verstehen, dass Sicherheitsstile nicht bestimmen, welche Clien
 
 Wenn ein Volume beispielsweise UNIX-Sicherheitsstil verwendet, können SMB-Clients aufgrund der Multiprotokollart von ONTAP weiterhin auf Daten zugreifen (sofern sie sich ordnungsgemäß authentifizieren und autorisieren). ONTAP verwendet jedoch UNIX-Berechtigungen, die nur UNIX-Clients mit nativen Tools ändern können.
 
-[cols="5*"]
+[cols="5"]
 |===
 | Sicherheitsstil | Clients, die Berechtigungen ändern können | Berechtigungen, die Clients verwenden können | Dadurch effektiver Sicherheitsstil | Clients, die auf Dateien zugreifen können 
 
 
-.2+| Unix .2+| NFS | Bits im NFSv3 Modus .2+| Unix .9+| NFS und SMB 
+| Unix | NFS  a| 
+* Bits im NFSv3 Modus
+* NFSv4.x ACLs
+
+| Unix | NFS und SMB 
 
 
-| NFSv4.x ACLs 
+| NTFS | SMB | NTFS-ACLs | NTFS | NFS und SMB 
 
 
-| NTFS | SMB | NTFS-ACLs | NTFS 
+| Gemischt | NFS oder SMB  a| 
+* Bits im NFSv3 Modus
+* NFSv4.x ACLs
+* NTFS-ACLs
+
+ a| 
+* UNIX (für NFSv3-Modusbits und NFSv4.x-ACLs)
+* NTFS (für NTFS-ACLs)
+
+| NFS und SMB 
 
 
-.3+| Gemischt .3+| NFS oder SMB | Bits im NFSv3 Modus .2+| UNIX 
+| Unified (nur für Infinite Volumes, in ONTAP 9.4 und älteren Versionen.) | NFS oder SMB  a| 
+* Bits im NFSv3 Modus
+* NFSv4.1 ACLs
+* NTFS-ACLs
 
+ a| 
+* UNIX (für NFSv3-Modusbits und NFSv4.1-ACLs)
+* NTFS (für NTFS-ACLs)
 
-| NFSv4.ACLs 
-
-
-| NTFS-ACLs | NTFS 
-
-
-.3+| Unified (nur für Infinite Volumes, in ONTAP 9.4 und älteren Versionen.) .3+| NFS oder SMB | Bits im NFSv3 Modus .2+| Unix 
-
-
-| NFSv4.1 ACLs 
-
-
-| NTFS-ACLs | NTFS 
+| NFS und SMB 
 |===
 FlexVol Volumes unterstützen UNIX, NTFS und verschiedene Sicherheitsstile. Wenn der Sicherheitsstil gemischt oder vereinheitlicht ist, hängen die effektiven Berechtigungen vom Clienttyp ab, der die Berechtigungen zuletzt geändert hat, da Benutzer den Sicherheitsstil auf individueller Basis festlegen. Wenn der letzte Client, der die Berechtigungen geändert hat, ein NFSv3-Client war, sind die Berechtigungen UNIX NFSv3-Modus-Bits. Wenn der letzte Client ein NFSv4-Client war, sind die Berechtigungen NFSv4 ACLs. Wenn der letzte Client ein SMB-Client war, sind die Berechtigungen Windows NTFS ACLs.
 
@@ -61,4 +68,55 @@ ONTAP legt zunächst einige Standarddateiberechtigungen fest. Standardmäßig is
 ====
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^]
+
+
+
+NOTE: Sicherheitsstile können auf FlexVol-Volumes (sowohl Root- als auch Datenvolumes) und qtrees festgelegt werden. Sicherheitsstile können manuell bei der Erstellung festgelegt, automatisch übernommen oder zu einem späteren Zeitpunkt geändert werden. == Entscheiden Sie, welche SMB-Sicherheitsstile auf ONTAP SVMs verwendet werden sollen
+
+Um zu entscheiden, welchen Sicherheitsstil auf einem Volume verwendet werden soll, sollten Sie zwei Faktoren berücksichtigen. Der Hauptfaktor ist die Art des Administrators, der das Dateisystem verwaltet. Sekundär ist die Art des Benutzers oder Service, der auf die Daten des Volume zugreift.
+
+Wenn Sie den Sicherheitsstil auf einem Volume konfigurieren, sollten Sie die Anforderungen Ihrer Umgebung berücksichtigen, um sicherzustellen, dass Sie den besten Sicherheitsstil wählen und Probleme beim Management von Berechtigungen vermeiden. Die folgenden Überlegungen helfen Ihnen bei der Auswahl:
+
+[cols="2,4"]
+|===
+| Sicherheitsstil | Wählen Sie aus, ob... 
+
+
+ a| 
+UNIX
+ a| 
+* Das Dateisystem wird von einem UNIX-Administrator verwaltet.
+* Die Mehrheit der Benutzer sind NFS-Clients.
+* Eine Anwendung, die auf die Daten zugreift, verwendet einen UNIX-Benutzer als Dienstkonto.
+
+
+
+
+ a| 
+NTFS
+ a| 
+* Das Dateisystem wird von einem Windows-Administrator verwaltet.
+* Die Mehrheit der Benutzer sind SMB-Clients.
+* Eine Anwendung, die auf die Daten zugreift, verwendet einen Windows-Benutzer als Dienstkonto.
+
+
+
+
+ a| 
+Gemischt
+ a| 
+Das Filesystem wird sowohl von UNIX- als auch von Windows-Administratoren gemanagt, und die Benutzer bestehen sowohl aus NFS- als auch SMB-Clients.
+
+|===
+
+
+== Erfahren Sie mehr über die Vererbung des ONTAP SMB-Sicherheitsstils
+
+Wenn Sie beim Erstellen eines neuen FlexVol Volumes oder eines qtree nicht den Sicherheitsstil festlegen, übernimmt dieser seinen Sicherheitsstil auf unterschiedliche Weise.
+
+Sicherheitsstile werden auf folgende Weise vererbt:
+
+* Ein FlexVol Volume erbt den Sicherheitsstil des Root-Volumes seiner enthaltenen SVM.
+* Ein qtree übernimmt den Sicherheitsstil seines enthaltenen FlexVol Volume.
+* Eine Datei oder ein Verzeichnis erbt den Sicherheitsstil, den sie FlexVol Volume oder qtree enthält.
 

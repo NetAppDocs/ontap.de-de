@@ -1,0 +1,105 @@
+---
+permalink: smb-admin/configure-ldap-tls.html 
+sidebar: sidebar 
+keywords: ldap, ssl, tls, secure, securing, active, directory, communication, export, copy, certificate, service, self-signed, root, ca, file, ascii, text, storage, virtual, machine, svm, export a copy of the self-signed root ca certificate 
+summary: Konfigurieren Sie LDAP über TLS für ONTAP SMB-Server, um die Kommunikation zwischen dem SMB-Server und Active Directory LDAP-Servern zu sichern. 
+---
+= LDAP über TLS für ONTAP SMB-Server konfigurieren
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Konfigurieren Sie LDAP über TLS für ONTAP SMB-Server, um die Kommunikation zwischen dem SMB-Server und Active Directory LDAP-Servern zu sichern.
+
+
+
+== Schritt 1: Selbstsignierte Stammzertifizierungsstellenzertifikate für ONTAP SMB SVMs exportieren
+
+Um LDAP über SSL/TLS zu verwenden, um die Active Directory-Kommunikation zu sichern, müssen Sie zuerst eine Kopie des selbstsignierten Stammzertifikats des Active Directory-Zertifikatdienstes in eine Zertifikatdatei exportieren und in eine ASCII-Textdatei konvertieren. Diese Textdatei wird von ONTAP verwendet, um das Zertifikat auf der Storage Virtual Machine (SVM) zu installieren.
+
+Der Active Directory-Zertifikatdienst muss für die Domäne, zu der der CIFS-Server gehört, bereits installiert und konfiguriert sein. Informationen zur Installation und Konfiguration des Active Directory-Zertifikatdienstes finden Sie in der  http://technet.microsoft.com/en-us/library/["Microsoft TechNet Bibliothek: technet.microsoft.com"] .Step
+
+. Erhalten Sie ein Stammzertifizierungsstellenzertifikat des Domänencontrollers im `.pem` Textformat.
++
+http://technet.microsoft.com/en-us/library/["Microsoft TechNet Bibliothek: technet.microsoft.com"]
+
+
+
+.Wie es weiter geht
+Installieren Sie das Zertifikat auf der SVM.
+
+
+
+== Schritt 2: Installieren Sie selbstsignierte Stammzertifikate der Zertifizierungsstelle auf der ONTAP SMB SVM
+
+Wenn bei der Anbindung an LDAP-Server eine LDAP-Authentifizierung mit TLS erforderlich ist, müssen Sie zuerst das selbstsignierte Root-CA-Zertifikat auf der SVM installieren.
+
+.Über diese Aufgabe
+Alle Applikationen in ONTAP, die TLS-Kommunikation verwenden, können den digitalen Zertifikatsstatus mithilfe des Online Certificate Status Protocol (OCSP) überprüfen. Wenn OCSP für LDAP über TLS aktiviert ist, werden zurückgeworfene Zertifikate abgelehnt und die Verbindung schlägt fehl.
+
+.Schritte
+. Installieren Sie das selbstsignierte Root-CA-Zertifikat:
++
+.. Beginnen Sie die Zertifikatsinstallation:
++
+[source, cli]
+----
+security certificate install -vserver <SVM_name> -type server-ca
+----
++
+An der Konsolenausgabe wird die folgende Meldung angezeigt: `Please enter Certificate: Press <Enter> when done`
+
+.. Öffnen Sie die Zertifikatdatei `.pem` mit einem Texteditor, kopieren Sie das Zertifikat einschließlich der Zeilen, die mit beginnen `-----BEGIN CERTIFICATE-----` und mit enden `-----END CERTIFICATE-----`, und fügen Sie das Zertifikat nach der Eingabeaufforderung ein.
+.. Vergewissern Sie sich, dass das Zertifikat ordnungsgemäß angezeigt wird.
+.. Schließen Sie die Installation durch Drücken der Eingabetaste ab.
+
+
+. Überprüfen Sie, ob das Zertifikat installiert ist:
++
+[source, cli]
+----
+security certificate show -vserver <SVM_name>
+----
+
+
+.Verwandte Informationen
+* link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-install.html["Sicherheitszertifikat installieren"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-show.html["Sicherheitszertifikat anzeigen"^]
+
+
+
+
+== Schritt 3: LDAP über TLS auf dem ONTAP SMB-Server aktivieren
+
+Bevor Ihr SMB-Server TLS für eine sichere Kommunikation mit einem Active Directory LDAP-Server verwenden kann, müssen Sie die SMB-Serversicherheitseinstellungen ändern, um LDAP über TLS zu aktivieren.
+
+Ab ONTAP 9.10.1 wird die LDAP-Kanalbindung standardmäßig sowohl für Active Directory (AD)- als auch für Name-Services-LDAP-Verbindungen unterstützt. ONTAP versucht die Channel-Bindung mit LDAP-Verbindungen nur dann, wenn Start-TLS oder LDAPS aktiviert ist und die Sitzungssicherheit entweder auf Signieren oder Seal gesetzt ist. Um `-try-channel-binding-for-ad-ldap` `vserver cifs security modify` die LDAP-Kanalbindung mit AD-Servern zu deaktivieren oder wieder zu aktivieren, verwenden Sie den Parameter mit dem Befehl.
+
+Weitere Informationen finden Sie unter:
+
+* link:../nfs-admin/using-ldap-concept.html["Erfahren Sie mehr über LDAP für ONTAP NFS SVMs"]
+* link:https://support.microsoft.com/en-us/topic/2020-ldap-channel-binding-and-ldap-signing-requirements-for-windows-ef185fb8-00f7-167d-744c-f299a66fc00a["2020 LDAP-Channel-Binding und LDAP-Signing-Anforderungen für Windows"^].
+
+
+.Schritte
+. Konfigurieren Sie die SMB-Server-Sicherheitseinstellung, die eine sichere LDAP-Kommunikation mit Active Directory LDAP-Servern ermöglicht:
++
+[source, cli]
+----
+vserver cifs security modify -vserver <SVM_name> -use-start-tls-for-ad-ldap true
+----
+. Überprüfen Sie, ob die LDAP-über-TLS-Sicherheitseinstellung auf  `true` gesetzt ist:
++
+[source, cli]
+----
+vserver cifs security show -vserver <SVM_name>
+----
++
+[NOTE]
+====
+Wenn die SVM denselben LDAP-Server zum Abfragen von Namenszuordnungen oder anderen UNIX-Informationen verwendet (z. B. Benutzer, Gruppen und Netzwerkgruppen), müssen Sie die `-use-start-tls` Option auch mit dem `vserver services name-service ldap client modify` Befehl ändern.
+
+====
+
