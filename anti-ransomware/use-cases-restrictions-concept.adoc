@@ -100,21 +100,21 @@ Andere Konfigurationen und Volume-Typen werden in den folgenden ONTAP-Versionen 
 
 | ARP/AI-Standardaktivierung^2^ | ✓ | ✓ |  |  |  |  |  |  |  |  
 |===
-^1^ ONTAP 9.16.1 und 9.17.1 bieten keine ARP/AI-Unterstützung für FlexGroup -Volumes.  Nach einem Upgrade auf diese Versionen funktionieren FlexGroup Volumes, die für ARP aktiviert sind, weiterhin mit dem gleichen ARP-Modell, das vor ARP/AI verwendet wurde.  Ab ONTAP 9.18.1 verwenden FlexGroup Volumes das ARP/AI-Modell.
+^1^ ONTAP 9.16.1 und 9.17.1 bieten keine ARP/AI-Unterstützung für FlexGroup Volumes; ab ONTAP 9.18.1 verwenden FlexGroup Volumes das ARP/AI-Modell. Informationen zum Verhalten beim Upgrade auf diese Versionen finden Sie unter <<arp-upgrade-considerations,ARP-versionsspezifische Upgrade-Überlegungen>>.
 
-^2^ Ab ONTAP 9.18.1 ist das standardmäßige Aktivierungsverhalten von ARP/AI für AFF A-Series und AFF C-Series, ASA und ASA r2 Systeme verfügbar. Dieses Verhalten aktiviert ARP/AI automatisch auf allen neuen Volumes nach einer 12-stündigen Übergangsfrist nach einem Upgrade oder sofort bei neuen ONTAP 9.18.1 Installationen. Sie müssen ARP manuell auf link:enable-task.html["bestehende Volumes"] aktivieren.
+^2^ Weitere Informationen zum Standardverhalten der ARP-Aktivierung nach dem Upgrade auf ONTAP 9.18.1 finden Sie unter <<arp-upgrade-considerations,ARP-versionsspezifische Upgrade-Überlegungen>>.
 
 ^3^ Ab ONTAP 9.19.1 RC unterstützt ARP/AI primäre Volumes in SnapMirror synchronen Beziehungen für NAS und SAN auf FAS, AFF A-Series, AFF C-Series und AFX-Systemen sowie primäre Volumes in SnapMirror active sync SAN-Beziehungen auf AFF A-Series, AFF C-Series und ASA r2-Systemen. Weitere Informationen finden Sie unter <<snapmirror>>.
 
 
 
-=== Interoperabilität und VM-Überlegungen
+== Interoperabilität und VM-Überlegungen
 
 ARP arbeitet zusammen mit SnapMirror Daten­schutz­beziehungen und virtuellen Maschinenumgebungen, mit einigen versionsspezifischen Verhaltensweisen und Einschränkungen, die Sie vor der Bereitstellung beachten sollten.
 
 
 
-==== SnapMirror und ARP-Interoperabilität
+=== SnapMirror und ARP-Interoperabilität
 
 Ab ONTAP 9.12.1 wird ARP auf SnapMirror asynchronen Ziel-Volumes unterstützt.
 
@@ -124,7 +124,6 @@ Ab ONTAP 9.19.1 RC unterstützt ARP/AI primäre Volumes, die an SnapMirror synch
 * ARP/AI wird auf _primären_ Volumes in SnapMirror active sync SAN-Beziehungen auf AFF A-series, AFF C-series und ASA r2-Systemen unterstützt.
 * ARP/AI-Analysen werden nur auf dem aktiven, les- und schreibfähigen primären Volume in SnapMirror synchronen und SnapMirror active sync SAN-Beziehungen ausgeführt, wobei ARP ausschließlich primäre Snapshots erstellt und eine auf maschinellem Lernen basierende Ransomware-Erkennung durchführt.
 * Der ARP-Konfigurationsstatus und ARP-Snapshots werden nicht auf das sekundäre Volume repliziert, weder im Rahmen von SnapMirror synchron noch von SnapMirror active sync in ONTAP 9.19.1 RC.
-* Nach dem Upgrade auf ONTAP 9.19.1 RC und der Aktivierung von ARP auf Volumes, die Teil von SnapMirror synchronen oder SnapMirror active sync-Beziehungen sind, kann die Beziehung kurzzeitig einen Out‑of‑Sync-Zustand aufweisen. Dieser Zustand ist vorübergehend, und die Beziehung wird sich automatisch ohne Eingriff wieder synchronisieren.
 
 
 
@@ -134,11 +133,11 @@ Wenn ein SnapMirror asynchrones Quellvolume ARP-fähig ist, übernimmt das SnapM
 
 Obwohl das asynchrone Zielvolume aus schreibgeschützten (RO) Snapshots besteht, findet keine ARP-Verarbeitung der Daten statt. Wenn das SnapMirror asynchrone Zielvolume jedoch in ein Lese-/Schreibvolume (RW) umgewandelt wird, wird ARP automatisch auf dem RW-konvertierten Zielvolume aktiviert. Das Zielvolume benötigt keine zusätzlichen Lernverfahren, abgesehen von dem, was bereits auf dem Quellvolume aufgezeichnet ist.
 
-In ONTAP 9.10.1 und 9.11.1 überträgt SnapMirror den ARP-Konfigurationsstatus, die Trainingsdaten und die Snapshots nicht von den SnapMirror auf die Zielvolumes. Daher muss ARP auf dem Zielvolume nach der Konvertierung in RW explizit im Lernmodus aktiviert werden.
+In ONTAP 9.10.1 und 9.11.1 werden bei SnapMirror der ARP-Konfigurationsstatus, die Trainingsdaten und die Snapshots nicht von Quell- auf Zielvolumes übertragen. Wenn das SnapMirror Zielvolume in den Lese-/Schreib-Modus umgewandelt wird, muss ARP auf dem Zielvolume nach der Umwandlung explizit im Lernmodus aktiviert werden.
 
 
 
-==== ARP und Virtual Machines
+=== ARP und Virtual Machines
 
 ARP wird für virtuelle Maschinen (VMs) auf VMware, Hyper-V, KVM und OpenStack unterstützt. VMware wird ab ONTAP 9.17.1 unterstützt, und Hyper-V, KVM und OpenStack werden ab ONTAP 9.17.1P5 unterstützt. Die ARP-Erkennung verhält sich unterschiedlich bei Änderungen innerhalb und außerhalb der VM. ARP wird nicht für Workloads empfohlen, die eine große Anzahl stark komprimierter Dateien (wie 7z und ZIP) oder verschlüsselter Dateien (wie passwortgeschützte PDF-, DOC- oder ZIP-Dateien) innerhalb der VM umfassen.
 
@@ -246,6 +245,30 @@ Erfahren Sie mehr über `security anti-ransomware volume disable`, `security ant
 Ab ONTAP 9.14.1 bietet ARP Warnmeldungen für die Erstellung eines ARP-Snapshots und für die Beobachtung einer neuen Dateierweiterung. Warnmeldungen für diese Ereignisse sind standardmäßig deaktiviert. Warnmeldungen können auf Volume- oder SVM-Ebene festgelegt werden. Sie können die Warnmeldungen aktivieren mit  `security anti-ransomware vserver event-log modify` oder bei der Lautstärke mit  `security anti-ransomware volume event-log modify` .
 
 Erfahren Sie mehr über `security anti-ransomware vserver event-log modify` und `security anti-ransomware volume event-log modify` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+anti-ransomware["ONTAP-Befehlsreferenz"^].
+
+
+
+== ARP-versionsspezifische Upgrade-Überlegungen
+
+Beim Upgrade von ONTAP Clustern, die bereits ARP verwenden, sollten Sie sich neben link:../upgrade/special-considerations.html["ONTAP Besondere Überlegungen, die Sie klären müssen"] auch der ARP-spezifischen Verhaltensänderungen bewusst sein, die sich aus einem Upgrade ergeben.
+
+
+
+=== Standardmäßige ARP-Aktivierung nach dem Upgrade auf ONTAP 9.18.1
+
+Ab ONTAP 9.18.1 ist das standardmäßige Aktivierungsverhalten von ARP/AI für AFF A-Series und AFF C-Series, ASA und ASA r2-Systeme verfügbar. Nach einem Upgrade wird ARP/AI nach einer 12-stündigen Übergangsfrist automatisch auf allen neuen Volumes aktiviert. Sie müssen link:index.html#manual-default-enablement["ARP manuell aktivieren"] auf bestehenden Volumes durchführen.
+
+
+
+=== SnapMirror-Beziehungen nach dem Upgrade auf ONTAP 9.19.1 RC
+
+Wenn Sie ARP auf Volumes aktivieren, die Teil von SnapMirror synchronen oder SnapMirror active sync-Beziehungen nach dem Upgrade sind, wechselt die Beziehung kurzzeitig in einen nicht synchronisierten Zustand. Dieser Zustand ist vorübergehend, und die Beziehung sollte sich automatisch ohne Eingriff wieder synchronisieren.
+
+
+
+=== FlexGroup volumes nach dem Upgrade
+
+ONTAP 9.16.1 und 9.17.1 bieten keine ARP/AI-Unterstützung für FlexGroup Volumes. Nach einem Upgrade auf diese Versionen arbeiten FlexGroup Volumes, für die ARP aktiviert ist, weiterhin mit demselben ARP-Modell wie vor ARP/AI. Ab ONTAP 9.18.1 verwenden FlexGroup Volumes das ARP/AI-Modell.
 
 .Nächste Schritte
 * link:enable-task.html["Autonomer Schutz Vor Ransomware"]
