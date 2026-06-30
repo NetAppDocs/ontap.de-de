@@ -4,61 +4,84 @@ sidebar: sidebar
 keywords: understanding, fabricpool, tiering, policies, types, modify, volume, clone, cloud migration 
 summary: Die Tiering-Richtlinien von FabricPool ermöglichen ein effizientes Verschieben von Daten über Tiers hinweg, wenn diese selten oder „kalt“ sind. Wenn Sie die Tiering-Richtlinien kennen, können Sie die passende Richtlinie für Ihre Storage-Management-Anforderungen auswählen. 
 ---
-= Effizientes Tiering von Daten mit ONTAP FabricPool Richtlinien
+= FabricPool Volume-Tiering-Richtlinien
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Die Tiering-Richtlinien von FabricPool ermöglichen ein effizientes Verschieben von Daten über Tiers hinweg, wenn diese selten oder „kalt“ sind. Wenn Sie die Tiering-Richtlinien kennen, können Sie die passende Richtlinie für Ihre Storage-Management-Anforderungen auswählen.
-
-
-
-== Arten von FabricPool Tiering-Richtlinien
-
-FabricPool Tiering-Richtlinien bestimmen, wann oder ob die Benutzerdatenblöcke eines Volumes in FabricPool basierend auf dem Volume „`Temperature`“ (aktiv) oder „kalt“ (inaktiv) in den Cloud-Tier verschoben werden. Das Volumen „`temperature`“ erhöht sich, wenn es häufig aufgerufen wird und sinkt, wenn es nicht. Einige Tiering-Richtlinien weisen einen zugehörigen Mindestkühlzeitraum für das Tiering auf. In diesem Fall wird die Zeit festgelegt, die Benutzerdaten in einem Volume von FabricPool inaktiv bleiben müssen, damit die Daten als „`Cold`“ gelten und in die Cloud-Tier verschoben werden.
-
-Nachdem ein Block als „kalt“ identifiziert wurde, wird er als „geeignet für Tiering“ markiert. Ein täglicher Hintergrund-Tiering Scan sucht nach kalten Blöcken. Wenn genug 4-KB-Blöcke vom selben Volume erfasst wurden, werden sie in ein 4-MB-Objekt verkettet und basierend auf der Volume-Tiering-Richtlinie in die Cloud-Ebene verschoben.
+FabricPool Volumen-Tiering-Richtlinien legen fest, welche Daten in einem Volume für das Tiering infrage kommen, und der Parameter für die minimale Anzahl an Kühl-Tagen beim Tiering bestimmt, wann die Daten als inaktiv gelten und für das Tiering infrage kommen.
 
 [NOTE]
 ====
-Daten in Volumes mithilfe der `all` Tiering-Richtlinie werden sofort als „kalt“ markiert und beginnen so schnell wie möglich mit dem Tiering in die Cloud-Tier. Es muss nicht darauf gewartet werden, dass der tägliche Tiering Scan ausgeführt wird.
+Zugriffskontrolllisten (ACLs), Verzeichnisstrukturen und Metadaten werden niemals gestuft, sondern verbleiben immer auf der lokalen Tier.
 
 ====
+Ein täglicher Hintergrundscan sucht nach selten genutzten Datenblöcken. Sobald genügend 4-KB-Blöcke desselben Volumes erfasst wurden, werden diese zu einem 4-MB-Objekt zusammengefasst und gemäß der Volume Tiering-Richtlinie in die Cloud-Ebene verschoben.
+
+Das Verständnis der Funktionsweise von Tiering-Richtlinien unterstützt bei der Auswahl der passenden Richtlinie für die Anforderungen an das Speichermanagement.
+
+
+
+== Optionen für Volume-Tiering-Richtlinien
+
+Standardmäßig verwenden Volumes die Volume-Tiering-Richtlinie „Keine“. Eine Ausnahme bilden neu erstellte FlexVol Volumes auf FabricPool Aggregaten, die die Volume-Tiering-Richtlinie „Nur Snapshots“ verwenden.
+
 Sie können den `volume object-store tiering show` Tiering-Status eines FabricPool Volumes mit dem Befehl anzeigen. Erfahren Sie mehr über `volume object-store tiering show` in der link:https://docs.netapp.com/us-en/ontap-cli//volume-object-store-tiering-show.html["ONTAP-Befehlsreferenz"^].
 
 Die FabricPool Tiering-Richtlinie wird auf Volume-Ebene festgelegt. Vier Optionen stehen zur Verfügung:
 
-* Über die `snapshot-only` Tiering-Richtlinie (Standard) werden Benutzerdaten der Volume-Snapshots, die nicht dem aktiven Filesystem zugeordnet sind, in die Cloud-Tier verschoben.
-+
-Der Tiering-Mindestkühlzeitraum beträgt 2 Tage. Sie können die Standardeinstellung für den minimalen Kühlzeitraum des Tiering mit dem `-tiering-minimum-cooling-days` Parameter auf der erweiterten Berechtigungsebene der `volume create` `volume modify` Befehle und ändern. Gültige Werte sind 2 bis 183 Tage mit ONTAP 9.8 und höher. Wenn Sie eine ONTAP-Version vor 9.8 verwenden, sind die gültigen Werte 2 bis 63 Tage.
 
-* Die `auto` Tiering-Richtlinie, die nur ab ONTAP 9.4 unterstützt wird, verschiebt kalte Benutzerdaten sowohl in den Snapshots als auch in das aktive Filesystem in die Cloud-Tier.
-+
-Die minimale Abkühlzeit für das Tiering beträgt standardmäßig 31 Tage und gilt für das gesamte Volume, sowohl für das aktive Dateisystem als auch für die Snapshots.
 
-+
+=== Nur Snapshot
+
+Die  `snapshot-only`Tiering-Richtlinie verschiebt Snapshot-Daten, die nicht mehr mit dem aktiven Dateisystem verbunden sind, in eine andere Ebene. Standardmäßig sind zwei Tage Inaktivität erforderlich, bevor ein Snapshot für das Tiering in Frage kommt. Die meisten Datensicherungspläne sind stündlich oder täglich und lesen die Daten lokal, bevor sie getiert werden.
+
+Die Standardeinstellung für die Mindestkühlzeit beim Tiering kann mit dem  `-tiering-minimum-cooling-days` Parameter auf der erweiterten Berechtigungsebene der  `volume create` und  `volume modify` Befehle geändert werden. Gültige Werte sind 2 bis 183 Tage bei Verwendung von ONTAP 9.8 und höher. Bei Verwendung einer ONTAP-Version vor 9.8 sind gültige Werte 2 bis 63 Tage.
+
+Beim Lesen bleiben kalte Blöcke, die mit Snapshot-Kopien verknüpft sind, kalt und werden nicht zurück in die lokale Tier geschrieben.
+
+
+
+=== Automatisch
+
+Die  `auto`Tiering-Richtlinie verschiebt alle kalten Daten im Volume, sowohl die Snapshots als auch das aktive Dateisystem, in die Cloud-Tier. Die standardmäßige Mindestkühlzeit für das Tiering beträgt 31 Tage und gilt für das gesamte Volume, sowohl für das aktive Dateisystem als auch für die Snapshots.
+
 Sie können die Standardeinstellung für den minimalen Kühlzeitraum des Tiering mit dem `-tiering-minimum-cooling-days` Parameter auf der erweiterten Berechtigungsebene der `volume create` `volume modify` Befehle und ändern. Gültige Werte sind 2 bis 183 Tage.
 
-* Durch die `all` Tiering-Richtlinie, die nur mit ONTAP 9.6 und höher unterstützt wird, werden alle Datenblöcke des Benutzers sowohl im aktiven Filesystem als auch von Snapshots in die Cloud-Tier verschoben. Sie ersetzt die `backup` Tiering-Richtlinie.
-+
-Die `all` Volume-Tiering-Richtlinie sollte nicht auf Lese-/Schreib-Volumes mit normalem Client-Datenverkehr verwendet werden.
+Beim zufälligen Lesen werden kalte Blöcke in einem Volume mit auf Auto eingestellter Tiering-Richtlinie als hot markiert und zurück in die lokale Tier geschrieben.
 
-+
+Beim sequenziellen Lesen bleiben kalte Blöcke in einem Volume mit der Tiering-Richtlinie Auto kalt und verbleiben auf der Cloud-Ebene. Sie werden nicht zurück auf die lokale Ebene geschrieben.
+
+
+
+=== Alle
+
+Die  `all` Tiering-Richtlinie kennzeichnet sofort alle Daten im Volume als kalt und beginnt, sie so schnell wie möglich in die Cloud-Tier zu verschieben. Ein Warten von 48 Stunden, bis neue Blöcke in einem Volume mit der  `all` Tiering-Richtlinie als kalt gelten, ist nicht erforderlich.
+
 Die minimale Abkühlzeit für das Tiering gilt nicht, da die Daten sofort nach der Tiering-Überprüfung in die Cloud-Tier verschoben werden und Sie die Einstellung nicht ändern können.
 
-* Bei der `none` Tiering-Richtlinie werden die Daten eines Volumes in der Performance-Tier und nicht selten in die Cloud-Tier verschoben.
-+
+Wenn kalte Blöcke in einem Volume mit der Tiering-Richtlinie „All“ gelesen werden, bleiben sie kalt und verbleiben im Cloud-Tier. Sie werden nicht zurück in den lokalen Tier geschrieben.
+
+[NOTE]
+====
+Die `all` Volume-Tiering-Richtlinie sollte nicht auf Lese-/Schreib-Volumes mit normalem Client-Datenverkehr verwendet werden.
+
+Objektspeicherung ist nicht transaktionsorientiert wie Datei- oder Blockspeicherung. Änderungen an Dateien, die als Objekte in Volumes mit der All Tiering-Richtlinie gespeichert werden, können zur Erstellung neuer Objekte, zur Fragmentierung vorhandener Objekte, zu einer verringerten Leseleistung und zu zusätzlichen Speicherineffizienzen führen.
+
+====
+
+
+=== Keine
+
+Die  `none`Tiering-Richtlinie behält die Daten eines Volumes in der Performance-Tier und verschiebt keine Daten in andere Tiers.
+
 Durch Festlegen der Tiering-Richtlinie `none` wird ein neues Tiering verhindert. Volume-Daten, die zuvor in die Cloud-Tier verschoben wurden, bleiben in der Cloud-Tier, bis sie häufig verwendet werden und automatisch zurück auf die lokale Tier verschoben werden.
 
-+
 Der minimale Kühlzeitraum für das Tiering entfällt, da die Daten niemals in das Cloud-Tier verschoben werden und Sie die Einstellung nicht ändern können.
 
-+
 Wenn selten genutzte Blöcke auf einem Volume mit einer Tiering-Richtlinie zum `none` Lesen „heiß“ werden, werden sie „heiß“ und auf die lokale Tier geschrieben.
-
-
 
 Die `volume show` Ausgabe des Befehls zeigt die Tiering-Richtlinie eines Volumes an. Ein Volume, das noch nie mit FabricPool verwendet wurde, zeigt die `none` Tiering-Richtlinie in der Ausgabe an.
 
@@ -67,7 +90,7 @@ NOTE: In einer SVM-DR-Beziehung müssen Quell- und Ziel-Volumes keine FabricPool
 
 
 
-== Was passiert, wenn Sie die Tiering-Richtlinie eines Volumes in FabricPool ändern
+== Was geschieht, wenn eine Volume-Tiering-Richtlinie geändert wird?
 
 Sie können die Tiering-Richtlinie eines Volumes durch einen `volume modify` Vorgang ändern. Sie müssen wissen, wie sich die Änderung der Tiering-Richtlinie auf den Zeitraum auswirkt, den Daten für „kalte“ Daten und zur Cloud-Tier verschoben werden müssen.
 
