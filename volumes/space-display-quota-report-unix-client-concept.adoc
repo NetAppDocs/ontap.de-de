@@ -28,3 +28,144 @@ Die Blockanzahl umfasst sowohl direkte als auch indirekte Blöcke, die für rege
 Das Quota-Subsystem ist so konzipiert, dass es nur vom Benutzer steuerbare Aspekte des Dateisystems berücksichtigt und berücksichtigt. Verzeichnisse, ACLs und Snapshot-Speicherplatz sind alle Beispiele für Speicherplatz, der von Quotenberechnungen ausgeschlossen ist. Quoten werden zur Durchsetzung von Limits, nicht Garantien verwendet und werden nur im aktiven Dateisystem betrieben. Die Kontingentberechnung zählt nicht bestimmte Filesystem-Konstrukte und macht die Storage-Effizienz (wie etwa Komprimierung oder Deduplizierung) nicht aus.
 
 Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
+
+
+
+== Unterschiede zwischen dem Befehl ls und dem Quota-Bericht für die Speicherplatznutzung
+
+Wenn Sie mit dem `ls` Befehl den Inhalt einer FlexVol volume anzeigen, die auf einem UNIX Client gemountet ist, können die in der Ausgabe angezeigten Dateigrößen von der im Quota-Bericht für das Volume angezeigten Speicherplatznutzung abweichen, je nach Typ der Datenblöcke für die Datei.
+
+In der Ausgabe des `ls` Befehls wird nur die Größe einer Datei und keine indirekten Blöcke angezeigt, die von der Datei verwendet werden. Alle leeren Blöcke der Datei werden auch in die Ausgabe des Befehls aufgenommen.
+
+Wenn also eine Datei keine leeren Blöcke enthält, `ls` kann die mit dem Befehl angezeigte Größe geringer sein als die in einem Kontingentbericht angegebene Festplattenauslastung, da indirekte Blöcke in den Kontingentbericht aufgenommen wurden. Wenn die Datei hingegen leere Blöcke enthält, ist die mit dem `ls` Befehl angezeigte Größe möglicherweise größer als die im Quota-Bericht angegebene Festplattennutzung.
+
+In der Ausgabe des `ls` Befehls wird nur die Größe einer Datei und keine indirekten Blöcke angezeigt, die von der Datei verwendet werden. Alle leeren Blöcke der Datei werden auch in die Ausgabe des Befehls aufgenommen.
+
+.Beispiel für den Unterschied zwischen Raumnutzung, der vom Befehl ls und einem Quotenbericht berücksichtigt wird
+[%collapsible]
+====
+Der folgende Quotenbericht zeigt eine Begrenzung von 10 MB für ein qtree q1:
+
+[listing]
+----
+
+                                      ----Disk----  ----Files-----   Quota
+  Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+  -------  --------  ------  -------  -----  -----  ------  ------   ---------
+  vol1     q1          tree    user1   10MB  10MB        1       -   q1
+
+...
+----
+Eine Datei im selben qtree kann die Größe überschreiten, die von einem UNIX Client aus gesehen wird. Verwenden Sie dazu den `ls` Befehl, wie im folgenden Beispiel gezeigt:
+
+[listing]
+----
+[user1@lin-sys1 q1]$ ls -lh
+-rwxr-xr-x  1 user1 nfsuser  **27M** Apr 09  2013 file1
+----
+====
+Erfahren Sie mehr über `ls` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=ls["ONTAP-Befehlsreferenz"^].
+
+
+
+== Erfahren Sie, wie der Befehl df die Dateigröße berücksichtigt
+
+Die Art und Weise, wie im `df` Befehl die Platznutzung gemeldet wird, hängt von zwei Bedingungen ab: Ob die Quoten für das Volume, das den qtree enthält, aktiviert oder deaktiviert sind und ob die Kontingentnutzung innerhalb des qtree nachverfolgt wird.
+
+Wenn für das Volume, das den qtree enthält, Kontingente aktiviert werden, wird nachverfolgt, wie die Speicherplatznutzung durch `df` den Befehl entspricht dem im Kontingentbericht angegebenen Wert. In dieser Situation werden Blöcke, die von Verzeichnissen, ACLs, Datenverzeichnissen und Metadateien verwendet werden, ausgeschlossen.
+
+Wenn Quoten auf dem Volume nicht aktiviert sind oder wenn für den qtree keine Kontingentregel konfiguriert ist, beinhaltet die gemeldete Speicherplatznutzung Blöcke, die von Verzeichnissen, ACLs, Stream-Verzeichnissen und Metadateien für das gesamte Volume verwendet werden, einschließlich anderer qtrees innerhalb des Volume. In dieser Situation `df` ist die vom Befehl gemeldete Speicherplatznutzung größer als der erwartete Wert, der beim Nachverfolgen von Kontingenten gemeldet wird.
+
+Wenn Sie den `df` Befehl am Mount-Punkt eines qtree ausführen, für den die Kontingentnutzung überwacht wird, zeigt die Befehlsausgabe dieselbe Speicherplatznutzung an, wie der im Kontingent-Bericht angegebene Wert. In den meisten Fällen `df` entspricht die vom Befehl gemeldete Gesamtgröße dem Festplattenlimit und der verfügbare Speicherplatz der Differenz zwischen dem Kontingent-Festplattenlimit und der Quota-Nutzung.
+
+In manchen Fällen `df` kann der durch den Befehl gemeldete Speicherplatz jedoch dem verfügbaren Speicherplatz im gesamten Volume entsprechen. Dies kann auftreten, wenn für den qtree kein Festplattenlimit konfiguriert ist. Ab ONTAP 9.9 kann es auch vorkommen, wenn der im Volumen als Ganzes verfügbare Platz unter dem verbleibenden Baum-Quota-Raum liegt. Wenn eine dieser Bedingungen eintritt, `df` ist die vom Befehl gemeldete Gesamtgröße eine synthetisierte Zahl, die dem Kontingent im qtree entspricht und dem im FlexVol volume verfügbaren Speicherplatz.
+
+[NOTE]
+====
+Diese Gesamtgröße entspricht weder dem qtree-Festplattenlimit noch der konfigurierten Volume-Größe. Dies kann auch von Ihrer Schreibaktivität im Rahmen anderer qtrees oder aufgrund Ihrer Storage-Effizienzaktivitäten im Hintergrund abweichen.
+
+====
+.Beispiel für die Speichernutzung, die vom <code>df</code>-Befehl und einem Quotenbericht erfasst wird
+[%collapsible]
+====
+Der folgende Quota-Bericht zeigt eine Datenträgerbegrenzung von 1 GB für qtree alice, 2 GB für qtree bob, und kein Limit für qtree projekt1:
+
+[listing]
+----
+C1_vsim1::> quota report -vserver vs0
+Vserver: vs0
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol2     alice     tree    1
+                                  502.0MB    1GB       2       -   alice
+vol2     bob       tree    2
+                                   1003MB    2GB       2       -   bob
+vol2     project1  tree    3
+                                  200.8MB      -       2       -   project1
+vol2               tree    *           0B      -       0       -   *
+4 entries were displayed.
+----
+Im folgenden Beispiel `df` zeigt die Ausgabe des Befehls in qtrees alice und bob den gleichen belegten Speicherplatz wie der Kontingentbericht und dieselbe Gesamtgröße (bezogen auf 1 Mio. Blöcke) wie das Festplattenlimit. Dies liegt daran, dass die Kontingentregeln für qtrees alice und bob eine definierte Datenträgergrenze haben und der verfügbare Speicherplatz (1211 MB) des Volumens größer ist als der für qtree alice (523 MB) und qtree bob (1045 MB) verbleibende Speicherplatz.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2/alice
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      1024   502       523  50% /mnt/vol2
+
+linux-client1 [~]$ df -m /mnt/vol2/bob
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      2048  1004      1045  50% /mnt/vol2
+----
+Im folgenden Beispiel `df` berichtet die Ausgabe des Befehls auf qtree project1 über den gleichen belegten Speicherplatz wie der Quota-Bericht, aber die Gesamtgröße wird synthetisiert, indem der verfügbare Speicherplatz im Volumen als Ganzes (1211 MB) zur Quota-Nutzung von qtree project1 (201 MB) hinzugefügt wird, um insgesamt 1412 MB zu ergeben. Der Grund dafür ist, dass die Kontingentregel für qtree project1 kein Datenträgerlimit hat.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2/project1
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      1412   201      1211  15% /mnt/vol2
+----
+Im folgenden Beispiel wird gezeigt, wie die Ausgabe des `df` Befehls auf dem gesamten Volume denselben verfügbaren Speicherplatz wie project1 meldet.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      2919  1709      1211  59% /mnt/vol2
+----
+====
+Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
+
+
+
+== Abweichung zwischen dem Befehl „du“ und dem Quotenbericht zur Speicherplatznutzung
+
+Wenn Sie den `du` Befehl ausführen, um die Speicherplatznutzung für einen qtree oder FlexVol volume zu überprüfen, der auf einem UNIX Client gemountet ist, kann der Wert für die Verwendung höher sein als der Wert, der in einem Kontingentbericht für den qtree oder Volume angezeigt wird.
+
+Die Ausgabe des `du` Befehls enthält die kombinierte Speicherplatznutzung aller Dateien durch den Verzeichnisbaum, beginnend auf der Ebene des Verzeichnisses, in dem der Befehl ausgegeben wird. Da der mit dem `du` Befehl angezeigte Nutzungswert auch die Datenblöcke für Verzeichnisse enthält, ist er höher als der in einem Kontingentbericht angezeigte Wert.
+
+.Beispiel für die Differenz zwischen der Raumnutzung, die vom Befehl du und einem Quotenbericht berücksichtigt wird
+[%collapsible]
+====
+Der folgende Quotenbericht zeigt eine Begrenzung von 10 MB für ein qtree q1:
+
+[listing]
+----
+
+                                      ----Disk----  ----Files-----   Quota
+  Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+  -------  --------  ------  -------  -----  -----  ------  ------   ---------
+  vol1     q1        tree    user1    10MB   10MB   1       -        q1
+
+...
+----
+Im folgenden Beispiel wird für die Ausgabe des `du` Befehls der Speicherplatzverbrauch einen höheren Wert angezeigt, der die Kontingentgrenze überschreitet:
+
+[listing]
+----
+[user1@lin-sys1 q1]$ du -sh
+**11M**     q1
+----
+====
+Erfahren Sie mehr über die in diesem Verfahren beschriebenen Befehle im link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
