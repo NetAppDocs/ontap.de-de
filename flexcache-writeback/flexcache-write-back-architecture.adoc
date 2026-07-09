@@ -15,12 +15,14 @@ Die folgenden Konzepte beschreiben den Betrieb von FlexCache Write-Back.
 
 
 
+[[delegations]]
 == Delegationen
 
 Durch Sperren von Delegierungen und Datendelegationen kann FlexCache sowohl Write-Back- als auch Write-Around-Caches konsistent, kohärent und aktuell halten. Der Ursprung orchestriert beide Delegationen.
 
 
 
+[[lock-delegations]]
 === Delegierungen sperren
 
 Eine Sperrdelegation ist eine Sperrbehörde auf Protokollebene, die Origin einem Cache pro Datei gewährt, um bei Bedarf Protokollsperren an Clients auszustellen. Dazu gehören xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Exklusive Sperrdelegationen (XLD)] und xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Gemeinsame Sperrdelegationen (SLD)].
@@ -47,6 +49,7 @@ NOTE: Es gibt eine Grenze von 170 XLDs pro Ursprungsbestandteil.
 
 
 
+[[data-delegations]]
 === Datendelegationen
 
 Eine Datendelegierung ist eine dateibasierte Garantie, die einem Cache nach Herkunft zugestellt wird, dass die für diese Datei zwischengespeicherten Daten auf dem neuesten Stand sind. Solange der Cache eine Datendelegation für eine Datei hat, kann er die für die Datei zwischengespeicherten Daten für den Client bereitstellen, ohne sich mit dem Ursprung in Verbindung setzen zu müssen. Wenn der Cache keine Datendelegierung für die Datei hat, muss er sich an den Ursprung wenden, um die vom Client angeforderten Daten zu erhalten.
@@ -57,6 +60,7 @@ Lesevorgänge in einem Write-Back-aktivierten Cache arbeiten im Allgemeinen wie 
 
 
 
+[[tracking-dirty-data]]
 == Unsaubere Daten werden nachverfolgt
 
 Das Rückschreiben vom Cache zum Ursprung erfolgt asynchron. Das heißt, schmutzige Daten werden nicht sofort zurück in die ursprüngliche Quelle geschrieben. ONTAP verwendet ein System mit nicht ordnungsgemäßen Datensätzen, um schmutzige Daten pro Datei nachzuverfolgen. Jeder Dirty Data Record (DDR) stellt ungefähr 20 MB schmutzige Daten für eine bestimmte Datei dar. Wenn eine Datei aktiv geschrieben wird, beginnt ONTAP schmutzige Daten zurück zu spülen, nachdem zwei DDRs gefüllt wurden und der dritte DDR geschrieben wird. Dies führt dazu, dass während der Schreibvorgänge ungefähr 40 MB an schmutzigen Daten in einem Cache verbleiben. Bei zustandsbehafteten Protokollen (NFSv4.x, SMB) werden die verbleibenden 40 MB an Daten zurück an den Ursprung übertragen, wenn die Datei geschlossen wird. Bei zustandslosen Protokollen (NFSv3) werden die 40 MB an Daten zurückgelöscht, wenn entweder der Zugriff auf die Datei in einem anderen Cache angefordert wird oder wenn die Datei zwei oder mehr Minuten lang inaktiv ist, maximal fünf Minuten. Weitere Informationen zum Auslösen von durch Timer oder durch Speicherplatz ausgelösten schmutzigen Daten finden Sie unter <<Cache-Scrubber>>.
@@ -78,6 +82,7 @@ Zusätzlich zu den DDRs und Scrubbers lösen einige Front-End NAS-Operationen au
 
 
 
+[[disconnected-mode]]
 == Abgetrennter Modus
 
 Wenn eine XLD für eine Datei in einem Write-Around-Cache gespeichert wird und dieser Cache vom Ursprung getrennt wird, sind Lesevorgänge für diese Datei weiterhin in den anderen Caches und im Ursprung zulässig. Dieses Verhalten unterscheidet sich, wenn ein XLD von einem Write-Back-aktivierten Cache gehalten wird. Wenn der Cache getrennt ist, hängt in diesem Fall überall der Lesezugriff auf die Datei. Dies trägt dazu bei, 100 % Konsistenz, Währung und Kohärenz aufrechtzuerhalten. Die Lesevorgänge sind im Write-Around-Modus erlaubt, da am Ursprung garantiert ist, dass alle Daten verfügbar sind, die für den Client schreibgeschützt sind. Im Write-Back-Modus während einer Trennung kann der Origin nicht garantieren, dass alle Daten, die in den Write-Back-aktivierten Cache geschrieben und vom Write-Back-aktivierten Cache bestätigt wurden, vor der Trennung auf den Ursprung gebracht wurden.
@@ -89,6 +94,7 @@ WARNING: Das manuelle Zurückziehen des XLD führt zum Verlust von fehlerhaften 
 
 
 
+[[cache-scrubbers]]
 == Cache-Scrubber
 
 In ONTAP gibt es Scrubbers, die als Reaktion auf bestimmte Ereignisse ausgeführt werden, wie z. B. einen Timer, der abläuft oder die Schwellenwerte für die Leerräume verletzt werden. Die Scrubbers erhalten eine exklusive Sperre für die zu scrubbed Datei, effektiv Einfrieren IO auf diese Datei, bis das Scrub abgeschlossen ist.
@@ -104,18 +110,23 @@ Zu den Scrubbers gehören:
 
 
 
+[[sequence-diagrams]]
 == Sequenzdiagramme
 
 Diese Sequenzdiagramme zeigen den Unterschied zwischen Write-Acknowledgement und Write-Back-Modus.
 
 
 
+[[write-around-sequence-diagram]]
+[[write-around]]
 === Umschreibung
 
 image:flexcache-write-around-sequence-diagram.png["FlexCache-Ablaufdiagramm für die Write-Around-Sequenz"]
 
 
 
+[[write-back-sequence-diagram]]
+[[write-back]]
 === Zurückschreiben
 
 image:flexcache-write-back-sequence-diagram.png["FlexCache-Write-Back-Sequenzdiagramm"]
