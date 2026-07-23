@@ -2,42 +2,42 @@
 permalink: authentication/enable-ad-users-groups-access-cluster-svm-task.html 
 sidebar: sidebar 
 keywords: configure, active directory, domain, controller access, authentication tunnel, SMB server, create, svm, computer, account, domain, cifs server 
-summary: Sie müssen AD-Domänencontroller-Zugriff auf das Cluster oder SVM konfigurieren, bevor ein AD-Konto auf die SVM zugreifen kann. Falls Sie bereits einen SMB-Server für eine Daten-SVM konfiguriert haben, können Sie die SVM für einen AD-Zugriff auf das Cluster als Gateway oder Tunnel konfigurieren. Wenn Sie keinen SMB-Server konfiguriert haben, können Sie ein Computerkonto für die SVM in der AD-Domäne erstellen. 
+summary: Sie müssen den Zugriff des AD-Domänencontrollers auf den Cluster oder die SVM konfigurieren, bevor ein AD-Konto auf die SVM zugreifen kann. Wenn bereits ein SMB-Server für eine Daten-SVM konfiguriert wurde, kann die SVM als Gateway oder Tunnel für den AD-Zugriff auf den Cluster eingerichtet werden. Wenn kein SMB-Server konfiguriert wurde, kann ein Computerkonto für die SVM in der AD-Domäne erstellt werden. 
 ---
-= Konfigurieren Sie den Zugriff auf den Active Directory-Domänencontroller in ONTAP
+= Konfigurieren des Zugriffs auf Active Directory-Domänencontroller in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie müssen AD-Domänencontroller-Zugriff auf das Cluster oder SVM konfigurieren, bevor ein AD-Konto auf die SVM zugreifen kann. Falls Sie bereits einen SMB-Server für eine Daten-SVM konfiguriert haben, können Sie die SVM für einen AD-Zugriff auf das Cluster als Gateway oder „_Tunnel_“ konfigurieren. Wenn Sie keinen SMB-Server konfiguriert haben, können Sie ein Computerkonto für die SVM in der AD-Domäne erstellen.
+Sie müssen den Zugriff des AD-Domänencontrollers auf den Cluster oder die SVM konfigurieren, bevor ein AD-Konto auf die SVM zugreifen kann. Wenn bereits ein SMB-Server für eine Daten-SVM konfiguriert wurde, kann die SVM als Gateway oder Tunnel für den AD-Zugriff auf den Cluster verwendet werden. Wenn kein SMB-Server konfiguriert wurde, kann ein Computerkonto für die SVM in der AD-Domäne erstellt werden.
 
-ONTAP unterstützt die folgenden Authentifizierungsservices für Domänencontroller:
+ONTAP unterstützt die folgenden Domänencontroller-Authentifizierungsdienste:
 
 * Kerberos
 * LDAP
-* Netzanmeldung
-* Lokale Sicherheitsbehörde (LSA)
+* Netlogon
+* Lokale Sicherheitsautorität (LSA)
 
 
-ONTAP unterstützt die folgenden Sitzungsschlüsselalgorithmen für sichere Netlogon-Verbindungen:
+ONTAP unterstützt die folgenden Sitzungsschlüssel-Algorithmen für sichere Netlogon Verbindungen:
 
 |===
 
 
-| Sitzungsschlüsselalgorithmus | Verfügbar ab... 
+| Session key Algorithmus | Verfügbar ab... 
 
 
-| HMAC-SHA256, basierend auf dem Advanced Encryption Standard (AES) Wenn Ihr Cluster ONTAP 9.9.1 oder früher ausführt und Ihr Domänencontroller AES für sichere Netlogon-Dienste erzwingt, schlägt die Verbindung fehl. In diesem Fall müssen Sie Ihren Domänencontroller neu konfigurieren, um stattdessen starke Schlüsselverbindungen mit ONTAP zu akzeptieren. | ONTAP 9.10.1 
+| HMAC-SHA256, basierend auf dem Advanced Encryption Standard (AES). Wenn auf Ihrem Cluster ONTAP 9.9.1 oder einer früheren Version ausgeführt wird und Ihr Domänencontroller AES für sichere Netlogon-Dienste erzwingt, schlägt die Verbindung fehl. In diesem Fall ist der Domänencontroller so zu konfigurieren, dass er stattdessen starke Schlüsselverbindungen mit ONTAP akzeptiert. | ONTAP 9.10.1 
 
 
-| DES und HMAC-MD5 (bei festem Schlüssel) | Alle ONTAP 9 Versionen 
+| DES und HMAC-MD5 (wenn ein starker Schlüssel gesetzt ist) | Alle ONTAP 9 Versionen 
 |===
-Wenn Sie AES-Sitzungsschlüssel während der Einrichtung des sicheren Netlogon-Kanals verwenden möchten, müssen Sie überprüfen, ob AES auf Ihrer SVM aktiviert ist.
+Wenn AES-Sitzungsschlüssel während des Aufbaus eines sicheren Netlogon-Kanals verwendet werden sollen, ist zu überprüfen, ob AES auf Ihrer SVM aktiviert ist.
 
-* Ab ONTAP 9.14.1 ist AES standardmäßig aktiviert, wenn Sie eine SVM erstellen, und Sie müssen die Sicherheitseinstellungen Ihrer SVM nicht ändern, um AES-Sitzungsschlüssel während der Einrichtung des sicheren Netlogon-Kanals zu verwenden.
-* In ONTAP 9.10.1 bis 9.13.1 ist AES beim Erstellen einer SVM standardmäßig deaktiviert. Sie müssen AES mit dem folgenden Befehl aktivieren:
+* Ab ONTAP 9.14.1 ist AES standardmäßig aktiviert, wenn eine SVM erstellt wird, und es ist nicht erforderlich, die Sicherheitseinstellungen der SVM zu ändern, um AES-Sitzungsschlüssel während der Herstellung eines sicheren Netlogon-Kanals zu verwenden.
+* In ONTAP 9.10.1 bis 9.13.1 ist AES beim Erstellen einer SVM standardmäßig deaktiviert. AES muss mit dem folgenden Befehl aktiviert werden:
 +
 [listing]
 ----
@@ -46,46 +46,46 @@ cifs security modify -vserver vs1 -aes-enabled-for-netlogon-channel true
 
 
 
-NOTE: Beim Upgrade auf ONTAP 9.14.1 oder höher wird die AES-Einstellung für vorhandene SVMs, die mit älteren ONTAP Versionen erstellt wurden, nicht automatisch geändert. Sie müssen den Wert für diese Einstellung immer noch aktualisieren, um AES für diese SVMs zu aktivieren.
+NOTE: Beim Upgrade auf ONTAP 9.14.1 oder höher ändert sich die AES-Einstellung für bestehende SVMs, die mit älteren ONTAP-Versionen erstellt wurden, nicht automatisch. Der Wert dieser Einstellung muss weiterhin aktualisiert werden, um AES auf diesen SVMs zu aktivieren.
 
 
 
 [[configure-an-authentication-tunnel]]
-== Konfigurieren Sie einen Authentifizierungstunnel
+== Einen Authentifizierungstunnel konfigurieren
 
-Falls Sie bereits einen SMB-Server für eine Daten-SVM `security login domain-tunnel create` konfiguriert haben, können Sie die SVM mit dem Befehl als Gateway bzw. _Tunnel_ für AD-Zugriff auf das Cluster konfigurieren.
+Wenn Sie bereits einen SMB-Server für eine Daten-SVM konfiguriert haben, kann mit dem  `security login domain-tunnel create` Befehl die SVM als Gateway (oder Tunnel) für den AD-Zugriff auf den Cluster konfiguriert werden.
 
-Vor ONTAP 9.16.1 müssen Sie einen Authentifizierungstunnel verwenden, um Clusteradministratorkonten mit AD zu managen.
+Vor ONTAP 9.16.1 ist ein Authentifizierungstunnel erforderlich, um Cluster-Administratorkonten mit AD zu verwalten.
 
 .Bevor Sie beginnen
-* Sie müssen einen SMB-Server für eine Daten-SVM konfiguriert haben.
-* Sie müssen ein AD-Domänenbenutzerkonto aktiviert haben, um auf die Admin-SVM für das Cluster zuzugreifen.
-* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Es muss ein SMB-Server für eine Daten-SVM konfiguriert sein.
+* Ein AD-Domänenbenutzerkonto muss für den Zugriff auf die Admin-SVM des Clusters aktiviert sein.
+* Sie müssen Cluster-Administrator sein, um diese Aufgabe ausführen zu können.
 
 
-Wenn Sie seit ONTAP 9.10.1 über ein SVM-Gateway (Domain-Tunnel) für AD-Zugriff verfügen, können Sie Kerberos für die Admin-Authentifizierung verwenden, wenn Sie NTLM in Ihrer AD-Domäne deaktiviert haben. In früheren Versionen wurde Kerberos mit der Admin-Authentifizierung für SVM Gateways nicht unterstützt. Diese Funktion ist standardmäßig verfügbar; keine Konfiguration erforderlich.
+Ab ONTAP 9.10.1 ist bei Verwendung eines SVM-Gateways (Domain-Tunnel) für den AD-Zugriff die Nutzung von Kerberos für die Admin-Authentifizierung möglich, sofern NTLM in Ihrer AD-Domäne deaktiviert ist. In früheren Versionen wurde Kerberos bei der Admin-Authentifizierung für SVM-Gateways nicht unterstützt. Diese Funktionalität ist standardmäßig verfügbar, eine Konfiguration ist nicht erforderlich.
 
 
-NOTE: Kerberos-Authentifizierung wird immer zuerst versucht. Bei einem Fehler wird dann versucht, die NTLM-Authentifizierung zu aktivieren.
+NOTE: Zuerst wird immer die Kerberos-Authentifizierung versucht. Im Falle eines Fehlschlags wird anschließend die NTLM-Authentifizierung versucht.
 
 .Schritte
-. Konfigurieren Sie eine SMB-fähige Daten-SVM als Authentifizierungstunnel für AD-Domänencontroller-Zugriff auf das Cluster:
+. Eine SMB-fähige Daten-SVM als Authentifizierungstunnel für den Zugriff des AD-Domänencontrollers auf den Cluster konfigurieren:
 +
 [source, cli]
 ----
 security login domain-tunnel create -vserver <svm_name>
 ----
 +
-Erfahren Sie mehr über `security login domain-tunnel create` in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-domain-tunnel-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `security login domain-tunnel create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-domain-tunnel-create.html["ONTAP-Befehlsreferenz"^].
 
 +
 [NOTE]
 ====
-Die SVM muss ausgeführt werden, damit der Benutzer authentifiziert werden kann.
+Die SVM muss ausgeführt werden, damit der Benutzer authentifiziert wird.
 
 ====
 +
-Mit dem folgenden Befehl wird die Daten-SVM mit SMB-Aktivierung als Authentifizierungstunnel konfiguriert `engData`.
+Der folgende Befehl konfiguriert die SMB-fähige Daten-SVM `engData` als Authentifizierungstunnel.
 
 +
 [listing]
@@ -97,30 +97,30 @@ cluster1::>security login domain-tunnel create -vserver engData
 
 
 [[create-an-svm-computer-account-on-the-domain]]
-== Erstellen Sie ein SVM-Computerkonto in der Domäne
+== Ein SVM-Computerkonto in der Domäne erstellen
 
-Wenn Sie keinen SMB-Server für eine Daten-SVM konfiguriert haben, können Sie mit dem `vserver active-directory create` Befehl ein Computerkonto für die SVM in der Domäne erstellen.
+Wenn für eine Daten-SVM kein SMB-Server konfiguriert wurde, kann mit dem  `vserver active-directory create` Befehl ein Computerkonto für die SVM in der Domäne erstellt werden.
 
 .Über diese Aufgabe
-Nachdem Sie den `vserver active-directory create` Befehl eingegeben haben, werden Sie aufgefordert, die Anmeldeinformationen für ein AD-Benutzerkonto mit ausreichender Privileges anzugeben, um der angegebenen Organisationseinheit in der Domäne Computer hinzuzufügen. Das Passwort des Kontos darf nicht leer sein.
+Nach Eingabe des  `vserver active-directory create` Befehls werden Sie aufgefordert, die Anmeldeinformationen für ein AD-Benutzerkonto mit ausreichenden Berechtigungen zum Hinzufügen von Computern zur angegebenen Organisationseinheit in der Domäne anzugeben. Das Kennwort des Kontos darf nicht leer sein.
 
-Ab ONTAP 9.16.1 können Sie dieses Verfahren verwenden, um Clusteradministratorkonten mit AD zu verwalten.
+Ab ONTAP 9.16.1 lässt sich dieses Verfahren zur Verwaltung von Cluster-Administratorkonten mit AD nutzen.
 
 .Bevor Sie beginnen
-Sie müssen ein Cluster- oder SVM-Administrator sein, um diese Aufgabe durchzuführen.
+Sie müssen Cluster- oder SVM-Administrator sein, um diese Aufgabe ausführen zu können.
 
 .Schritte
-. Erstellen eines Computerkontos für eine SVM in der AD-Domäne:
+. Ein Computerkonto für eine SVM in der AD-Domäne erstellen:
 +
 [source, cli]
 ----
 vserver active-directory create -vserver <SVM_name> -account-name <NetBIOS_account_name> -domain <domain> -ou <organizational_unit>
 ----
 +
-Ab ONTAP 9.16.1 akzeptiert der `-vserver` Parameter die Admin-SVM. Erfahren Sie mehr über `vserver active-directory create` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-active-directory-create.html["ONTAP-Befehlsreferenz"^].
+Ab ONTAP 9.16.1 akzeptiert der `-vserver` Parameter die Admin-SVM. Weitere Informationen zu  `vserver active-directory create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-active-directory-create.html["ONTAP-Befehlsreferenz"^].
 
 +
-Mit dem folgenden Befehl wird ein Computerkonto mit dem Namen in der Domäne `example.com` für SVM `engData` erstellt `ADSERVER1`. Sie werden nach Eingabe des Befehls zur Eingabe der Anmeldedaten für das AD-Benutzerkonto aufgefordert.
+Der folgende Befehl erstellt ein Computerkonto mit dem Namen  `ADSERVER1` in der Domäne  `example.com` für SVM  `engData`. Nach Eingabe des Befehls erfolgt eine Aufforderung zur Eingabe der Anmeldeinformationen des AD-Benutzerkontos.
 
 +
 [listing]

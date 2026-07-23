@@ -2,35 +2,35 @@
 permalink: flexgroup/fabricpool-aggregates-existing-volumes-task.html 
 sidebar: sidebar 
 keywords: aggregate, fabricpool, flexgroup, volume 
-summary: Ab ONTAP 9.5 wird FabricPool für FlexGroup Volumes unterstützt. Falls Sie Aggregate in FabricPool für vorhandene FlexGroup Volumes verwenden möchten, können Sie entweder die Aggregate, auf denen das FlexGroup Volume sich befindet, in FabricPool-Aggregaten konvertieren oder die FlexGroup-Volume-Komponenten zu Aggregaten in FabricPool migrieren. 
+summary: Ab ONTAP 9.5 wird FabricPool für FlexGroup Volumes unterstützt. Wenn Aggregate in FabricPool für bestehende FlexGroup Volumes verwendet werden sollen, besteht die Möglichkeit, entweder die Aggregate, auf denen sich das FlexGroup Volume befindet, in Aggregate in FabricPool zu konvertieren oder die FlexGroup Volume-Bestandteile in Aggregate in FabricPool zu migrieren. 
 ---
-= Verwenden Sie Aggregate in FabricPool für vorhandene ONTAP FlexGroup Volumes
+= Aggregate in FabricPool für bestehende ONTAP FlexGroup Volumes verwenden
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Ab ONTAP 9.5 wird FabricPool für FlexGroup Volumes unterstützt. Falls Sie Aggregate in FabricPool für vorhandene FlexGroup Volumes verwenden möchten, können Sie entweder die Aggregate, auf denen das FlexGroup Volume sich befindet, in FabricPool-Aggregaten konvertieren oder die FlexGroup-Volume-Komponenten zu Aggregaten in FabricPool migrieren.
+Ab ONTAP 9.5 wird FabricPool für FlexGroup Volumes unterstützt. Wenn Aggregate in FabricPool für bestehende FlexGroup Volumes verwendet werden sollen, besteht die Möglichkeit, entweder die Aggregate, auf denen sich das FlexGroup Volume befindet, in Aggregate in FabricPool zu konvertieren oder die FlexGroup Volume-Bestandteile in Aggregate in FabricPool zu migrieren.
 
 .Bevor Sie beginnen
-* Das FlexGroup-Volumen muss Raum-Garantie auf gesetzt haben `none`.
-* Falls Sie die Aggregate konvertieren möchten, auf denen sich das FlexGroup Volume befindet, in Aggregaten in FabricPool, müssen die Aggregate alle SSD-Festplatten verwenden.
+* Das FlexGroup Volume muss die Speicherplatzgarantie auf  `none` gesetzt haben.
+* Wenn Sie die Aggregate, auf denen sich das FlexGroup Volume befindet, in Aggregate in FabricPool konvertieren möchten, müssen die Aggregate ausschließlich SSD-Festplatten verwenden.
 
 
 .Über diese Aufgabe
-Wenn ein vorhandenes FlexGroup Volume sich auf nicht-SSD-Aggregaten befindet, müssen die FlexGroup Volume-Komponenten zu Aggregaten in FabricPool migriert werden.
+Wenn sich ein vorhandenes FlexGroup Volume auf Nicht-SSD-Aggregaten befindet, müssen die FlexGroup Volume-Bestandteile auf Aggregate in FabricPool migriert werden.
 
-.Wahlmöglichkeiten
-* Um die Aggregate zu konvertieren, auf denen das FlexGroup Volume sich in Aggregate in FabricPool befindet, führen Sie folgende Schritte aus:
+.Auswahlmöglichkeiten
+* Um die Aggregate, auf denen sich das FlexGroup Volumen befindet, in Aggregate in FabricPool zu konvertieren, sind die folgenden Schritte erforderlich:
 +
-.. Legen Sie die Tiering-Richtlinie für das vorhandene FlexGroup-Volume fest: `volume modify -volume flexgroup_name -tiering-policy [auto|snapshot|none|backup]`
+.. Die Tiering-Richtlinie für das bestehende FlexGroup Volume festlegen: `volume modify -volume flexgroup_name -tiering-policy [auto|snapshot|none|backup]`
 +
 [listing]
 ----
 cluster-2::> volume modify -volume fg1 -tiering-policy auto
 ----
-.. Ermitteln Sie die Aggregate, auf denen sich das FlexGroup Volume befindet: `volume show -volume flexgroup_name -fields aggr-list`
+.. Die Aggregate, auf denen das FlexGroup Volume liegt, werden identifiziert: `volume show -volume flexgroup_name -fields aggr-list`
 +
 [listing]
 ----
@@ -39,9 +39,9 @@ vserver volume aggr-list
 ------- ------ -----------
 vs1     fg1    aggr1,aggr3
 ----
-.. Fügen Sie jedem in der Aggregatliste aufgeführten Aggregat einen Objektspeicher hinzu: `storage aggregate object-store attach -aggregate aggregate name -name object-store-name -allow-flexgroup true`
+.. Jedem in der Aggregatliste aufgeführten Aggregat wird ein Objektspeicher zugeordnet: `storage aggregate object-store attach -aggregate aggregate name -name object-store-name -allow-flexgroup true`
 +
-Sie müssen alle Aggregate an einen Objektspeicher anhängen.
+Alle Aggregate müssen an einen Objektspeicher angehängt werden.
 
 +
 [listing]
@@ -50,17 +50,17 @@ cluster-2::> storage aggregate object-store attach -aggregate aggr1 -object-stor
 ----
 
 
-* So migrieren Sie die FlexGroup-Volume-Komponenten zu Aggregaten in FabricPool:
+* Um die FlexGroup Volumenbestandteile auf Aggregate in FabricPool zu migrieren, sind die folgenden Schritte erforderlich:
 +
-.. Legen Sie die Tiering-Richtlinie für das vorhandene FlexGroup-Volume fest: `volume modify -volume flexgroup_name -tiering-policy [auto|snapshot|none|backup]`
+.. Die Tiering-Richtlinie für das bestehende FlexGroup Volume festlegen: `volume modify -volume flexgroup_name -tiering-policy [auto|snapshot|none|backup]`
 +
 [listing]
 ----
 cluster-2::> volume modify -volume fg1 -tiering-policy auto
 ----
-.. Verschieben Sie jede Komponente des FlexGroup Volume zu einem Aggregat in FabricPool im selben Cluster: `volume move start -volume constituent-volume -destination-aggregate FabricPool_aggregate -allow-mixed-aggr-types true`
+.. Jeder Bestandteil des FlexGroup Volumens wird in ein Aggregat in FabricPool im selben Cluster verschoben: `volume move start -volume constituent-volume -destination-aggregate FabricPool_aggregate -allow-mixed-aggr-types true`
 +
-Alle FlexGroup Volume-Komponenten müssen zu Aggregaten in FabricPool verschoben werden (falls die FlexGroup Volume-Komponenten auf gemischten Aggregattypen sind). Außerdem muss sichergestellt werden, dass alle Komponenten über die Nodes im Cluster hinweg gleichmäßig verteilt werden.
+Alle FlexGroup-Volumenbestandteile müssen auf Aggregate in FabricPool verschoben werden (falls die FlexGroup-Volumenbestandteile auf gemischten Aggregattypen liegen), und es ist sicherzustellen, dass alle Bestandteile gleichmäßig auf die Knoten im Cluster verteilt sind.
 
 +
 [listing]
@@ -72,6 +72,6 @@ cluster-2::> volume move start -volume fg1_001 -destination-aggregate FP_aggr1 -
 
 
 .Verwandte Informationen
-* link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-attach.html["Speicheraggregat-Objektspeicher anhängen"^]
+* link:../disks-aggregates/index.html["Festplatten- und Aggregatverwaltung"]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-attach.html["storage aggregate Objektspeicher anhängen"^]
 

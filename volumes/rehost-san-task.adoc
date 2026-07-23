@@ -2,75 +2,75 @@
 permalink: volumes/rehost-san-task.html 
 sidebar: sidebar 
 keywords: rehost, san volumes 
-summary: Rehosting eines SAN-Volumes, das Daten über zugeordnete LUNs bereitstellt 
+summary: Ein SAN-Volume, das Daten über zugeordnete LUNs bereitstellt, neu hosten. 
 ---
-= Ein ONTAP SAN-Volume neu hosten
+= Rehost eines ONTAP SAN-Volumes
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können ein SAN-Volume, das Daten über zugeordnete LUNs bereitstellt, neu hosten. Nach dem erneuten Erstellen der Initiatorgruppe in der Ziel-SVM kann die Volume-Rehosting-Operation das Volume automatisch derselben SVM zuordnen.
+Sie können ein SAN-Volume, das Daten über zugeordnete LUNs bereitstellt, neu hosten. Nach dem Neuerstellen der Initiatorgruppe (Initiatorgruppe) in der Ziel-SVM kann der Volume-Rehost-Vorgang das Volume automatisch auf derselben SVM neu zuordnen.
 
 .Über diese Aufgabe
-* Das Rehosting ist ein störender Betrieb.
-* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
-* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Wenn Sie einen integrierten Schlüsselmanager verwenden, werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht geändert.
+* Rehosting ist ein störender Vorgang.
+* Falls der Rehosting-Vorgang fehlschlägt, ist es möglicherweise erforderlich, die Volume-Richtlinien und die zugehörigen Regeln auf dem Quellvolume neu zu konfigurieren.
+* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Bei Verwendung eines integrierten Schlüsselmanagers werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht verändert.
 +
-Bei Verwendung von ONTAP 9.8 oder früher müssen Sie die Verschlüsselung des Volumes aufheben, bevor Sie den Host-Vorgang wiederholen.
+Wenn Sie ONTAP 9.8 oder eine frühere Version verwenden, muss das Volume vor der Durchführung des Rehost-Vorgangs entschlüsselt werden.
 
 
 
-* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
+* Nach dem Rehosting-Vorgang gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen des Quellvolumes verloren und müssen auf dem rehosteten Volume manuell neu konfiguriert werden:
 +
-** Virenschutz-Richtlinien
-** Volume-Effizienzrichtlinie
-** Quality of Service-Richtlinien (QoS
-** Snapshot-Richtlinien
-** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
+** Antivirus-Richtlinien
+** Effizienzrichtlinie
+** Richtlinien zur Dienstqualität (QoS)
+** Snapshot Richtlinien
+** ns-switch und Name-Services-Konfiguration Exportrichtlinie und -regeln
 ** Benutzer- und Gruppen-IDs
 
 
 
 
 .Bevor Sie beginnen
-* Das Volume muss sich online sein.
-* Volume-Managementvorgänge wie das Verschieben von Volumes oder LUNs dürfen nicht ausgeführt werden.
-* Es darf keine aktive I/O-Vorgänge auf den Volumes oder LUNs vorhanden sein.
-* Sie müssen überprüfen, ob die Ziel-SVM über keine Initiatorgruppe desselben Namens, sondern unterschiedliche Initiatoren verfügt.
+* Das Volume muss online sein.
+* Volume-Management-Operationen wie Volume-Verschiebungen oder LUN-Verschiebungen dürfen nicht ausgeführt werden.
+* Es dürfen keine aktiven E/A-Vorgänge auf den Volumes oder LUNs stattfinden.
+* Es muss sichergestellt sein, dass die Ziel-SVM keine Initiatorgruppe mit demselben Namen, aber unterschiedlichen Initiatoren besitzt.
 +
-Wenn die Initiatorgruppe denselben Namen hat, müssen Sie die Initiatorgruppe in einer der SVMs (Quelle oder Ziel) umbenannt haben.
+Wenn die Initiatorgruppe denselben Namen hat, muss die Initiatorgruppe in einer der SVMs (Quell- oder Ziel-SVM) umbenannt worden sein.
 
-* Sie müssen die `force-unmap-luns` Option aktiviert haben.
+* Die Option  `force-unmap-luns`muss aktiviert sein.
 +
 ** Der Standardwert der `force-unmap-luns` Option ist `false`.
-** Wenn Sie die `force-unmap-luns` Option auf einstellen, wird keine Warn- oder Bestätigungsmeldung angezeigt `true`.
+** Es wird keine Warn- oder Bestätigungsmeldung angezeigt, wenn die Option  `force-unmap-luns` auf  `true` gesetzt wird.
 
 
 
 
 .Schritte
-. Erfassen Sie die LUN-Zuordnungsinformationen für das Ziel-Volume:
+. LUN-Zuordnungsinformationen auf dem Ziel-Volume erfassen:
 +
 `lun mapping show volume _volume_ vserver _source_svm_`
 
 +
-Dies ist ein vorsorgender Schritt, um zu vermeiden, dass Informationen über die LUN-Zuordnung verloren gehen, falls das Rehosting des Volumes fehlschlägt.
+Dies ist eine Vorsichtsmaßnahme, um den Verlust von Informationen über die LUN-Zuordnung im Falle eines Fehlers beim Volume-Rehost zu vermeiden.
 
 +
-Erfahren Sie mehr über `lun mapping show volume` in der link:https://docs.netapp.com/us-en/ontap-cli/lun-mapping-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `lun mapping show volume` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/lun-mapping-show.html["ONTAP-Befehlsreferenz"^].
 
-. Löschen der dem Ziel-Volume zugeordneten Initiatorgruppen.
-. Erneutes Hosten des Ziel-Volume auf die Ziel-SVM:
+. Löschen von igroups, die mit dem Ziel-Volume verknüpft sind.
+. Das Ziel-Volume auf der Ziel-SVM neu hosten:
 +
 `volume rehost -vserver _source_svm_ -volume _volume_name_ -destination-vserver _destination_svm_`
 
-. Zuordnen von LUNs auf dem Ziel-Volume zu entsprechenden Initiatorgruppen:
+. LUNs auf dem Ziel-Volume den entsprechenden igroups zuordnen:
 +
-** Durch die Volume-Rehosting werden die LUNs auf dem Ziel-Volume beibehalten, die Zuordnung der LUNs bleibt jedoch aufgehoben.
-** Verwenden Sie den Ziel-SVM-Portsatz beim Zuordnen der LUNs.
-** Wenn die `auto-remap-luns` Option auf festgelegt `true` ist, werden die LUNs nach dem Rehosten automatisch zugeordnet.
+** Volume Rehost erhält die LUNs auf dem Ziel-Volume, jedoch bleiben die LUNs unzugeordnet.
+** Der Ziel-SVM-Portsatz wird beim Zuordnen von LUNs verwendet.
+** Wenn die  `auto-remap-luns` Option auf  `true` gesetzt ist, werden die LUNs nach dem Rehosting automatisch zugeordnet.
 
 
 

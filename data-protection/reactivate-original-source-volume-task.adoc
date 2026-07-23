@@ -2,56 +2,56 @@
 permalink: data-protection/reactivate-original-source-volume-task.html 
 sidebar: sidebar 
 keywords: reactivate, original, source, volume 
-summary: Sie können die ursprüngliche Datensicherungsbeziehung zwischen den Quell- und Ziel-Volumes wiederherstellen, wenn Sie nicht mehr Daten vom Bestimmungsort bereitstellen müssen. 
+summary: Sie können die ursprüngliche Datensicherungsbeziehung zwischen Quell- und Zielvolume wiederherstellen, wenn keine Daten mehr vom Zielvolume bereitgestellt werden müssen. 
 ---
-= Aktivieren Sie das ursprüngliche ONTAP SnapMirror-Quell-Volume erneut
+= Das ursprüngliche ONTAP SnapMirror Quellvolume wird reaktiviert
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können die ursprüngliche Datensicherungsbeziehung zwischen den Quell- und Ziel-Volumes wiederherstellen, wenn Sie nicht mehr Daten vom Bestimmungsort bereitstellen müssen.
+Sie können die ursprüngliche Datensicherungsbeziehung zwischen Quell- und Zielvolume wiederherstellen, wenn keine Daten mehr vom Zielvolume bereitgestellt werden müssen.
 
 .Über diese Aufgabe
-* Für das folgende Verfahren wird vorausgesetzt, dass die Basis im ursprünglichen Quell-Volume intakt ist. Wenn die Baseline nicht intakt ist, müssen Sie die Beziehung zwischen dem Volume, das Sie Daten vom und dem ursprünglichen Quell-Volume bereitstellen, erstellen und initialisieren, bevor Sie den Vorgang durchführen.
-* Die Hintergrundvorbereitung und die Data Warehousing-Phase einer XDP-SnapMirror-Beziehung nehmen viel Zeit in Anspruch. Es ist nicht ungewöhnlich, dass die SnapMirror Beziehung den Status „Vorbereitung“ für einen längeren Zeitraum meldet.
+* Das folgende Verfahren setzt voraus, dass die Baseline im ursprünglichen Quellvolume intakt ist. Falls die Baseline nicht intakt ist, muss die Beziehung zwischen dem Volume, von dem Daten bereitgestellt werden, und dem ursprünglichen Quellvolume erstellt und initialisiert werden, bevor das Verfahren durchgeführt wird.
+* Die Hintergrundvorbereitung und die Data-Warehousing-Phase einer XDP SnapMirror Beziehung können viel Zeit in Anspruch nehmen. Es ist nicht ungewöhnlich, dass die SnapMirror Beziehung den Status „preparing“ über einen längeren Zeitraum meldet.
 
 
 .Schritte
-. Umkehren der ursprünglichen Datensicherungsbeziehung:
+. Die ursprüngliche Datensicherungsbeziehung umkehren:
 +
 `snapmirror resync -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
-Erfahren Sie mehr über `snapmirror resync` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror resync` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen. Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen. Der Befehl schlägt fehl, wenn auf der Quelle und dem Ziel kein allgemeiner Snapshot vorhanden ist. Verwenden Sie `snapmirror initialize` , um die Beziehung neu zu initialisieren. Erfahren Sie mehr über `snapmirror initialize` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
+Dieser Befehl muss von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausgeführt werden. Obwohl für die Resynchronisierung kein Basistransfer erforderlich ist, kann sie zeitaufwändig sein. Die Resynchronisierung kann außerhalb der Spitzenzeiten durchgeführt werden. Der Befehl schlägt fehl, wenn auf der Quelle und dem Ziel kein gemeinsamer Snapshot vorhanden ist. Mit  `snapmirror initialize` kann die Beziehung neu initialisiert werden. Weitere Informationen zu  `snapmirror initialize` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
 
 ====
 +
-Im folgenden Beispiel wird die Beziehung zwischen dem ursprünglichen Quellvolume, `volA` auf `svm1`, und dem Volumen, von dem Sie Daten bereitstellen, `volA_dst` auf umgekehrt `svm_backup`:
+Das folgende Beispiel kehrt die Beziehung zwischen dem ursprünglichen Quellvolume, `volA` auf `svm1`, und dem Volume, von dem Daten bereitgestellt werden, `volA_dst` auf `svm_backup` um:
 
 +
 [listing]
 ----
 cluster_src::> snapmirror resync -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
-. Wenn Sie bereit sind, den Datenzugriff zur Originalquelle wiederherzustellen, stoppen Sie den Zugriff auf das ursprüngliche Ziel-Volume. Eine Möglichkeit besteht darin, die ursprüngliche Ziel-SVM zu stoppen:
+. Wenn Sie bereit sind, den Datenzugriff auf die ursprüngliche Quelle wiederherzustellen, beenden Sie den Zugriff auf das ursprüngliche Zielvolume. Eine Möglichkeit hierfür ist das Stoppen der ursprünglichen Ziel-SVM:
 +
 `vserver stop -vserver _SVM_`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster ausführen. Dieser Befehl verhindert den Benutzerzugriff auf die gesamte ursprüngliche Ziel-SVM. Sie können den Zugriff auf das ursprüngliche Ziellaufwerk mithilfe anderer Methoden beenden.
+Dieser Befehl muss von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster ausgeführt werden. Dieser Befehl unterbindet den Benutzerzugriff auf die gesamte ursprüngliche Ziel-SVM. Es besteht die Möglichkeit, den Zugriff auf das ursprüngliche Ziel-Volume mit anderen Methoden zu unterbinden.
 
 ====
 +
-Im folgenden Beispiel wird die ursprüngliche Ziel-SVM angehalten:
+Das folgende Beispiel stoppt die ursprüngliche Ziel-SVM:
 
 +
 [listing]
@@ -59,20 +59,20 @@ Im folgenden Beispiel wird die ursprüngliche Ziel-SVM angehalten:
 cluster_dst::> vserver stop svm_backup
 ----
 +
-Erfahren Sie mehr über `vserver stop` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-stop.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `vserver stop` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-stop.html["ONTAP-Befehlsreferenz"^].
 
-. Aktualisierung der umgekehrten Beziehung:
+. Die umgekehrte Beziehung aktualisieren:
 +
 `snapmirror update -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen.
+Dieser Befehl muss von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausgeführt werden.
 
 ====
 +
-Das folgende Beispiel aktualisiert die Beziehung zwischen dem Volumen, das Sie Daten von, `volA_dst` auf `svm_backup`, und dem ursprünglichen Quell-Volume `volA` auf bereitstellen `svm1`:
+Das folgende Beispiel aktualisiert die Beziehung zwischen dem Volume, von dem Daten bereitgestellt werden, `volA_dst` auf `svm_backup`, und dem ursprünglichen Quellvolume, `volA` auf `svm1`:
 
 +
 [listing]
@@ -80,20 +80,20 @@ Das folgende Beispiel aktualisiert die Beziehung zwischen dem Volumen, das Sie D
 cluster_src::> snapmirror update -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
 +
-Erfahren Sie mehr über `snapmirror update` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror update` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["ONTAP-Befehlsreferenz"^].
 
-. Halten Sie geplante Transfers von der ursprünglichen SVM oder dem ursprünglichen Quell-Cluster für die umgekehrte Beziehung ab:
+. Vom ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster geplante Übertragungen für die umgekehrte Beziehung anhalten:
 +
 `snapmirror quiesce -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen.
+Dieser Befehl muss von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausgeführt werden.
 
 ====
 +
-Im folgenden Beispiel werden geplante Übertragungen zwischen dem ursprünglichen Zielvolume, `volA_dst` ein `svm_backup` und dem ursprünglichen Quellvolume `volA` am gestoppt `svm1`:
+Das folgende Beispiel stoppt geplante Übertragungen zwischen dem ursprünglichen Zielvolume, `volA_dst` auf `svm_backup`, und dem ursprünglichen Quellvolume, `volA` auf `svm1`:
 
 +
 [listing]
@@ -101,20 +101,20 @@ Im folgenden Beispiel werden geplante Übertragungen zwischen dem ursprüngliche
 cluster_src::> snapmirror quiesce -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
 +
-Erfahren Sie mehr über `snapmirror quiesce` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-quiesce.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror quiesce` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-quiesce.html["ONTAP-Befehlsreferenz"^].
 
-. Wenn das endgültige Update abgeschlossen ist und die Beziehung für den Beziehungsstatus „stillgelegt“ anzeigt, führen Sie den folgenden Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster aus, um die umgekehrte Beziehung zu unterbrechen:
+. Wenn das letzte Update abgeschlossen ist und die Beziehung den Status „Quiesced“ anzeigt, kann der folgende Befehl auf der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausgeführt werden, um die umgekehrte Beziehung aufzuheben:
 +
 `snapmirror break -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem Quell-Cluster ausführen.
+Dieser Befehl muss von der ursprünglichen Quell-SVM oder dem Quell-Cluster ausgeführt werden.
 
 ====
 +
-Das folgende Beispiel bricht die Beziehung zwischen dem ursprünglichen Zielvolume, `volA_dst` auf `svm_backup`, und dem ursprünglichen Quellvolume, `volA` auf `svm1`:
+Das folgende Beispiel unterbricht die Beziehung zwischen dem ursprünglichen Zielvolume, `volA_dst` auf `svm_backup`, und dem ursprünglichen Quellvolume, `volA` auf `svm1`:
 
 +
 [listing]
@@ -122,20 +122,20 @@ Das folgende Beispiel bricht die Beziehung zwischen dem ursprünglichen Zielvolu
 cluster_scr::> snapmirror break -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
 +
-Erfahren Sie mehr über `snapmirror break` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror break` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["ONTAP-Befehlsreferenz"^].
 
-. Löschen Sie in der ursprünglichen SVM oder dem ursprünglichen Quell-Cluster die verkehrte Datensicherungsbeziehung:
+. Aus der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster die umgekehrte Datensicherungsbeziehung löschen:
 +
 `snapmirror delete -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausführen.
+Dieser Befehl muss von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausgeführt werden.
 
 ====
 +
-Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen Quellvolume, `volA` ON `svm1`, und dem Volumen, von dem Sie Daten bereitstellen, `volA_dst` auf gelöscht `svm_backup`:
+Das folgende Beispiel löscht die umgekehrte Beziehung zwischen dem ursprünglichen Quellvolume, `volA` auf `svm1`, und dem Volume, von dem Daten bereitgestellt werden, `volA_dst` auf `svm_backup`:
 
 +
 [listing]
@@ -143,20 +143,20 @@ Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen
 cluster_src::> snapmirror delete -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
 +
-Erfahren Sie mehr über `snapmirror delete` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-delete.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror delete` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-delete.html["ONTAP-Befehlsreferenz"^].
 
-. Lassen Sie die umgekehrte Beziehung von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster los.
+. Die umgekehrte Beziehung vom ursprünglichen Ziel-SVM oder vom ursprünglichen Ziel-Cluster aufheben.
 +
 `snapmirror release -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster ausführen.
+Dieser Befehl muss von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster ausgeführt werden.
 
 ====
 +
-Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen Zielvolume, `volA_dst` `svm_backup` `volA` auf , und dem ursprünglichen Quellvolume auf freigegeben `svm1`:
+Das folgende Beispiel hebt die umgekehrte Beziehung zwischen dem ursprünglichen Zielvolume, `volA_dst` auf `svm_backup`, und dem ursprünglichen Quellvolume, `volA` auf `svm1`, auf:
 
 +
 [listing]
@@ -164,14 +164,14 @@ Im folgenden Beispiel wird die umgekehrte Beziehung zwischen dem ursprünglichen
 cluster_dst::> snapmirror release -source-path svm_backup:volA_dst -destination-path svm1:volA
 ----
 +
-Erfahren Sie mehr über `snapmirror release` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-release.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror release` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-release.html["ONTAP-Befehlsreferenz"^].
 
-. Wiederherstellung der ursprünglichen Datensicherungsbeziehung vom ursprünglichen Zielort:
+. Die ursprüngliche Datensicherungsbeziehung vom ursprünglichen Ziel-Cluster wiederherstellen:
 +
 `snapmirror resync -source-path _SVM:volume_ -destination-path _SVM:volume_`
 
 +
-Das folgende Beispiel stellt die Beziehung zwischen dem ursprünglichen Quell-Volume, `volA` `svm1` `volA_dst` auf , und dem ursprünglichen Ziel-Volume wieder her, auf `svm_backup`:
+Das folgende Beispiel stellt die Beziehung zwischen dem ursprünglichen Quellvolume, `volA` auf  `svm1`, und dem ursprünglichen Zielvolume, `volA_dst` auf  `svm_backup`, wieder her:
 
 +
 [listing]
@@ -179,14 +179,14 @@ Das folgende Beispiel stellt die Beziehung zwischen dem ursprünglichen Quell-Vo
 cluster_dst::> snapmirror resync -source-path svm1:volA -destination-path svm_backup:volA_dst
 ----
 +
-Erfahren Sie mehr über `snapmirror resync` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror resync` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
 
-. Starten Sie bei Bedarf die ursprüngliche Ziel-SVM:
+. Gegebenenfalls die ursprüngliche Ziel-SVM starten:
 +
 `vserver start -vserver _SVM_`
 
 +
-Im folgenden Beispiel wird die ursprüngliche Ziel-SVM gestartet:
+Das folgende Beispiel startet die ursprüngliche Ziel-SVM:
 
 +
 [listing]
@@ -194,11 +194,11 @@ Im folgenden Beispiel wird die ursprüngliche Ziel-SVM gestartet:
 cluster_dst::> vserver start svm_backup
 ----
 +
-Erfahren Sie mehr über `vserver start` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-start.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `vserver start` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-start.html["ONTAP-Befehlsreferenz"^].
 
 
 
 .Nachdem Sie fertig sind
- `snapmirror show`Überprüfen Sie mit dem Befehl, ob die SnapMirror Beziehung erstellt wurde.
+Mit dem  `snapmirror show`Befehl lässt sich überprüfen, ob die SnapMirror Beziehung erstellt wurde.
 
-Erfahren Sie mehr über `snapmirror show` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["ONTAP-Befehlsreferenz"^].

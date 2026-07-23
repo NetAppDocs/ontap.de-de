@@ -2,53 +2,53 @@
 permalink: smb-hyper-v-sql/verify-domain-accounts-map-default-unix-user-task.html 
 sidebar: sidebar 
 keywords: verfiy, domain, account, default, unix, server, smb, share, user 
-summary: Hyper-V und SQL Server erfordern für den SMB-Zugriff die Zuordnung von Domänencomputerkonten zu einem UNIX-Benutzer. Am einfachsten ist die Zuordnung zum UNIX-Standardbenutzer. 
+summary: Hyper-V und SQL Server benötigen Domänencomputerkonten, die einem UNIX-Benutzer für den SMB-Zugriff zugeordnet werden. Am einfachsten ist es, sie dem Standard-UNIX-Benutzer zuzuordnen. 
 ---
-= Überprüfen Sie, ob die Domänenkonten dem standardmäßigen UNIX-Benutzer in ONTAP zugeordnet sind
+= Überprüfen, ob die Domänenkonten dem Standard-UNIX-Benutzer in ONTAP zugeordnet sind
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Hyper-V und SQL Server verwenden Domänenkonten, um SMB-Verbindungen für kontinuierlich verfügbare Freigaben zu erstellen. Um die Verbindung erfolgreich zu erstellen, muss das Computerkonto einem UNIX-Benutzer erfolgreich zugeordnet werden. Der bequemste Weg dies zu erreichen ist, das Computerkonto dem standardmäßigen UNIX-Benutzer zuzuordnen.
+Hyper-V und SQL Server verwenden Domänenkonten, um SMB-Verbindungen zu permanent verfügbaren Freigaben herzustellen. Damit die Verbindung erfolgreich hergestellt werden kann, muss das Computerkonto erfolgreich einem UNIX-Benutzer zugeordnet werden. Am einfachsten wird dies erreicht, indem das Computerkonto dem Standard-UNIX-Benutzer zugeordnet wird.
 
 .Über diese Aufgabe
-Hyper-V und SQL Server verwenden die Domänencomputer-Konten, um SMB-Verbindungen zu erstellen. Darüber hinaus verwendet SQL Server ein Domain-Benutzerkonto als Dienstkonto, das auch SMB-Verbindungen erstellt.
+Hyper-V und SQL Server verwenden Domänencomputerkonten, um SMB-Verbindungen herzustellen. Zusätzlich verwendet SQL Server ein Domänenbenutzerkonto als Dienstkonto, das ebenfalls SMB-Verbindungen herstellt.
 
-Wenn Sie eine Storage Virtual Machine (SVM) erstellen, erstellt ONTAP automatisch den Standardbenutzer mit dem Namen  `pcuser` (mit einer UID von  `65534` ) und die Gruppe namens  `pcuser` (mit einer GID von  `65534` ) und fügt den Standardbenutzer zum  `pcuser` Gruppe. Wenn Sie eine Hyper-V über SMB-Lösung auf einer SVM konfigurieren, die vor dem Upgrade des Clusters auf Data ONTAP 8.2 vorhanden war, sind Benutzer und Gruppen möglicherweise nicht vorhanden. Wenn dies nicht der Fall ist, müssen Sie diese erstellen, bevor Sie den UNIX-Standardbenutzer des CIFS-Servers konfigurieren.
+Wenn eine Storage Virtual Machine (SVM) erstellt wird, erstellt ONTAP automatisch den Standardbenutzer `pcuser` (mit einer UID von `65534`) und die Gruppe `pcuser` (mit einer GID von `65534`) und fügt den Standardbenutzer der `pcuser` Gruppe hinzu. Wenn eine Hyper-V over SMB-Lösung auf einer SVM konfiguriert wird, die bereits vor dem Upgrade des Clusters auf Data ONTAP 8.2 vorhanden war, existieren der Standardbenutzer und die Standardgruppe möglicherweise nicht. Falls dies der Fall ist, müssen diese erstellt werden, bevor der Standard-UNIX-Benutzer des CIFS-Servers konfiguriert wird.
 
 .Schritte
-. Legen Sie fest, ob ein UNIX-Standardbenutzer vorhanden ist:
+. Ermitteln, ob ein Standard-UNIX-Benutzer vorhanden ist:
 +
 [source, cli]
 ----
 vserver cifs options show -vserver <vserver_name>
 ----
-. Wenn die Standardbenutzeroption nicht festgelegt ist, legen Sie fest, ob ein UNIX-Benutzer als Standardbenutzer festgelegt werden kann:
+. Wenn die Option „Standardbenutzer“ nicht festgelegt ist, muss geprüft werden, ob ein UNIX-Benutzer existiert, der als Standard-UNIX-Benutzer festgelegt werden kann:
 +
 [source, cli]
 ----
 vserver services unix-user show -vserver <vserver_name>
 ----
-. Wenn die Option „Standardbenutzer“ nicht festgelegt ist und kein UNIX-Benutzer vorhanden ist, der als UNIX-Standardbenutzer festgelegt werden kann, erstellen Sie die Standardgruppe und den UNIX-Standardbenutzer und fügen Sie den Standardbenutzer der Gruppe hinzu.
+. Wenn die Option „Standardbenutzer“ nicht festgelegt ist und kein UNIX-Benutzer existiert, der als Standard-UNIX-Benutzer bestimmt werden kann, sollten die Standardgruppe und der Standard-UNIX-Benutzer erstellt und der Standardbenutzer der Gruppe hinzugefügt werden.
 +
-. Die Standardgruppe erhält im Allgemeinen den Gruppennamen „pcuser“ Die der Gruppe zugewiesene GID muss sein `65534`.
+Im Allgemeinen erhält der Standardbenutzer den Benutzernamen „pcuser“ und muss die UID von `65534` zugewiesen bekommen. Die Standardgruppe erhält im Allgemeinen den Gruppennamen „pcuser“. Die der Gruppe zugewiesene GID muss `65534` sein.
 
 +
-.. Erstellen Sie die Standardgruppe:
+.. Standardgruppe erstellen:
 +
 [source, cli]
 ----
 vserver services unix-group create -vserver <vserver_name> -name pcuser -id 65534
 ----
-.. Erstellen Sie den Standardbenutzer und fügen Sie den Standardbenutzer der Standardgruppe hinzu:
+.. Den Standardbenutzer erstellen und den Standardbenutzer der Standardgruppe hinzufügen:
 +
 [source, cli]
 ----
 vserver services unix-user create -vserver <vserver_name> -user pcuser -id 65534 -primary-gid 65534
 ----
-.. Überprüfen Sie, ob der Standardbenutzer und die Standardgruppe richtig konfiguriert sind:
+.. Es sollte überprüft werden, ob der Standardbenutzer und die Standardgruppe korrekt konfiguriert sind:
 +
 [source, cli]
 ----
@@ -61,15 +61,15 @@ vserver services unix-group show -vserver <vserver_name> -members
 ----
 
 
-. Wenn der Standardbenutzer des CIFS-Servers nicht konfiguriert ist, führen Sie Folgendes aus:
+. Wenn der Standardbenutzer des CIFS-Servers nicht konfiguriert ist, gilt Folgendes:
 +
-.. Konfigurieren Sie den Standardbenutzer:
+.. Standardbenutzer konfigurieren:
 +
 [source, cli]
 ----
 vserver cifs options modify -vserver <vserver_name> -default-unix-user pcuser
 ----
-.. Vergewissern Sie sich, dass der UNIX-Standardbenutzer richtig konfiguriert ist:
+.. Es sollte überprüft werden, ob der Standard-UNIX-Benutzer korrekt konfiguriert ist:
 +
 [source, cli]
 ----
@@ -77,14 +77,14 @@ vserver cifs options show -vserver <vserver_name>
 ----
 
 
-. Um zu überprüfen, ob das Computerkonto des Anwendungsservers dem Standardbenutzer ordnungsgemäß zugeordnet ist, ordnen Sie ein Laufwerk einer auf der SVM befindlichen Freigabe zu, und bestätigen Sie die Windows-Benutzer-UNIX-Benutzerzuordnung mit dem `vserver cifs session show` Befehl.
+. Um zu überprüfen, ob das Computerkonto des Anwendungsservers korrekt dem Standardbenutzer zugeordnet ist, kann ein Laufwerk einer Freigabe auf dem SVM zugeordnet und die Zuordnung von Windows-Benutzer zu UNIX-Benutzer mit dem  `vserver cifs session show` Befehl bestätigt werden.
 +
-Erfahren Sie mehr über `vserver cifs options` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=vserver+cifs+options["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `vserver cifs options` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=vserver+cifs+options["ONTAP-Befehlsreferenz"^].
 
 
 
 .Beispiel
-Die folgenden Befehle stellen fest, dass der Standardbenutzer des CIFS-Servers nicht festgelegt ist, stellen aber fest, dass der  `pcuser` Benutzer und  `pcuser` Gruppe existiert. Die  `pcuser` Der Benutzer wird als Standardbenutzer des CIFS-Servers auf SVM vs1 zugewiesen.
+Die folgenden Befehle ermitteln, dass der Standardbenutzer des CIFS-Servers nicht festgelegt ist, aber dass der  `pcuser` Benutzer und die  `pcuser` Gruppe existieren. Der  `pcuser` Benutzer ist als Standardbenutzer des CIFS-Servers auf SVM vs1 zugewiesen.
 
 [listing]
 ----

@@ -2,57 +2,57 @@
 permalink: san-config/host-support-multipathing-concept.html 
 sidebar: sidebar 
 keywords: host, support, multipathing 
-summary: 'ONTAP verwendet für FC- und iSCSI-Pfade immer Asymmetric Logical Unit Access (ALUA). Nutzen Sie Host-Konfigurationen, die ALUA für FC- und iSCSI-Protokolle unterstützen.' 
+summary: 'ONTAP verwendet stets Asymmetric Logical Unit Access (ALUA) sowohl für FC als auch für iSCSI-Pfade. Es sollten Hostkonfigurationen verwendet werden, die ALUA für die Protokolle FC und iSCSI unterstützen.' 
 ---
-= ONTAP-Unterstützung für SAN-Host-Multipathing
+= ONTAP Unterstützung für SAN Host Multipathing
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-ONTAP verwendet Asymmetric Logical Unit Access (ALUA)-Software für das Multipathing mit FC- und iSCSI-Hosts.
+ONTAP verwendet Asymmetric Logical Unit Access (ALUA) Software für Multipathing mit sowohl FC- als auch iSCSI-Hosts.
 
-Ab ONTAP 9.5 wird Failover/Giveback für Multipath-Hochverfügbarkeitspaare (HA) für NVMe-Hosts unterstützt, die asynchronen Namespace-Zugriff (ANA) verwenden. In ONTAP 9.4 unterstützt NVMe nur einen Pfad vom Host zum Ziel, sodass der Applikations-Host den Pfad-Failover zu seinem HA-Partner managen muss.
+Ab ONTAP 9.5 wird Multipath-Hochverfügbarkeit (HA) mit Failover/Giveback für NVMe-Hosts über Asynchronous Namespace Access (ANA) unterstützt. In ONTAP 9.4 unterstützt NVMe nur einen Pfad vom Host zum Ziel, daher muss der Anwendungshost das Pfad-Failover zu seinem HA-Partner verwalten.
 
-Informationen darüber, welche spezifischen Host-Konfigurationen ALUA oder ANA unterstützen, finden Sie im https://mysupport.netapp.com/matrix["NetApp Interoperabilitäts-Matrix-Tool"^] und https://docs.netapp.com/us-en/ontap-sanhost/index.html["ONTAP SAN-Host-Konfiguration"] Ihres Host-Betriebssystems.
+Informationen darüber, welche spezifischen Hostkonfigurationen ALUA oder ANA unterstützen, finden sich in der  https://mysupport.netapp.com/matrix["NetApp Interoperabilitätsmatrix-Tool"^] und  https://docs.netapp.com/us-en/ontap-sanhost/index.html["ONTAP SAN Hostkonfiguration"] für Ihr Host-Betriebssystem.
 
 Multipathing-Software, auch bekannt als MPIO (Multipath I/O), wird für HA-Konfigurationen empfohlen. Die Multipathing-Software ist auf Ihrem SAN-Host erforderlich, damit dieser über mehrere Pfade auf eine LUN oder einen NVMe-Namespace zugreifen kann. Sie stellt dem Betriebssystem für alle Pfade zu einer LUN oder einem NVMe-Namespace eine einzige Festplatte bereit. Ohne sie könnte das Betriebssystem jeden Pfad als separate Festplatte behandeln, was zu Datenbeschädigung führen kann.
 
-Ihre Lösung wird als mehrere Pfade angesehen, wenn Sie einen der folgenden haben:
+Ihre Lösung gilt als mehrpfadig, wenn eine der folgenden Bedingungen erfüllt ist:
 
-* Ein einzelner Initiator-Port im Host, der an mehrere SAN LIFs in der SVM angeschlossen ist
-* Mehrere Initiator-Ports, die an eine einzelne SAN-LIF in der SVM angeschlossen sind
-* Mehrere Initiator-Ports, die an mehrere SAN-LIFs in der SVM angeschlossen sind
+* Ein einzelner Initiator-Port im Host, der mit mehreren SAN-LIFs in der SVM verbunden ist
+* Mehrere Initiator-Ports sind an eine einzelne SAN LIF in der SVM angeschlossen.
+* Mehrere Initiator-Ports, die mit mehreren SAN-LIFs in der SVM verbunden sind
 
 
 Sie sollten Selective LUN Map, FC-Switch-Zoning oder Portsets verwenden, um die Pfade für den Zugriff auf LUNs und Namespaces einzuschränken.
 
 .Verwandte Informationen
-Erfahren Sie mehr über link:../san-admin/multipath-automatic-lif-failover-support.html["Von ONTAP unterstützte SAN-Multipath-Konfigurationen"].
+Informationen dazu link:../san-admin/multipath-automatic-lif-failover-support.html["Von ONTAP unterstützte SAN-Multipath-Konfigurationen"].
 
 
 
 [[recommended-number-of-paths-from-host-to-nodes-in-cluster]]
-== Empfohlene Anzahl an Pfaden vom Host zu Nodes im Cluster
+== Empfohlene Anzahl von Pfaden vom Host zu den Knoten im Cluster
 
-Sie sollten zu jedem Node im Cluster nicht mehr als acht Pfade vom Host überschreiten. Sie sollten darüber hinaus die Gesamtzahl der Pfade nicht überschreiten, die für das Host-Betriebssystem und das auf dem Host verwendete Multipathing unterstützt werden können.
+Sie sollten nicht mehr als acht Pfade von Ihrem Host zu jedem Knoten in Ihrem Cluster verwenden. Sie sollten außerdem die Gesamtzahl der Pfade, die vom Host-Betriebssystem und dem auf dem Host verwendeten Multipathing unterstützt werden, nicht überschreiten.
 
-Wenn Sie vier oder mehr Nodes in Ihrem Cluster haben oder mehr als vier von den SVMs in einem Ihrer Nodes verwendete Ziel-Ports: Mithilfe der folgenden Methoden können Sie die Anzahl der Pfade begrenzen, die zum Zugriff auf LUNs auf Ihren Nodes verwendet werden können, damit Sie die empfohlene maximale Anzahl von acht Pfaden nicht überschreiten.
+Wenn Ihr Cluster vier oder mehr Knoten umfasst oder die SVMs auf einem Ihrer Knoten mehr als vier Zielports verwenden, können die folgenden Methoden eingesetzt werden, um die Anzahl der Pfade, über die auf LUNs auf Ihren Knoten zugegriffen werden kann, so zu begrenzen, dass das empfohlene Maximum von acht Pfaden nicht überschritten wird.
 
-* link:../san-admin/selective-lun-map-concept.html["Selektive LUN-Zuordnung (SLM)"]
+* link:../san-admin/selective-lun-map-concept.html["Selective LUN Map (SLM)"]
 +
 SLM reduziert die Anzahl der Pfade vom Host zur LUN auf nur Pfade auf dem Knoten, dem die LUN gehört, und dem HA-Partner des Eigentümerknotens. SLM ist standardmäßig aktiviert. Sie sollten mindestens zwei Pfade pro LUN haben, die zu jedem meldenden Knoten führen und durch SLM von der Storage Virtual Machine (SVM) in Ihrem Cluster verwendet werden. Dadurch werden Single Points of Failure eliminiert und das System kann Komponentenausfälle überstehen.
 
-* link:../san-admin/limit-lun-access-portsets-igroups-concept.html["Portsets"]
+* link:../san-admin/limit-lun-access-portsets-igroups-concept.html["Port-Sets"]
 +
-Portsätze können mit SLM verwendet werden, um den Zugriff bestimmter Ziele noch weiter auf bestimmte Initiatoren zu beschränken. Wenn Sie SLM mit Portsätzen verwenden, sind die LUNs für den Satz der LIFs im Portsatz auf dem Node, der die LUN besitzt, und auf dem HA-Partner dieses Node zugänglich.
+Portsets können in Verbindung mit SLM verwendet werden, um den Zugriff bestimmter Ziele auf bestimmte Initiatoren weiter einzuschränken. Bei Verwendung von SLM mit Portsets sind LUNs auf der Menge der LIFs im Portset auf dem Node, dem die LUN gehört, und auf dem HA-Partner dieses Nodes zugänglich.
 
 * Initiatorgruppen-Zuordnungen (igroup) von Ihrem Host
 +
-Sie können Initiatorgruppen definieren und diese LUNs zuordnen, um zu steuern, welche Initiatoren Zugriff auf LUNs haben.
+Es besteht die Möglichkeit, igroups zu definieren und sie LUNs zuzuordnen, um zu steuern, welche Initiatoren Zugriff auf LUNs erhalten.
 
-* link:../san-config/fc-fcoe-recommended-zoning-configuration.html["FC-Switch-Zoning"]
+* link:../san-config/fc-fcoe-recommended-zoning-configuration.html["FC Switch-Zonierung"]
 +
 Sie sollten eine Zoning-Konfiguration erstellen, wenn auf Ihrem Host keine Multipathing-Lösung installiert ist, wenn vier oder mehr Hosts mit Ihrem SAN verbunden sind oder wenn SLM auf den Knoten in Ihrem Cluster nicht implementiert ist.
 

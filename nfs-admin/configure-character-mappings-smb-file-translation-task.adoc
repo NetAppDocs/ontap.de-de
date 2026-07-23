@@ -2,41 +2,41 @@
 permalink: nfs-admin/configure-character-mappings-smb-file-translation-task.html 
 sidebar: sidebar 
 keywords: configure, character, mapping, smb, file, name, translation, volume 
-summary: NFS-Clients können Dateinamen mit Zeichen erstellen, die für SMB-Clients und bestimmte Windows-Applikationen nicht gültig sind. Sie können die Zeichenzuordnung für die Übersetzung von Dateinamen auf Volumes konfigurieren, damit SMB-Clients auf Dateien mit NFS-Namen zugreifen können, die ansonsten nicht gültig wären. 
+summary: NFS-Clients können Dateinamen erstellen, die Zeichen enthalten, die für SMB-Clients und bestimmte Windows-Anwendungen ungültig sind. Die Zeichenzuordnung für die Dateinamenübersetzung kann auf Volumes konfiguriert werden, sodass SMB-Clients auf Dateien mit NFS-Namen zugreifen können, die andernfalls ungültig wären. 
 ---
-= Konfigurieren Sie die Zeichenzuordnung für die SMB-Dateinamenübersetzung auf ONTAP NFS-Volumes
+= Zeichenzuordnung für die SMB-Dateinamenübersetzung auf ONTAP NFS-Volumes konfigurieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-NFS-Clients können Dateinamen mit Zeichen erstellen, die für SMB-Clients und bestimmte Windows-Applikationen nicht gültig sind. Sie können die Zeichenzuordnung für die Übersetzung von Dateinamen auf Volumes konfigurieren, damit SMB-Clients auf Dateien mit NFS-Namen zugreifen können, die ansonsten nicht gültig wären.
+NFS-Clients können Dateinamen erstellen, die Zeichen enthalten, die für SMB-Clients und bestimmte Windows-Anwendungen ungültig sind. Die Zeichenzuordnung für die Dateinamenübersetzung kann auf Volumes konfiguriert werden, sodass SMB-Clients auf Dateien mit NFS-Namen zugreifen können, die andernfalls ungültig wären.
 
 .Über diese Aufgabe
-Wenn von NFS-Clients erstellte Dateien von SMB Clients abgerufen werden, wird der Name der Datei von ONTAP angezeigt. Wenn der Name kein gültiger SMB-Dateiname ist (z. B. wenn er ein eingebettetes Doppelpunkt "`:`" Zeichen hat), gibt ONTAP den Dateinamen von 8.3 zurück, der für jede Datei gepflegt wird. Dies führt jedoch zu Problemen für Anwendungen, die wichtige Informationen in lange Dateinamen kodieren.
+Wenn Dateien, die von NFS-Clients erstellt wurden, von SMB-Clients geöffnet werden, prüft ONTAP den Dateinamen. Ist der Name kein gültiger SMB-Dateiname (zum Beispiel wenn er einen eingebetteten Doppelpunkt ":" enthält), gibt ONTAP den 8.3-Dateinamen zurück, der für jede Datei gepflegt wird. Dies führt jedoch zu Problemen bei Anwendungen, die wichtige Informationen in langen Dateinamen codieren.
 
-Wenn Sie also eine Datei zwischen Clients auf verschiedenen Betriebssystemen gemeinsam nutzen, sollten Sie Zeichen in den Dateinamen verwenden, die in beiden Betriebssystemen gültig sind.
+Wenn Sie also eine Datei zwischen Clients auf unterschiedlichen Betriebssystemen austauschen, sollten Sie in den Dateinamen Zeichen verwenden, die in beiden Betriebssystemen gültig sind.
 
-Wenn Sie jedoch NFS-Clients haben, die Dateinamen mit Zeichen erstellen, die keine gültigen Dateinamen für SMB-Clients sind, können Sie eine Karte definieren, die ungültige NFS-Zeichen in Unicode-Zeichen umwandelt, die sowohl SMB- als auch bestimmte Windows-Anwendungen akzeptieren. Diese Funktionalität unterstützt beispielsweise die CATIA MCAD- und Mathematica-Anwendungen sowie andere Anwendungen, die diese Anforderung haben.
+Wenn Sie jedoch NFS-Clients haben, die Dateinamen mit Zeichen erstellen, die für SMB-Clients keine gültigen Dateinamen sind, kann eine Zuordnung definiert werden, die die ungültigen NFS-Zeichen in Unicode-Zeichen umwandelt, die sowohl von SMB als auch von bestimmten Windows-Anwendungen akzeptiert werden. Beispielsweise wird diese Funktionalität von den Anwendungen CATIA MCAD und Mathematica sowie anderen Anwendungen mit dieser Anforderung unterstützt.
 
-Sie können die Zeichenzuordnung auf Volume-Basis konfigurieren.
+Die Zeichenzuordnung kann für jedes Volume einzeln konfiguriert werden.
 
-Bei der Konfiguration der Zeichenzuordnung auf einem Volume müssen Sie Folgendes beachten:
+Bei der Konfiguration der Zeichenzuordnung auf einem Volume ist Folgendes zu beachten:
 
-* Die Zeichenzuordnung wird nicht über Kreuzungspunkte angewendet.
+* Die Zeichenzuordnung wird nicht über Verbindungspunkte hinweg angewendet.
 +
-Sie müssen die Zeichenzuordnung für jedes Verbindungvolume explizit konfigurieren.
+Die Zeichenzuordnung muss für jedes Verbindung Volume explizit konfiguriert werden.
 
-* Sie müssen sicherstellen, dass die Unicode-Zeichen, die für ungültige oder illegale Zeichen verwendet werden, Zeichen sind, die normalerweise nicht in Dateinamen angezeigt werden. Andernfalls werden unerwünschte Zuordnungen angezeigt.
+* Sie müssen sicherstellen, dass die Unicode-Zeichen, die zur Darstellung ungültiger oder unzulässiger Zeichen verwendet werden, Zeichen sind, die normalerweise nicht in Dateinamen vorkommen; andernfalls treten unerwünschte Zuordnungen auf.
 +
-Wenn Sie beispielsweise versuchen, einen Doppelpunkt (:) einem Bindestrich (-) zuzuordnen, aber der Bindestrich (-) wurde im Dateinamen richtig verwendet, würde ein Windows-Client, der versucht, auf eine Datei namens „`a-b`“ zuzugreifen, seine Anfrage dem NFS-Namen „`a:b`“ zugeordnet haben (nicht das gewünschte Ergebnis).
+Wenn Sie beispielsweise versuchen, einen Doppelpunkt (:) einem Bindestrich (-) zuzuordnen, der Bindestrich (-) aber im Dateinamen korrekt verwendet wurde, würde die Anfrage eines Windows-Clients, der auf eine Datei mit dem Namen "`a-b`" zugreifen möchte, dem NFS-Namen "`a:b`" zugeordnet (was nicht das gewünschte Ergebnis ist).
 
-* Wenn die Zuordnung nach dem Anwenden der Zeichenzuordnung noch ein ungültiges Windows-Zeichen enthält, wird ONTAP auf Windows 8.3-Dateinamen zurückfallend.
-* In FPolicy Benachrichtigungen, NAS-Prüfprotokollen und Security-Trace-Meldungen werden die zugeordneten Dateinamen angezeigt.
-* Wenn eine SnapMirror Beziehung des Typs DP erstellt wird, wird die Charakterzuordnung des Quell-Volumes nicht auf dem Ziel-DP Volume repliziert.
-* Case-Sensitivität: Da die zugeordneten Windows-Namen in NFS-Namen umgewandelt werden, folgt die Suche nach den Namen NFS-Semantik. Das schließt auch die Tatsache ein, dass NFS-Lookups Groß- und Kleinschreibung beachten. Das bedeutet, dass Anwendungen, die auf zugewiesene Freigaben zugreifen, nicht auf Groß- und Kleinschreibung von Windows angewiesen sein dürfen. Der Name 8.3 ist jedoch verfügbar, und der Groß-/Kleinschreibung wird nicht berücksichtigt.
-* Partielle oder ungültige Zuordnungen: Nachdem ein Name zugeordnet wurde, um zu Clients zurückzukehren, die die Verzeichnisenumeration („dir“) ausführen, wird der resultierende Unicode-Name auf Windows-Gültigkeit überprüft. Wenn dieser Name noch ungültige Zeichen enthält oder wenn er ansonsten für Windows ungültig ist (z. B. endet er in "." oder leer), wird der Name 8.3 anstelle des ungültigen Namens zurückgegeben.
+* Wenn nach der Anwendung der Zeichenzuordnung die Zuordnung immer noch ein ungültiges Windows-Zeichen enthält, greift ONTAP auf die Dateinamen von Windows 8.3 zurück.
+* In FPolicy-Benachrichtigungen, NAS-Audit-Protokollen und Sicherheits-Trace-Meldungen werden die zugeordneten Dateinamen angezeigt.
+* Wenn eine SnapMirror Relation vom Typ DP erstellt wird, wird die Zeichenzuordnung des Quellvolumes nicht auf das Zielvolume vom Typ DP repliziert.
+* Groß-/Kleinschreibung: Da die zugeordneten Windows-Namen in NFS-Namen umgewandelt werden, folgt die Namensauflösung der NFS-Semantik. Das schließt ein, dass NFS-Suchen zwischen Groß- und Kleinschreibung unterscheiden. Das bedeutet, dass Anwendungen, die auf zugeordnete Freigaben zugreifen, sich nicht auf das Windows-Verhalten ohne Berücksichtigung der Groß- und Kleinschreibung verlassen dürfen. Der 8.3-Name ist jedoch verfügbar und unterscheidet nicht zwischen Groß- und Kleinschreibung.
+* Unvollständige oder ungültige Zuordnungen: Nach der Zuordnung eines Namens zur Rückgabe an Clients, die eine Verzeichnisauflistung durchführen („dir“), wird der resultierende Unicode-Name auf Windows-Gültigkeit geprüft. Enthält dieser Name noch ungültige Zeichen oder ist er aus anderen Gründen für Windows ungültig (z. B. endet er mit einem Punkt oder ist leer), wird der 8.3 Name anstelle des ungültigen Namens zurückgegeben.
 
 
 .Schritt
@@ -45,15 +45,15 @@ Wenn Sie beispielsweise versuchen, einen Doppelpunkt (:) einem Bindestrich (-) z
 `+vserver cifs character-mapping create -vserver vserver_name -volume volume_name -mapping mapping_text, ...+`
 
 +
-Die Zuordnung besteht aus einer Liste von Quell-Ziel-Zeichenpaaren getrennt durch "`:`". Bei den Zeichen handelt es sich um Unicode-Zeichen, die mit Hexadezimalziffern eingegeben werden. Zum Beispiel: 3C:E03C.
+Die Zuordnung besteht aus einer Liste von Quell-Ziel-Zeichenpaaren, die durch ":`" getrennt sind. Die Zeichen sind Unicode-Zeichen, die mit Hexadezimalziffern eingegeben werden. Beispiel: 3C:E03C.
 
 +
-Der erste Wert jedes `mapping_text` Paars, der durch einen Doppelpunkt getrennt wird, ist der hexadezimale Wert des zu übersetzenden NFS-Zeichens, und der zweite Wert ist der Unicode-Wert, den SMB verwendet. Die Zuordnungspaare müssen eindeutig sein (es sollte ein 1:1-Mapping vorhanden sein).
+Der erste Wert jedes  `mapping_text`Paars, das durch einen Doppelpunkt getrennt ist, ist der Hexadezimalwert des NFS-Zeichens, das Sie übersetzen möchten, und der zweite Wert ist der von SMB verwendete Unicode-Wert. Die Zuordnungspaare müssen eindeutig sein (eine Eins-zu-eins-Zuordnung sollte bestehen).
 
 +
 ** Quellenzuordnung
 +
-Die folgende Tabelle zeigt den zulässigen Unicode-Zeichensatz für die Quellenzuordnung:
+Die folgende Tabelle zeigt den zulässigen Unicode-Zeichensatz für die Quellzuordnung:
 
 +
 [cols="20,20,60"]
@@ -66,9 +66,9 @@ Die folgende Tabelle zeigt den zulässigen Unicode-Zeichensatz für die Quellenz
  a| 
 0x01-0x19
  a| 
-Keine Angabe
+Nicht zutreffend
  a| 
-Nicht druckende Kontrollzeichen
+Nicht druckbare Steuerzeichen
 
 
 
@@ -77,7 +77,7 @@ Nicht druckende Kontrollzeichen
  a| 
 \
  a| 
-Umgekehrter Schrägstrich
+Backslash
 
 
 
@@ -111,7 +111,7 @@ Fragezeichen
  a| 
 0x22
  a| 
-„
+"
  a| 
 Anführungszeichen
 
@@ -122,7 +122,7 @@ Anführungszeichen
  a| 
 <
  a| 
-Kleiner als
+Weniger als
 
 
 
@@ -138,7 +138,7 @@ Größer als
  a| 
 0x7C
  a| 
-.
+|
  a| 
 Vertikale Linie
 
@@ -154,14 +154,14 @@ Plus-Minus-Zeichen
 |===
 ** Zielzuordnung
 +
-Im Bereich „`Private Use Area`“ von Unicode können Sie Zielzeichen im folgenden Bereich angeben: U+E0000...U+F8FF.
+Sie können Zielzeichen im "`Private Use Area`" von Unicode im folgenden Bereich angeben: U+E0000...U+F8FF.
 
 
 
 
 
 .Beispiel
-Mit dem folgenden Befehl wird eine Zeichenzuordnung für ein Volume mit dem Namen „`data`“ auf der Storage Virtual Machine (SVM) vs1 erstellt:
+Der folgende Befehl erstellt eine Zeichenzuordnung für ein Volume mit dem Namen "`data`" auf der Storage Virtual Machine (SVM) vs1:
 
 [listing]
 ----

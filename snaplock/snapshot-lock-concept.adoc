@@ -2,112 +2,112 @@
 permalink: snaplock/snapshot-lock-concept.html 
 sidebar: sidebar 
 keywords: snaplock, snapshot, lock, tamperproof 
-summary: Ab ONTAP 9.12.1 können Sie einen Snapshot auf einem nicht-SnapLock-Volume sperren, um Schutz vor Ransomware-Angriffen zu bieten. Das Sperren von Snapshots stellt sicher, dass sie nicht versehentlich oder böswillig gelöscht werden können. 
+summary: Ab ONTAP 9.12.1 können Snapshots auf einem Nicht-SnapLock Volume gesperrt werden, um Schutz vor Ransomware-Angriffen zu bieten. Das Sperren von Snapshots stellt sicher, dass sie nicht versehentlich oder böswillig gelöscht werden können. 
 ---
-= Sperren Sie einen ONTAP Snapshot zum Schutz vor Ransomware-Angriffen
+= Einen ONTAP Snapshot zum Schutz vor Ransomware-Angriffen sperren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Ab ONTAP 9.12.1 können Sie einen Snapshot auf einem nicht-SnapLock-Volume sperren, um Schutz vor Ransomware-Angriffen zu bieten. Das Sperren von Snapshots stellt sicher, dass sie nicht versehentlich oder böswillig gelöscht werden können.
+Ab ONTAP 9.12.1 können Snapshots auf einem Nicht-SnapLock Volume gesperrt werden, um Schutz vor Ransomware-Angriffen zu bieten. Das Sperren von Snapshots stellt sicher, dass sie nicht versehentlich oder böswillig gelöscht werden können.
 
-Sie verwenden die SnapLock Compliance-Uhrfunktion, um Snapshots für einen bestimmten Zeitraum zu sperren, sodass sie erst gelöscht werden können, wenn die Ablaufdatum erreicht ist. Durch das Sperren von Snapshots werden sie manipulationssicher und vor Ransomware-Bedrohungen geschützt. Sie können gesperrte Snapshots verwenden, um Daten wiederherzustellen, falls ein Volume durch einen Ransomware-Angriff kompromittiert wird.
+Die SnapLock compliance clock-Funktion wird verwendet, um Snapshots für einen festgelegten Zeitraum zu sperren, sodass sie erst nach Erreichen der Ablaufzeit gelöscht werden können. Das Sperren von Snapshots macht sie manipulationssicher und schützt sie vor Ransomware-Bedrohungen. Mit gesperrten Snapshots kann eine Datenwiederherstellung erfolgen, wenn ein Volume durch einen Ransomware-Angriff kompromittiert wurde.
 
-Ab ONTAP 9.14.1 unterstützt die Snapshot Sperrung Snapshots zur langfristigen Aufbewahrung auf SnapLock Vault-Zielen und auf nicht-SnapLock SnapMirror Ziel-Volumes. Die Snapshot-Sperrung wird aktiviert, indem die Aufbewahrungsfrist mithilfe von SnapMirror-Richtlinienregeln festgelegt wirdxref:Modify an existing policy to apply long-term retention[Vorhandene Richtlinienbezeichnung], die mit einem verknüpft sind. Die Regel überschreibt den auf dem Volume festgelegten Standardaufbewahrungszeitraum. Wenn dem SnapMirror-Label keine Aufbewahrungsfrist zugeordnet ist, wird die Standardaufbewahrungsdauer des Volume verwendet.
+Ab ONTAP 9.14.1 unterstützt die Snapshot-Sperre Langzeitaufbewahrung von Snapshots auf SnapLock Vault-Zielen und auf nicht-SnapLock SnapMirror Ziel-Volumes. Snapshot-Sperre wird aktiviert, indem die Aufbewahrungsdauer mithilfe von SnapMirror Richtlinienregeln festgelegt wird, die einem xref:Modify an existing policy to apply long-term retention[bestehende Richtlinienbezeichnung] zugeordnet sind. Die Regel überschreibt die standardmäßige Aufbewahrungsdauer des Volumes. Ist dem SnapMirror Label keine Aufbewahrungsdauer zugeordnet, wird die Standardaufbewahrungsdauer des Volumes verwendet.
 
 .Anforderungen und Überlegungen zu manipulationssicheren Snapshots
-* Wenn Sie die ONTAP-CLI verwenden, muss auf allen Nodes im Cluster ONTAP 9.12.1 oder höher ausgeführt werden. Wenn Sie System Manager verwenden, muss auf allen Nodes ONTAP 9.13.1 oder höher ausgeführt werden.
-* link:../system-admin/install-license-task.html["Die SnapLock-Lizenz muss auf dem Cluster installiert sein"]. Diese Lizenz ist in enthaltenlink:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"].
-* link:../snaplock/initialize-complianceclock-task.html["Die Compliance-Uhr auf dem Cluster muss initialisiert werden"].
-* Wenn die Snapshot-Sperrung auf einem Volume aktiviert ist, können Sie die Cluster auf eine Version von ONTAP höher als ONTAP 9.12.1 aktualisieren. Sie können jedoch nicht auf eine frühere Version von ONTAP zurücksetzen, bis alle gesperrten Snapshots ihr Ablaufdatum erreicht haben und gelöscht und die Snapshot Sperrung deaktiviert ist.
-* Wenn ein Snapshot gesperrt ist, wird die Gültigkeitsdauer des Volumes auf die Ablaufzeit des Snapshots eingestellt. Wenn mehr als ein Snapshot gesperrt ist, spiegelt die Gültigkeitsdauer des Volumes die größte Verfallszeit unter allen Snapshots wider.
-* Die Aufbewahrungsfrist für gesperrte Snapshots hat Vorrang vor der Anzahl der Snapshot-Aufbewahrung, was bedeutet, dass die Begrenzung der Anzahl beibehalten nicht eingehalten wird, wenn die Snapshot-Aufbewahrungsfrist für gesperrte Snapshots nicht abgelaufen ist.
-* In einer SnapMirror Beziehung können Sie in einer Regel für die Richtlinie „Mirror-Vault“ eine Aufbewahrungsfrist festlegen, und der Aufbewahrungszeitraum wird für auf das Ziel-Volume replizierte Snapshots angewendet, wenn für das Ziel-Volume die Snapshot-Sperrung aktiviert ist. Die Aufbewahrungsfrist hat Vorrang vor der Anzahl behalten. Snapshots, die ihr Ablaufdatum nicht überschritten haben, werden z. B. auch dann beibehalten, wenn die Anzahl der Bewahren Daten überschritten wird.
-* Sie können einen Snapshot auf einem Volume ohne SnapLock umbenennen. Umbenennungsvorgänge für Snapshots auf dem primären Volume einer SnapMirror-Beziehung werden nur auf dem sekundären Volume wiedergegeben, wenn die Richtlinie MirrorAllSnapshots ist. Bei anderen Richtlinientypen wird der umbenannte Snapshot während der Aktualisierungen nicht propagiert.
-* Wenn Sie die ONTAP CLI verwenden, können Sie einen gesperrten Snapshot mit dem Befehl nur wiederherstellen `volume snapshot restore`, wenn es sich bei dem gesperrten Snapshot um den aktuellsten handelt. Wenn nach der Wiederherstellung noch nicht abgelaufene Snapshots vorhanden sind, schlägt die Snapshot-Wiederherstellung fehl.
+* Wenn die ONTAP CLI verwendet wird, müssen alle Knoten im Cluster ONTAP 9.12.1 oder neuer ausführen. Wenn System Manager verwendet wird, müssen alle Knoten ONTAP 9.13.1 oder neuer ausführen.
+* link:../system-admin/install-license-task.html["Die SnapLock Lizenz muss auf dem Cluster installiert sein."]. Diese Lizenz ist in link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"] enthalten.
+* link:../snaplock/initialize-complianceclock-task.html["Die Compliance-Uhr auf dem Cluster muss initialisiert sein."].
+* Wenn die Snapshot-Sperre für ein Volume aktiviert ist, können die Cluster auf eine Version von ONTAP nach ONTAP 9.12.1 aktualisiert werden; ein Zurücksetzen auf eine frühere Version von ONTAP ist jedoch erst möglich, wenn alle gesperrten Snapshots ihr Ablaufdatum erreicht haben, gelöscht wurden und die Snapshot-Sperre deaktiviert ist.
+* Wenn ein Snapshot gesperrt ist, wird die Ablaufzeit des Volumes auf die Ablaufzeit des Snapshots gesetzt. Wenn mehr als ein Snapshot gesperrt ist, entspricht die Ablaufzeit des Volumes der größten Ablaufzeit aller Snapshots.
+* Die Aufbewahrungsfrist für gesperrte Snapshots hat Vorrang vor der Snapshot-Aufbewahrungsanzahl, was bedeutet, dass die Begrenzung der Aufbewahrungsanzahl nicht berücksichtigt wird, wenn die Aufbewahrungsfrist für gesperrte Snapshots noch nicht abgelaufen ist.
+* In einer SnapMirror Beziehung kann eine Aufbewahrungsdauer für eine Mirror-Vault-Richtlinienregel festgelegt werden, und die Aufbewahrungsdauer wird auf Snapshots angewendet, die auf das Ziel repliziert werden, wenn auf dem Zielvolume die Snapshot-Sperre aktiviert ist. Die Aufbewahrungsdauer hat Vorrang vor der Aufbewahrungsanzahl; beispielsweise werden Snapshots, deren Ablaufdatum noch nicht erreicht ist, auch dann aufbewahrt, wenn die Aufbewahrungsanzahl überschritten wurde.
+* Sie können einen Snapshot auf einem Nicht-SnapLock Volume umbenennen. Snapshot-Umbenennungsvorgänge auf dem primären Volume einer SnapMirror Beziehung werden auf dem sekundären Volume nur dann widergespiegelt, wenn die Richtlinie MirrorAllSnapshots ist. Bei anderen Richtlinientypen wird der umbenannte Snapshot bei Aktualisierungen nicht übernommen.
+* Wenn die ONTAP CLI verwendet wird, kann ein gesperrter Snapshot mit dem  `volume snapshot restore` Befehl nur dann wiederhergestellt werden, wenn der gesperrte Snapshot der aktuellste ist. Wenn spätere, noch nicht abgelaufene Snapshots vorhanden sind, als der wiederherzustellende, schlägt die Snapshot-Wiederherstellung fehl.
 
 
-.Durch manipulationssichere Snapshots unterstützte Funktionen
+.Funktionen, die mit manipulationssicheren Snapshots unterstützt werden
 * link:https://docs.netapp.com/us-en/storage-management-cloud-volumes-ontap/reference-worm-snaplock.html["Cloud Volumes ONTAP"^]
 * FlexGroup Volumes
 +
-Das Sperren von Snapshots wird auf FlexGroup Volumes unterstützt. Die Snapshot-Sperrung erfolgt nur für den Snapshot der Root-Komponente. Das Löschen des FlexGroup-Volume ist nur zulässig, wenn die Ablaufzeit der Root-Komponente abgelaufen ist.
+Die Snapshot-Sperrung wird für FlexGroup Volumes unterstützt. Die Snapshot-Sperrung erfolgt nur beim Snapshot des Root-Bestandteils. Das Löschen des FlexGroup Volumes ist nur zulässig, wenn die Ablaufzeit des Root-Bestandteils abgelaufen ist.
 
-* Konvertierung von FlexVol zu FlexGroup
+* FlexVol zu FlexGroup Konvertierung
 +
-Sie können eine FlexVol volume mit gesperrten Snapshots in ein FlexGroup Volume konvertieren. Snapshots bleiben nach der Konvertierung gesperrt.
+Sie können ein FlexVol Volume mit gesperrten Snapshots in ein FlexGroup Volume konvertieren. Snapshots bleiben nach der Konvertierung gesperrt.
 
 * SnapMirror asynchron
 +
-Die Compliance-Uhr muss sowohl auf der Quelle als auch auf dem Ziel initialisiert werden.
+Die Compliance-Uhr muss sowohl auf dem Quell- als auch auf dem Zielsystem initialisiert werden.
 
-* SVM-Datenmobilität (verwendet für die Migration oder Verschiebung einer SVM von einem Quell-Cluster zu einem Ziel-Cluster)
+* SVM Datenmobilität (wird für die Migration oder Verlagerung einer SVM von einem Quell-Cluster zu einem Ziel-Cluster verwendet)
 +
 Unterstützt ab ONTAP 9.14.1.
 
-* SnapMirror-Richtlinie, die den `-schedule` Parameter verwendet
-* SVM-DR
+* SnapMirror Richtlinienregeln mit dem  `-schedule` Parameter
+* SVM DR
 +
-Die Compliance-Uhr muss sowohl auf der Quelle als auch auf dem Ziel initialisiert werden.
+Die Compliance-Uhr muss sowohl auf dem Quell- als auch auf dem Zielsystem initialisiert werden.
 
-* Volume-Klon und Dateiklon
+* Volume clone und Klon einer Datei
 +
-Sie können aus einem gesperrten Snapshot Volume-Klone und Dateiklone erstellen.
+Aus einem gesperrten Snapshot können Volume-Klone und Klone einer Datei erstellt werden.
 
 * FlexCache Ursprungs-Volumes
 +
 Unterstützt ab ONTAP 9.16.1.
 
-* SnapMirror Synchronous
+* SnapMirror synchron
 +
 Ab ONTAP 9.19.1 kann die Ablaufzeit nur noch bei der Snapshot-Erstellung festgelegt werden. Sie können die Ablaufzeit für vorhandene Snapshots nicht festlegen oder verlängern.
 
 
 
 .Nicht unterstützte Funktionen
-Die folgenden Funktionen werden derzeit bei manipulationssicheren Snapshots nicht unterstützt:
+Folgende Funktionen werden derzeit bei manipulationssicheren Snapshots nicht unterstützt:
 
 * Konsistenzgruppen
 * link:../fabricpool/index.html["FabricPool"]
 +
-Manipulationssichere Snapshots bieten unveränderliche Schutzmechanismen, die nicht gelöscht werden können. Da FabricPool Daten löschen muss, können FabricPool- und Snapshot-Sperren nicht auf demselben Volume aktiviert werden.
+Manipulationssichere Snapshots bieten unveränderlichen Schutz, der nicht gelöscht werden kann. Da FabricPool die Möglichkeit zum Löschen von Daten benötigt, können FabricPool und Snapshot-Sperren nicht auf demselben Volume aktiviert werden.
 
-* SMTape
+* SMtape
 * SnapMirror Active Sync
 
 
 
 
 [[enable-snapshot-locking-when-creating-a-volume]]
-== Aktivieren Sie die Snapshot-Sperrung bei der Erstellung eines Volumes
+== Snapshot-Sperre beim Erstellen eines Volumes aktivieren
 
-Ab ONTAP 9.12.1 können Sie die Snapshot-Sperrung aktivieren, wenn Sie ein neues Volume erstellen oder ein vorhandenes Volume ändern. Dazu verwenden Sie die `-snapshot-locking-enabled` Option mit den `volume create` Befehlen und `volume modify` in der CLI. Ab ONTAP 9.13.1 können Sie System Manager verwenden, um die Snapshot-Sperrung zu aktivieren.
+Ab ONTAP 9.12.1 kann die Snapshot-Sperre beim Erstellen eines neuen Volumes oder beim Ändern eines vorhandenen Volumes mithilfe der  `-snapshot-locking-enabled` Option zusammen mit den  `volume create` und  `volume modify` Befehlen in der CLI aktiviert werden. Ab ONTAP 9.13.1 kann der System Manager verwendet werden, um die Snapshot-Sperre zu aktivieren.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
 . Navigieren Sie zu *Storage > Volumes* und wählen Sie *Add*.
-. Wählen Sie im Fenster *Volume hinzufügen* *Weitere Optionen*.
-. Geben Sie den Namen, die Größe, die Exportrichtlinie und den Freigabenamen des Volumes ein.
-. Wählen Sie *Snapshot sperren aktivieren*. Diese Auswahl wird nicht angezeigt, wenn die SnapLock-Lizenz nicht installiert ist.
-. Wenn sie noch nicht aktiviert ist, wählen Sie *SnapLock-Compliance-Uhr initialisieren* aus.
-. Speichern Sie die Änderungen.
-. Wählen Sie im Fenster *Volumes* das Volume aus, das Sie aktualisiert haben, und wählen Sie *Übersicht*.
-. Überprüfen Sie, ob *SnapLock Snapshot Locking* als *aktiviert* angezeigt wird.
+. Im Fenster *Volume hinzufügen* *Weitere Optionen* auswählen.
+. Den Datenträgernamen, die Größe, die Exportrichtlinie und den Freigabenamen eingeben.
+. *Snapshot-Sperre aktivieren* auswählen. Diese Auswahlmöglichkeit wird nicht angezeigt, wenn die SnapLock Lizenz nicht installiert ist.
+. Falls diese Option noch nicht aktiviert ist, *SnapLock Compliance-Uhr initialisieren* auswählen.
+. Speichern Sie Ihre Änderungen.
+. Im Fenster *Volumes* das aktualisierte Volume auswählen und *Übersicht* wählen.
+. Es wird geprüft, ob *SnapLock Snapshot Locking* als *Aktiviert* angezeigt wird.
 
 
 --
 .CLI
 --
-. Geben Sie den folgenden Befehl ein, um ein neues Volume zu erstellen und die Snapshot-Sperrung zu aktivieren:
+. Zum Erstellen eines neuen Volumes und Aktivieren der Snapshot-Sperre ist folgender Befehl einzugeben:
 +
 `volume create -vserver <vserver_name> -volume <volume_name> -snapshot-locking-enabled true`
 
 +
-Mit dem folgenden Befehl wird die Snapshot-Sperrung auf einem neuen Volume mit dem Namen vol1 aktiviert:
+Der folgende Befehl aktiviert die Snapshot-Sperre auf einem neuen Volume mit dem Namen vol1:
 
 +
 [listing]
@@ -124,30 +124,30 @@ Do you want to continue: {yes|no}: y
 
 
 [[enable-snapshot-locking-on-an-existing-volume]]
-== Aktivieren Sie die Snapshot-Sperrung auf einem vorhandenen Volume
+== Aktivieren der Snapshot-Sperre auf einem vorhandenen Volume
 
-Ab ONTAP 9.12.1 können Sie die Snapshot-Sperrung auf einem vorhandenen Volume mithilfe der ONTAP CLI aktivieren. Ab ONTAP 9.13.1 können Sie System Manager verwenden, um die Snapshot-Sperrung auf einem vorhandenen Volume zu aktivieren.
+Ab ONTAP 9.12.1 ist es möglich, die Snapshot-Sperre für ein vorhandenes Volume mithilfe der ONTAP CLI zu aktivieren. Ab ONTAP 9.13.1 kann die Snapshot-Sperre für ein vorhandenes Volume mithilfe des System Manager aktiviert werden.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
 . Navigieren Sie zu *Storage > Volumes*.
-. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und dann *Bearbeiten > Lautstärke*.
-. Suchen Sie im Fenster *Volume bearbeiten* den Abschnitt Snapshots (Local) Settings und wählen Sie *Snapshot locking aktivieren* aus.
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und dann *Bearbeiten > Volume*.
+. Im Fenster *Volume bearbeiten* befindet sich der Abschnitt Snapshots (Lokal) Einstellungen, dort kann *Snapshot-Sperre aktivieren* ausgewählt werden.
 +
-Diese Auswahl wird nicht angezeigt, wenn die SnapLock-Lizenz nicht installiert ist.
+Diese Auswahlmöglichkeit wird nicht angezeigt, wenn die SnapLock Lizenz nicht installiert ist.
 
-. Wenn sie noch nicht aktiviert ist, wählen Sie *SnapLock-Compliance-Uhr initialisieren* aus.
-. Speichern Sie die Änderungen.
-. Wählen Sie im Fenster *Volumes* das Volume aus, das Sie aktualisiert haben, und wählen Sie *Übersicht*.
-. Stellen Sie sicher, dass * SnapLock Snapshot-Sperre* als *Aktiviert* angezeigt wird.
+. Falls diese Option noch nicht aktiviert ist, *SnapLock Compliance-Uhr initialisieren* auswählen.
+. Speichern Sie Ihre Änderungen.
+. Im Fenster *Volumes* das aktualisierte Volume auswählen und *Übersicht* wählen.
+. Es wird geprüft, ob *SnapLock Snapshot-Sperrung* als *Aktiviert* angezeigt wird.
 
 
 --
 .CLI
 --
-. Geben Sie den folgenden Befehl ein, um ein vorhandenes Volume zu ändern und die Snapshot-Sperrung zu aktivieren:
+. Um ein vorhandenes Volume zu modifizieren, um die Snapshot-Sperre zu aktivieren, ist folgender Befehl einzugeben:
 +
 `volume modify -vserver <vserver_name> -volume <volume_name> -snapshot-locking-enabled true`
 
@@ -158,45 +158,45 @@ Diese Auswahl wird nicht angezeigt, wenn die SnapLock-Lizenz nicht installiert i
 
 
 [[create-a-locked-snapshot-policy-and-apply-retention]]
-== Erstellen Sie eine gesperrte Snapshot-Richtlinie und wenden Sie die Aufbewahrung an
+== Eine Richtlinie für gesperrte Snapshots erstellen und die Aufbewahrungsfrist anwenden
 
-Ab ONTAP 9.12.1 können Sie Snapshot-Richtlinien erstellen, um eine Aufbewahrungsfrist für Snapshots anzuwenden, und die Richtlinie auf ein Volume anwenden, um Snapshots für den angegebenen Zeitraum zu sperren. Sie können einen Snapshot auch sperren, indem Sie manuell eine Aufbewahrungsfrist festlegen. Ab ONTAP 9.13.1 können Sie mit System Manager Snapshot-Sperrrichtlinien erstellen und auf ein Volume anwenden.
+Ab ONTAP 9.12.1 ist es möglich, Snapshot-Richtlinien zu erstellen, um eine Aufbewahrungsdauer für Snapshots festzulegen und die Richtlinie auf ein Volume anzuwenden, sodass Snapshots für den angegebenen Zeitraum gesperrt werden. Ein Snapshot kann auch durch das manuelle Festlegen einer Aufbewahrungsdauer gesperrt werden. Ab ONTAP 9.13.1 kann der System Manager verwendet werden, um Snapshot-Sperrrichtlinien zu erstellen und sie auf ein Volume anzuwenden.
 
 
 
 [[create-a-snapshot-locking-policy]]
-=== Erstellen Sie eine Snapshot-Sperrrichtlinie
+=== Erstellen einer Snapshot-Sperrrichtlinie
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Navigieren Sie zu *Storage > Storage VMs* und wählen Sie eine Storage VM aus.
-. Wählen Sie *Einstellungen*.
-. Suchen Sie *Snapshot Policies* und wählen Sie image:icon_arrow.gif["Pfeilsymbol"].
-. Geben Sie im Fenster *Add Snapshot Policy* den Richtliniennamen ein.
+. Zu *Speicher > Speicher-VMs* navigieren und eine Speicher-VM auswählen.
+. *Einstellungen* auswählen.
+. *Snapshot-Richtlinien* suchen und image:icon_arrow.gif["Pfeilsymbol"] auswählen.
+. Im Fenster *Snapshot-Richtlinie hinzufügen* den Richtliniennamen eingeben.
 . Wählen Sie image:icon_add.gif["Symbol hinzufügen"].
-. Geben Sie die Details des Snapshot-Zeitplans an, einschließlich des Plannamens, der maximalen Anzahl der zu haltenden Snapshots und des SnapLock-Aufbewahrungszeitraums.
-. Geben Sie in der Spalte *SnapLock Retention Period* die Anzahl der Stunden, Tage, Monate oder Jahre ein, um die Snapshots zu behalten. Eine Snapshot-Richtlinie mit einer Aufbewahrungsfrist von 5 Tagen sperrt einen Snapshot beispielsweise 5 Tage ab dem Zeitpunkt, zu dem er erstellt wird. Er kann in dieser Zeit nicht gelöscht werden. Folgende Aufbewahrungszeiträume werden unterstützt:
+. Geben Sie die Details des Snapshot-Zeitplans an, einschließlich des Zeitplannamens, der maximalen Anzahl der aufzubewahrenden Snapshots und der SnapLock Aufbewahrungsdauer.
+. In der Spalte *SnapLock Aufbewahrungsdauer* die Anzahl der Stunden, Tage, Monate oder Jahre eingeben, für die die Snapshots aufbewahrt werden sollen. Beispielsweise sperrt eine Snapshot-Richtlinie mit einer Aufbewahrungsdauer von 5 Tagen einen Snapshot für 5 Tage ab dem Zeitpunkt seiner Erstellung, und er kann während dieser Zeit nicht gelöscht werden. Die folgenden Aufbewahrungsdauerbereiche werden unterstützt:
 +
 ** Jahre: 0 - 100
 ** Monate: 0 - 1200
 ** Tage: 0 - 36500
-** Öffnungszeiten: 0 - 24
+** Stunden: 0 - 24
 
 
-. Speichern Sie die Änderungen.
+. Speichern Sie Ihre Änderungen.
 
 
 --
 .CLI
 --
-. Geben Sie zum Erstellen einer Snapshot-Richtlinie den folgenden Befehl ein:
+. Zum Erstellen einer Snapshot-Richtlinie ist folgender Befehl einzugeben:
 +
 `volume snapshot policy create -policy <policy_name> -enabled true -schedule1 <schedule1_name> -count1 <maximum snapshots> -retention-period1 <retention_period>`
 
 +
-Mit dem folgenden Befehl wird eine Snapshot-Sperrrichtlinie erstellt:
+Der folgende Befehl erstellt eine Snapshot-Sperrrichtlinie:
 
 +
 [listing]
@@ -204,7 +204,7 @@ Mit dem folgenden Befehl wird eine Snapshot-Sperrrichtlinie erstellt:
 cluster1> volume snapshot policy create -policy lock_policy -enabled true -schedule1 hourly -count1 24 -retention-period1 "1 days"
 ----
 +
-Ein Snapshot wird nicht ersetzt, wenn er unter aktiver Aufbewahrung liegt. Das heißt, die Aufbewahrungszahl wird nicht berücksichtigt, wenn es gesperrte Snapshots gibt, die noch nicht abgelaufen sind.
+Ein Snapshot wird nicht ersetzt, wenn er sich in aktiver Aufbewahrung befindet, das heißt, die Aufbewahrungsanzahl wird nicht berücksichtigt, wenn gesperrte Snapshots vorhanden sind, die noch nicht abgelaufen sind.
 
 
 
@@ -213,24 +213,24 @@ Ein Snapshot wird nicht ersetzt, wenn er unter aktiver Aufbewahrung liegt. Das h
 
 
 [[apply-a-locking-policy-to-a-volume]]
-=== Wenden Sie eine Sperrrichtlinie auf ein Volume an
+=== Eine Sperrrichtlinie auf ein Volume anwenden
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
 . Navigieren Sie zu *Storage > Volumes*.
-. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und dann *Bearbeiten > Lautstärke*.
-. Wählen Sie im Fenster *Volume bearbeiten* die Option *Snapshots planen*.
-. Wählen Sie die Snapshot-Sperrrichtlinie aus der Liste aus.
-. Wenn die Snapshot-Sperrung noch nicht aktiviert ist, wählen Sie *Snapshot-Sperrung aktivieren*.
-. Speichern Sie die Änderungen.
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und dann *Bearbeiten > Volume*.
+. Im Fenster *Volume bearbeiten* *Snapshots planen* auswählen.
+. Die Richtlinie zum Sperren von Snapshots aus der Liste auswählen.
+. Falls die Snapshot-Sperre noch nicht aktiviert ist, *Snapshot-Sperre aktivieren* auswählen.
+. Speichern Sie Ihre Änderungen.
 
 
 --
 .CLI
 --
-. Geben Sie den folgenden Befehl ein, um eine Snapshot-Sperrrichtlinie auf ein vorhandenes Volume anzuwenden:
+. Um eine Snapshot-Sperrrichtlinie auf ein vorhandenes Volume anzuwenden, ist folgender Befehl einzugeben:
 +
 `volume modify -volume <volume_name> -vserver <vserver_name> -snapshot-policy <policy_name>`
 
@@ -241,31 +241,31 @@ Ein Snapshot wird nicht ersetzt, wenn er unter aktiver Aufbewahrung liegt. Das h
 
 
 [[apply-retention-period-during-manual-snapshot-creation]]
-=== Wenden Sie den Aufbewahrungszeitraum während der manuellen Snapshot-Erstellung an
+=== Aufbewahrungsfrist bei manueller Snapshot-Erstellung anwenden
 
-Sie können eine Aufbewahrungsfrist für Snapshots anwenden, wenn Sie einen Snapshot manuell erstellen. Die Snapshot-Sperrung muss auf dem Volume aktiviert sein. Andernfalls wird die Einstellung für den Aufbewahrungszeitraum ignoriert.
+Sie können beim manuellen Erstellen eines Snapshots eine Aufbewahrungsdauer festlegen. Snapshot-Sperre muss für das Volume aktiviert sein, andernfalls wird die Einstellung der Aufbewahrungsdauer ignoriert.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Navigieren Sie zu *Speicher > Volumes* und wählen Sie ein Volume aus.
-. Wählen Sie auf der Seite Volume Details die Registerkarte *Snapshots* aus.
+. Zu *Speicher > Volumes* navigieren und ein Volume auswählen.
+. Auf der Seite mit den Volumendetails die Registerkarte *Snapshots* auswählen.
 . Wählen Sie image:icon_add.gif["Symbol hinzufügen"].
-. Geben Sie den Snapshot-Namen und die SnapLock-Ablaufzeit ein. Sie können den Kalender auswählen, um das Ablaufdatum und die Uhrzeit für die Aufbewahrung auszuwählen.
-. Speichern Sie die Änderungen.
-. Wählen Sie auf der Seite *Volumes > Snapshots* *ein/Ausblenden* und wählen Sie *SnapLock Ablaufzeit*, um die Spalte *SnapLock Ablaufzeit* anzuzeigen und zu überprüfen, ob die Aufbewahrungszeit eingestellt ist.
+. Geben Sie den Snapshot-Namen und die SnapLock Ablaufzeit ein. Es besteht die Möglichkeit, den Kalender auszuwählen, um das Ablaufdatum und die Uhrzeit der Aufbewahrung festzulegen.
+. Speichern Sie Ihre Änderungen.
+. Auf der Seite *Volumes > Snapshots* *Anzeigen/Ausblenden* auswählen und *SnapLock Expiration Time* wählen, um die Spalte *SnapLock Expiration Time* anzuzeigen und zu überprüfen, ob die Aufbewahrungszeit eingestellt ist.
 
 
 --
 .CLI
 --
-. Geben Sie den folgenden Befehl ein, um einen Snapshot manuell zu erstellen und eine Aufbewahrungsfrist für die Sperrung anzuwenden:
+. Um einen Snapshot manuell zu erstellen und eine Sperr-Aufbewahrungsfrist anzuwenden, ist folgender Befehl einzugeben:
 +
 `volume snapshot create -volume <volume_name> -snapshot <snapshot name> -snaplock-expiry-time <expiration_date_time>`
 
 +
-Mit dem folgenden Befehl wird ein neuer Snapshot erstellt und der Aufbewahrungszeitraum festgelegt:
+Der folgende Befehl erstellt einen neuen Snapshot und legt die Aufbewahrungsdauer fest:
 
 +
 [listing]
@@ -279,28 +279,28 @@ cluster1> volume snapshot create -vserver vs1 -volume vol1 -snapshot snap1 -snap
 
 
 [[apply-retention-period-to-an-existing-snapshot]]
-=== Anwenden des Aufbewahrungszeitraums auf einen vorhandenen Snapshot
+=== Aufbewahrungszeitraum auf einen vorhandenen Snapshot anwenden
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Navigieren Sie zu *Speicher > Volumes* und wählen Sie ein Volume aus.
-. Wählen Sie auf der Seite Volume Details die Registerkarte *Snapshots* aus.
-. Wählen Sie den Snapshot aus, wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"], und wählen Sie *SnapLock-Ablaufzeit ändern*. Sie können den Kalender auswählen, um das Ablaufdatum und die Uhrzeit für die Aufbewahrung auszuwählen.
-. Speichern Sie die Änderungen.
-. Wählen Sie auf der Seite *Volumes > Snapshots* *ein/Ausblenden* und wählen Sie *SnapLock Ablaufzeit*, um die Spalte *SnapLock Ablaufzeit* anzuzeigen und zu überprüfen, ob die Aufbewahrungszeit eingestellt ist.
+. Zu *Speicher > Volumes* navigieren und ein Volume auswählen.
+. Auf der Seite mit den Volumendetails die Registerkarte *Snapshots* auswählen.
+. Wählen Sie den Snapshot aus, wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und dann *Modify SnapLock Expiration Time*. Es besteht die Möglichkeit, den Kalender auszuwählen, um das Ablaufdatum und die Uhrzeit der Aufbewahrung festzulegen.
+. Speichern Sie Ihre Änderungen.
+. Auf der Seite *Volumes > Snapshots* *Anzeigen/Ausblenden* auswählen und *SnapLock Expiration Time* wählen, um die Spalte *SnapLock Expiration Time* anzuzeigen und zu überprüfen, ob die Aufbewahrungszeit eingestellt ist.
 
 
 --
 .CLI
 --
-. Um einen vorhandenen Snapshot manuell auf eine Aufbewahrungsfrist anzuwenden, geben Sie den folgenden Befehl ein:
+. Um einem vorhandenen Snapshot manuell eine Aufbewahrungsfrist zuzuweisen, ist folgender Befehl einzugeben:
 +
 `volume snapshot modify-snaplock-expiry-time -volume <volume_name> -snapshot <snapshot name> -snaplock-expiry-time <expiration_date_time>`
 
 +
-Im folgenden Beispiel wird eine Aufbewahrungsfrist auf einen vorhandenen Snapshot angewendet:
+Im folgenden Beispiel wird eine Aufbewahrungsfrist auf einen bestehenden Snapshot angewendet:
 
 +
 [listing]
@@ -314,18 +314,18 @@ cluster1> volume snapshot modify-snaplock-expiry-time -volume vol1 -snapshot sna
 
 
 [[modify-an-existing-policy-to-apply-long-term-retention]]
-=== Ändern Sie eine vorhandene Richtlinie, um die langfristige Aufbewahrung anzuwenden
+=== Eine bestehende Richtlinie anpassen, um die langfristige Aufbewahrung anzuwenden.
 
-In einer SnapMirror Beziehung können Sie in einer Regel für die Richtlinie „Mirror-Vault“ eine Aufbewahrungsfrist festlegen, und der Aufbewahrungszeitraum wird für auf das Ziel-Volume replizierte Snapshots angewendet, wenn für das Ziel-Volume die Snapshot-Sperrung aktiviert ist. Die Aufbewahrungsfrist hat Vorrang vor der Anzahl behalten. Snapshots, die ihr Ablaufdatum nicht überschritten haben, werden z. B. auch dann beibehalten, wenn die Anzahl der Bewahren Daten überschritten wird.
+In einer SnapMirror Beziehung kann eine Aufbewahrungsdauer für eine Mirror-Vault-Richtlinienregel festgelegt werden, und die Aufbewahrungsdauer wird auf Snapshots angewendet, die auf das Ziel repliziert werden, wenn auf dem Zielvolume die Snapshot-Sperre aktiviert ist. Die Aufbewahrungsdauer hat Vorrang vor der Aufbewahrungsanzahl; beispielsweise werden Snapshots, deren Ablaufdatum noch nicht erreicht ist, auch dann aufbewahrt, wenn die Aufbewahrungsanzahl überschritten wurde.
 
-Ab ONTAP 9.14.1 können Sie eine vorhandene SnapMirror-Richtlinie ändern, indem Sie eine Regel hinzufügen, um die langfristige Aufbewahrung von Snapshots festzulegen. Die Regel wird verwendet, um den Standardaufbewahrungszeitraum des Volumes auf SnapLock Vault-Zielen und auf nicht-SnapLock SnapMirror Ziel-Volumes außer Kraft zu setzen.
+Ab ONTAP 9.14.1 ist es möglich, eine bestehende SnapMirror Richtlinie zu ändern, indem eine Regel hinzugefügt wird, um die Langzeitaufbewahrung von Snapshots festzulegen. Die Regel dient dazu, die standardmäßige Aufbewahrungsdauer von Volumes auf SnapLock Vault-Zielen und auf nicht-SnapLock SnapMirror Ziel-Volumes zu überschreiben.
 
-. Fügen Sie einer vorhandenen SnapMirror-Richtlinie eine Regel hinzu:
+. Einer bestehenden SnapMirror Richtlinie eine Regel hinzufügen:
 +
 `snapmirror policy add-rule -vserver <SVM name> -policy <policy name> -snapmirror-label <label name> -keep <number of snapshots> -retention-period [<integer> days|months|years]`
 
 +
-Im folgenden Beispiel wird eine Regel erstellt, die eine Aufbewahrungsfrist von 6 Monaten auf die vorhandene Richtlinie namens „lockvault“ anwendet:
+Das folgende Beispiel erstellt eine Regel, die eine Aufbewahrungsfrist von 6 Monaten auf die bestehende Richtlinie mit dem Namen „lockvault“ anwendet:
 
 +
 [listing]
@@ -333,6 +333,6 @@ Im folgenden Beispiel wird eine Regel erstellt, die eine Aufbewahrungsfrist von 
 snapmirror policy add-rule -vserver vs1 -policy lockvault -snapmirror-label test1 -keep 10 -retention-period "6 months"
 ----
 +
-Erfahren Sie mehr über `snapmirror policy add-rule` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-policy-add-rule.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror policy add-rule` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-policy-add-rule.html["ONTAP-Befehlsreferenz"^].
 
 

@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: networking/use_cdp_to_detect_network_connectivity.html 
 keywords: display, view, show, network, connectivity, neighbor, discovery, protocol, cdp, use cdp to detect network connectivity, considerations for using cdp, enable or disable cdp, view cdp neighbor information, example of showing and clearing statistics, cisco 
-summary: In einem Rechenzentrum können Sie Neighbor-Discovery-Protokolle verwenden, um die Netzwerkverbindungen zwischen zwei physischen oder virtuellen Systemen und deren Netzwerkschnittstellen anzuzeigen. ONTAP unterstützt zwei Neighbor-Discovery-Protokolle, Cisco Discovery Protocol und Link Layer Discovery Protocol. 
+summary: In einem Rechenzentrum können Nachbarerkennungsprotokolle verwendet werden, um die Netzwerkverbindungen zwischen einem Paar physischer oder virtueller Systeme und deren Netzwerkschnittstellen anzuzeigen. ONTAP unterstützt zwei Neighbor-Discovery-Protokolle, Cisco Discovery Protocol und Link Layer Discovery Protocol. 
 ---
-= Verwenden Sie CDP, um ONTAP-Netzwerkverbindungen zu erkennen
+= CDP kann zur Erkennung der ONTAP-Netzwerkverbindung verwendet werden.
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,30 +14,10 @@ summary: In einem Rechenzentrum können Sie Neighbor-Discovery-Protokolle verwen
 
 
 [role="lead"]
-Die Verwendung von CDP zur Erkennung von Netzwerkverbindungen besteht aus der Überprüfung von Bereitstellungsüberlegungen, der Nutzung von Datenports, der Anzeige von Nachbargeräten und der Anpassung der CDP-Konfigurationswerte nach Bedarf. CDP ist standardmäßig auf Cluster-Ports aktiviert.
+Die Verwendung von CDP zur Erkennung von Netzwerkverbindungen umfasst die Prüfung der Bereitstellungsaspekte, die Aktivierung an Datenports, die Anzeige benachbarter Geräte und die gegebenenfalls erforderliche Anpassung der CDP-Konfigurationswerte. CDP ist standardmäßig an Clusterports aktiviert.
 
-CDP muss auch auf Switches und Routern aktiviert sein, bevor Informationen zu Nachbargeräten angezeigt werden können.
+CDP muss außerdem auf allen Ethernet Switches und Routern aktiviert sein, bevor Informationen über benachbarte Geräte angezeigt werden können.
 
-[cols="30,70"]
-|===
-
-
-| Version von ONTAP | Beschreibung 
-
-
- a| 
-9.10.1 und früher
- a| 
-CDP kann außerdem von der Systemzustandsüberwachung der Cluster-Switches verwendet werden, um die Cluster- und Management-Netzwerk-Switches automatisch zu erkennen.
-
-
-
- a| 
-9.11.1 und höher
- a| 
-CDP kann außerdem von der Systemzustandsüberwachung der Cluster-Switches verwendet werden, um die Switches für das Cluster-, Storage- und Management-Netzwerk automatisch zu erkennen.
-
-|===
 .Verwandte Informationen
 link:../system-admin/index.html["Systemadministration"]
 
@@ -46,37 +26,37 @@ link:../system-admin/index.html["Systemadministration"]
 [[considerations-for-using-cdp]]
 == Überlegungen zur Verwendung von CDP
 
-Standardmäßig senden CDP-kompatible Geräte CDPv2-Werbeanzeigen. CDP-kompatible Geräte senden CDPv1-Werbeanzeigen nur dann, wenn sie CDPv1-Werbeanzeigen erhalten. ONTAP unterstützt nur CDPv1. Wenn ein ONTAP-Knoten CDPv1-Werbeanzeigen sendet, senden CDP-kompatible benachbarte Geräte daher CDP1-Werbeanzeigen zurück.
+Standardmäßig senden CDP-kompatible Geräte CDPv2-Ankündigungen. CDP-kompatible Geräte senden CDPv1-Ankündigungen nur, wenn sie CDPv1-Ankündigungen empfangen. ONTAP unterstützt nur CDPv1. Daher senden benachbarte CDP-kompatible Geräte CDPv1-Ankündigungen zurück, wenn ein ONTAP Node CDPv1-Ankündigungen sendet.
 
-Vor der Aktivierung von CDP auf einem Knoten sollten Sie die folgenden Informationen berücksichtigen:
+Vor der Aktivierung von CDP auf einem Node sind die folgenden Informationen zu berücksichtigen:
 
 * CDP wird für alle Ports unterstützt.
-* CDP-Werbeanzeigen werden von Ports gesendet und empfangen, die sich im up-Zustand befinden.
-* CDP muss auf den Sende- und Empfangsgeräten für das Senden und Empfangen von CDP-Werbeanzeigen aktiviert sein.
-* CDP-Werbeanzeigen werden in regelmäßigen Abständen gesendet, und Sie können das Zeitintervall konfigurieren.
-* Wenn IP-Adressen für eine LIF geändert werden, sendet der Node die aktualisierten Informationen in der nächsten CDP-Ankündigung.
+* CDP-Anzeigen werden von Ports im aktiven Zustand gesendet und empfangen.
+* CDP muss sowohl auf dem sendenden als auch auf dem empfangenden Gerät aktiviert sein, damit CDP-Anzeigen gesendet und empfangen werden können.
+* CDP-Anzeigen werden in regelmäßigen Abständen gesendet, und das Zeitintervall kann konfiguriert werden.
+* Wenn die IP-Adressen für eine LIF geändert werden, sendet der Node die aktualisierten Informationen in der nächsten CDP-Ankündigung.
 * ONTAP 9.10.1 und früher:
 +
-** CDP ist immer auf Cluster-Ports aktiviert.
-** CDP ist standardmäßig auf allen nicht-Cluster-Ports deaktiviert.
+** CDP ist auf Cluster-Ports immer aktiviert.
+** CDP ist standardmäßig auf allen Nicht-Cluster-Ports deaktiviert.
 
 
 * ONTAP 9.11.1 und höher:
 +
-** CDP ist immer auf Cluster- und Storage-Ports aktiviert.
-** CDP ist standardmäßig auf allen nicht-Cluster- und nicht-Storage-Ports deaktiviert.
+** CDP ist auf Cluster- und Speicher-Ports immer aktiviert.
+** CDP ist standardmäßig auf allen Nicht-Cluster- und Nicht-Speicher-Ports deaktiviert.
 
 
 
 
 
-NOTE: Wenn LIFs auf dem Node geändert werden, werden die CDP-Informationen manchmal nicht auf der Seite des empfangenden Geräts (z. B. ein Switch) aktualisiert. Wenn ein solches Problem auftritt, sollten Sie die Netzwerkschnittstelle des Node mit dem Status „down“ und dann mit dem Status „up“ konfigurieren.
+NOTE: Manchmal werden die CDP-Informationen auf der Empfängerseite (z. B. einem Ethernet-Switch) nicht aktualisiert, wenn LIFs auf dem Knoten geändert werden. Tritt ein solches Problem auf, kann die Netzwerkschnittstelle des Knotens zunächst in den Status "down" und anschließend in den Status "up" versetzt werden.
 
-* In CDP-Werbeanzeigen werden nur IPv4-Adressen beworben.
-* Bei physischen Netzwerk-Ports mit VLANs werden alle auf den VLANs dieses Ports konfigurierten LIFs angekündigt.
-* Bei physischen Ports, die Teil einer Schnittstellengruppe sind, werden alle in dieser Schnittstellengruppe konfigurierten IP-Adressen auf jedem physischen Port angekündigt.
-* Bei einer Interface Group, die VLANs hostet, werden alle in der Interface Group konfigurierten LIFs und VLANs auf den einzelnen Netzwerk-Ports angekündigt.
-* Da CDP-Pakete auf nicht mehr als 1500 Byte beschränkt sind, können bei Ports, die mit einer großen Anzahl von LIFs konfiguriert sind, nur eine Teilmenge dieser IP-Adressen auf dem benachbarten Switch gemeldet werden.
+* Nur IPv4-Adressen werden in CDP-Anzeigen bekanntgegeben.
+* Für physische Netzwerk-Ports mit VLANs werden alle auf den VLANs dieses Ports konfigurierten LIFs bekanntgegeben.
+* Für physische Ports, die Teil einer Schnittstellengruppe sind, werden alle auf dieser Schnittstellengruppe konfigurierten IP-Adressen auf jedem physischen Port bekanntgegeben.
+* Für eine Schnittstellengruppe, die VLANs hostet, werden alle auf der Schnittstellengruppe und den VLANs konfigurierten LIFs auf jedem der Netzwerkports angekündigt.
+* Da CDP-Pakete auf maximal 1500 Bytes beschränkt sind, kann auf Ports, die mit einer großen Anzahl von LIFs konfiguriert sind, nur eine Teilmenge dieser IP-Adressen auf dem benachbarten Switch gemeldet werden.
 
 
 
@@ -84,64 +64,64 @@ NOTE: Wenn LIFs auf dem Node geändert werden, werden die CDP-Informationen manc
 [[enable-or-disable-cdp]]
 == CDP aktivieren oder deaktivieren
 
-Um Anzeigen zu ermitteln und an CDP-konforme benachbarte Geräte zu senden, muss CDP auf jedem Knoten des Clusters aktiviert sein.
+Um CDP-kompatible Nachbargeräte zu erkennen und ihnen Werbung zu senden, muss CDP auf jedem Knoten des Clusters aktiviert sein.
 
-Standardmäßig ist CDP in ONTAP 9.10.1 und früher auf allen Cluster-Ports eines Knotens aktiviert und auf allen nicht-Cluster-Ports eines Knotens deaktiviert.
+In ONTAP 9.10.1 und früher ist CDP standardmäßig auf allen Cluster-Ports eines Knotens aktiviert und auf allen Nicht-Cluster-Ports eines Knotens deaktiviert.
 
-Standardmäßig ist CDP in ONTAP 9.11.1 und höher auf allen Cluster- und Speicherports eines Knotens aktiviert und auf allen nicht-Cluster- und nicht-Speicherports eines Node deaktiviert.
+In ONTAP 9.11.1 und später ist CDP standardmäßig auf allen Cluster- und Speicher-Ports eines Knotens aktiviert und auf allen Nicht-Cluster- und Nicht-Speicher-Ports eines Knotens deaktiviert.
 
 .Über diese Aufgabe
-Die `cdpd.enable` Option steuert, ob CDP auf den Ports eines Knotens aktiviert oder deaktiviert ist:
+Die  `cdpd.enable`Option steuert, ob CDP an den Ports eines Knotens aktiviert oder deaktiviert ist:
 
-* Für ONTAP 9.10.1 und frühere Versionen ermöglicht ON CDP für nicht-Cluster-Ports.
-* Für ONTAP 9.11.1 und höher ermöglicht ON CDP auf nicht-Cluster- und nicht-Storage-Ports.
-* Bei ONTAP 9.10.1 und älteren Versionen deaktiviert CDP für nicht-Cluster-Ports; Sie können CDP bei Cluster-Ports nicht deaktivieren.
-* Bei ONTAP 9.11.1 und höher deaktiviert Off CDP für nicht-Cluster- und nicht-Speicherports; CDP kann bei Cluster-Ports nicht deaktiviert werden.
+* Bei ONTAP 9.10.1 und früher wird CDP auf Nicht-Cluster-Ports aktiviert.
+* Ab ONTAP 9.11.1 wird CDP auf Nicht-Cluster- und Nicht-Storage-Ports aktiviert.
+* Bei ONTAP 9.10.1 und früher deaktiviert „off“ CDP auf Nicht-Cluster-Ports; CDP kann auf Cluster-Ports nicht deaktiviert werden.
+* Für ONTAP 9.11.1 und höher deaktiviert „off“ CDP auf Nicht-Cluster- und Nicht-Speicher-Ports; auf Cluster-Ports kann CDP nicht deaktiviert werden.
 
 
-Wenn CDP auf einem Port deaktiviert ist, der mit einem CDP-kompatiblen Gerät verbunden ist, kann der Netzwerkverkehr möglicherweise nicht optimiert werden.
+Wenn CDP an einem Port deaktiviert ist, der mit einem CDP-kompatiblen Gerät verbunden ist, könnte der Netzwerkverkehr möglicherweise nicht optimiert sein.
 
 .Schritte
-. Aktuelle CDP-Einstellung für einen Knoten oder für alle Knoten in einem Cluster anzeigen:
+. Die aktuelle CDP-Einstellung für einen Knoten oder für alle Knoten in einem Cluster anzeigen:
 +
 [cols="30,70"]
 |===
 
 
-| So zeigen Sie die CDP-Einstellung an: | Eingeben... 
+| Die CDP-Einstellung von ... kann angezeigt werden... | Eingeben... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 `run - node <node_name> options cdpd.enable`
 
 
 
  a| 
-Alle Nodes in einem Cluster
+Alle Knoten in einem Cluster
  a| 
 `options cdpd.enable`
 
 |===
-. Aktivieren oder Deaktivieren von CDP an allen Ports eines Knotens oder an allen Ports aller Knoten in einem Cluster:
+. CDP auf allen Ports eines Knotens oder auf allen Ports aller Knoten in einem Cluster aktivieren oder deaktivieren:
 +
 [cols="30,70"]
 |===
 
 
-| So aktivieren oder deaktivieren Sie CDP ein: | Eingeben... 
+| CDP kann auf ... aktiviert oder deaktiviert werden. | Eingeben... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 `run -node node_name options cdpd.enable {on or off}`
 
 
 
  a| 
-Alle Nodes in einem Cluster
+Alle Knoten in einem Cluster
  a| 
 `options cdpd.enable {on or off}`
 
@@ -151,22 +131,22 @@ Alle Nodes in einem Cluster
 
 
 [[view-cdp-neighbor-information]]
-== Anzeigen von CDP-Nachbarinformationen
+== CDP-Nachbarinformationen anzeigen
 
-Sie können Informationen über die benachbarten Geräte anzeigen, die mit jedem Port des Clusters verbunden sind, sofern der Port mit einem CDP-kompatiblen Gerät verbunden ist. Sie können mit dem `network device-discovery show -protocol cdp` Befehl Nachbarinformationen anzeigen. Erfahren Sie mehr über `network device-discovery show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-device-discovery-show.html["ONTAP-Befehlsreferenz"^].
+Sie können Informationen über die benachbarten Geräte anzeigen, die mit jedem Port der Knoten Ihres Clusters verbunden sind, vorausgesetzt, der Port ist mit einem CDP-kompatiblen Gerät verbunden. Mit dem  `network device-discovery show -protocol cdp` Befehl lassen sich Nachbarinformationen anzeigen. Weitere Informationen zu  `network device-discovery show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-device-discovery-show.html["ONTAP-Befehlsreferenz"^].
 
 .Über diese Aufgabe
-In ONTAP 9.10.1 und früher, da CDP immer für Cluster-Ports aktiviert ist, werden CDP-Nachinformationen immer für diese Ports angezeigt. CDP muss auf nicht-Cluster-Ports aktiviert sein, damit für diese Ports „Nachbar“-Informationen angezeigt werden können.
+In ONTAP 9.10.1 und früher, da CDP für Cluster-Ports immer aktiviert ist, werden die CDP-Nachbarinformationen für diese Ports immer angezeigt. CDP muss auf Nicht-Cluster-Ports aktiviert sein, damit die Nachbarinformationen für diese Ports angezeigt werden.
 
-In ONTAP 9.11.1 und höher wird CDP immer für Cluster- und Storage-Ports aktiviert, sodass CDP-Nachinformationen immer für diese Ports angezeigt werden. CDP muss auf nicht-Cluster- und nicht-Storage-Ports aktiviert sein, damit für diese Ports Nachbar-Informationen angezeigt werden können.
+In ONTAP 9.11.1 und höher ist CDP für Cluster- und Speicherports immer aktiviert, daher werden die CDP-Nachbarinformationen für diese Ports stets angezeigt. CDP muss auf Nicht-Cluster- und Nicht-Speicherports aktiviert sein, damit die Nachbarinformationen für diese Ports angezeigt werden.
 
 .Schritt
-Informationen zu allen CDP-kompatiblen Geräten anzeigen, die mit den Ports eines Knotens im Cluster verbunden sind:
+Informationen über alle CDP-kompatiblen Geräte, die mit den Ports eines Knotens im Cluster verbunden sind, werden angezeigt:
 
 ....
 network device-discovery show -node node -protocol cdp
 ....
-Mit dem folgenden Befehl werden die Nachbarn angezeigt, die mit den Ports auf dem Node sti2650-212 verbunden sind:
+Der folgende Befehl zeigt die Nachbarn, die mit den Ports des Knotens sti2650-212 verbunden sind:
 
 ....
 network device-discovery show -node sti2650-212 -protocol cdp
@@ -187,61 +167,61 @@ sti2650-212/cdp
             e0f    RTP-LF349-510K33.gdl.eng.netapp.com(FDO21521S4T)
                                              Ethernet1/24      N9K-C93180YC-FX
 ....
-Die Ausgabe listet die Cisco-Geräte auf, die mit jedem Port des angegebenen Knotens verbunden sind.
+Die Ausgabe listet die Cisco Geräte auf, die mit jedem Port des angegebenen Knotens verbunden sind.
 
 
 
 [[configure-the-hold-time-for-cdp-messages]]
-== Konfigurieren Sie die Haltezeit für CDP-Nachrichten
+== Die Haltezeit für CDP-Nachrichten konfigurieren
 
-Die Haltezeit ist der Zeitraum, für den CDP-Werbeanzeigen im Cache von benachbarten CDP-kompatiblen Geräten gespeichert werden. Die Haltezeit wird in jedem CDP1-Paket angekündigt und wird aktualisiert, sobald ein CDPv1-Paket von einem Node empfangen wird.
+Die Haltezeit ist der Zeitraum, für den CDP-Ankündigungen im Cache benachbarter CDP-kompatibler Geräte gespeichert werden. Die Haltezeit wird in jedem CDPv1-Paket angekündigt und aktualisiert, wenn ein Knoten ein CDPv1-Paket empfängt.
 
-* Der Wert der `cdpd.holdtime` Option sollte auf beiden Nodes eines HA-Paars auf den gleichen Wert eingestellt werden.
-* Der Standardwert für die Haltezeit beträgt 180 Sekunden, Sie können jedoch Werte zwischen 10 Sekunden und 255 Sekunden eingeben.
-* Wenn eine IP-Adresse entfernt wird, bevor die Haltezeit abgelaufen ist, werden die CDP-Informationen bis zum Ablauf der Haltezeit zwischengespeichert.
+* Der Wert der  `cdpd.holdtime` Option sollte auf beiden Knoten eines HA-Paares auf den gleichen Wert eingestellt werden.
+* Der Standardwert für die Haltezeit beträgt 180 Sekunden, es können jedoch Werte zwischen 10 Sekunden und 255 Sekunden eingegeben werden.
+* Wird eine IP-Adresse vor Ablauf der Aufbewahrungsfrist entfernt, werden die CDP-Informationen bis zum Ablauf der Aufbewahrungsfrist zwischengespeichert.
 
 
 .Schritte
-. Zeigen Sie die aktuelle CDP-Haltezeit für einen Knoten oder für alle Knoten in einem Cluster an:
+. Die aktuelle CDP-Haltezeit für einen Knoten oder für alle Knoten in einem Cluster anzeigen:
 +
 [cols="30,70"]
 |===
 
 
-| So zeigen Sie die Haltezeit von... | Eingeben... 
+| Die Wartezeit kann angezeigt werden... | Eingeben... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 `run -node node_name options cdpd.holdtime`
 
 
 
  a| 
-Alle Nodes in einem Cluster
+Alle Knoten in einem Cluster
  a| 
 `options cdpd.holdtime`
 
 |===
-. Konfigurieren Sie die CDP-Haltezeit auf allen Ports eines Node oder auf allen Ports aller Knoten in einem Cluster:
+. Die CDP-Haltezeit auf allen Ports eines Knotens oder auf allen Ports aller Knoten in einem Cluster konfigurieren:
 +
 [cols="30,70"]
 |===
 
 
-| So stellen Sie die Haltezeit ein: | Eingeben... 
+| Die Haltezeit kann eingestellt werden... | Eingeben... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 `run -node node_name options cdpd.holdtime holdtime`
 
 
 
  a| 
-Alle Nodes in einem Cluster
+Alle Knoten in einem Cluster
  a| 
 `options cdpd.holdtime holdtime`
 
@@ -251,55 +231,55 @@ Alle Nodes in einem Cluster
 
 
 [[set-the-interval-for-sending-cdp-advertisements]]
-== Stellen Sie das Intervall für das Senden von CDP-Werbeanzeigen ein
+== Das Intervall für das Senden von CDP-Anzeigen festlegen
 
-CDP-Anzeigen werden regelmäßig an CDP-Nachbarn gesendet. Sie können das Intervall für das Senden von CDP-Anzeigen in Abhängigkeit von Netzwerkverkehr und Änderungen in der Netzwerktopologie erhöhen oder verringern.
+CDP-Ankündigungen werden in regelmäßigen Abständen an CDP-Nachbarn gesendet. Das Intervall für das Senden von CDP-Ankündigungen kann je nach Netzwerkverkehr und Änderungen in der Netzwerktopologie erhöht oder verringert werden.
 
-* Der Wert der `cdpd.interval` Option sollte auf beiden Nodes eines HA-Paars auf den gleichen Wert eingestellt werden.
-* Das Standardintervall beträgt 60 Sekunden, Sie können jedoch einen Wert von 5 Sekunden bis 900 Sekunden eingeben.
+* Der Wert der  `cdpd.interval` Option sollte auf beiden Knoten eines HA-Paares auf den gleichen Wert eingestellt werden.
+* Das Standardintervall beträgt 60 Sekunden, aber es kann ein Wert zwischen 5 und 900 Sekunden eingegeben werden.
 
 
 .Schritte
-. Anzeige des aktuellen CDP-Zeitintervalls für einen Knoten oder für alle Knoten in einem Cluster:
+. Das aktuelle CDP-Werbezeitintervall für einen Knoten oder für alle Knoten in einem Cluster anzeigen:
 +
 [cols="30,70"]
 |===
 
 
-| So zeigen Sie das Intervall für... | Eingeben... 
+| Das Intervall für ... kann angezeigt werden. | Eingeben... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 `run -node node_name options cdpd.interval`
 
 
 
  a| 
-Alle Nodes in einem Cluster
+Alle Knoten in einem Cluster
  a| 
 `options cdpd.interval`
 
 |===
-. Konfigurieren Sie das Intervall für das Senden von CDP-Werbeanzeigen für alle Ports eines Node oder für alle Ports aller Nodes in einem Cluster:
+. Das Intervall für das Senden von CDP-Ankündigungen für alle Ports eines Knotens oder für alle Ports aller Knoten in einem Cluster konfigurieren:
 +
 [cols="30,70"]
 |===
 
 
-| So legen Sie das Intervall für... | Eingeben... 
+| Das Intervall für ... festlegen | Eingeben... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 `run -node node_name options cdpd.interval interval`
 
 
 
  a| 
-Alle Nodes in einem Cluster
+Alle Knoten in einem Cluster
  a| 
 `options cdpd.interval interval`
 
@@ -311,32 +291,32 @@ Alle Nodes in einem Cluster
 [[view-or-clear-cdp-statistics]]
 == CDP-Statistiken anzeigen oder löschen
 
-Sie können die CDP-Statistiken für den Cluster und nicht-Cluster-Ports auf jedem Node anzeigen, um potenzielle Netzwerkverbindungsprobleme zu erkennen. CDP-Statistiken werden seit der letzten Freigabe kumulativ erfasst.
+Sie können die CDP-Statistiken für die Cluster- und Nicht-Cluster-Ports auf jedem Knoten einsehen, um potenzielle Netzwerkverbindungsprobleme zu erkennen. Die CDP-Statistiken sind seit ihrer letzten Löschung kumulativ.
 
 .Über diese Aufgabe
-In ONTAP 9.10.1 und früher, da CDP immer für Ports aktiviert ist, werden CDP-Statistiken immer für Verkehr auf diesen Ports angezeigt. CDP muss auf Ports aktiviert sein, damit Statistiken für diese Ports angezeigt werden können.
+In ONTAP 9.10.1 und früher, da CDP für Ports immer aktiviert ist, werden CDP-Statistiken für den Datenverkehr auf diesen Ports immer angezeigt. CDP muss auf Ports aktiviert sein, damit Statistiken für diese Ports angezeigt werden.
 
-In ONTAP 9.11.1 und höher, da CDP immer für Cluster- und Speicherports aktiviert ist, werden CDP-Statistiken immer für den Datenverkehr auf diesen Ports angezeigt. CDP muss auf nicht-Cluster- oder nicht-Storage-Ports aktiviert sein, damit Statistiken für diese Ports angezeigt werden können.
+In ONTAP 9.11.1 und höher ist CDP für Cluster- und Speicherports immer aktiviert, daher werden CDP-Statistiken für den Datenverkehr auf diesen Ports stets angezeigt. CDP muss auf Nicht-Cluster- oder Nicht-Speicherports aktiviert sein, damit Statistiken für diese Ports angezeigt werden.
 
 .Schritt
-Aktuelle CDP-Statistiken für alle Ports auf einem Knoten anzeigen oder löschen:
+Aktuelle CDP-Statistiken für alle Ports eines Knotens anzeigen oder löschen:
 
 [cols="30,70"]
 |===
 
 
-| Ihr Ziel ist | Eingeben... 
+| Wenn Sie möchten... | Eingeben... 
 
 
  a| 
-Zeigen Sie die CDP-Statistiken an
+CDP-Statistiken anzeigen
  a| 
 `run -node node_name cdpd show-stats`
 
 
 
  a| 
-Löschen Sie die CDP-Statistiken
+CDP-Statistiken löschen
  a| 
 `run -node node_name cdpd zero-stats`
 
@@ -344,9 +324,9 @@ Löschen Sie die CDP-Statistiken
 
 
 [[example-of-showing-and-clearing-statistics]]
-=== Beispiel zum Anzeigen und Löschen von Statistiken
+=== Beispiel für das Anzeigen und Löschen von Statistiken
 
-Der folgende Befehl zeigt die CDP-Statistiken vor dem Löschen an. Die Ausgabe zeigt die Gesamtanzahl der Pakete an, die seit dem letzten Löschen der Statistiken gesendet und empfangen wurden.
+Der folgende Befehl zeigt die CDP-Statistiken an, bevor sie gelöscht werden. Die Ausgabe zeigt die Gesamtzahl der Pakete, die seit dem letzten Löschen der Statistiken gesendet und empfangen wurden.
 
 ....
 run -node node1 cdpd show-stats
@@ -363,7 +343,7 @@ TRANSMIT
 OTHER
  Init failures:      0
 ....
-Mit dem folgenden Befehl werden die CDP-Statistiken gelöscht:
+Der folgende Befehl löscht die CDP Statistiken:
 
 ....
 run -node node1 cdpd zero-stats
@@ -383,17 +363,17 @@ TRANSMIT
 OTHER
  Init failures:      0
 ....
-Nachdem die Statistiken gelöscht wurden, beginnen sie sich zu sammeln, nachdem die nächste CDP-Anzeige gesendet oder empfangen wurde.
+Nachdem die Statistiken gelöscht wurden, beginnen sie nach dem Senden oder Empfangen der nächsten CDP-Werbung wieder zu zählen.
 
 
 
 [[connecting-to-ethernet-switches-that-do-not-support-cdp]]
-== Verbinden mit Ethernet-Switches, die CDP nicht unterstützen
+== Verbindung mit Ethernet-Switches, die CDP nicht unterstützen
 
-Mehrere Switches von Anbietern unterstützen CDP nicht. Siehe dielink:https://kb.netapp.com/onprem/ontap/da/NAS/ONTAP_device_discovery_shows_nodes_instead_of_the_switch["NetApp Knowledge Base: ONTAP Geräteerkennung zeigt Knoten anstelle des Switches an"^] für weitere Details.
+Einige Switches verschiedener Hersteller unterstützen CDP nicht. Siehe die link:https://kb.netapp.com/onprem/ontap/da/NAS/ONTAP_device_discovery_shows_nodes_instead_of_the_switch["NetApp Knowledge Base: ONTAP Geräteerkennung zeigt Knoten anstelle des Switches an"^] für weitere Details.
 
 Es gibt zwei Möglichkeiten, dieses Problem zu lösen:
 
-* Deaktivieren Sie CDP, und aktivieren Sie LLDP, falls unterstützt. Weitere Informationen finden Sie unter link:use_lldp_to_detect_network_connectivity.html["Verwenden Sie LLDP, um die Netzwerkverbindung zu erkennen"] .
-* Konfigurieren Sie einen MAC-Adresspaketfilter auf den Switches, um CDP-Ankündigungen zu löschen.
+* CDP deaktivieren und LLDP aktivieren, sofern unterstützt. Weitere Einzelheiten sind unter link:use_lldp_to_detect_network_connectivity.html["LLDP zur Erkennung der Netzwerkverbindung verwenden"] zu finden.
+* Ein MAC-Adress-Paketfilter auf den Switches wird konfiguriert, sodass CDP-Ankündigungen verworfen werden.
 

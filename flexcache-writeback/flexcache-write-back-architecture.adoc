@@ -2,110 +2,110 @@
 permalink: flexcache-writeback/flexcache-write-back-architecture.html 
 sidebar: sidebar 
 keywords: tr-4743, flexcache writeback, flexcache write-back, flexcache, write-back, write back, lock delegations, data delegations, dirty data, cache scrubbers, disconnected mode, grok it, sequence diagrams, technical report, netapp tr, ontap tr 
-summary: Detailliertere Informationen zum FlexCache Write-Back-Betrieb 
+summary: Die Feinheiten der Funktionsweise des FlexCache Write-Back-Betriebs werden erläutert. 
 ---
 = ONTAP FlexCache Write-Back-Architektur
 :allow-uri-read: 
 
 
 [role="lead"]
-FlexCache wurde unter Berücksichtigung starker Konsistenz entwickelt, einschließlich beider Schreibmodi: Write-Back und Write-Around. Sowohl der traditionelle Write-Around-Modus als auch der in ONTAP 9.15.1 eingeführte Write-Back-Modus garantieren, dass die Daten, auf die zugegriffen wird, immer 100% konsistent, aktuell und kohärent sind.
+FlexCache wurde mit starker Konsistenz im Sinn entwickelt, einschließlich beider Modi des Schreibvorgangs: Write-Back und Write-Around. Sowohl der traditionelle Write-Around Betriebsmodus als auch der neue Write-Back Betriebsmodus, der in ONTAP 9.15.1 eingeführt wurde, gewährleisten, dass die abgerufenen Daten stets zu 100 % konsistent, aktuell und kohärent sind.
 
-Die folgenden Konzepte beschreiben den Betrieb von FlexCache Write-Back.
+Die folgenden Konzepte erläutern, wie das FlexCache Write-Back funktioniert.
 
 
 
 [[delegations]]
 == Delegationen
 
-Durch Sperren von Delegierungen und Datendelegationen kann FlexCache sowohl Write-Back- als auch Write-Around-Caches konsistent, kohärent und aktuell halten. Der Ursprung orchestriert beide Delegationen.
+Sperrdelegierungen und Datendelegierungen helfen FlexCache, sowohl Write-Back- als auch Write-Around-Caches konsistent, kohärent und aktuell zu halten. Der Ursprung orchestriert beide Delegierungen.
 
 
 
 [[lock-delegations]]
-=== Delegierungen sperren
+=== Sperrdelegationen
 
-Eine Sperrdelegation ist eine Sperrbehörde auf Protokollebene, die Origin einem Cache pro Datei gewährt, um bei Bedarf Protokollsperren an Clients auszustellen. Dazu gehören xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Exklusive Sperrdelegationen (XLD)] und xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Gemeinsame Sperrdelegationen (SLD)].
+Eine Sperrdelegierung ist eine Sperrberechtigung auf Protokollebene, die der Ursprungsserver einem Cache pro Datei erteilt, um bei Bedarf Protokollsperren an Clients auszugeben. Dazu gehören xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[exklusive Lock-Delegationen (XLD)] und xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Shared Lock Delegations (SLD)].
 
-.XLD und Write-Back
-Um sicherzustellen, dass ONTAP niemals einen widersprüchlichen Schreibvorgang abgleichen muss, wird ein XLD einem Cache gewährt, in dem ein Client das Schreiben in eine Datei anfordert. Wichtig ist, dass zu jeder Zeit nur ein XLD für jede Datei existieren kann, was bedeutet, dass es nie mehr als einen Writer zu einer Datei gleichzeitig geben wird.
+.XLD und Rückschreiben
+Um zu gewährleisten, dass ONTAP niemals einen widersprüchlichen Schreibvorgang abgleichen muss, wird einem Cache, bei dem ein Client das Schreiben einer Datei anfordert, ein XLD zugewiesen. Wichtig ist, dass für jede Datei zu jedem Zeitpunkt nur ein XLD existieren kann, was bedeutet, dass nie mehr als ein Schreibvorgang gleichzeitig auf eine Datei erfolgt.
 
-Wenn die Anfrage zum Schreiben in eine Datei in einen schreibaktivierten Cache kommt, werden die folgenden Schritte ausgeführt:
+Wenn eine Anfrage zum Schreiben in eine Datei in einem Write-Back-fähigen Cache eingeht, erfolgen die folgenden Schritte:
 
-. Der Cache prüft, ob bereits ein XLD für die angeforderte Datei vorhanden ist. Wenn dies der Fall ist, wird dem Client die Schreibsperre gewährt, solange ein anderer Client nicht in die Datei im Cache schreibt. Wenn der Cache keine XLD für die angeforderte Datei hat, wird eine vom Ursprungsort angefordert. Dies ist ein proprietärer Anruf, der das Cluster-Netzwerk durchquert.
-. Nach dem Empfang der XLD-Anforderung aus dem Cache prüft der Origin, ob ein ausstehender XLD für die Datei in einem anderen Cache vorhanden ist. Wenn dies der Fall ist, ruft es die XLD dieser Datei auf, die eine Spülung von jedem aus diesem Cache zurück zum Ursprung auslöst xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Schmutzige Daten] .
-. Sobald die fehlerhaften Daten aus diesem Cache zurückgeleert und an einen stabilen Speicher am Ursprung übertragen wurden, wird der Ursprung die XLD für die Datei dem anfragenden Cache zuweisen.
-. Sobald der XLD der Datei empfangen wurde, gewährt der Cache dem Client die Sperre, und der Schreibvorgang beginnt.
-
-
-Ein hochstufiger Ablaufplan, der einige dieser Schritte abdeckt, wird im <<write-back-sequence-diagram>> Ablaufdiagramm beschrieben.
-
-Aus der Client-Perspektive funktioniert alle Sperrung so, als würde sie auf eine Standard-FlexVol oder FlexGroup geschrieben. Das Risiko liegt bei einer kleinen Verzögerung, wenn die Schreibsperre angefordert wird.
-
-Wenn in der aktuellen Iteration ein Write-Back-fähiger Cache den XLD für eine Datei enthält, blockiert ONTAP * jeden beliebigen* Zugriff auf diese Datei in anderen Caches, einschließlich `READ` Operationen.
+. Der Cache prüft, ob bereits eine XLD für die angeforderte Datei vorhanden ist. Ist dies der Fall, wird dem Client das Schreibsperre erteilt, solange kein anderer Client im Cache auf die Datei schreibt. Falls der Cache keine XLD für die angeforderte Datei hat, wird eine vom Ursprung angefordert. Dies ist ein proprietärer Aufruf, der das Intercluster-Netzwerk durchläuft.
+. Nach Erhalt der XLD-Anfrage aus dem Cache prüft der Origin, ob für die Datei in einem anderen Cache bereits eine ausstehende XLD vorhanden ist. Falls ja, wird die XLD dieser Datei zurückgerufen, was einen Flush aller xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[schmutzige Daten] aus diesem Cache zurück zum Origin auslöst.
+. Sobald die schmutzigen Daten aus diesem Cache zurückgeschrieben und im stabilen Speicher am Ursprung gespeichert sind, erteilt der Ursprung dem anfragenden Cache die XLD für die Datei.
+. Sobald die XLD der Datei empfangen wurde, gewährt der Cache dem Client die Sperre und der Schreibvorgang beginnt.
 
 
-NOTE: Es gibt eine Grenze von 170 XLDs pro Ursprungsbestandteil.
+Ein übergeordnetes Sequenzdiagramm, das einige dieser Schritte abdeckt, ist im <<write-back-sequence-diagram>> Sequence Diagramm enthalten.
+
+Aus Kundensicht funktioniert die Sperrung so, als ob auf ein Standard FlexVol oder FlexGroup geschrieben würde, mit einer möglichen kleinen Verzögerung, wenn die Schreibsperre angefordert wird.
+
+In der aktuellen Version blockiert ONTAP *jeden* Zugriff auf eine Datei in anderen Caches, einschließlich  `READ`-Operationen, wenn ein Write-Back-fähiger Cache das XLD für eine Datei hält.
+
+
+NOTE: Es gilt eine Obergrenze von 170 XLDs pro Herkunftsbestandteil.
 
 
 
 [[data-delegations]]
-=== Datendelegationen
+=== Datendelegierungen
 
-Eine Datendelegierung ist eine dateibasierte Garantie, die einem Cache nach Herkunft zugestellt wird, dass die für diese Datei zwischengespeicherten Daten auf dem neuesten Stand sind. Solange der Cache eine Datendelegation für eine Datei hat, kann er die für die Datei zwischengespeicherten Daten für den Client bereitstellen, ohne sich mit dem Ursprung in Verbindung setzen zu müssen. Wenn der Cache keine Datendelegierung für die Datei hat, muss er sich an den Ursprung wenden, um die vom Client angeforderten Daten zu erhalten.
+Eine Datendelegierung ist eine dateibezogene Garantie, die dem Cache vom Ursprung gegeben wird, dass die für diese Datei zwischengespeicherten Daten aktuell sind. Solange der Cache über eine Datendelegierung für eine Datei verfügt, kann er dem Client die zwischengespeicherten Daten dieser Datei bereitstellen, ohne den Ursprung kontaktieren zu müssen. Verfügt der Cache nicht über eine Datendelegierung für die Datei, muss er den Ursprung kontaktieren, um die vom Client angeforderten Daten zu erhalten.
 
-Im Write-Back-Modus wird die Datendelegierung einer Datei aufgehoben, wenn eine XLD für diese Datei in einem anderen Cache oder vom Ursprung genommen wird. Dadurch wird die Datei effektiv von Clients aller anderen Caches und vom Ursprung abgetrennt, auch bei Lesevorgängen. Dies ist ein Kompromiss, der getroffen werden muss, um sicherzustellen, dass auf alte Daten nie zugegriffen wird.
+Im Write-Back-Modus wird die Datendelegierung einer Datei widerrufen, wenn ein XLD für diese Datei in einem anderen Cache oder am Ursprung vorgenommen wird. Dadurch wird die Datei effektiv für Clients in allen anderen Caches und am Ursprung gesperrt, selbst für Lesezugriffe. Dies ist ein notwendiger Kompromiss, um sicherzustellen, dass niemals auf alte Daten zugegriffen wird.
 
-Lesevorgänge in einem Write-Back-aktivierten Cache arbeiten im Allgemeinen wie Lesevorgänge in einem Write-Around-Cache. Sowohl in Write-Around- als auch in Write-Back-fähigen Caches kann es zu einem ersten `READ` Performance-Hit kommen, wenn die angeforderte Datei über eine exklusive Schreibsperre in einem anderen Write-Back-aktivierten Cache verfügt, als wenn der Lesevorgang ausgeführt wird. Der XLD muss widerrufen werden, und die fehlerhaften Daten müssen an den Ursprung übertragen werden, bevor der Lesevorgang im anderen Cache bedient werden kann.
+Lesevorgänge in einem Write-Back-fähigen Cache verhalten sich im Allgemeinen wie Lesevorgänge in einem Write-Around-Cache. Sowohl bei Write-Around- als auch bei Write-Back-fähigen Caches kann es zu einem anfänglichen  `READ` Leistungsverlust kommen, wenn die angeforderte Datei in einem anderen Write-Back-fähigen Cache als dem, in dem der Lesevorgang ausgelöst wurde, eine exklusive Schreibsperre besitzt. Die XLD muss aufgehoben und die schmutzigen Daten müssen an den Ursprung übertragen werden, bevor der Lesevorgang im anderen Cache bedient werden kann.
 
 
 
 [[tracking-dirty-data]]
-== Unsaubere Daten werden nachverfolgt
+== Verfolgung schmutziger Daten
 
-Das Rückschreiben vom Cache zum Ursprung erfolgt asynchron. Das heißt, schmutzige Daten werden nicht sofort zurück in die ursprüngliche Quelle geschrieben. ONTAP verwendet ein System mit nicht ordnungsgemäßen Datensätzen, um schmutzige Daten pro Datei nachzuverfolgen. Jeder Dirty Data Record (DDR) stellt ungefähr 20 MB schmutzige Daten für eine bestimmte Datei dar. Wenn eine Datei aktiv geschrieben wird, beginnt ONTAP schmutzige Daten zurück zu spülen, nachdem zwei DDRs gefüllt wurden und der dritte DDR geschrieben wird. Dies führt dazu, dass während der Schreibvorgänge ungefähr 40 MB an schmutzigen Daten in einem Cache verbleiben. Bei zustandsbehafteten Protokollen (NFSv4.x, SMB) werden die verbleibenden 40 MB an Daten zurück an den Ursprung übertragen, wenn die Datei geschlossen wird. Bei zustandslosen Protokollen (NFSv3) werden die 40 MB an Daten zurückgelöscht, wenn entweder der Zugriff auf die Datei in einem anderen Cache angefordert wird oder wenn die Datei zwei oder mehr Minuten lang inaktiv ist, maximal fünf Minuten. Weitere Informationen zum Auslösen von durch Timer oder durch Speicherplatz ausgelösten schmutzigen Daten finden Sie unter <<Cache-Scrubber>>.
+Das Zurückschreiben vom Cache zum Ursprung erfolgt asynchron. Das bedeutet, dass schmutzige Daten nicht sofort zum Ursprung zurückgeschrieben werden. ONTAP verwendet ein schmutzige Daten Record System, um schmutzige Daten pro Datei zu verfolgen. Jeder schmutzige Daten Record (DDR) repräsentiert ungefähr 20 MB schmutzige Daten für eine bestimmte Datei. Wenn eine Datei aktiv beschrieben wird, beginnt ONTAP mit dem Zurückschreiben schmutziger Daten, nachdem zwei DDRs gefüllt wurden und der dritte DDR beschrieben wird. Dadurch verbleiben während des Schreibvorgangs etwa 40 MB schmutzige Daten im Cache. Bei zustandsbehafteten Protokollen (NFSv4.x, SMB) werden die verbleibenden 40 MB Daten beim Schließen der Datei zum Ursprung zurückgeschrieben. Bei zustandslosen Protokollen (NFSv3) werden die 40 MB Daten zurückgeschrieben, wenn entweder der Zugriff auf die Datei über einen anderen Cache erfolgt oder nachdem die Datei zwei oder mehr Minuten inaktiv war, maximal jedoch fünf Minuten. Weitere Informationen zum zeit- oder speichergesteuerten Zurückschreiben schmutziger Daten finden sich unter <<Cache-Scrubber>>.
 
-Zusätzlich zu den DDRs und Scrubbers lösen einige Front-End NAS-Operationen auch das Spülen aller schmutzigen Daten für eine Datei aus:
+Zusätzlich zu den DDRs und Scrubbern lösen einige Frontend-NAS-Operationen auch das Leeren aller schmutzigen Daten einer Datei aus:
 
 * `SETATTR`
 +
-** `SETATTR`s, die nur mtime, atitime und/oder ctime ändern, können im Cache verarbeitet werden, um die Einbußen des WAN zu vermeiden.
+** `SETATTR`-Anweisungen, die nur mtime, atime und/oder ctime ändern, können im Cache verarbeitet werden, wodurch die Belastung durch das WAN vermieden wird.
 
 
 * `CLOSE`
-* `OPEN` In einem anderen Cache
-* `READ` In einem anderen Cache
-* `READDIR` In einem anderen Cache
-* `READDIRPLUS` In einem anderen Cache
-* `WRITE` In einem anderen Cache
+* `OPEN` an einem anderen Cache
+* `READ` an einem anderen Cache
+* `READDIR` an einem anderen Cache
+* `READDIRPLUS` an einem anderen Cache
+* `WRITE` an einem anderen Cache
 
 
 
 
 [[disconnected-mode]]
-== Abgetrennter Modus
+== Getrennter Modus
 
-Wenn eine XLD für eine Datei in einem Write-Around-Cache gespeichert wird und dieser Cache vom Ursprung getrennt wird, sind Lesevorgänge für diese Datei weiterhin in den anderen Caches und im Ursprung zulässig. Dieses Verhalten unterscheidet sich, wenn ein XLD von einem Write-Back-aktivierten Cache gehalten wird. Wenn der Cache getrennt ist, hängt in diesem Fall überall der Lesezugriff auf die Datei. Dies trägt dazu bei, 100 % Konsistenz, Währung und Kohärenz aufrechtzuerhalten. Die Lesevorgänge sind im Write-Around-Modus erlaubt, da am Ursprung garantiert ist, dass alle Daten verfügbar sind, die für den Client schreibgeschützt sind. Im Write-Back-Modus während einer Trennung kann der Origin nicht garantieren, dass alle Daten, die in den Write-Back-aktivierten Cache geschrieben und vom Write-Back-aktivierten Cache bestätigt wurden, vor der Trennung auf den Ursprung gebracht wurden.
+Wenn ein XLD für eine Datei in einem Write-Around-Cache gehalten wird und dieser Cache die Verbindung zum Ursprung verliert, sind Lesezugriffe auf diese Datei in den anderen Caches und am Ursprung weiterhin erlaubt. Dieses Verhalten unterscheidet sich, wenn ein XLD von einem Write-Back-fähigen Cache gehalten wird. In diesem Fall führen Lesezugriffe auf die Datei überall zu einem Hängenbleiben, wenn der Cache die Verbindung verliert. Dadurch wird sichergestellt, dass vollständige Konsistenz, Aktualität und Kohärenz erhalten bleiben. Im Write-Around-Betriebsmodus sind Lesezugriffe erlaubt, da beim Ursprung garantiert alle Daten verfügbar sind, die dem Client als geschrieben bestätigt wurden. Im Write-Back-Betriebsmodus kann der Ursprung bei einer Trennung nicht garantieren, dass alle Daten, die an den Write-Back-fähigen Cache geschrieben und von diesem bestätigt wurden, vor der Trennung den Ursprung erreicht haben.
 
-Falls ein Cache mit einem XLD für eine Datei über einen längeren Zeitraum getrennt wird, kann ein Systemadministrator den XLD am Ursprung manuell widerrufen. Dadurch kann die E/A-Datei an den verbleibenden Caches und am Ursprung wieder aufgenommen werden.
+Falls ein Cache mit einer XLD-Berechtigung für eine Datei über einen längeren Zeitraum getrennt ist, kann ein Systemadministrator die XLD-Berechtigung am Ursprung manuell widerrufen. Dadurch kann die IO auf die Datei in den verbleibenden Caches und am Ursprung fortgesetzt werden.
 
 
-WARNING: Das manuelle Zurückziehen des XLD führt zum Verlust von fehlerhaften Daten für die Datei im nicht verbundenen Cache. Das manuelle Revocieren eines XLD sollte nur im Falle einer katastrophalen Störung zwischen Cache und Ursprung erfolgen.
+WARNING: Das manuelle Widerrufen der XLD führt zum Verlust aller schmutzigen Daten der Datei im getrennten Cache. Das manuelle Widerrufen einer XLD sollte nur im Falle einer schwerwiegenden Unterbrechung zwischen Cache und Origin erfolgen.
 
 
 
 [[cache-scrubbers]]
 == Cache-Scrubber
 
-In ONTAP gibt es Scrubbers, die als Reaktion auf bestimmte Ereignisse ausgeführt werden, wie z. B. einen Timer, der abläuft oder die Schwellenwerte für die Leerräume verletzt werden. Die Scrubbers erhalten eine exklusive Sperre für die zu scrubbed Datei, effektiv Einfrieren IO auf diese Datei, bis das Scrub abgeschlossen ist.
+Es gibt Scrubber in ONTAP, die bei bestimmten Ereignissen ausgeführt werden, beispielsweise wenn ein Timer abläuft oder Speicherplatzgrenzen überschritten werden. Die Scrubber nehmen eine exklusive Sperre auf die zu bereinigende Datei und frieren so die IO für diese Datei ein, bis der Scrub abgeschlossen ist.
 
-Zu den Scrubbers gehören:
+Zu den Scrubbern gehören:
 
-* *Mtime-basierte Scrubber im Cache:* dieser Scrubber startet alle fünf Minuten und reibt jede Datei, die zwei Minuten lang unverändert sitzt. Wenn sich irgendwelche fehlerhaften Daten für die Datei noch im Cache befinden, wird die I/O-Vorgänge für diese Datei stillgelegt und ein Rückschreiben ausgelöst. Die E/A-Vorgänge werden nach Abschluss des Rückschreibens wieder aufgenommen.
-* *Mtime-basierte Scrubber nach Herkunft:* ähnlich wie der mtime-basierte Scrubber im Cache läuft dieser auch alle fünf Minuten. Es reibt jedoch jede Datei, die 15 Minuten lang unverändert sitzt, und erinnert an die Delegation der Inode. Dieser Scrubber initiiert keinen Rückschreibvorgang.
-* *RW-Scheuersaugmaschine auf Ursprungsbasis:* ONTAP überwacht, wie viele RW-Lock-Delegationen pro Ursprungskomponente ausgehändigt werden. Wenn diese Zahl 170 übertrifft, beginnt ONTAP mit dem Scrubbing von Write Lock-Delegationen auf LRU-Basis (Least-Recently-Used).
-* *Platzbasiertes Scrubber auf dem Cache:* erreicht ein FlexCache-Volumen 90% voll, wird der Cache geschrubbt und wird auf LRU-Basis entfernt.
-* *Platzbasiertes Scrubber auf der Herkunft:* erreicht ein FlexCache-Ursprungsvolumen 90% voll, wird der Cache geschrubbt und wird auf LRU-Basis entfernt.
+* *Änderungszeitbasierter Scrubber im Cache:* Dieser Scrubber startet alle fünf Minuten und überprüft alle Dateien, die zwei Minuten lang unverändert im Cache liegen. Befinden sich noch schmutzige Daten für die Datei im Cache, wird die IO zu dieser Datei angehalten und ein Write-Back ausgelöst. Die IO wird fortgesetzt, nachdem das Write-Back abgeschlossen ist.
+* *Änderungszeitbasierter Scrubber auf dem Ursprungsserver:* Ähnlich dem änderungszeitbasierten Scrubber im Cache wird auch dieser alle fünf Minuten ausgeführt. Er bereinigt jedoch alle Dateien, die 15 Minuten lang unverändert geblieben sind, wobei die Delegierung des Inodes zurückgerufen wird. Dieser Scrubber initiiert keinen Schreibvorgang.
+* *RW-Limit-basierter Scrubber am Ursprung:* ONTAP überwacht, wie viele RW-Sperrdelegierungen pro Ursprungskomponente vergeben werden. Überschreitet diese Zahl 170, beginnt ONTAP mit der Bereinigung von Schreibsperrdelegierungen nach dem Least-Recently-Used-Prinzip (LRU).
+* *Speicherbasierte Bereinigung auf dem Cache:* Wenn ein FlexCache Volume zu 90 % gefüllt ist, wird der Cache bereinigt, wobei Elemente nach dem LRU-Prinzip entfernt werden.
+* *Speicherbasierter Scrubber auf dem Ursprungsvolume:* Wenn ein FlexCache Ursprungsvolume zu 90 % gefüllt ist, wird der Cache bereinigt, wobei die Elemente nach dem LRU-Prinzip entfernt werden.
 
 
 
@@ -113,20 +113,20 @@ Zu den Scrubbers gehören:
 [[sequence-diagrams]]
 == Sequenzdiagramme
 
-Diese Sequenzdiagramme zeigen den Unterschied zwischen Write-Acknowledgement und Write-Back-Modus.
+Diese Sequenzdiagramme veranschaulichen den Unterschied bei den Schreibbestätigungen zwischen Write-Around und Write-Back Modus.
 
 
 
 [[write-around]]
 [[write-around-sequence-diagram]]
-=== Umschreibung
+=== Write-around
 
-image:flexcache-write-around-sequence-diagram.png["FlexCache-Ablaufdiagramm für die Write-Around-Sequenz"]
+image:flexcache-write-around-sequence-diagram.png["FlexCache Write-Around-Sequenzdiagramm"]
 
 
 
 [[write-back]]
 [[write-back-sequence-diagram]]
-=== Zurückschreiben
+=== Write-Back
 
-image:flexcache-write-back-sequence-diagram.png["FlexCache-Write-Back-Sequenzdiagramm"]
+image:flexcache-write-back-sequence-diagram.png["FlexCache Write-Back-Sequenzdiagramm"]

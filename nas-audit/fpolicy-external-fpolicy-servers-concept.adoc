@@ -2,24 +2,24 @@
 permalink: nas-audit/fpolicy-external-fpolicy-servers-concept.html 
 sidebar: sidebar 
 keywords: fpolicy, works, external fpolicy servers, privileged data access, channels, synchronous communication, connection, credentials, super user 
-summary: 'Nachdem FPolicy auf der Storage Virtual Machine (SVM) konfiguriert und aktiviert wurde, wird FPolicy auf jedem Node ausgeführt, an dem die SVM teilnimmt. FPolicy ist für die Einrichtung und Wartung von Verbindungen mit externen FPolicy-Servern (FPolicy-Servern), für die Benachrichtigungsverarbeitung und das Management von Benachrichtigungsmeldungen zu und von FPolicy-Servern verantwortlich.' 
+summary: 'Nachdem FPolicy auf der Storage Virtual Machine (SVM) konfiguriert und aktiviert wurde, läuft FPolicy auf jedem Knoten, an dem die SVM beteiligt ist. FPolicy ist verantwortlich für den Aufbau und die Aufrechterhaltung von Verbindungen zu externen FPolicy Servern (FPolicy Server), für die Verarbeitung von Benachrichtigungen sowie für die Verwaltung von Benachrichtigungen an und von FPolicy Servern.' 
 ---
-= So funktioniert ONTAP FPolicy mit externen FPolicy-Servern
+= Wie ONTAP FPolicy mit externen FPolicy Servern funktioniert
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Nachdem FPolicy auf der Storage Virtual Machine (SVM) konfiguriert und aktiviert wurde, wird FPolicy auf jedem Node ausgeführt, an dem die SVM teilnimmt. FPolicy ist für die Einrichtung und Wartung von Verbindungen mit externen FPolicy-Servern (FPolicy-Servern), für die Benachrichtigungsverarbeitung und das Management von Benachrichtigungsmeldungen zu und von FPolicy-Servern verantwortlich.
+Nachdem FPolicy auf der Storage Virtual Machine (SVM) konfiguriert und aktiviert wurde, läuft FPolicy auf jedem Knoten, an dem die SVM beteiligt ist. FPolicy ist verantwortlich für den Aufbau und die Aufrechterhaltung von Verbindungen zu externen FPolicy Servern (FPolicy Server), für die Verarbeitung von Benachrichtigungen sowie für die Verwaltung von Benachrichtigungen an und von FPolicy Servern.
 
-Darüber hinaus hat FPolicy im Rahmen des Verbindungsmanagements folgende Aufgaben:
+Darüber hinaus hat FPolicy im Rahmen des Verbindungsmanagements folgende Verantwortlichkeiten:
 
-* Stellt sicher, dass die Dateibenachrichtigung durch die richtige LIF an den FPolicy-Server fließt.
-* Stellt sicher, dass beim Senden von Benachrichtigungen an die FPolicy-Server ein Lastausgleich erfolgt, wenn mehrere FPolicy-Server mit einer Richtlinie verknüpft sind.
-* Versucht, die Verbindung wiederherzustellen, wenn eine Verbindung zu einem FPolicy-Server unterbrochen wird.
-* Sendet Benachrichtigungen über eine authentifizierte Sitzung an FPolicy Server.
-* Verwaltet die vom FPolicy-Server für die Verarbeitung von Clientanforderungen festgelegte Passthrough-Datenverbindung, wenn das Passthrough-Lesevorgang aktiviert ist.
+* Stellt sicher, dass Dateibenachrichtigungen über die korrekte LIF an den FPolicy Server weitergeleitet werden.
+* Gewährleistet, dass bei der Zuordnung mehrerer FPolicy Server zu einer Richtlinie ein Lastausgleich beim Senden von Benachrichtigungen an die FPolicy Server erfolgt.
+* Versuche, die Verbindung wiederherzustellen, wenn die Verbindung zu einem FPolicy Server unterbrochen wird.
+* Sendet die Benachrichtigungen über eine authentifizierte Sitzung an die FPolicy Server.
+* Verwaltet die vom FPolicy Server eingerichtete Passthrough-Read-Datenverbindung zur Bearbeitung von Clientanfragen, wenn Passthrough-Read aktiviert ist.
 
 
 
@@ -27,72 +27,72 @@ Darüber hinaus hat FPolicy im Rahmen des Verbindungsmanagements folgende Aufgab
 [[how-control-channels-are-used-for-fpolicy-communication]]
 == Wie Kontrollkanäle für die FPolicy Kommunikation verwendet werden
 
-FPolicy initiiert eine Steuerkanalverbindung zu einem externen FPolicy Server von den Daten-LIFs jedes Nodes, der an einer Storage Virtual Machine (SVM) beteiligt ist. FPolicy verwendet Kontrollkanäle für die Übertragung von Dateibenachrichtigungen. Daher können bei einem FPolicy-Server je nach SVM-Topologie mehrere Kontrollkanalverbindungen zu erkennen sein.
+FPolicy initiiert eine Steuerkanalverbindung zu einem externen FPolicy Server von den Daten-LIFs jedes Knotens einer Storage Virtual Machine (SVM). FPolicy verwendet Steuerkanäle zur Übertragung von Dateibenachrichtigungen, daher kann ein FPolicy Server je nach SVM-Topologie mehrere Steuerkanalverbindungen sehen.
 
 
 
 [[how-privileged-data-access-channels-are-used-for-synchronous-communication]]
-== Verwendung von privilegierten Datenzugriffskanälen für die synchrone Kommunikation
+== Wie privilegierte Datenzugriffskanäle für synchronen Kommunikationsaustausch verwendet werden
 
-Bei synchronen Anwendungsfällen greift der FPolicy Server über einen privilegierten Datenpfad auf die auf der Storage Virtual Machine (SVM) befindlichen Daten zu. Der Zugriff über den privilegierten Pfad stellt dem FPolicy-Server das komplette Dateisystem zur Verfügung. Es kann auf Datendateien zugreifen, um Informationen zu sammeln, Dateien zu scannen, Dateien zu lesen oder in Dateien zu schreiben.
+Bei synchronen Anwendungsfällen greift der FPolicy Server über einen privilegierten Datenzugriffspfad auf Daten zu, die sich auf der Storage Virtual Machine (SVM) befinden. Der Zugriff über den privilegierten Pfad stellt dem FPolicy Server das gesamte Dateisystem zur Verfügung. Er kann auf Datendateien zugreifen, um Informationen zu sammeln, Dateien zu scannen, Dateien zu lesen oder in Dateien zu schreiben.
 
-Da der externe FPolicy-Server über den privilegierten Datenkanal vom Root der SVM auf das gesamte Filesystem zugreifen kann, muss die Verbindung mit dem privilegierten Datenkanal sicher sein.
+Da der externe FPolicy Server über den privilegierten Datenkanal auf das gesamte Dateisystem vom Stammverzeichnis der SVM aus zugreifen kann, muss die Verbindung über den privilegierten Datenkanal sicher sein.
 
 
 
 [[how-fpolicy-connection-credentials-are-used-with-privileged-data-access-channels]]
-== Verwendung von FPolicy Connection Anmeldeinformationen mit privilegierten Datenzugriffskanälen
+== Wie FPolicy Verbindungsinformationen mit privilegierten Datenzugriffskanälen verwendet werden
 
-Der FPolicy-Server stellt privilegierte Datenzugangsverbindungen zu Cluster-Knoten mithilfe einer bestimmten Windows-Benutzeranmeldeinformationen bereit, die mit der FPolicy-Konfiguration gespeichert werden. SMB ist das einzige unterstützte Protokoll für eine Verbindung mit einem privilegierten Channel für den Datenzugriff.
+Der FPolicy Server stellt privilegierte Dateizugriffsverbindungen zu Cluster-Knoten her, indem er spezifische Windows-Benutzeranmeldeinformationen verwendet, die mit der FPolicy Konfiguration gespeichert sind. SMB ist das einzige unterstützte Protokoll für die Herstellung einer privilegierten Dateizugriffskanalverbindung.
 
-Wenn der FPolicy-Server einen privilegierten Datenzugriff erfordert, müssen die folgenden Bedingungen erfüllt sein:
+Falls der FPolicy Server privilegierten Dateizugriff benötigt, müssen die folgenden Bedingungen erfüllt sein:
 
-* Eine SMB-Lizenz muss auf dem Cluster aktiviert sein.
-* Der FPolicy-Server muss unter den in der FPolicy-Konfiguration konfigurierten Anmeldeinformationen ausgeführt werden.
+* Auf dem Cluster muss eine SMB-Lizenz aktiviert sein.
+* Der FPolicy Server muss unter den in der FPolicy Konfiguration festgelegten Anmeldeinformationen ausgeführt werden.
 
 
-Beim Herstellen einer Datenkanalverbindung verwendet FPolicy die Anmeldeinformationen für den angegebenen Windows-Benutzernamen. Der Datenzugriff erfolgt über den Admin-Anteil „ONTAP_ADMIN“.
+Beim Herstellen einer Datenkanalverbindung verwendet FPolicy die Anmeldeinformationen für den angegebenen Windows-Benutzernamen. Der Dateizugriff erfolgt über die Adminfreigabe ONTAP_ADMIN$.
 
 
 
 [[what-granting-super-user-credentials-for-privileged-data-access-means]]
-== Was die Gewährung von Super-User-Anmeldeinformationen für privilegierten Datenzugriff bedeutet
+== Was die Vergabe von Superuser-Berechtigungen für den Zugriff auf privilegierte Daten bedeutet
 
-ONTAP verwendet die Kombination aus der IP-Adresse und den in der FPolicy-Konfiguration konfigurierten Benutzerberechtigungen, um dem FPolicy-Server Super-Benutzeranmeldeinformationen zu erteilen.
+ONTAP verwendet die Kombination aus IP-Adresse und Benutzeranmeldeinformationen, die in der FPolicy Konfiguration festgelegt ist, um dem FPolicy Server Superuser-Berechtigungen zu erteilen.
 
-Der Superuser-Status gewährt die folgenden Berechtigungen, wenn der FPolicy-Server auf Daten zugreift:
+Der Superuser-Status gewährt dem FPolicy Server die folgenden Berechtigungen beim Datenzugriff:
 
-* Vermeiden Sie Berechtigungsprüfungen
+* Berechtigungsprüfungen vermeiden
 +
-Der Benutzer vermeidet Überprüfungen von Dateien und Verzeichniszugriff.
+Der Benutzer umgeht Kontrollen des Datei- und Verzeichniszugriffs.
 
-* Besondere Sperrrechte
+* Spezielle Sperrberechtigungen
 +
-ONTAP ermöglicht Lese-, Schreib- oder Änderungszugriff auf beliebige Dateien, unabhängig von vorhandenen Sperren. Wenn der FPolicy-Server Byte-Sperren auf der Datei nimmt, werden bestehende Sperren auf der Datei sofort entfernt.
+ONTAP ermöglicht Lese-, Schreib- oder Änderungszugriff auf beliebige Dateien, unabhängig von bestehenden Sperren. Wenn der FPolicy Server Bytebereichssperren für die Datei setzt, erfolgt die sofortige Entfernung bestehender Sperren für die Datei.
 
-* Umgehen Sie alle FPolicy-Prüfungen
+* Jegliche FPolicy-Prüfungen umgehen
 +
-Der Zugriff generiert keine FPolicy-Benachrichtigungen.
+Access generiert keine FPolicy-Benachrichtigungen.
 
 
 
 
 
 [[how-fpolicy-manages-policy-processing]]
-== So managt FPolicy die Richtlinienverarbeitung
+== Wie FPolicy die Richtlinienverarbeitung verwaltet
 
-Ihrer Storage Virtual Machine (SVM) können mehrere FPolicy Richtlinien zugewiesen sein, von denen jede eine andere Priorität hat. Um eine entsprechende FPolicy-Konfiguration auf der SVM zu erstellen, ist es wichtig zu verstehen, wie FPolicy die Richtlinienverarbeitung managt.
+Ihrer Storage Virtual Machine (SVM) können mehrere FPolicy Richtlinien mit jeweils unterschiedlicher Priorität zugewiesen sein. Für die Erstellung einer geeigneten FPolicy Konfiguration auf der SVM ist es wichtig zu verstehen, wie FPolicy die Richtlinienverarbeitung verwaltet.
 
-Jede Dateizugriffsanforderung wird zunächst ausgewertet, um festzustellen, welche Richtlinien dieses Ereignis überwachen. Wenn es sich um ein überwachtes Ereignis handelt, werden Informationen über das überwachte Ereignis zusammen mit interessierten Richtlinien an FPolicy weitergeleitet, wo es ausgewertet wird. Jede Richtlinie wird in der Reihenfolge der zugewiesenen Priorität bewertet.
+Jede Dateizugriffsanfrage wird zunächst geprüft, um festzustellen, welche Richtlinien dieses Ereignis überwachen. Handelt es sich um ein überwachtes Ereignis, werden Informationen über das überwachte Ereignis sowie die relevanten Richtlinien an FPolicy übermittelt, wo sie ausgewertet werden. Jede Richtlinie wird in der Reihenfolge der zugewiesenen Priorität ausgewertet.
 
-Beim Konfigurieren von Richtlinien sollten Sie die folgenden Empfehlungen berücksichtigen:
+Folgende Empfehlungen sind bei der Konfiguration von Richtlinien zu berücksichtigen:
 
-* Wenn eine Richtlinie immer vor anderen Richtlinien bewertet werden soll, konfigurieren Sie diese Richtlinie mit höherer Priorität.
-* Wenn der Erfolg des angeforderten Dateizugriffs bei einem überwachten Ereignis eine Voraussetzung für eine Dateianforderung ist, die anhand einer anderen Richtlinie ausgewertet wird, geben Sie der Richtlinie, die den Erfolg oder den Fehler des ersten Dateivorgangs steuert, eine höhere Priorität.
+* Wenn eine Richtlinie immer vor anderen Richtlinien ausgewertet werden soll, wird diese Richtlinie mit einer höheren Priorität konfiguriert.
+* Wenn der Erfolg einer angeforderten Dateizugriffsoperation bei einem überwachten Ereignis eine Voraussetzung für eine Dateianforderung ist, die anhand einer anderen Richtlinie ausgewertet wird, erhält die Richtlinie, die den Erfolg oder Misserfolg der ersten Dateioperation steuert, eine höhere Priorität.
 +
-Wenn eine Richtlinie beispielsweise Funktionen zur Dateiarchivierung und -Wiederherstellung auf FPolicy managt und eine zweite Richtlinie Dateizugriffsvorgänge in der Online-Datei managt, Die Richtlinie für die Wiederherstellung von Dateien muss eine höhere Priorität haben, damit die Datei wiederhergestellt wird, bevor der Vorgang, der von der zweiten Richtlinie gemanagt wird, zulässig ist.
+Wenn beispielsweise eine Richtlinie die Archivierungs- und Wiederherstellungsfunktionalität von FPolicy-Dateien verwaltet und eine zweite Richtlinie Dateizugriffsvorgänge auf die Online-Datei verwaltet, muss die Richtlinie, die die Dateiwiederherstellung verwaltet, eine höhere Priorität haben, damit die Datei wiederhergestellt wird, bevor der von der zweiten Richtlinie verwaltete Vorgang zugelassen werden kann.
 
-* Wenn Sie möchten, dass alle Richtlinien, die für einen Dateizugriffsvorgang gelten, ausgewertet werden, sollten Sie synchrone Richtlinien mit niedrigerer Priorität betrachten.
+* Wenn alle Richtlinien, die für einen Dateizugriff gelten könnten, ausgewertet werden sollen, ist synchronen Richtlinien eine niedrigere Priorität zuzuweisen.
 
 
-Sie können Richtlinienprioritäten für vorhandene Richtlinien neu anordnen, indem Sie die Nummer der Richtliniensequenz ändern. Um Richtlinien basierend auf der geänderten Prioritätsreihenfolge jedoch FPolicy bewerten zu können, müssen Sie die Richtlinie mit der geänderten Sequenznummer deaktivieren und erneut aktivieren.
+Sie können die Prioritäten bestehender Richtlinien neu anordnen, indem Sie die Richtliniensequenznummer ändern. Damit FPolicy die Richtlinien jedoch anhand der geänderten Prioritätsreihenfolge auswertet, muss die Richtlinie mit der geänderten Sequenznummer deaktiviert und anschließend wieder aktiviert werden.

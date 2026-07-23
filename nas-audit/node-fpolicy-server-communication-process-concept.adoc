@@ -2,49 +2,49 @@
 permalink: nas-audit/node-fpolicy-server-communication-process-concept.html 
 sidebar: sidebar 
 keywords: node-to-external, fpolicy, server communication process 
-summary: Um Ihre FPolicy-Konfiguration richtig zu planen, sollten Sie verstehen, was der Knoten-zu-externe FPolicy Server-Kommunikationsprozess ist. 
+summary: Für eine optimale Planung Ihrer FPolicy Konfiguration ist es wichtig, den Kommunikationsprozess zwischen dem Knoten und dem externen FPolicy Server zu verstehen. 
 ---
-= Kommunikationsprozess vom Knoten zum externen ONTAP FPolicy-Server
+= Kommunikationsprozess zwischen Knoten und externem ONTAP FPolicy Server
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Um Ihre FPolicy-Konfiguration richtig zu planen, sollten Sie verstehen, was der Knoten-zu-externe FPolicy Server-Kommunikationsprozess ist.
+Für eine optimale Planung Ihrer FPolicy Konfiguration ist es wichtig, den Kommunikationsprozess zwischen dem Knoten und dem externen FPolicy Server zu verstehen.
 
-Jeder Node, der an jeder Storage Virtual Machine (SVM) teilnimmt, initiiert mithilfe von TCP/IP eine Verbindung zu einem externen FPolicy Server (FPolicy Server). Verbindungen zu den FPolicy-Servern werden mithilfe von Node-Daten-LIFs eingerichtet. Daher kann ein teilnehmender Node eine Verbindung nur einrichten, wenn der Node über eine funktionsfähige Daten-LIF für die SVM verfügt.
+Jeder Knoten, der an einer Storage Virtual Machine (SVM) beteiligt ist, initiiert eine Verbindung zu einem externen FPolicy Server (FPolicy Server) über TCP/IP. Verbindungen zu den FPolicy Servern werden über Knotendaten-LIFs eingerichtet, daher kann ein beteiligter Knoten nur dann eine Verbindung herstellen, wenn er über einen betriebsbereiten Daten-LIF für die SVM verfügt.
 
-Jeder FPolicy-Prozess auf teilnehmenden Knoten versucht, eine Verbindung zum FPolicy-Server herzustellen, wenn die Richtlinie aktiviert ist. Sie verwendet die IP-Adresse und den Port der FPolicy-externen Engine, die in der Richtlinienkonfiguration angegeben ist.
+Jeder FPolicy-Prozess auf den teilnehmenden Knoten versucht, eine Verbindung zum FPolicy Server herzustellen, wenn die Richtlinie aktiviert ist. Dabei werden die in der Richtlinienkonfiguration angegebene IP-Adresse und der Port der FPolicy External Engine verwendet.
 
-Die Verbindung stellt von jedem der Nodes, die an jeder SVM teilnehmen, über die Daten-LIF einen Kontrollkanal zum FPolicy-Server bereit. Wenn IPv4- und IPv6-Daten-LIF-Adressen auf demselben teilnehmenden Node vorhanden sind, versucht FPolicy zudem, Verbindungen sowohl für IPv4 als auch für IPv6 herzustellen. Daher muss der FPolicy-Server in einem Szenario, in dem die SVM über mehrere Nodes erweitert wird oder wenn sowohl IPv4- als auch IPv6-Adressen vorhanden sind, bereit sein, nach Aktivierung der FPolicy auf der SVM mehrere Kontrollkanaleinrichtungsanfragen vom Cluster aus zu bearbeiten.
+Die Verbindung stellt einen Steuerkanal von jedem an jedem SVM beteiligten Knoten zum FPolicy Server über die Daten-LIF her. Sind auf demselben beteiligten Knoten sowohl IPv4- als auch IPv6-Daten-LIF-Adressen vorhanden, versucht FPolicy, Verbindungen sowohl für IPv4 als auch für IPv6 herzustellen. Daher muss der FPolicy Server in einem Szenario, in dem sich das SVM über mehrere Knoten erstreckt oder sowohl IPv4- als auch IPv6-Adressen vorhanden sind, nach der Aktivierung der FPolicy Policy auf dem SVM auf mehrere Anfragen zum Aufbau von Steuerkanälen aus dem Cluster vorbereitet sein.
 
-Wenn beispielsweise ein Cluster drei Nodes hat –-Node1, Node2 und Node3- und SVM-Daten-LIFs werden über nur Node2 und Node3 verteilt – werden die Kontrollkanäle nur von Node2 und Node3 aus initiiert, unabhängig von der Verteilung der Daten-Volumes. Sagen wir, dass Node2 zwei Daten-LIFs hat --LIF1 und LIF2 -- die zur SVM gehören und dass die anfängliche Verbindung von LIF1 ist. Wenn LIF1 fehlschlägt, versucht FPolicy, einen Kontrollkanal von LIF2 einzurichten.
+Besteht ein Cluster beispielsweise aus drei Knoten, Node1, Node2 und Node3, und sind die SVM-Daten-LIFs nur auf Node2 und Node3 verteilt, werden Kontrollkanäle unabhängig von der Verteilung der Daten-Volumes ausschließlich von Node2 und Node3 initiiert. Angenommen, Node2 verfügt über zwei Daten-LIFs, LIF1 und LIF2, die zur SVM gehören, und die initiale Verbindung erfolgt über LIF1. Fällt LIF1 aus, versucht FPolicy, einen Kontrollkanal über LIF2 herzustellen.
 
-image:what-node-to-fpolicy-server-communication-process-is.png["Knoten zu Fpolocy Service Kommunikationsprozess"]
+image:what-node-to-fpolicy-server-communication-process-is.png["Kommunikationsprozess zwischen Knoten und Fpolicy Service"]
 
 
 
 [[how-fpolicy-manages-external-communication-during-lif-migration-or-failover]]
-== So managt FPolicy die externe Kommunikation während LIF-Migration oder Failover
+== Wie FPolicy die externe Kommunikation während einer LIF-Migration oder eines Failovers verwaltet
 
-Daten-LIFs können zu Daten-Ports im selben Node oder zu Daten-Ports eines Remote Nodes migriert werden.
+Daten-LIFs können auf Datenports im selben Knoten oder auf Datenports auf einem entfernten Knoten migriert werden.
 
-Bei einem Failover oder der Migration einer Daten-LIF wird eine neue Kontrollkanal-Verbindung zum FPolicy-Server hergestellt. FPolicy kann dann erneut versuchen SMB- und NFS-Client-Anforderungen zu versuchen, die abgelaufen sind. Mit dem Ergebnis, dass neue Benachrichtigungen an die externen FPolicy-Server gesendet werden. Der Node lehnt FPolicy-Serverantworten an ursprüngliche, zeitlich begrenzte SMB- und NFS-Anforderungen ab.
+Wenn ein Daten-LIF ausfällt oder migriert wird, wird eine neue Steuerkanalverbindung zum FPolicy-Server hergestellt. FPolicy kann dann SMB- und NFS-Client-Anfragen, bei denen eine Zeitüberschreitung aufgetreten ist, erneut versuchen, sodass neue Benachrichtigungen an die externen FPolicy-Server gesendet werden. Der Node weist FPolicy-Serverantworten auf ursprüngliche, aufgrund von Zeitüberschreitung abgelaufene SMB- und NFS-Anfragen zurück.
 
 
 
 [[how-fpolicy-manages-external-communication-during-node-failover]]
-== Wie FPolicy die externe Kommunikation beim Node Failover managt
+== Wie FPolicy die externe Kommunikation während eines Node-Failovers verwaltet
 
-Wenn der Cluster-Node, der die für die FPolicy Kommunikation verwendeten Daten-Ports hostet, ausfällt, bricht ONTAP die Verbindung zwischen dem FPolicy-Server und dem Node aus.
+Wenn der Clusterknoten, der die für die FPolicy-Kommunikation verwendeten Datenports hostet, ausfällt, unterbricht ONTAP die Verbindung zwischen dem FPolicy-Server und dem Knoten.
 
-Die Auswirkungen eines Cluster Failover auf den FPolicy-Server können durch Konfiguration der Failover-Richtlinie reduziert werden, um den in der FPolicy-Kommunikation verwendeten Daten-Port zu einem anderen aktiven Node zu migrieren. Nach Abschluss der Migration wird über den neuen Daten-Port eine neue Verbindung hergestellt.
+Die Auswirkungen eines Cluster-Failovers auf den FPolicy Server lassen sich abmildern, indem die Failover-Policy so konfiguriert wird, dass der für die FPolicy-Kommunikation verwendete Datenport auf einen anderen aktiven Knoten migriert wird. Nach Abschluss der Migration wird eine neue Verbindung über den neuen Datenport hergestellt.
 
-Wenn die Failover-Richtlinie nicht für die Migration des Daten-Ports konfiguriert ist, muss der FPolicy-Server warten, bis der ausgefallene Node angezeigt wird. Nachdem der Knoten aktiv ist, wird eine neue Verbindung von diesem Knoten mit einer neuen Session-ID initiiert.
+Wenn die Failover-Richtlinie nicht für die Migration des Datenports konfiguriert ist, muss der FPolicy Server warten, bis der ausgefallene Knoten wieder verfügbar ist. Nachdem der Knoten wieder verfügbar ist, wird von diesem Knoten aus eine neue Verbindung mit einer neuen Session ID initiiert.
 
 [NOTE]
 ====
-Der FPolicy-Server erkennt unterbrochene Verbindungen mit der Keep-Alive-Protokollnachricht. Bei der Konfiguration von FPolicy wird die Zeitüberschreitung für das Löschen der Sitzungs-ID festgelegt. Die standardmäßige Keep-Alive-Zeitüberschreitung beträgt zwei Minuten.
+Der FPolicy Server erkennt Verbindungsabbrüche mithilfe der Keep-Alive-Protokollnachricht. Die Zeitüberschreitung für das Entfernen der Session ID wird bei der Konfiguration von FPolicy festgelegt. Die Standard-Zeitüberschreitung beträgt zwei Minuten.
 
 ====

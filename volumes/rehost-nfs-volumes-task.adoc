@@ -2,7 +2,7 @@
 permalink: volumes/rehost-nfs-volumes-task.html 
 sidebar: sidebar 
 keywords: rehost, nfs, volumes 
-summary: Sie können ein Volume, das Daten bereitstellt, über das NFS-Protokoll hosten. 
+summary: Sie können ein Volume, das Daten über das NFS-Protokoll bereitstellt, neu hosten. 
 ---
 = Rehost eines ONTAP NFS-Volumes
 :allow-uri-read: 
@@ -11,75 +11,75 @@ summary: Sie können ein Volume, das Daten bereitstellt, über das NFS-Protokoll
 
 
 [role="lead"]
-Sie können ein Volume, das Daten bereitstellt, über das NFS-Protokoll hosten. Damit Clients nach dem Rehosting weiterhin auf die Daten zugreifen können, müssen Sie das Volume der Exportrichtlinie der SVM zuordnen und die Richtlinien und zugehörigen Regeln manuell konfigurieren.
+Sie können ein Volume, das Daten über das NFS-Protokoll bereitstellt, neu hosten. Damit Clients nach dem Rehosting weiterhin auf die Daten zugreifen können, muss das Volume der Exportrichtlinie der SVM zugeordnet werden sowie die Richtlinien und die zugehörigen Regeln manuell konfiguriert werden.
 
 .Über diese Aufgabe
-* Das Rehosting ist ein störender Betrieb.
-* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
-* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Wenn Sie einen integrierten Schlüsselmanager verwenden, werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht geändert.
+* Rehosting ist ein störender Vorgang.
+* Falls der Rehosting-Vorgang fehlschlägt, ist es möglicherweise erforderlich, die Volume-Richtlinien und die zugehörigen Regeln auf dem Quellvolume neu zu konfigurieren.
+* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Bei Verwendung eines integrierten Schlüsselmanagers werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht verändert.
 +
-Bei Verwendung von ONTAP 9.8 oder früher müssen Sie die Verschlüsselung des Volumes aufheben, bevor Sie den Host-Vorgang wiederholen.
+Wenn Sie ONTAP 9.8 oder eine frühere Version verwenden, muss das Volume vor der Durchführung des Rehost-Vorgangs entschlüsselt werden.
 
 
 
-* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
+* Nach dem Rehosting-Vorgang gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen des Quellvolumes verloren und müssen auf dem rehosteten Volume manuell neu konfiguriert werden:
 +
-** Exportrichtlinien für Volumes und qtree
-** Virenschutz-Richtlinien
-** Volume-Effizienzrichtlinie
-** Quality of Service-Richtlinien (QoS
-** Snapshot-Richtlinien
-** Kontingentregeln
-** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
+** Exportrichtlinien für Volumes und Qtrees
+** Antivirus-Richtlinien
+** Effizienzrichtlinie
+** Richtlinien zur Dienstqualität (QoS)
+** Snapshot Richtlinien
+** Quotenregeln
+** ns-switch und Name-Services-Konfiguration Exportrichtlinie und -regeln
 ** Benutzer- und Gruppen-IDs
 
 
 
 
 .Bevor Sie beginnen
-* Das Volume muss sich online sein.
-* Volume-Managementvorgänge wie das Verschieben von Volumes oder LUNs dürfen nicht ausgeführt werden.
-* Der Datenzugriff auf das neu gehostete Volume muss gestoppt werden.
-* Die ns-Switch- und Name-Services-Konfiguration der Ziel-SVM muss konfiguriert werden, um den Datenzugriff des Rehosting Volume zu unterstützen.
-* Die Benutzer-ID und Gruppen-ID des Volumes muss in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
+* Das Volume muss online sein.
+* Volume-Management-Operationen wie Volume-Verschiebungen oder LUN-Verschiebungen dürfen nicht ausgeführt werden.
+* Der Datenzugriff auf das Volume, das neu gehostet wird, muss gestoppt werden.
+* Die ns-switch- und Name-Services-Konfiguration der Ziel-SVM muss so konfiguriert sein, dass der Datenzugriff auf das Rehosting-Volume unterstützt wird.
+* Die Benutzer-ID und die Gruppen-ID des Volumes müssen entweder in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
 
 
 .Schritte
-. Notieren Sie Informationen über die NFS-Exportrichtlinien, um zu vermeiden, dass Informationen über NFS-Richtlinien verloren gehen, falls der Vorgang des Rehosting des Volumes fehlschlägt.
-. Heben Sie die Bereitstellung des Volumes vom übergeordneten Volume ab:
+. Informationen zu den NFS-Exportrichtlinien sollten dokumentiert werden, damit bei einem Fehlschlagen des Volume-Rehosting-Vorgangs keine Informationen zu den NFS-Richtlinien verloren gehen.
+. Das Volume vom übergeordneten Volume trennen:
 +
 `volume unmount`
 
-. Wechseln zur erweiterten Berechtigungsebene:
+. Zur erweiterten Berechtigungsstufe wechseln:
 +
 `set -privilege advanced`
 
-. Erneutes Hosten des Volumes auf der Ziel-SVM:
+. Das Volume auf der Ziel-SVM neu hosten:
 +
 `volume rehost -vserver _source_svm_ -volume _volume_name_ -destination-vserver _destination_svm_`
 
 +
-Die standardmäßige Exportrichtlinie der Ziel-SVM wird auf das neu gehostete Volume angewendet.
+Die Standard-Export-Richtlinie der Ziel-SVM wird auf das neu gehostete Volume angewendet.
 
-. Erstellen Sie die Exportrichtlinie:
+. Exportrichtlinie erstellen:
 +
 `vserver export-policy create`
 
-. Aktualisieren Sie die Exportrichtlinie des neu gehosteten Volumes in eine benutzerdefinierte Exportrichtlinie:
+. Die Exportrichtlinie des neu gehosteten Volumes wird auf eine benutzerdefinierte Exportrichtlinie aktualisiert:
 +
 `volume modify`
 
-. Mounten Sie das Volume unter dem entsprechenden Verbindungspfad in der Ziel-SVM:
+. Das Volume wird unter dem entsprechenden Verbindungspfad in der Ziel-SVM eingebunden:
 +
 `volume mount`
 
-. Vergewissern Sie sich, dass der NFS-Service auf der Ziel-SVM ausgeführt wird.
-. Setzen Sie den NFS-Zugriff auf das neu gehostete Volume fort.
-. Die Zugangsdaten für den NFS-Client und die LIF-Konfigurationen werden aktualisiert, um die SVM-Zielschnittstellen zu reflektieren.
+. Es sollte sichergestellt werden, dass der NFS-Service auf der Ziel-SVM läuft.
+. Der NFS-Zugriff auf das neu gehostete Volume wird wieder aufgenommen.
+. Die NFS-Client-Anmeldeinformationen und LIF-Konfigurationen werden aktualisiert, sodass sie die Ziel-SVM-LIFs widerspiegeln.
 +
-Das liegt daran, dass der Volume-Zugriffspfad (LIFs und Verbindungspfad) Änderungen durchlaufen hat.
+Dies liegt daran, dass sich der Volume-Zugriffspfad (LIFs und Verbindungspfad) geändert hat.
 
 
 
 .Nachdem Sie fertig sind
-Sie müssen die Richtlinien und die zugehörigen Regeln für das neu gehostete Volume manuell neu konfigurieren. Weitere Informationen finden Sie unter https://docs.netapp.com/us-en/ontap-system-manager-classic/nfs-config/index.html["NFS-Konfiguration"] .
+Die Richtlinien und die zugehörigen Regeln auf dem neu gehosteten Volume müssen manuell neu konfiguriert werden. Siehe  https://docs.netapp.com/us-en/ontap-system-manager-classic/nfs-config/index.html["NFS-Konfiguration"] für weitere Informationen.

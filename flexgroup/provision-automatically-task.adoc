@@ -2,7 +2,7 @@
 permalink: flexgroup/provision-automatically-task.html 
 sidebar: sidebar 
 keywords: provision, flexgroup, volume, automatic, create, flex group, aggregate, space 
-summary: 'Wenn Sie ein FlexGroup Volume erstellen, können Sie ONTAP das FlexGroup Volume bereitstellen lassen, indem Sie automatisch die lokalen Tiers (Aggregate) auswählen. Die Auswahl der lokalen Stufen erfolgt anhand der Best Practices für eine optimale Leistung.' 
+summary: 'Beim Erstellen eines FlexGroup Volumes können Sie festlegen, dass ONTAP das FlexGroup Volume durch automatische Auswahl der lokalen Ebenen (Aggregate) bereitstellt. Die Auswahl der lokalen Ebenen erfolgt auf Basis bewährter Verfahren für optimale Leistung.' 
 ---
 = Automatische Bereitstellung eines ONTAP FlexGroup Volumes
 :allow-uri-read: 
@@ -11,56 +11,56 @@ summary: 'Wenn Sie ein FlexGroup Volume erstellen, können Sie ONTAP das FlexGro
 
 
 [role="lead"]
-Bei der Erstellung eines FlexGroup Volume besteht die Wahl zwischen der automatischen Bereitstellung des FlexGroup Volume durch ONTAP durch Auswahl der zugrunde liegenden lokalen Tiers (Aggregate). Die Auswahl der lokalen Tiers erfolgt anhand der Best Practices für optimale Performance und Kapazität.
+Beim Erstellen eines FlexGroup Volumes kann ONTAP das FlexGroup Volume automatisch bereitstellen, indem die zugrunde liegenden lokalen Tiers (Aggregate) ausgewählt werden. Lokale Tiers werden auf Grundlage von Best Practices für optimale Leistung und Kapazität ausgewählt.
 
 .Bevor Sie beginnen
-Jeder Node im Cluster muss über mindestens eine lokale Tier verfügen.
+Jeder Knoten im Cluster muss mindestens eine lokale Ebene haben.
 
 [NOTE]
 ====
-Wenn ein FlexGroup-Volume erstellt wird, auf dem inaktive Daten verschoben werden, muss für jeden Node mindestens eine lokale Tier mit aktiviertem FabricPool vorhanden sein.
+Beim Erstellen eines FlexGroup Volumes, das inaktive Daten auf eine andere Ebene verschiebt, muss jeder Knoten mindestens eine lokale Ebene mit aktiviertem FabricPool haben.
 
 ====
 .Über diese Aufgabe
-ONTAP wählt zwei lokale Tiers mit der größten Menge an nutzbarem Speicherplatz auf jedem Node aus, um das FlexGroup Volume zu erstellen. Wenn nicht zwei lokale Tiers verfügbar sind, wählt ONTAP eine lokale Tier pro Node aus, um das FlexGroup Volume zu erstellen.
+ONTAP wählt auf jedem Knoten zwei lokale Speicherebenen mit dem größten verfügbaren Speicherplatz aus, um das FlexGroup volume zu erstellen. Wenn zwei lokale Speicherebenen nicht verfügbar sind, wählt ONTAP pro Knoten eine lokale Speicherebene aus, um das FlexGroup volume zu erstellen.
 
-Ab ONTAP 9.15.1 verwendet ONTAP bei der automatischen Bereitstellung eines FlexGroup Volume die optimierte Platzierung (BP) zur Auswahl der lokalen Tiers und des Layouts der FlexGroup Member (konstituierenden) Volumes. Ein Aspekt von BP ist, wie es die Überdimensionierung lokaler Tiers beim Erstellen von „keinen“ garantierten (Thin-Provisioning) FlexGroup-Volumes beschränkt. Die Größe des gesamten FlexGroup-Volumes wird durch den freien Speicherplatz auf der lokalen Tier begrenzt, obwohl das Limit höher ist als bei mit „Volume“ garantierten (Thick Provisioning) FlexGroup-Volumes. Wenn Sie ein FlexGroup-Volume mit REST-APIs oder mit der ONTAP-CLI erstellen `auto-provision-as` , kann die Bereitstellung aufgrund dieser Beschränkung fehlschlagen, weil der Speicherplatz nicht ausreicht. Dies kann durch das Erstellen kleinerer FlexGroup Volumes oder mit dem Parameter vermieden link:create-task.html["Erstellen eines FlexGroup-Volumes und manuelle Auswahl der lokalen Tiers"] `aggr-list` werden.
+Ab ONTAP 9.15.1 wird bei der automatischen Bereitstellung eines FlexGroup Volumes Balanced Placement (BP) von ONTAP verwendet, um die lokalen Tiers und das Layout der FlexGroup Mitglieds- (Konstituenten-) Volumes auszuwählen. Ein Aspekt von BP ist, wie die Überbereitstellung lokaler Tiers beim Erstellen von FlexGroup Volumes mit „Keine Garantie“ (thin-provisioned) begrenzt wird. Die Größe des gesamten FlexGroup Volumes ist durch den freien Speicherplatz auf dem lokalen Tier begrenzt, wobei dieses Limit höher ist als bei FlexGroup Volumes mit „Volume-Garantie“ (thick-provisioned). Wenn ein FlexGroup Volume mithilfe von REST-APIs oder  `auto-provision-as` mit der ONTAP CLI erstellt wird, kann die Bereitstellung aufgrund dieses Limits wegen unzureichenden Speicherplatzes fehlschlagen. Dies kann vermieden werden, indem kleinere FlexGroup Volumes erstellt oder link:create-task.html["Erstellung eines FlexGroup Volume und manuelle Auswahl der lokalen Tiers"] der  `aggr-list` Parameter verwendet wird.
 
 .Schritte
-. Bereitstellen des FlexGroup Volume:
+. Das FlexGroup Volume bereitstellen:
 +
 `volume create -vserver svm_name -volume fg_vol_name –auto-provision-as flexgroup -size fg_size [–encrypt true] [-qos-policy-group qos_policy_group_name] [-support-tiering true] [-granular-data advanced]`
 
 +
-Ab ONTAP 9.16.1 können Sie  (`-granular-data advanced`in der CLI aktivierenlink:enable-adv-capacity-flexgroup-task.html["Erweiterter Kapazitätsausgleich"]), um Daten über mehrere FlexGroup Member Volumes zu schreiben, wenn Dateien größer als 10 GB sind.
+Ab ONTAP 9.16.1 kann link:enable-adv-capacity-flexgroup-task.html["fortschrittlicher Kapazitätsausgleich"] (`-granular-data advanced` in der CLI aktiviert werden, um Daten über mehrere FlexGroup Member-Volumes zu schreiben, wenn Dateien größer als 10 GB sind.
 
 +
-Ab ONTAP 9.5 können Sie FlexGroup Volumes auf lokalen Tiers mit aktivierter FabricPool erstellen. Um ein FlexGroup-Volume automatisch auf lokalen Tiers mit aktiviertem FabricPool bereitzustellen, müssen Sie den Parameter auf `true` einstellen `-support-tiering`.  `none`Für FabricPool muss die Volumengarantie immer auf festgelegt sein. Sie können auch die Tiering-Richtlinie und den minimalen Kühlzeitraum für das FlexGroup Volume festlegen.
+Ab ONTAP 9.5 können FlexGroup Volumes auf lokalen Tiers mit aktiviertem FabricPool erstellt werden. Um ein FlexGroup Volume auf lokalen Tiers mit aktiviertem FabricPool automatisch bereitzustellen, muss der  `-support-tiering` Parameter auf  `true` gesetzt werden. Die Volume-Garantie muss für FabricPool immer auf  `none` gesetzt werden. Es kann außerdem die Tiering-Policy und die minimale Tiering-Abkühlperiode für das FlexGroup Volume angegeben werden.
 
 +
-link:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"]
+link:../disks-aggregates/index.html["Festplatten- und Aggregatverwaltung"]
 
 +
-Sie können eine Durchsatzobergrenze (max. QoS) für FlexGroup Volumes angeben. Dies schränkt die Performance-Ressourcen ein, die das FlexGroup Volume verbrauchen kann. Ab ONTAP 9.4 können Sie Durchsatzböden (QoS Min.) und anpassungsfähige QoS für FlexGroup Volumes festlegen.
+Sie können eine Durchsatzobergrenze (QoS Max) für FlexGroup Volumes festlegen. Dies begrenzt die Leistungsressourcen, die das FlexGroup Volume nutzen kann. Ab ONTAP 9.4 können Durchsatzuntergrenzen (QoS Min) und adaptives QoS für FlexGroup Volumes festgelegt werden.
 
 +
-link:../performance-admin/index.html["Performance Management"]
+link:../performance-admin/index.html["Leistungsmanagement"]
 
 +
-Sie können den Parameter auf festlegen `-encrypt`, wenn Sie die Verschlüsselung auf `true` dem FlexGroup Volume aktivieren möchten. Zum Erstellen eines verschlüsselten Volumes müssen Sie die Lizenz für die Volume-Verschlüsselung und den Schlüsselmanager installiert haben.
+Sie können den  `-encrypt` Parameter auf  `true` setzen, wenn Sie die Verschlüsselung auf dem FlexGroup volume aktivieren möchten. Für das Erstellen eines verschlüsselten Volumes müssen die Volume Encryption-Lizenz und der Key Manager installiert sein.
 
 +
 
-NOTE: Sie müssen die Verschlüsselung auf FlexGroup Volumes während der Erstellung aktivieren. Sie können die Verschlüsselung auf vorhandenen FlexGroup Volumes nicht aktivieren.
+NOTE: Die Verschlüsselung auf FlexGroup Volumes muss zum Zeitpunkt der Erstellung aktiviert werden. Die Verschlüsselung kann auf bestehenden FlexGroup Volumes nicht aktiviert werden.
 
 +
 link:../encryption-at-rest/index.html["Verschlüsselung von Daten im Ruhezustand"]
 
 +
-Der `size` Parameter gibt die Größe des FlexGroup-Volumes in KB, MB, GB, TB oder PB an.
+Der  `size` Parameter gibt die Größe des FlexGroup Volumes in KB, MB, GB, TB oder PB an.
 
 +
-Im folgenden Beispiel wird gezeigt, wie ein FlexGroup Volume mit einer Größe von 400 TB bereitgestellt wird:
+Das folgende Beispiel zeigt, wie ein FlexGroup volume mit einer Größe von 400 TB bereitgestellt wird:
 
 +
 [listing]
@@ -72,7 +72,7 @@ Do you want to continue? {y|n}: y
 [Job 34] Job succeeded: Successful
 ----
 +
-Das folgende Beispiel zeigt, wie eine QoS-Richtliniengruppe für eine Durchsatzobergrenze erstellt und wie sie auf ein FlexGroup Volume angewendet wird:
+Das folgende Beispiel zeigt, wie eine QoS-Richtliniengruppe für die Durchsatzbegrenzung erstellt wird und wie sie auf ein FlexGroup volume angewendet wird:
 
 +
 [listing]
@@ -89,7 +89,7 @@ Do you want to continue? {y|n}: y
 [Job 34] Job succeeded: Successful
 ----
 +
-Im folgenden Beispiel wird gezeigt, wie ein FlexGroup Volume mit der Größe 400 TB auf lokalen Tiers mit aktiviertem FabricPool bereitgestellt wird:
+Das folgende Beispiel zeigt, wie ein FlexGroup volume mit einer Größe von 400 TB auf lokalen Ebenen mit aktivierter FabricPool Option bereitgestellt wird:
 
 +
 [listing]
@@ -101,12 +101,12 @@ Do you want to continue? {y|n}: y
 [Job 34] Job succeeded: Successful
 ----
 +
-Das FlexGroup Volume wird mit acht Member Volumes auf jedem Node im Cluster erstellt. Die Mitgliedervolumes werden gleichmäßig auf die beiden größten lokalen Tiers auf jedem Node verteilt.
+Das FlexGroup volume wird mit acht Mitgliedsvolumes auf jedem Knoten im Cluster erstellt. Die Mitgliedsvolumes werden gleichmäßig auf die beiden größten lokalen Tiers auf jedem Knoten verteilt.
 
 +
-Standardmäßig wird das FlexGroup Volume mit der `volume` Einstellung für Speicherplatzzusagen erstellt, ausgenommen bei AFF Systemen. Bei AFF Systemen wird das FlexGroup-Volume standardmäßig mit der `none` Platzgarantie erstellt.
+Standardmäßig wird das FlexGroup Volume mit der  `volume` Speicherplatzzusage erstellt, außer auf AFF Systemen. Für AFF Systeme wird das FlexGroup Volume standardmäßig mit der  `none` Speicherplatzzusage erstellt.
 
-. Mounten Sie das FlexGroup Volume mit einem Verbindungspfad:
+. Das FlexGroup Volume mit einem Verbindungspfad einbinden:
 +
 `volume mount -vserver vserver_name -volume vol_name -junction-path junction_path`
 
@@ -118,9 +118,9 @@ cluster1::> volume mount -vserver vs0 -volume fg2 -junction-path /fg2
 
 
 .Nachdem Sie fertig sind
-Sie sollten das FlexGroup-Volume vom Client mounten.
+Das FlexGroup Volume sollte vom Client aus eingebunden werden.
 
-Wenn Sie ONTAP 9.6 oder früher ausführen und wenn die Storage Virtual Machine (SVM) sowohl NFSv3 als auch NFSv4 konfiguriert ist, kann das Mounten des FlexGroup Volumes vom Client fehlschlagen. In diesen Fällen müssen Sie beim Mounten des FlexGroup-Volume vom Client explizit die NFS-Version angeben.
+Wenn ONTAP 9.6 oder eine frühere Version verwendet wird und die Storage Virtual Machine (SVM) sowohl NFSv3 als auch NFSv4 konfiguriert hat, kann das Einbinden des FlexGroup Volumes vom Client fehlschlagen. In solchen Fällen muss die NFS-Version beim Einbinden des FlexGroup Volumes vom Client explizit angegeben werden.
 
 [listing]
 ----
@@ -129,5 +129,5 @@ Wenn Sie ONTAP 9.6 oder früher ausführen und wenn die Storage Virtual Machine 
 file1  file2
 ----
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html["qos-Richtliniengruppen werden erstellt"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html["qos policy-group create"^]
 

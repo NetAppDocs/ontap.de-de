@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: high-availability/index.html 
 keywords: high availability, ha, overview 
-summary: Übernahme ist der Prozess, in dem ein Node die Kontrolle über den Storage seines Partners übernimmt. GiveBack ist der Prozess, in dem die Speicherung an den Partner zurückgeschickt wird. 
+summary: Übernahme ist der Vorgang, bei dem ein Node die Kontrolle über den Storage seines Partners übernimmt. Rückgabe ist der Vorgang, bei dem der Storage an den Partner zurückgegeben wird. 
 ---
-= Erfahren Sie mehr über die HA-Paarverwaltung in ONTAP-Clustern
+= Informationen zur Verwaltung von HA-Paaren in ONTAP Clustern
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,49 +14,49 @@ summary: Übernahme ist der Prozess, in dem ein Node die Kontrolle über den Sto
 
 
 [role="lead"]
-Die Clusterknoten werden in Hochverfügbarkeitspaaren (HA) konfiguriert, um Fehlertoleranz und unterbrechungsfreien Betrieb zu gewährleisten.  Wenn ein Knoten ausfällt oder wenn Sie einen Knoten für routinemäßige Wartungsarbeiten herunterfahren müssen, kann sein Partner den Speicher übernehmen und weiterhin Daten von diesem Knoten bereitstellen.  Der Partner stellt den Speicherplatz wieder zur Verfügung, sobald der Knoten wieder online ist.
+Clusterknoten sind in Hochverfügbarkeitspaaren (HA-Paaren) konfiguriert, um Fehlertoleranz und unterbrechungsfreie Vorgänge zu ermöglichen. Fällt ein Knoten aus oder muss ein Knoten für routinemäßige Wartungsarbeiten heruntergefahren werden, kann der Partner dessen Speicher übernehmen und weiterhin Daten daraus bereitstellen. Der Partner gibt den Speicher zurück, wenn der Knoten wieder online ist.
 
-Die HA-Paar-Controller-Konfiguration besteht aus einem Paar von zusammenpassenden Speichercontrollern (lokaler Knoten und Partnerknoten).  Jeder dieser Knoten ist mit den Festplattengehäusen der anderen verbunden.  Wenn bei einem Knoten eines HA-Paares ein Fehler auftritt und die Datenverarbeitung eingestellt wird, erkennt der Partner den Fehlerzustand des Partners und übernimmt die gesamte Datenverarbeitung von diesem Controller.
+Die HA-Paar-Controller-Konfiguration besteht aus einem Paar übereinstimmender Speichercontroller (lokaler Node und Partner-Node). Jeder dieser Nodes ist mit den Festplatten-Shelfs des jeweils anderen verbunden. Wenn ein Node in einem HA-Paar einen Fehler feststellt und die Datenverarbeitung stoppt, erkennt der Partner den Ausfallstatus des Partners und übernimmt die gesamte Datenverarbeitung von diesem Controller.
 
-_Übernahme_ ist der Prozess, in dem ein Node die Kontrolle über den Storage seines Partners übernimmt.
+Die Übernahme ist der Prozess, bei dem ein Node die Kontrolle über den Storage seines Partners übernimmt.
 
-_GiveBack_ ist der Prozess, in dem die Speicherung an den Partner zurückgeschickt wird.
+_Giveback_ ist der Prozess, bei dem der Speicher an den Partner zurückgegeben wird.
 
-Standardmäßig werden Übernahmen automatisch in einer der folgenden Situationen durchgeführt:
+Standardmäßig erfolgen Übernahmen automatisch in einer der folgenden Situationen:
 
-* Ein Software- oder Systemfehler tritt auf einem Node auf, der zu einem Panikzustand führt. Die HA-Paar-Controller führen automatisch einen Failover auf den Partner-Node durch. Nachdem der Partner den Panikzustand wiederhergestellt und hochgefahren hat, führt der Node automatisch ein Giveback durch und stellt den normalen Betrieb des Partners wieder her.
-* Auf einem Node tritt ein Systemfehler auf, und der Node kann nicht neu gebootet werden. Wenn ein Node beispielsweise aufgrund eines Stromausfalls ausfällt, führen die HA-Paar-Controller automatisch einen Failover auf seinen Partner-Node aus und stellen Daten vom verbleibenden Storage Controller bereit.
-
-
-
-NOTE: Sollte auch der Storage für einen Node zur gleichen Zeit an Strom verlieren, ist ein Standard-Takeover nicht möglich.
-
-* Heartbeat-Meldungen werden nicht vom Partner des Node empfangen. Das könnte passieren, wenn der Partner einen Hardware- oder Softwarefehler (z. B. ein Interconnect-Fehler) hat, der nicht zu einem Panik- oder Systemfehler geführt hat, aber dennoch daran gehindert wird, ihn korrekt zu funktionieren.
-* Sie beenden einen der Nodes, ohne den `-f` `-inhibit-takeover true` Parameter oder zu verwenden.
+* Auf einem Node tritt ein Software- oder Systemausfall auf, der zu einem Panic führt. Die HA Pair Controller übernehmen automatisch auf ihren Partner-Node. Nachdem sich der Partner vom Panic erholt und hochgefahren ist, führt der Node automatisch ein Giveback durch und versetzt den Partner wieder in den Normalbetrieb.
+* Ein Systemausfall tritt auf einem Node auf, und der Node kann nicht neu gestartet werden. Beispielsweise übernehmen bei einem Ausfall eines Node aufgrund eines Stromausfalls die HA Pair Controller automatisch auf den Partner-Node und stellen Daten vom verbleibenden Storage Controller bereit.
 
 
 
-NOTE: In einem Cluster mit zwei Nodes und aktiviertem Cluster HA `‑inhibit‑takeover true` bewirkt das Anhalten oder Neubooten eines Node mit dem Parameter, dass beide Nodes nicht mehr Daten bereitstellen, es sei denn, Sie deaktivieren zuerst Cluster HA und weisen dann Epsilon dem Node zu, der online bleiben soll.
+NOTE: Wenn der Speicher eines Knotens gleichzeitig ebenfalls die Stromversorgung verliert, ist eine Standardübernahme nicht möglich.
 
-* Sie booten einen der Nodes ohne Verwendung des `‑inhibit‑takeover true` Parameters neu. (Der `‑onboot` Parameter des `storage failover` Befehls ist standardmäßig aktiviert.)
-* Das Remote-Management-Gerät (Service Processor) erkennt den Ausfall des Partner-Node. Dies gilt nicht, wenn Sie die Hardware-gestützte Übernahme deaktivieren.
+* Heartbeat-Nachrichten werden vom Partner des Knotens nicht empfangen. Dies kann auftreten, wenn der Partner einen Hardware- oder Softwarefehler (zum Beispiel einen Interconnect-Fehler) hatte, der zwar keinen Panikzustand auslöste, aber dennoch die korrekte Funktion verhinderte.
+* Sie halten einen der Knoten an, ohne den  `-f` oder  `-inhibit-takeover true` Parameter zu verwenden.
 
 
-Sie können Takeovers auch manuell mit dem `storage failover takeover` Befehl starten.
 
-Ab ONTAP 9.18.1 können Sie die verschlüsselte Kommunikation zwischen HA-Paarknoten konfigurieren. Weitere Informationen finden Sie unterlink:ha-pair-encryption.html["Konfigurieren Sie die Verschlüsselung für den ONTAP HA-Datenverkehr."] .
+NOTE: In einem Zwei-Node-Cluster mit aktiviertem Cluster HA führt das Anhalten oder Neustarten eines Knotens mithilfe des  `‑inhibit‑takeover true` Parameters dazu, dass beide Knoten keine Daten mehr liefern, es sei denn, zuerst wird Cluster HA deaktiviert und dann dem Knoten, der online bleiben soll, epsilon zugewiesen.
+
+* Sie starten einen der Knoten neu, ohne den `‑inhibit‑takeover true` Parameter zu verwenden. (Der `‑onboot` Parameter des `storage failover` Befehls ist standardmäßig aktiviert.)
+* Das Fernverwaltungsgerät (Service Processor) erkennt einen Ausfall des Partnerknotens. Dies ist nicht zutreffend, wenn Hardware-unterstützt Takeover deaktiviert ist.
+
+
+Übernahmen können auch manuell mit dem  `storage failover takeover` Befehl initiiert werden.
+
+Ab ONTAP 9.18.1 kann die verschlüsselte Kommunikation zwischen HA-Paar-Nodes konfiguriert werden. Weitere Informationen finden sich unter link:ha-pair-encryption.html["Verschlüsselung für ONTAP HA Datenverkehr konfigurieren"].
 
 
 
 [[cluster-resiliency-and-diagnostic-improvements]]
-== Verbesserungen bei der Cluster-Ausfallsicherheit und Diagnose
+== Resilienz von Clustern und diagnostische Verbesserungen
 
-Ab ONTAP 9.9 verbessern die folgenden Ergänzungen die Clusterbedienung:
+Ab ONTAP 9.9.1 verbessern die folgenden Erweiterungen hinsichtlich Ausfallsicherheit und Diagnose den Clusterbetrieb:
 
 * *Portüberwachung und -vermeidung*: In Zwei-Knoten Cluster ohne Switches vermeidet das System Ports, bei denen es zu vollständigem Paketverlust (Verbindungsverlust) kommt. In ONTAP 9.8 und früher war diese Funktionalität nur in Konfigurationen mit Switches verfügbar.
-* *Automatisches Knoten-Failover*: Wenn ein Knoten keine Daten über sein Cluster-Netzwerk bereitstellen kann, sollte dieser Knoten keine Festplatten besitzen. Stattdessen sollte sein HA-Partner übernehmen, wenn der Partner gesund ist.
-* *Befehle zur Analyse von Verbindungsproblemen*: Verwenden Sie den folgenden Befehl, um anzuzeigen, welche Cluster-Pfade Paketverlust haben: `network interface check cluster-connectivity show`
+* *Automatisches Node-Failover*: Kann ein Node keine Daten über sein Cluster-Netzwerk bereitstellen, sollte dieser Node keine Festplatten besitzen. Stattdessen sollte der HA-Partner übernehmen, sofern dieser funktionsfähig ist.
+* *Befehle zur Analyse von Verbindungsproblemen*: Mit dem folgenden Befehl wird angezeigt, bei welchen Clusterpfaden Paketverluste auftreten: `network interface check cluster-connectivity show`
 +
-Erfahren Sie mehr über `network interface check cluster-connectivity show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-check-cluster-connectivity-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network interface check cluster-connectivity show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-check-cluster-connectivity-show.html["ONTAP-Befehlsreferenz"^].
 
 

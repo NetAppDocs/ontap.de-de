@@ -2,58 +2,58 @@
 permalink: disks-aggregates/relocate-aggregate-ownership-task.html 
 sidebar: sidebar 
 keywords: relocate, aggregate, ownership, local tier 
-summary: Sie können die Eigentümerschaft eines lokalen Tiers nur zwischen den Nodes innerhalb eines HA-Paars ändern. 
+summary: Die Eigentümerschaft einer lokalen Ebene kann nur zwischen den Knoten innerhalb eines HA Paares geändert werden. 
 ---
-= Verschieben Sie die Eigentümerschaft einer lokalen ONTAP Tier innerhalb eines HA-Paars
+= Zuständigkeit für eine ONTAP lokale Ebene innerhalb eines HA-Paares verlagern
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Die Eigentümerschaft lokaler Tiers kann zwischen den Nodes in einem HA-Paar geändert werden, ohne den Service von den lokalen Tiers zu unterbrechen.
+Sie können die Zuständigkeit für lokale Ebenen zwischen den Knoten eines HA-Paares ändern, ohne den Dienst von den lokalen Ebenen zu unterbrechen.
 
 
-NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um eine „_Local Tier_“ zu beschreiben. Unabhängig von Ihrer ONTAP-Version verwendet die ONTAP CLI den Begriff _Aggregate_. Weitere Informationen zu lokalen Ebenen finden Sie unter link:../disks-aggregates/index.html["Festplatten und lokale Tiers"].
+NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff _aggregate_, um eine _lokale Ebene_ zu beschreiben. Unabhängig von der ONTAP Version verwendet die ONTAP CLI den Begriff _aggregate_. Weitere Informationen zu lokalen Ebenen finden sich unter link:../disks-aggregates/index.html["Festplatten und lokale Ebenen"].
 
-Beide Nodes in einem HA-Paar sind physisch mit den Festplatten oder Array-LUNs des jeweils anderen verbunden. Jede Festplatte oder Array-LUN befindet sich im Besitz eines der Nodes.
+Beide Knoten eines HA-Paares sind physisch mit den Festplatten oder Array-LUNs des jeweils anderen Knotens verbunden. Jede Festplatte oder Array-LUN gehört einem der Knoten.
 
-Alle Festplatten oder Array-LUNs innerhalb einer lokalen Tier ändern sich vorübergehend von einem Node auf den anderen, wenn ein Takeover eintritt. Allerdings können lokale Schichten Verlagerung Operationen auch dauerhaft ändern das Eigentum (z. B. wenn für die Lastverteilung getan). Die Eigentümerschaft ändert sich ohne Prozesse von Datenkopieerstellung oder physische Verschiebung der Festplatten oder Array LUNs.
+Bei einer Übernahme wechselt die Eigentümerschaft aller Festplatten oder Array-LUNs innerhalb einer lokalen Ebene vorübergehend von einem Knoten zum anderen. Lokale Ebenenverschiebungsoperationen können die Eigentümerschaft jedoch auch dauerhaft ändern (zum Beispiel bei einer Lastverteilung). Die Eigentümerschaft ändert sich ohne Datenkopierprozesse oder physische Bewegung der Festplatten oder Array-LUNs.
 
 .Über diese Aufgabe
-* Da die Einschränkungen der Volume-Anzahl während des lokalen Tier-Versetzens programmatisch validiert werden, ist eine manuelle Überprüfung nicht erforderlich.
+* Da Volume-Anzahl-Grenzwerte während der lokalen Tier-Umlagerungsvorgänge programmatisch überprüft werden, ist eine manuelle Überprüfung nicht erforderlich.
 +
-Wenn die Anzahl der Volumes die unterstützte Grenze überschreitet, schlägt die Verschiebung des lokalen Tiers mit einer entsprechenden Fehlermeldung fehl.
+Wenn die Volume-Anzahl das unterstützte Limit überschreitet, schlägt die lokale Tier-Verschiebung mit einer entsprechenden Fehlermeldung fehl.
 
-* Sie sollten keine lokale Ebenenverschiebung initiieren, wenn Vorgänge auf Systemebene sowohl auf dem Quell- als auch auf dem Ziel-Node ausgeführt werden. Ebenso sollten Sie diese Vorgänge während der Verschiebung der lokalen Ebene nicht starten.
+* Eine lokale Tier-Verschiebung sollte nicht eingeleitet werden, wenn auf dem Quell- oder Zielknoten Systemoperationen ausgeführt werden; ebenso sollten diese Operationen nicht während der lokalen Tier-Verschiebung gestartet werden.
 +
-Dazu können folgende Vorgänge zählen:
+Diese Vorgänge können Folgendes umfassen:
 
 +
 ** Übernahme
 ** Giveback
 ** Herunterfahren
-** Ein anderer lokaler Standortwechsel
-** Änderungen am Festplatteneigentümer
-** Lokale Tier- oder Volume-Konfiguration
-** Austausch von Storage-Controllern
-** ONTAP-Upgrade
-** ONTAP zurücksetzen
+** Ein weiterer Vorgang zur lokalen Tier-Verlagerung
+** Änderungen des Festplattenbesitzes
+** Lokale Tier- oder Volume-Konfigurationsvorgänge
+** Speichercontroller Austausch
+** ONTAP Upgrade
+** ONTAP Revertierung
 
 
-* Wenn Sie über eine MetroCluster-Konfiguration verfügen, sollten Sie keine lokale Tier-Verschiebung initiieren, während Disaster-Recovery-Vorgänge (_Switchover_, _healing_ oder _switback_) ausgeführt werden.
-* Wenn Sie über eine MetroCluster-Konfiguration verfügen und eine lokale Tier-Verschiebung auf einer Switched-over-lokalen Tier initiieren, kann der Vorgang fehlschlagen, da die Anzahl der Volumes des DR-Partners nicht mehr beträgt.
-* Sie sollten keine Verlagerung der lokalen Ebene auf lokalen Ebenen initiieren, die beschädigt sind oder Wartungsarbeiten durchlaufen.
-* Vor dem Starten der Verschiebung der lokalen Tier sollten Sie alle Core Dumps auf den Quell- und Ziel-Nodes speichern.
+* Wenn Sie über eine MetroCluster Konfiguration verfügen, sollte keine lokale Tier-Verschiebung eingeleitet werden, während Notfallwiederherstellungsmaßnahmen (_switchover_, _healing_ oder _switchback_) im Gange sind.
+* Wenn Sie eine MetroCluster Konfiguration haben und eine lokale Tier-Verschiebung auf einem umgeschalteten lokalen Tier initiieren, kann der Vorgang fehlschlagen, weil die Volume-Anzahl des DR-Partners überschritten wird.
+* Eine lokale Tier-Verschiebung sollte nicht auf lokalen Tiers durchgeführt werden, die beschädigt sind oder sich in der Wartung befinden.
+* Vor Beginn der lokalen Tier Verschiebung sollten alle Core-Dumps auf den Quell- und Zielknoten gespeichert werden.
 
 
 .Schritte
-. Zeigen Sie die lokalen Tiers auf dem Node an, um zu bestätigen, welche lokalen Tiers verschoben werden sollen, und stellen Sie sicher, dass sie online und in gutem Zustand sind:
+. Die lokalen Ebenen auf dem Knoten anzeigen, um zu bestätigen, welche lokalen Ebenen verschoben werden sollen, und sicherzustellen, dass sie online und in gutem Zustand sind:
 +
 `storage aggregate show -node _source-node_`
 
 +
-Der folgende Befehl zeigt sechs lokale Tiers auf den vier Nodes im Cluster. Alle lokalen Ebenen sind online. Node1 und Node3 bilden ein HA-Paar, und Node2 und Node4 bilden ein HA-Paar.
+Der folgende Befehl zeigt sechs lokale Ebenen auf den vier Knoten im Cluster. Alle lokalen Ebenen sind online. Node1 und Node3 bilden ein HA-Paar und Node2 und Node4 bilden ein HA-Paar.
 
 +
 [listing]
@@ -75,12 +75,12 @@ aggr_5     239.0GB   239.0GB    0% online       4 node4  raid_dp,
                                                          normal
 6 entries were displayed.
 ----
-. Geben Sie den Befehl ein, um die Verlagerung der lokalen Ebene zu starten:
+. Den Befehl zum Starten der lokalen Tier-Verlagerung ausgeben:
 +
 `storage aggregate relocation start -aggregate-list _aggregate-1_, _aggregate-2_... -node _source-node_ -destination _destination-node_`
 
 +
-Mit dem folgenden Befehl werden die lokalen Ebenen aggr_1 und aggr_2 von Node1 zu Node3 verschoben. Node3 ist HA-Partner von Node1. Die lokalen Tiers können nur innerhalb des HA-Paars verschoben werden.
+Der folgende Befehl verschiebt die lokalen Tiers aggr_1 und aggr_2 von Node1 zu Node3. Node3 ist der HA-Partner von Node1. Die lokalen Tiers können nur innerhalb des HA-Paars verschoben werden.
 
 +
 [listing]
@@ -89,12 +89,12 @@ cluster::> storage aggregate relocation start -aggregate-list aggr_1, aggr_2 -no
 Run the storage aggregate relocation show command to check relocation status.
 node1::storage aggregate>
 ----
-. Überwachen Sie den Fortschritt der Verlagerung der lokalen Ebene mit dem `storage aggregate relocation show` folgenden Befehl:
+. Der Fortschritt der lokalen Tier-Verschiebung kann mit dem  `storage aggregate relocation show` Befehl überwacht werden:
 +
 `storage aggregate relocation show -node _source-node_`
 
 +
-Der folgende Befehl zeigt den Fortschritt der lokalen Ebenen an, die in Knoten 3 verschoben werden:
+Der folgende Befehl zeigt den Fortschritt der lokalen Ebenen, die zu Node3 verschoben werden:
 
 +
 [listing]
@@ -109,12 +109,12 @@ node1
 node1::storage aggregate>
 ----
 +
-Wenn die Verlagerung abgeschlossen ist, zeigt die Ausgabe dieses Befehls jede lokale Ebene mit dem Standortstatus „`Fertig`“ an.
+Wenn die Verlagerung abgeschlossen ist, zeigt die Ausgabe dieses Befehls für jede lokale Ebene den Verlagerungsstatus „Done“ an.
 
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-relocation-show.html["Lageraggregat-Umzugsshow"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-relocation-start.html["Beginn der Verlagerung von Lageraggregaten"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-show.html["Storage-Aggregate zeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-relocation-show.html["storage aggregate relocation show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-relocation-start.html["Start der Verlagerung des Storage Aggregats"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-show.html["storage aggregate show"^]
 

@@ -2,80 +2,80 @@
 permalink: data-protection/reactivate-original-source-svm-task.html 
 sidebar: sidebar 
 keywords: reactivate, original, source, svm, quick resync, resynchronize, reverse resync 
-summary: Sie können die ursprüngliche Datensicherungsbeziehung zwischen Quell- und Ziel-SVM wiederherstellen, wenn Sie keine Daten mehr vom Ziel-Storage bereitstellen müssen. Das Verfahren ist weitgehend identisch mit dem Verfahren zur Volume-Replikation, mit einer Ausnahme. Vor der erneuten Aktivierung der Quell-SVM müssen Sie die Ziel-SVM beenden. 
+summary: Sie können die ursprüngliche Datensicherungsbeziehung zwischen Quell-SVM und Ziel-SVM wiederherstellen, wenn keine Daten mehr vom Ziel-SVM bereitgestellt werden müssen. Das Verfahren ist weitgehend identisch mit dem Verfahren für die Volume-Replikation, mit einer Ausnahme. Der Ziel-SVM muss gestoppt werden, bevor der Quell-SVM reaktiviert wird. 
 ---
-= Aktivieren Sie die ursprüngliche ONTAP SnapMirror Quell-SVM erneut
+= Die ursprüngliche ONTAP SnapMirror Quelle-SVM reaktivieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können die ursprüngliche Datensicherungsbeziehung zwischen Quell- und Ziel-SVM wiederherstellen, wenn Sie keine Daten mehr vom Ziel-Storage bereitstellen müssen. Das Verfahren ist weitgehend identisch mit dem Verfahren zur Volume-Replikation, mit einer Ausnahme. Vor der erneuten Aktivierung der Quell-SVM müssen Sie die Ziel-SVM beenden.
+Sie können die ursprüngliche Datensicherungsbeziehung zwischen Quell-SVM und Ziel-SVM wiederherstellen, wenn keine Daten mehr vom Ziel-SVM bereitgestellt werden müssen. Das Verfahren ist weitgehend identisch mit dem Verfahren für die Volume-Replikation, mit einer Ausnahme. Der Ziel-SVM muss gestoppt werden, bevor der Quell-SVM reaktiviert wird.
 
 .Bevor Sie beginnen
-* Falls Sie die Größe des Ziel-Volumes erhöht und gleichzeitig die Daten bereit gestellt haben, sollten Sie vor der Reaktivierung des Quell-Volume die maximale Autogröße auf dem ursprünglichen Quell-Volume manuell erhöhen, um sicherzustellen, dass dieses ausreichend wachsen kann.
+* Wenn Sie die Größe des Zielvolumes erhöht haben, während Sie Daten von diesem bereitgestellt haben, sollten Sie, bevor Sie das Quellvolume reaktivieren, den Wert für max-autosize auf dem ursprünglichen Quellvolume manuell erhöhen, um sicherzustellen, dass es ausreichend wachsen kann.
 
 
-link:destination-volume-grows-automatically-concept.html["Wenn ein Ziellaufwerk automatisch wächst"]
+link:destination-volume-grows-automatically-concept.html["Wenn ein Zielvolumen automatisch wächst"]
 
 
-WARNING: Um Datenverlust zu vermeiden, sollte der Cluster-Administrator die Schreibvorgänge vom Client anhalten, bevor er die ursprüngliche Quell-SVM reaktiviert.
+WARNING: Der Cluster-Administrator sollte die Schreibvorgänge vom Client anhalten, bevor die ursprüngliche Quell-SVM wieder aktiviert wird, um Datenverlust zu vermeiden.
 
 .Über diese Aufgabe
-Ab ONTAP 9.11.1 können Sie die Resynchronisierung während einer Disaster-Recovery-Probe verkürzen, indem Sie die CLI `-quick-resync true`-Option des `snapmirror resync` Befehls verwenden, während Sie eine SVM DR-Beziehung umkehren. Durch eine schnelle Neusynchronisierung kann sich die Zeit bis zur Produktionsrückführung verkürzen, da das Data Warehouse neu aufgebaut und Vorgänge wiederhergestellt werden müssen. Erfahren Sie mehr über `snapmirror resync` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
+Ab ONTAP 9.11.1 kann die Resynchronisierungszeit während einer Notfallwiederherstellungsübung verkürzt werden, indem die CLI  `-quick-resync true` Option des  `snapmirror resync` Befehls bei einer umgekehrten Resynchronisierung einer SVM DR-Beziehung verwendet wird. Eine schnelle Resynchronisierung kann die Zeit bis zur Rückkehr in den Produktivbetrieb verkürzen, da die Wiederherstellungs- und Neuaufbauvorgänge des Data Warehouse umgangen werden. Weitere Informationen zu  `snapmirror resync` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
 
 
-NOTE: Schnelle Neusynchronisierung sorgt nicht für eine Aufrechterhaltung der Storage-Effizienz der Ziel-Volumes. Durch die Aktivierung der schnellen Neusynchronisierung kann der Volume-Platz erhöht werden, der von den Ziel-Volumes belegt wird.
+NOTE: Die schnelle Resynchronisierung erhält die Speichereffizienz der Ziel-Volumes nicht. Durch Aktivieren der schnellen Resynchronisierung kann sich der von den Ziel-Volumes belegte Speicherplatz erhöhen.
 
-Bei diesem Verfahren wird vorausgesetzt, dass die Basis im ursprünglichen Quell-Volume intakt ist. Wenn die Baseline nicht intakt ist, müssen Sie die Beziehung zwischen dem Volume, das Sie Daten vom und dem ursprünglichen Quell-Volume bereitstellen, erstellen und initialisieren, bevor Sie den Vorgang durchführen.
+Dieses Verfahren setzt voraus, dass die Baseline im ursprünglichen Quell-Volume intakt ist. Falls die Baseline nicht intakt ist, muss die Beziehung zwischen dem Volume, von dem Daten bereitgestellt werden, und dem ursprünglichen Quellvolume erstellt und initialisiert werden, bevor das Verfahren durchgeführt wird.
 
-Ab ONTAP 9.8 können Sie mit dem System Manager eine Quellspeicher-VM nach einem Ausfall reaktivieren.
+Ab ONTAP 9.8 ist es möglich, mit System Manager eine Quell-Storage-VM nach einem Ausfall zu reaktivieren.
 
 .Schritte
-Diese Aufgabe können Sie mit dem System Manager oder der ONTAP Befehlszeilenschnittstelle (CLI) ausführen.
+Diese Aufgabe kann mit dem System Manager oder der ONTAP CLI ausgeführt werden.
 
 [role="tabbed-block"]
 ====
 .System Manager ONTAP 9.17.1 und höher
 --
-. Wählen Sie im Zielcluster die gewünschte Schutzbeziehung aus: Klicken Sie auf *Schutz > Replikation*.
-. Bewegen Sie den Mauszeiger über den Quellnamen, klicken Sie image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
-. Klicken Sie im Fenster *Reverse Resync Relationship* auf *Reverse Resync*.
+. Im Ziel-Cluster die gewünschte Schutzbeziehung auswählen: *Schutz > Replikation* anklicken.
+. Bewegen Sie den Mauszeiger über den Quellnamen, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"] und dann auf *Resynchronisierung umkehren*.
+. Im Fenster *Umgekehrte Resynchronisierungsbeziehung* auf *Umgekehrte Resynchronisierung* klicken.
 +
-Die Beziehung verschwindet aus der *Replikationstabelle* und wird nun vom ursprünglichen Quellcluster verwaltet.
+Die Beziehung verschwindet aus der *Replikationstabelle* und wird nun vom ursprünglichen Quell-Cluster verwaltet.
 
-. Klicken Sie im ursprünglichen Quellcluster auf *Schutz > Replikation* und überprüfen Sie, ob die umgekehrte Resynchronisierung abgeschlossen ist, indem Sie prüfen, ob der Status *Gespiegelt* anzeigt.
-. Navigieren Sie im ursprünglichen Zielcluster zu *Cluster > Storage VMs*.
-. Suchen Sie die Speicher-VM, bewegen Sie den Mauszeiger über den Namen der Speicher-VM und klicken Sie. image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Stopp*.
-. Klicken Sie im Fenster *Speicher-VM stoppen* auf *Stoppen*.
-. Navigieren Sie im Quellcluster zu *Schutz > Replikation* und suchen Sie die Speicher-VM, die Sie reaktivieren möchten. Bewegen Sie den Mauszeiger über den Namen der Speicher-VM und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Zielspeicher-VM aktivieren*.
-. Im Fenster *Ziel-Speicher-VM aktivieren* wählen Sie *Ziel-Speicher-VM aktivieren und Beziehung aufheben* und klicken Sie auf *Aktivieren*.
-. Wenn Sie zur Seite *Replikation* zurückkehren, bewegen Sie den Mauszeiger erneut über den Namen der Speicher-VM und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
+. Klicken Sie im ursprünglichen Quell-Cluster auf *Schutz > Replikation* und überprüfen Sie, ob die umgekehrte Resynchronisierung abgeschlossen ist, indem Sie prüfen, ob der Status *Gespiegelt* angezeigt wird.
+. Im ursprünglichen Ziel-Cluster zu *Cluster > Storage VMs* navigieren.
+. Die Storage-VM suchen, den Mauszeiger über den Namen der Storage-VM bewegen, auf image:icon_kabob.gif["Symbol für Menüoptionen"] klicken und *Stopp* auswählen.
+. Im Fenster *Speicher-VM stoppen* auf *Stoppen* klicken.
+. Navigieren Sie im Quell-Cluster zu *Protection > Replication*, suchen Sie die Storage-VM, die reaktiviert werden soll, bewegen Sie den Mauszeiger über den Namen der Storage-VM, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"], und wählen Sie *Activate destination storage VM* aus.
+. Im Fenster *Ziel-Speicher-VM aktivieren* die Option *Ziel-Speicher-VM aktivieren und Beziehung aufheben* auswählen und auf *Aktivieren* klicken.
+. Wenn Sie zur Seite *Replikation* zurückkehren, den Mauszeiger erneut über den Namen der Storage-VM bewegen, auf image:icon_kabob.gif["Symbol für Menüoptionen"] klicken und *Umgekehrte Resynchronisierung* auswählen.
 
 
 --
 .System Manager ONTAP 9.16.1 und früher
 --
-. Wählen Sie auf dem Zielcluster die gewünschte Schutzbeziehung aus: Klicken Sie auf *Schutz > Beziehungen*.
-. Bewegen Sie den Mauszeiger über den Quellnamen, klicken Sie image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
-. Klicken Sie im Fenster *Reverse Resync Relationship* auf *Reverse Resync*.
+. Im Ziel-Cluster die gewünschte Schutzbeziehung auswählen: *Schutz > Beziehungen* anklicken.
+. Bewegen Sie den Mauszeiger über den Quellnamen, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"] und dann auf *Resynchronisierung umkehren*.
+. Im Fenster *Umgekehrte Resynchronisierungsbeziehung* auf *Umgekehrte Resynchronisierung* klicken.
 +
-Die Beziehung verschwindet aus der Tabelle *Relationships*, da sie nun vom ursprünglichen Quellcluster verwaltet wird.
+Die Beziehung verschwindet aus der Tabelle *Relationships*, da sie nun vom ursprünglichen Quell-Cluster verwaltet wird.
 
-. Klicken Sie im ursprünglichen Quellcluster auf *Schutz > Beziehungen* und überprüfen Sie, ob die umgekehrte Resynchronisierung abgeschlossen ist, indem Sie prüfen, ob der Status als *Gespiegelt* angezeigt wird.
-. Navigieren Sie im ursprünglichen Zielcluster zu *Speicher > Speicher-VMs*.
-. Suchen Sie die Speicher-VM, bewegen Sie den Mauszeiger über den Namen der Speicher-VM und klicken Sie. image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Stopp*.
-. Klicken Sie im Fenster *Speicher-VM stoppen* auf *Stoppen*.
-. Suchen Sie im Quellcluster die Speicher-VM (die nun die Quell-SVM der umgekehrten Beziehung ist), bewegen Sie den Mauszeiger über den SVM-Namen und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Zielspeicher-VM aktivieren*.
-. Im Fenster *Ziel-Speicher-VM aktivieren* wählen Sie *Ziel-Speicher-VM aktivieren und Beziehung aufheben* und klicken Sie auf *Aktivieren*.
-. Wenn Sie zur Seite *Beziehungen* zurückkehren, bewegen Sie den Mauszeiger erneut über den Namen der Speicher-VM und klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"]und klicken Sie auf *Umgekehrte Resynchronisierung*.
+. Im ursprünglichen Quell-Cluster auf *Schutz > Beziehungen* klicken und überprüfen, ob die umgekehrte Resynchronisierung abgeschlossen ist, indem kontrolliert wird, dass der Status als *Gespiegelt* angezeigt wird.
+. Navigieren Sie im ursprünglichen Ziel-Cluster zu *Storage > Storage VMs*.
+. Die Storage-VM suchen, den Mauszeiger über den Namen der Storage-VM bewegen, auf image:icon_kabob.gif["Symbol für Menüoptionen"] klicken und *Stopp* auswählen.
+. Im Fenster *Speicher-VM stoppen* auf *Stoppen* klicken.
+. Suchen Sie im Quell-Cluster die Storage-VM (die nun die Quell-SVM der umgekehrten Beziehung ist), bewegen Sie den Mauszeiger über den SVM-Namen, klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"], und wählen Sie *Ziel-Storage-VM aktivieren* aus.
+. Im Fenster *Ziel-Speicher-VM aktivieren* die Option *Ziel-Speicher-VM aktivieren und Beziehung aufheben* auswählen und auf *Aktivieren* klicken.
+. Wenn Sie zur Seite *Beziehungen* zurückkehren, den Mauszeiger erneut über den Namen der Storage-VM bewegen, auf image:icon_kabob.gif["Symbol für Menüoptionen"] klicken und anschließend auf *Reverse Resync* klicken.
 
 
 --
 .CLI
 --
-. Erstellen Sie aus der ursprünglichen SVM oder dem ursprünglichen Quell-Cluster eine Reverse-SVM-DR-Beziehung. Dabei verwenden Sie dieselbe Konfiguration, Richtlinie und dieselben Einstellungen wie für die ursprüngliche SVM-DR-Beziehung:
+. Ausgehend von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster wird eine umgekehrte SVM DR-Beziehung mit derselben Konfiguration, Richtlinie und Einstellung zur Identitätserhaltung wie bei der ursprünglichen SVM DR-Beziehung erstellt:
 +
 [source, cli]
 ----
@@ -83,10 +83,10 @@ snapmirror create -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Im folgenden Beispiel wird eine Beziehung zwischen der SVM, von der aus Sie Daten bereitstellen, `svm_backup` und der ursprünglichen Quell-SVM erstellt `svm1`:
+Das folgende Beispiel stellt eine Beziehung zwischen der SVM, von der Sie Daten bereitstellen, `svm_backup`, und der ursprünglichen Quell-SVM, `svm1`:
 
 +
 [listing]
@@ -94,9 +94,9 @@ Im folgenden Beispiel wird eine Beziehung zwischen der SVM, von der aus Sie Date
 cluster_src::> snapmirror create -source-path svm_backup: -destination-path svm1:
 ----
 +
-Erfahren Sie mehr über `snapmirror create` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
 
-. Führen Sie in der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster den folgenden Befehl aus, um die Datensicherungsbeziehung umzukehren:
+. Vom ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster aus wird der folgende Befehl ausgeführt, um die Datenschutzbeziehung umzukehren:
 +
 [source, cli]
 ----
@@ -104,17 +104,17 @@ snapmirror resync -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen.
+Obwohl für die Resynchronisierung kein Basistransfer erforderlich ist, kann sie zeitaufwändig sein. Die Resynchronisierung kann außerhalb der Spitzenzeiten durchgeführt werden.
 
 +
 
-NOTE: Der Befehl schlägt fehl, wenn auf der Quelle und dem Ziel kein allgemeiner Snapshot vorhanden ist. Verwenden Sie `snapmirror initialize`, um die Beziehung neu zu initialisieren.
+NOTE: Der Befehl schlägt fehl, wenn auf der Quelle und dem Ziel kein gemeinsamer Snapshot vorhanden ist.  `snapmirror initialize` kann verwendet werden, um die Beziehung neu zu initialisieren.
 
 +
-Im folgenden Beispiel wird die Beziehung zwischen der ursprünglichen SVM `svm1` und der SVM, von der aus Sie Daten bereitstellen, rückgängig gemacht `svm_backup`:
+Das folgende Beispiel kehrt die Beziehung zwischen der ursprünglichen Quell-SVM, `svm1`, und der SVM, von der Daten bereitgestellt werden, `svm_backup` um:
 
 +
 [listing]
@@ -122,28 +122,28 @@ Im folgenden Beispiel wird die Beziehung zwischen der ursprünglichen SVM `svm1`
 cluster_src::> snapmirror resync -source-path svm_backup: -destination-path svm1:
 ----
 +
-Beispiel mit -Quick-Resync-Option:
+Beispiel für die Verwendung der Option -quick-resync:
 
 +
 [listing]
 ----
 cluster_src::> snapmirror resync -source-path svm_backup: -destination-path svm1: -quick-resync true
 ----
-. Wenn Sie den Datenzugriff auf die ursprüngliche Quell-SVM wiederherstellen möchten, beenden Sie die ursprüngliche Ziel-SVM, um alle Clients, die derzeit mit der ursprünglichen Ziel-SVM verbunden sind, zu trennen.
+. Wenn der Datenzugriff auf die ursprüngliche Quell-SVM wiederhergestellt werden soll, wird die ursprüngliche Ziel-SVM gestoppt, um alle derzeit mit der ursprünglichen Ziel-SVM verbundenen Clients zu trennen.
 +
 [source, cli]
 ----
 vserver stop -vserver <SVM>
 ----
 +
-Im folgenden Beispiel wird die ursprüngliche Ziel-SVM angehalten, die derzeit Daten bereitstellt:
+Das folgende Beispiel stoppt die ursprüngliche Ziel-SVM, die aktuell Daten bereitstellt:
 
 +
 [listing]
 ----
 cluster_dst::> vserver stop svm_backup
 ----
-. Mit dem `vserver show` Befehl überprüfen Sie, ob die ursprüngliche Ziel-SVM den Status „angehalten“ aufweist.
+. Es sollte mithilfe des  `vserver show` Befehls überprüft werden, ob sich die ursprüngliche Ziel-SVM im gestoppten Zustand befindet.
 +
 [listing]
 ----
@@ -153,7 +153,7 @@ Vserver        Type    Subtype    State      State       Volume     Aggregate
 --------       ------- ---------- ---------- ----------- ---------- ----------
 svm_backup     data    default    stopped    stopped     rv         aggr1
 ----
-. Führen Sie für die ursprüngliche Quell-SVM oder das ursprüngliche Quell-Cluster den folgenden Befehl aus, um die endgültige Aktualisierung der umgekehrten Beziehung durchzuführen, um alle Änderungen von der ursprünglichen Ziel-SVM auf die ursprüngliche Quell-SVM zu übertragen:
+. Vom ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster aus wird der folgende Befehl ausgeführt, um die endgültige Aktualisierung der umgekehrten Beziehung durchzuführen und alle Änderungen vom ursprünglichen Ziel-SVM auf den ursprünglichen Quell-SVM zu übertragen:
 +
 [source, cli]
 ----
@@ -161,10 +161,10 @@ snapmirror update -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Im folgenden Beispiel wird die Beziehung zwischen der ursprünglichen Ziel-SVM, von der aus Sie Daten bereitstellen,`svm_backup`, und der ursprünglichen Quell-SVM aktualisiert `svm1`:
+Das folgende Beispiel aktualisiert die Beziehung zwischen der ursprünglichen Ziel-SVM, von der Sie Daten bereitstellen ,`svm_backup`, und der ursprünglichen Quell-SVM, `svm1`:
 
 +
 [listing]
@@ -172,9 +172,9 @@ Im folgenden Beispiel wird die Beziehung zwischen der ursprünglichen Ziel-SVM, 
 cluster_src::> snapmirror update -source-path svm_backup: -destination-path svm1:
 ----
 +
-Erfahren Sie mehr über `snapmirror update` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror update` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["ONTAP-Befehlsreferenz"^].
 
-. Führen Sie in der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster den folgenden Befehl aus, um geplante Transfers für die umgekehrte Beziehung zu beenden:
+. Führen Sie auf der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster den folgenden Befehl aus, um geplante Übertragungen für die umgekehrte Beziehung zu stoppen:
 +
 [source, cli]
 ----
@@ -182,17 +182,17 @@ snapmirror quiesce -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Das folgende Beispiel stoppt geplante Übertragungen zwischen der SVM, von der Sie Daten bereitstellen, `svm_backup` und der ursprünglichen SVM, `svm1`:
+Das folgende Beispiel stoppt geplante Übertragungen zwischen der SVM, von der Sie Daten bereitstellen, `svm_backup`, und der ursprünglichen SVM, `svm1`:
 
 +
 [listing]
 ----
 cluster_src::> snapmirror quiesce -source-path svm_backup: -destination-path svm1:
 ----
-. Wenn das endgültige Update abgeschlossen ist und die Beziehung für den Beziehungsstatus „stillgelegt“ anzeigt, führen Sie den folgenden Befehl von der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster aus, um die umgekehrte Beziehung zu unterbrechen:
+. Wenn das letzte Update abgeschlossen ist und die Beziehung den Beziehungsstatus „Quiesced“ anzeigt, muss der folgende Befehl auf der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster ausgeführt werden, um die umgekehrte Beziehung aufzuheben:
 +
 [source, cli]
 ----
@@ -200,10 +200,10 @@ snapmirror break -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Im folgenden Beispiel wird die Beziehung zwischen der ursprünglichen Ziel-SVM, von der aus Sie Daten bereitstellten, `svm_backup` und der ursprünglichen Quell-SVM, unterbrochen `svm1`:
+Das folgende Beispiel unterbricht die Beziehung zwischen dem ursprünglichen Ziel-SVM, von dem Sie Daten bereitgestellt haben, `svm_backup`, und dem ursprünglichen Quell-SVM, `svm1`:
 
 +
 [listing]
@@ -211,23 +211,23 @@ Im folgenden Beispiel wird die Beziehung zwischen der ursprünglichen Ziel-SVM, 
 cluster_src::> snapmirror break -source-path svm_backup: -destination-path svm1:
 ----
 +
-Erfahren Sie mehr über `snapmirror break` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror break` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["ONTAP-Befehlsreferenz"^].
 
-. Wenn die ursprüngliche Quell-SVM zuvor angehalten wurde, starten Sie aus dem ursprünglichen Quell-Cluster die ursprüngliche Quell-SVM:
+. Falls die ursprüngliche Quell-SVM zuvor gestoppt wurde, starten Sie die ursprüngliche Quell-SVM vom ursprünglichen Quell-Cluster aus:
 +
 [source, cli]
 ----
 vserver start -vserver <SVM>
 ----
 +
-Im folgenden Beispiel wird die ursprüngliche Quell-SVM gestartet:
+Das folgende Beispiel startet die ursprüngliche Quell-SVM:
 
 +
 [listing]
 ----
 cluster_src::> vserver start svm1
 ----
-. Wiederherstellung der ursprünglichen Datensicherungsbeziehung von der ursprünglichen Ziel-SVM oder dem ursprünglichen Ziel-Cluster
+. Vom ursprünglichen Ziel-SVM oder vom ursprünglichen Ziel-Cluster wird die ursprüngliche Datensicherungsbeziehung wiederhergestellt:
 +
 [source, cli]
 ----
@@ -235,17 +235,17 @@ snapmirror resync -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Das folgende Beispiel stellt die Beziehung zwischen der ursprünglichen Quell-SVM, `svm1` und der ursprünglichen Ziel-SVM wieder her `svm_backup`:
+Das folgende Beispiel stellt die Beziehung zwischen der ursprünglichen Quell-SVM, `svm1`, und der ursprünglichen Ziel-SVM, `svm_backup` wieder her:
 
 +
 [listing]
 ----
 cluster_dst::> snapmirror resync -source-path svm1: -destination-path svm_backup:
 ----
-. Führen Sie für die ursprüngliche Quell-SVM oder das ursprüngliche Quell-Cluster den folgenden Befehl aus, um die umgekehrte Datensicherungsbeziehung zu löschen:
+. Führen Sie auf der ursprünglichen Quell-SVM oder dem ursprünglichen Quell-Cluster den folgenden Befehl aus, um die umgekehrte Datensicherungsbeziehung zu löschen:
 +
 [source, cli]
 ----
@@ -253,7 +253,7 @@ snapmirror delete -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
 Das folgende Beispiel löscht die umgekehrte Beziehung zwischen der ursprünglichen Ziel-SVM, `svm_backup`, und der ursprünglichen Quell-SVM, `svm1`:
@@ -263,7 +263,7 @@ Das folgende Beispiel löscht die umgekehrte Beziehung zwischen der ursprünglic
 ----
 cluster_src::> snapmirror delete -source-path svm_backup: -destination-path svm1:
 ----
-. Geben Sie für die ursprüngliche Ziel-SVM oder das ursprüngliche Ziel-Cluster die umgekehrte Datensicherungsbeziehung frei:
+. Vom ursprünglichen Ziel-SVM oder vom ursprünglichen Ziel-Cluster die umgekehrte Datensicherungsbeziehung freigeben:
 +
 [source, cli]
 ----
@@ -271,10 +271,10 @@ snapmirror release -source-path <SVM>: -destination-path <SVM>:
 ----
 +
 
-NOTE: In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+NOTE: Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
 +
-Im folgenden Beispiel werden die umgekehrte Beziehung zwischen der ursprünglichen Ziel-SVM, SVM_Backup und der ursprünglichen Quell-SVM veröffentlicht. `svm1`
+Das folgende Beispiel löst die umgekehrte Beziehung zwischen dem ursprünglichen Ziel-SVM, svm_backup, und dem ursprünglichen Quell-SVM `svm1`.
 
 +
 [listing]
@@ -285,19 +285,19 @@ cluster_dst::> snapmirror release -source-path svm_backup: -destination-path svm
 
 --
 ====
-.Wie es weiter geht
-*  `snapmirror show`Überprüfen Sie mit dem Befehl, ob die SnapMirror Beziehung erstellt wurde.
+.Was kommt als Nächstes
+* Mit dem  `snapmirror show`Befehl lässt sich überprüfen, ob die SnapMirror Beziehung erstellt wurde.
 +
-Erfahren Sie mehr über `snapmirror show` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["ONTAP-Befehlsreferenz"^].
 
-* Setzen Sie die Schreibvorgänge von Ihrem Client zur ursprünglichen Quell-SVM fort.
+* Die Schreibvorgänge von Ihrem Client zur ursprünglichen Quell-SVM werden wieder aufgenommen.
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["snapmirror erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-delete.html["snapmirror löschen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["snapmirror Initialisierung"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-quiesce.html["Snapmirror-Ruhezustand"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-release.html["snapmirror Release"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror-Neusynchronisierung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["snapmirror create"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-delete.html["snapmirror delete"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["snapmirror initialize"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-quiesce.html["snapmirror quiesce"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-release.html["SnapMirror Release"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror Resynchronisierung"^]
 

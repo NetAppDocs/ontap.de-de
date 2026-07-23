@@ -2,7 +2,7 @@
 permalink: volumes/examples-quota-config-concept.html 
 sidebar: sidebar 
 keywords: examples, quota, configuration, volume quota policy 
-summary: Diese Beispiele helfen Ihnen zu verstehen, wie man Quoten konfiguriert und Quota Reports liest. 
+summary: Diese Beispiele veranschaulichen, wie Quoten konfiguriert werden und wie Quotenberichte gelesen werden können. 
 ---
 = ONTAP Quota-Konfigurationsbeispiele
 :allow-uri-read: 
@@ -11,18 +11,18 @@ summary: Diese Beispiele helfen Ihnen zu verstehen, wie man Quoten konfiguriert 
 
 
 [role="lead"]
-Diese Beispiele helfen Ihnen zu verstehen, wie man Quoten konfiguriert und Quota Reports liest.
+Diese Beispiele veranschaulichen, wie Quoten konfiguriert werden und wie Quotenberichte gelesen werden können.
 
-.Zu diesen Beispielen
-Nehmen wir für die folgenden Beispiele an, dass Sie ein Speichersystem haben, das eine SVM, `vs1` mit einem Volume, umfasst `vol1`.
+.Über diese Beispiele
+In den folgenden Beispielen wird davon ausgegangen, dass ein Speichersystem mit einer SVM `vs1` und einem Volume `vol1` vorhanden ist.
 
-. Um mit der Einrichtung von Kontingenten zu beginnen, erstellen Sie eine neue Kontingentrichtlinie für die SVM:
+. Zum Einrichten von Kontingenten wird eine neue Quotenrichtlinie für die SVM erstellt:
 +
 [listing]
 ----
 cluster1::>volume quota policy create -vserver vs1 -policy-name quota_policy_vs1_1
 ----
-. Da die Kontingentrichtlinie neu ist, weisen Sie sie der SVM zu:
+. Da die Quotenrichtlinie neu ist, wird sie der SVM zugewiesen:
 +
 [listing]
 ----
@@ -31,19 +31,19 @@ cluster1::>vserver modify -vserver vs1 -quota-policy quota_policy_vs1_1
 
 
 .Beispiel 1: Standard-Benutzerkontingent
-. Sie entscheiden sich für eine harte Grenze von 50MB für jeden Benutzer in `vol1`:
+. Es wird ein endgültiges Limit von 50 MB pro Benutzer für  `vol1` festgelegt:
 +
 [listing]
 ----
 cluster1::>volume quota policy rule create -vserver vs1 -policy-name quota_policy_vs1_1 -volume vol1 -type user -target "" -disk-limit 50MB -qtree ""
 ----
-. Um die neue Regel zu aktivieren, initialisieren Sie Quoten auf dem Volumen:
+. Zur Aktivierung der neuen Regel werden die Quoten auf dem Volume initialisiert:
 +
 [listing]
 ----
 cluster1::>volume quota on -vserver vs1 -volume vol1 -foreground
 ----
-. Sie können den Quota-Bericht anzeigen:
+. Der Kontingentbericht wird angezeigt:
 +
 [listing]
 ----
@@ -51,7 +51,7 @@ cluster1::>volume quota report
 ----
 
 
-Der daraus resultierende Quotenbericht ähnelt dem folgenden Bericht:
+Der resultierende Quotenbericht ähnelt dem folgenden Bericht:
 
 [listing]
 ----
@@ -63,35 +63,35 @@ vol1               user    *           0B   50MB       0       -   *
 vol1               user    jsmith    49MB   50MB      37       -   *
 vol1               user    root        0B      -       1       -
 ----
-Die erste Zeile zeigt das von Ihnen erstellte Standard-Benutzerkontingent, einschließlich der Datenträgerbegrenzung. Wie alle Standardkontingente zeigt dieses standardmäßige Benutzerkontingent keine Informationen über die Festplatten- oder Dateinutzung an. Zusätzlich zu dem erstellten Kontingent werden zwei weitere Quotas angezeigt. Es gibt ein Kontingent für jeden Benutzer, der derzeit über Dateien verfügt `vol1`. Diese zusätzlichen Kontingente sind Benutzerkontingente, die automatisch aus dem Standard-Benutzerkontingent abgeleitet wurden. Das abgeleitete Benutzerkontingent für den Benutzer `jsmith` hat die gleiche Festplattengrenze von 50 MB wie das standardmäßige Benutzerkontingent. Das abgeleitete Benutzerkontingent für den Root-Benutzer ist ein Tracking-Quota (ohne Grenzen).
+Die erste Zeile zeigt das von Ihnen erstellte Standard-Benutzerkontingent, einschließlich des Festplattenlimits. Wie alle Standardkontingente zeigt auch dieses Standard-Benutzerkontingent keine Informationen zur Festplatten- oder Dateinutzung an. Zusätzlich zu dem erstellten Kontingent erscheinen zwei weitere Kontingente. Für jeden Benutzer, der aktuell Dateien auf `vol1` besitzt, gibt es ein Kontingent. Diese zusätzlichen Kontingente sind Benutzerkontingente, die automatisch vom Standard-Benutzerkontingent abgeleitet wurden. Das abgeleitete Benutzerkontingent für den Benutzer `jsmith` hat dasselbe Festplattenlimit von 50 MB wie das Standard-Benutzerkontingent. Das abgeleitete Benutzerkontingent für den Root-Benutzer ist ein Tracking-Kontingent (ohne Limits).
 
-Wenn ein Benutzer auf dem System (außer dem Root-Benutzer) versucht, eine Aktion auszuführen, die mehr als 50 MB in verwenden würde `vol1` (z. B. Schreiben in eine Datei von einem Editor), schlägt die Aktion fehl.
+Wenn ein anderer Benutzer des Systems (außer dem Root-Benutzer) versucht, eine Aktion auszuführen, die mehr als 50MB in `vol1` (zum Beispiel das Schreiben in eine Datei aus einem Editor) verwenden würde, schlägt die Aktion fehl.
 
-.Beispiel 2: Explizites Benutzerkontingent, das eine standardmäßige Benutzerquote übergibt
-. Wenn Sie `vol1` dem Benutzer mehr Speicherplatz im Volumen bereitstellen müssen `jsmith`, geben Sie den folgenden Befehl ein:
+.Beispiel 2: Explizites Benutzerkontingent überschreibt das Standard-Benutzerkontingent
+. Wenn mehr Speicherplatz im Volume `vol1` für den Benutzer `jsmith` bereitgestellt werden soll, wird folgender Befehl eingegeben:
 +
 [listing]
 ----
 cluster1::>volume quota policy rule create -vserver vs1 -policy-name quota_policy_vs1_1 -volume vol1 -type user -target jsmith -disk-limit 80MB -qtree ""
 ----
 +
-Dies ist eine explizite Benutzerquote, da der Benutzer explizit als Ziel der Quota-Regel aufgeführt wird.
+Dies ist ein explizites Benutzerkontingent, da der Benutzer explizit als Ziel der Kontingentregel aufgeführt ist.
 
 +
-Dies ist eine Änderung an einem vorhandenen Kontingentlimit, da sich das Festplattenlimit des abgeleiteten Benutzer-Quotas für den Benutzer `jsmith` auf dem Volume ändert. Daher müssen Sie die Quoten auf dem Volume nicht neu initialisieren, um die Änderung zu aktivieren.
+Dies ist eine Änderung eines bestehenden Kontingentlimits, da sie das Festplattenlimit des abgeleiteten Benutzerkontingents für den Benutzer `jsmith` auf dem Volume ändert. Ein erneutes Initialisieren der Kontingente auf dem Volume ist zur Aktivierung der Änderung nicht erforderlich.
 
-. So ändern Sie die Größe von Kontingenten:
+. Zum Ändern von Quoten:
 +
 [listing]
 ----
 cluster1::>volume quota resize -vserver vs1 -volume vol1 -foreground
 ----
 +
-Die Quoten bleiben während der Anpassung wirksam, und der Anpassungsprozess ist kurz.
+Die Kontingente bleiben während der Größenänderung aktiv und der Größenänderungsprozess ist kurz.
 
 
 
-Der daraus resultierende Quotenbericht ähnelt dem folgenden Bericht:
+Der resultierende Quotenbericht ähnelt dem folgenden Bericht:
 
 [listing]
 ----
@@ -105,14 +105,14 @@ vol1               user    jsmith    50MB   80MB      37       -   jsmith
 vol1               user    root        0B      -       1       -
 3 entries were displayed.
 ----
-Die zweite Zeile zeigt nun einen Datenträgergrenzwert von `80MB` und einen Quota `jsmith`-Spezifikator von.
+Die zweite Zeile zeigt nun ein Festplattenlimit von `80MB` und einen Kontingentspezifizierer von `jsmith`.
 
-Daher `jsmith` kann bis zu 80 MB Speicherplatz auf belegen `vol1`, obwohl alle anderen Benutzer noch auf 50 MB begrenzt sind.
+Daher  `jsmith`kann bis zu 80 MB Speicherplatz auf `vol1` genutzt werden, obwohl alle anderen Benutzer weiterhin auf 50 MB beschränkt sind.
 
 .Beispiel 3: Schwellenwerte
-Angenommen, Sie möchten eine Benachrichtigung erhalten, wenn Benutzer innerhalb von 5 MB ihrer Festplattenlimits erreichen.
+Angenommen, Sie möchten eine Benachrichtigung erhalten, wenn Benutzer sich bis auf 5 MB ihrem Speicherlimit nähern.
 
-. Um einen Schwellenwert von 45 MB für alle Benutzer und einen Schwellenwert von 75 MB für zu erstellen `jsmith`, ändern Sie die bestehenden Quota-Regeln:
+. Um einen Schwellenwert von 45 MB für alle Benutzer und einen Schwellenwert von 75 MB für `jsmith` festzulegen, werden die bestehenden Kontingentregeln geändert:
 +
 [listing]
 ----
@@ -120,9 +120,9 @@ cluster1::>volume quota policy rule modify -vserver vs1 -policy quota_policy_vs1
 cluster1::>volume quota policy rule modify -vserver vs1 -policy quota_policy_vs1_1 -volume vol1 -type user -target jsmith -qtree "" -threshold 75MB
 ----
 +
-Da die Größen der vorhandenen Regeln geändert werden, ändern Sie die Größe der Kontingente auf dem Volume, um die Änderungen zu aktivieren. Sie warten, bis die Größenänderung abgeschlossen ist.
+Da die Größen der bestehenden Regeln geändert werden, werden die Kontingente auf dem Volume angepasst, um die Änderungen zu aktivieren. Es wird abgewartet, bis der Anpassungsprozess abgeschlossen ist.
 
-. Um den Kontingentbericht mit Schwellenwerten anzuzeigen, fügen Sie den `-thresholds` Parameter dem `volume quota report` Befehl hinzu:
+. Um den Quotenbericht mit Schwellenwerten anzuzeigen, wird der  `-thresholds` Parameter zum  `volume quota report` Befehl hinzugefügt:
 +
 [listing]
 ----
@@ -141,19 +141,19 @@ vol1               user    root        0B      -       1       -
 3 entries were displayed.
 ----
 +
-Die Schwellenwerte werden in Klammern in der Spalte Datenträgerbegrenzung angezeigt.
+Die Schwellenwerte erscheinen in Klammern in der Spalte „Festplattenlimit“.
 
 +
-Erfahren Sie mehr über `volume quota report` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-quota-report.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `volume quota report` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-quota-report.html["ONTAP-Befehlsreferenz"^].
 
 
 
-.Beispiel 4: Quoten auf qtrees
-Angenommen, Sie müssen einen Speicherplatz für zwei Projekte partitionieren. Sie können zwei qtrees mit den Namen `proj1` und erstellen, `proj2` um diese Projekte in aufzunehmen `vol1`.
+.Beispiel 4: Kontingente auf qtrees
+Angenommen, Sie müssen Speicherplatz für zwei Projekte aufteilen. Sie können zwei qtrees mit den Namen  `proj1` und  `proj2` erstellen, um diese Projekte innerhalb von  `vol1` unterzubringen.
 
-Derzeit können Benutzer genau so viel Speicherplatz auf einem qtree benötigen, wie sie für das gesamte Volume zugeteilt werden (vorausgesetzt, sie haben das Limit des Volumes nicht durch die Nutzung von Speicherplatz im Root-Verzeichnis oder einem anderen qtree überschritten). Darüber hinaus kann jede qtrees das gesamte Volume verbrauchen.
+Aktuell können Benutzer in einem qtree so viel Speicherplatz nutzen, wie ihnen für das gesamte Volume zugewiesen ist (vorausgesetzt, sie haben das Limit für das Volume nicht durch die Nutzung von Speicherplatz im Root oder einem anderen qtree überschritten). Darüber hinaus kann jeder der qtrees so weit wachsen, dass er das gesamte Volume belegt.
 
-. Wenn Sie sicherstellen möchten, dass weder qtree mehr als 20 GB wächst, können Sie Standard-Tree-Kontingent auf dem Volume erstellen:
+. Wenn sichergestellt werden soll, dass kein qtree über 20 GB hinaus wächst, kann ein Standard-qtree-Kontingent auf dem Volume erstellt werden:
 +
 [listing]
 ----
@@ -161,9 +161,9 @@ cluster1:>>volume quota policy rule create -vserver vs1 -policy-name quota_polic
 ----
 +
 
-NOTE: Der richtige Typ ist _Tree_, nicht qtree.
+NOTE: Der korrekte Typ ist _tree_, nicht qtree.
 
-. Da es sich um ein neues Kontingent handelt, können Sie es nicht aktivieren, indem Sie die Größe ändern. Sie initialisieren Quoten auf dem Volumen neu:
+. Da es sich um ein neues Kontingent handelt, kann es nicht durch eine Größenänderung aktiviert werden. Die Kontingente auf dem Volume werden neu initialisiert:
 +
 [listing]
 ----
@@ -174,14 +174,14 @@ cluster1:>>volume quota on -vserver vs1 -volume vol1 -foreground
 
 [NOTE]
 ====
-Sie müssen für jedes betroffene Volume ca. fünf Minuten warten, bevor Sie die Quoten erneut aktivieren. Der Versuch, sie fast unmittelbar nach Ausführung des `volume quota off` Befehls zu aktivieren, kann zu Fehlern führen. Alternativ können Sie die Befehle ausführen, um die Quoten für ein Volume von dem Node, der das jeweilige Volume enthält, neu zu initialisieren. Erfahren Sie mehr über `volume quota off` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-quota-off.html["ONTAP-Befehlsreferenz"^].
+Sie müssen unbedingt etwa fünf Minuten warten, bevor Sie die Kontingente auf den betroffenen Volumes reaktivieren, da der Versuch, sie fast unmittelbar nach Ausführung des  `volume quota off` Befehls zu aktivieren, zu Fehlern führen kann. Alternativ besteht die Möglichkeit, die Befehle zur Neuinitialisierung der Quotas für ein Volume von dem Knoten aus auszuführen, der das jeweilige Volume enthält. Weitere Informationen zu  `volume quota off` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-quota-off.html["ONTAP-Befehlsreferenz"^].
 
 ====
-Quoten werden während der Neuinitialisierung nicht durchgesetzt, was länger dauert als der Anpassungsprozess.
+Während des Reinitialisierungsprozesses, der länger dauert als der Größenänderungsprozess, werden keine Kontingente durchgesetzt.
 
-Wenn Sie einen Quotenbericht anzeigen, enthält er mehrere neue Zeilen. Einige Zeilen gelten für Tree Quotas und einige Zeilen für abgeleitete Benutzer-Quotas.
+Wenn ein Kontingentbericht angezeigt wird, enthält dieser mehrere neue Zeilen. Einige Zeilen beziehen sich auf qtree-Kontingente, andere auf abgeleitete Benutzerkontingente.
 
-Die folgenden neuen Zeilen gelten für die Baumquoten:
+Die folgenden neuen Zeilen sind für die qtree-Kontingente:
 
 [listing]
 ----
@@ -195,7 +195,7 @@ vol1     proj1     tree    1           0B   20GB       1       -   proj1
 vol1     proj2     tree    2           0B   20GB       1       -   proj2
 ...
 ----
-Das von Ihnen erstellte Standardbaumkontingent wird in der ersten neuen Zeile mit einem Sternchen (*) in der Spalte ID angezeigt. Als Reaktion auf das Standard-Tree-Kontingent auf einem Volume erstellt ONTAP automatisch abgeleitete Tree Quotas für jeden qtree im Volume. Diese werden in den Zeilen angezeigt, in denen `proj1` und `proj2` in der `Tree` Spalte angezeigt werden.
+Die von Ihnen erstellte Standard-Baumquote wird in der ersten neuen Zeile angezeigt, die in der ID-Spalte ein Sternchen (*) enthält. Als Reaktion auf die Standard-Baumquote auf einem Volume erstellt ONTAP automatisch abgeleitete Baumquoten für jeden qtree im Volume. Diese werden in den Zeilen angezeigt, in denen  `proj1` und  `proj2` in der  `Tree`-Spalte erscheinen.
 
 Die folgenden neuen Zeilen gelten für abgeleitete Benutzerkontingente:
 
@@ -212,22 +212,22 @@ vol1     proj2     user    *           0B   50MB       0       -
 vol1     proj2     user    root        0B      -       1       -
 ...
 ----
-Standard-Benutzerkontingente auf einem Volume werden automatisch für alle qtrees übernommen, die in diesem Volume enthalten sind, sofern die Kontingente für qtrees aktiviert sind. Wenn Sie das erste qtree-Kontingent hinzugefügt haben, haben Sie Quoten auf qtrees aktiviert. Daher wurden für jeden qtree abgeleitete Standard-Benutzerkontingente erstellt. Diese werden in den Zeilen mit einem Sternchen (*) angezeigt.
+Standardmäßige Benutzerkontingente eines Volumes werden automatisch auf alle in diesem Volume enthaltenen qtrees vererbt, sofern Kontingente für qtrees aktiviert sind. Mit dem Hinzufügen des ersten qtree-Kontingents wurden Kontingente für qtrees aktiviert. Daher wurden für jeden qtree abgeleitete Standard-Benutzerkontingente erstellt. Diese erscheinen in den Zeilen, in denen die ID ein Sternchen (*) ist.
 
-Da der Root-Benutzer Eigentümer einer Datei ist, wurden für jede der qtrees Standard-Benutzerkontingente erstellt, spezielle Tracking-Kontingente für den Root-Benutzer auf jeder qtrees erstellt. Diese werden in den Zeilen angezeigt, in denen ID root ist.
+Da der Root-Benutzer der Eigentümer einer Datei ist, wurden bei der Erstellung der Standard-Benutzerkontingente für jeden der qtrees auch spezielle Tracking-Kontingente für den Root-Benutzer auf jedem der qtrees angelegt. Diese sind in den Zeilen zu sehen, in denen die ID root ist.
 
-.Beispiel 5: Benutzerkontingent auf einen qtree
-. Sie beschließen, Benutzer auf weniger Platz im `proj1` qtree zu beschränken, als sie im Volume als Ganzes erhalten. Sie möchten verhindern, dass sie mehr als 10 MB im `proj1` qtree verwenden. Daher erstellen Sie ein Standard-Benutzerkontingent für den qtree:
+.Beispiel 5: Benutzerkontingent auf einem qtree
+. Sie entscheiden, den Benutzern im  `proj1` qtree weniger Speicherplatz zuzuweisen, als ihnen im gesamten Volume zur Verfügung steht. Es soll verhindert werden, dass sie mehr als 10 MB im  `proj1` qtree belegen. Deshalb wird ein Standard-Benutzerkontingent für den qtree erstellt:
 +
 [listing]
 ----
 cluster1::>volume quota policy rule create -vserver vs1 -policy-name quota_policy_vs1_1 -volume vol1 -type user -target "" -disk-limit 10MB -qtree proj1
 ----
 +
-Dies ist eine Änderung zu einem bestehenden Kontingent, da es das Standard-Benutzerkontingent für den proj1-qtree ändert, der aus dem Standard-Benutzerkontingent auf dem Volume abgeleitet wurde. Daher aktivieren Sie die Änderung durch Ändern der Quoten. Wenn der Größenänderungsprozess abgeschlossen ist, können Sie den Quotenbericht anzeigen.
+Dies ist eine Änderung eines bestehenden Kontingents, da sie das Standard-Benutzerkontingent für den qtree „proj1“ ändert, das vom Standard-Benutzerkontingent des Volumes abgeleitet wurde. Daher wird die Änderung durch das Anpassen der Kontingente aktiviert. Nach Abschluss des Anpassungsvorgangs kann der Kontingentbericht angezeigt werden.
 
 +
-Die folgende neue Zeile erscheint im Kontingentbericht, der die neue explizite Benutzerquote für den qtree zeigt:
+Im Quotenbericht erscheint die folgende neue Zeile, die das neue explizite Benutzerkontingent für das qtree anzeigt:
 
 +
 [listing]
@@ -239,20 +239,20 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 vol1     proj1     user    *           0B   10MB       0       -   *
 ----
 +
-Allerdings `jsmith` kann der Benutzer nicht mehr Daten in den proj1 qtree schreiben, da die Quote, die Sie zum Überschreiben der Standard-Benutzerquote (um mehr Platz bereitzustellen) erstellt haben, auf dem Volume lag. Wie Sie ein Standard Benutzer-Kontingent auf dem `proj1` qtree hinzugefügt haben, wird dieses Kontingent angewendet und begrenzt alle Benutzerfläche in diesem qtree, einschließlich `jsmith`.
+Der Benutzer `jsmith` wird daran gehindert, weitere Daten in den proj1-qtree zu schreiben, da das von Ihnen erstellte Kontingent zur Überschreibung des Standard-Benutzerkontingents (um mehr Speicherplatz bereitzustellen) auf dem Volume lag. Da Sie ein Standard-Benutzerkontingent auf dem `proj1` qtree hinzugefügt haben, wird dieses Kontingent angewendet und begrenzt den Speicherplatz aller Benutzer in diesem qtree, einschließlich `jsmith`.
 
-. Um dem Benutzer mehr Speicherplatz `jsmith` zur Verfügung zu stellen, fügen Sie eine explizite Benutzer-Quota-Regel für den qtree mit einer Plattengrenze von 80 MB hinzu, um die standardmäßige Benutzer-Quota-Regel für den qtree außer Kraft zu setzen:
+. Um dem Benutzer mehr Speicherplatz zur Verfügung zu stellen `jsmith`, wird eine explizite Benutzerkontingentregel für das qtree mit einem Festplattenlimit von 80 MB hinzugefügt, um die standardmäßige Benutzerkontingentregel für das qtree zu überschreiben:
 +
 [listing]
 ----
 cluster1::>volume quota policy rule create -vserver vs1 -policy-name quota_policy_vs1_1 -volume vol1 -type user -target jsmith -disk-limit 80MB -qtree proj1
 ----
 +
-Da es sich hierbei um ein explizites Kontingent handelt, für das bereits ein Standardkontingent existiert, aktivieren Sie die Änderung, indem Sie Quotas ändern. Wenn die Größenänderung abgeschlossen ist, wird ein Kontingentbericht angezeigt.
+Da es sich hier um ein explizites Kontingent handelt, für das bereits ein Standardkontingent existierte, wird die Änderung durch Anpassen der Kontingente aktiviert. Nach Abschluss der Anpassung kann ein Kontingentbericht angezeigt werden.
 
 
 
-Die folgende neue Zeile wird im Quotenbericht angezeigt:
+Im Quotenbericht erscheint folgende neue Zeile:
 
 [listing]
 ----
@@ -262,7 +262,7 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 -------  --------  ------  -------  -----  -----  ------  ------   ---------
 vol1     proj1     user    jsmith    61MB   80MB      57       -   jsmith
 ----
-Der endgültige Quotenbericht ähnelt dem folgenden Bericht:
+Der endgültige Kontingentbericht ähnelt dem folgenden Bericht:
 
 [listing]
 ----
@@ -284,9 +284,9 @@ vol1               user    root        0B      -       3       -
 vol1     proj1     user    jsmith    61MB   80MB      57       -   jsmith
 11 entries were displayed.
 ----
-Der Benutzer `jsmith` muss die folgenden Quota-Limits erfüllen, um in eine Datei zu schreiben `proj1`:
+Der Benutzer `jsmith` muss die folgenden Kontingentlimits erfüllen, um in eine Datei in  `proj1` schreiben zu können:
 
-. Das Tree-Kontingent für den `proj1` qtree.
-. Das Benutzerkontingent auf dem `proj1` qtree.
-. Die Benutzerkontingente auf dem Volumen.
+. Das qtree-Kontingent für den  `proj1`qtree.
+. Das Benutzerkontingent für das  `proj1` qtree.
+. Das Benutzerkontingent für das Volume.
 

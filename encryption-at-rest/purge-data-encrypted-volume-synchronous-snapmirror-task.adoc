@@ -2,83 +2,83 @@
 permalink: encryption-at-rest/purge-data-encrypted-volume-synchronous-snapmirror-task.html 
 sidebar: sidebar 
 keywords: secure, purge, scrub, data, encrypted, volume, nve, netapp, volume encryption, snapmirror, synchronous 
-summary: Ab ONTAP 9.8 können Sie Secure-Purge verwenden, um Daten auf NVE-fähigen Volumes mit einer synchronen SnapMirror Beziehung unterbrechungsfrei zu bereinigen. 
+summary: Ab ONTAP 9.8 kann secure-purge verwendet werden, um Daten auf NVE-fähigen Volumes mit einer SnapMirror synchronen Beziehung unterbrechungsfrei zu bereinigen. 
 ---
-= Daten von einem verschlüsselten ONTAP Volume mit einer synchronen SnapMirror -Beziehung bereinigen
+= Daten aus einem verschlüsselten ONTAP Volume mit einer SnapMirror synchronen Beziehung bereinigen
 :allow-uri-read: 
 
 
 [role="lead"]
-Ab ONTAP 9.8 können Sie ein sicheres Löschen verwenden, um Daten auf NVE-fähigen Volumes mit einer synchronen SnapMirror Beziehung unterbrechungsfrei zu „Peeling“.
+Ab ONTAP 9.8 ist es möglich, mit einer sicheren Bereinigung Daten auf NVE-fähigen Volumes mit einer SnapMirror synchronen Beziehung unterbrechungsfrei zu „bereinigen“.
 
 .Über diese Aufgabe
-Eine sichere Löschung kann in Abhängigkeit von der Datenmenge in den gelöschten Dateien von mehreren Minuten bis zu vielen Stunden dauern. Sie können den `volume encryption secure-purge show` Status des Vorgangs mit dem Befehl anzeigen. Sie können den `volume encryption secure-purge abort` Vorgang mit dem Befehl beenden.
+Eine sichere Datenlöschung kann je nach Datenmenge in den gelöschten Dateien einige Minuten bis mehrere Stunden dauern. Der Status des Vorgangs kann mit dem  `volume encryption secure-purge show` Befehl angezeigt werden. Der Vorgang kann mit dem  `volume encryption secure-purge abort` Befehl beendet werden.
 
 
-NOTE: Um eine sichere Löschung auf einem SAN-Host durchzuführen, müssen Sie die gesamte LUN löschen, die die zu löschenden Dateien enthält. Alternativ können Sie Löcher in der LUN für die Blöcke lochen, die zu den Dateien gehören, die gelöscht werden sollen. Wenn Sie die LUN nicht löschen können oder Ihr Host-Betriebssystem keine Stanzlöcher in der LUN unterstützt, können Sie keine sichere Löschung durchführen.
+NOTE: Um eine sichere Bereinigung auf einem SAN-Host durchzuführen, müssen Sie entweder die gesamte LUN löschen, die die Dateien enthält, die Sie bereinigen möchten, oder Sie müssen in der Lage sein, in der LUN für die Blöcke, die zu den Dateien gehören, die Sie bereinigen möchten, Löcher zu schlagen. Wenn Sie die LUN nicht löschen können oder Ihr Host-Betriebssystem das Schlagen von Löchern in der LUN nicht unterstützt, kann eine sichere Bereinigung nicht durchgeführt werden.
 
 .Bevor Sie beginnen
-* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Sie müssen Cluster-Administrator sein, um diese Aufgabe ausführen zu können.
 * Für diese Aufgabe sind erweiterte Berechtigungen erforderlich.
 
 
 .Schritte
-. Ändern Sie im Storage-System die erweiterte Berechtigungsebene:
+. Im Speichersystem zur erweiterten Berechtigungsstufe wechseln:
 +
 `set -privilege advanced`
 
-. Löschen Sie die Dateien oder die LUN, die Sie löschen möchten.
+. Die Dateien oder die LUN, die sicher gelöscht werden sollen, löschen.
 +
-** Löschen Sie auf einem NAS-Client die Dateien, die Sie sicher löschen möchten.
-** Löschen Sie auf einem SAN-Host die LUN, die Sie löschen oder Löcher in der LUN sicher löschen möchten, damit die Blöcke zu den Dateien gehören, die gelöscht werden sollen.
+** Auf einem NAS-Client die Dateien löschen, die Sie sicher entfernen möchten.
+** Auf einem SAN-Host die LUN löschen, die Sie sicher bereinigen möchten, oder Löcher in die LUN für die Blöcke stanzen, die zu den Dateien gehören, die Sie bereinigen möchten.
 
 
-. Bereiten Sie das Zielvolumen in der asynchronen Beziehung vor, die sicher gelöscht werden soll:
+. Das Zielvolume in der asynchronen Beziehung wird für die sichere Löschung vorbereitet:
 +
 `volume encryption secure-purge start -vserver <SVM_name> -volume <volume_name> -prepare true`
 
 +
-Wiederholen Sie diesen Schritt für das andere Volume in Ihrer synchronen SnapMirror-Beziehung.
+Diesen Schritt für das andere Volume in Ihrer SnapMirror synchronen Beziehung wiederholen.
 
-. Wenn die Dateien, die Sie sicher löschen möchten, in Snapshots gespeichert sind, löschen Sie die Snapshots:
+. Wenn sich die Dateien, die Sie sicher löschen möchten, in Snapshots befinden, löschen Sie die Snapshots:
 +
 `snapshot delete -vserver <SVM_name> -volume <volume_name> -snapshot <snapshot>`
 
-. Wenn sich die sichere Löschdatei in der Basis oder in allgemeinen Snapshots befindet, aktualisieren Sie die SnapMirror, um den gemeinsamen Snapshot vorwärts zu verschieben:
+. Befindet sich die sichere Löschdatei im Basis- oder gemeinsamen Snapshot, wird die SnapMirror Beziehung aktualisiert, um den gemeinsamen Snapshot voranzubewegen:
 +
 `snapmirror update -source-snapshot <snapshot_name> -destination-path <destination_path>`
 
 +
-Es gibt zwei gemeinsame Snapshots, daher muss dieser Befehl zweimal ausgegeben werden.
+Es gibt zwei gemeinsame Snapshots, daher muss dieser Befehl zweimal ausgeführt werden.
 
-. Wenn sich die Datei für das sichere Löschen im anwendungskonsistenten Snapshot befindet, löschen Sie den Snapshot auf beiden Volumes in der synchronen SnapMirror-Beziehung:
+. Befindet sich die sichere Löschdatei im applikationskonsistenten Snapshot, wird der Snapshot auf beiden Volumes in der SnapMirror synchronen Beziehung gelöscht:
 +
 `snapshot delete -vserver <SVM_name> -volume <volume_name> -snapshot <snapshot>`
 
 +
 Führen Sie diesen Schritt auf beiden Volumes durch.
 
-. Löschen Sie gelöschte Dateien sicher:
+. Gelöschte Dateien sicher löschen:
 +
 `volume encryption secure-purge start -vserver <SVM_name> -volume <volume_name>`
 
 +
-Wiederholen Sie diesen Schritt für jedes Volume in der synchronen SnapMirror-Beziehung.
+Dieser Schritt ist für jedes Volume in der SnapMirror synchronen Beziehung zu wiederholen.
 
 +
-Mit dem folgenden Befehl werden die gelöschten Dateien auf „`vol1`“ auf SVM „`vs1`“ sicher gelöscht.
+Der folgende Befehl entfernt die gelöschten Dateien auf "`vol1`" auf SVM "`vs1`" sicher und unwiderruflich.
 
 +
 [listing]
 ----
 cluster1::> volume encryption secure-purge start -vserver vs1 -volume vol1
 ----
-. Überprüfen Sie den Status des sicheren Löschvorgangs:
+. Status des sicheren Löschvorgangs überprüfen:
 +
 `volume encryption secure-purge show`
 
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["Snapmirror-Update"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["SnapMirror update"^]
 

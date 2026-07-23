@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: networking/configure_vlans_over_physical_ports.html 
 keywords: configure, configuration, configuring, setup, setting, set, up, vlans, virtual local area network, physical, port, logical, segmentation, configure vlans over physical ports, vlans provide logical segmentation of networks, create a vlan, network port vlan create, delete a vlan, network port vlan delete 
-summary: VLANs in ONTAP ermöglichen die logische Segmentierung von Netzwerken durch die Erstellung separater Broadcast-Domänen, die auf Switch-Port-Basis definiert werden und nicht von herkömmlichen Broadcast-Domänen, die an physischen Grenzen definiert werden. 
+summary: VLANs können in ONTAP verwendet werden, um Netzwerke logisch zu segmentieren, indem separate Broadcast-Domänen erstellt werden, die auf Basis eines Switch-Ports definiert sind, im Gegensatz zu den traditionellen Broadcast-Domänen, die auf physischen Grenzen basieren. 
 ---
-= Konfiguration von ONTAP-VLANS über physische Ports
+= ONTAP VLANs über physische Ports konfigurieren
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,113 +14,113 @@ summary: VLANs in ONTAP ermöglichen die logische Segmentierung von Netzwerken d
 
 
 [role="lead"]
-VLANs in ONTAP ermöglichen die logische Segmentierung von Netzwerken durch die Erstellung separater Broadcast-Domänen, die auf Switch-Port-Basis definiert werden und nicht von herkömmlichen Broadcast-Domänen, die an physischen Grenzen definiert werden.
+VLANs können in ONTAP verwendet werden, um Netzwerke logisch zu segmentieren, indem separate Broadcast-Domänen erstellt werden, die auf Basis eines Switch-Ports definiert sind, im Gegensatz zu den traditionellen Broadcast-Domänen, die auf physischen Grenzen basieren.
 
-Ein VLAN kann mehrere physische Netzwerksegmente umfassen. Die Endstationen, die zu einem VLAN gehören, werden durch Funktion oder Anwendung verknüpft.
+Ein VLAN kann sich über mehrere physische Netzwerksegmente erstrecken. Die zu einem VLAN gehörenden Endgeräte sind durch Funktion oder Anwendung miteinander verbunden.
 
-Beispielsweise können Endstationen in einem VLAN nach Abteilungen wie Engineering und Accounting oder nach Projekten wie releas1 und release2 gruppiert werden. Da die physische Nähe der Endstationen in einem VLAN nicht unbedingt erforderlich ist, können Sie die Endstationen geographisch verteilen und die Broadcast-Domäne weiterhin in einem geswitchten Netzwerk enthalten.
+Beispielsweise können Endgeräte in einem VLAN nach Abteilungen wie Engineering und Accounting oder nach Projekten wie release1 und release2 gruppiert werden. Da die physische Nähe der Endgeräte in einem VLAN nicht erforderlich ist, können die Endgeräte geografisch verteilt werden, und dennoch bleibt die Broadcast-Domäne in einem Switch-Netzwerk erhalten.
 
-In ONTAP 9.14.1 und 9.13.1 werden nicht markierte Ports, die von keiner logischen Schnittstelle (LIF) verwendet werden und denen die native VLAN-Konnektivität auf dem verbundenen Switch fehlt, als beeinträchtigt gekennzeichnet.  Dies dient der Identifizierung nicht verwendeter Ports und weist nicht auf einen Ausfall hin.  Native VLANs ermöglichen ungetaggten Datenverkehr auf dem ifgrp-Basisport, wie z. ONTAP CFM-Broadcasts.  Konfigurieren Sie native VLANs auf dem Switch, um zu verhindern, dass nicht markierter Datenverkehr blockiert wird.
+In ONTAP 9.14.1 und 9.13.1 werden ungetaggte Ports, die von keiner Logical Interface (LIF) verwendet werden und keine native VLAN-Konnektivität am angeschlossenen Netzwerk-Switch besitzen, als beeinträchtigt markiert. Dies dient dazu, ungenutzte Ports zu identifizieren und stellt keinen Ausfall dar. Native VLANs ermöglichen ungetaggten Datenverkehr am ifgrp Basis-Port, beispielsweise ONTAP CFM Broadcasts. Die Konfiguration nativer VLANs auf dem Switch verhindert die Blockierung von ungetaggtem Datenverkehr.
 
-Sie können VLANs verwalten, indem Sie Informationen über sie erstellen, löschen oder anzeigen.
+VLANs lassen sich verwalten, indem sie erstellt, gelöscht oder Informationen darüber angezeigt werden.
 
 
-NOTE: Sie sollten kein VLAN auf einer Netzwerkschnittstelle mit derselben Kennung wie das native VLAN des Switches erstellen. Wenn beispielsweise die Netzwerkschnittstelle e0b auf nativem VLAN 10 ist, sollten Sie keine VLAN e0b-10 auf dieser Schnittstelle erstellen.
+NOTE: Ein VLAN sollte nicht auf einer Netzwerkschnittstelle mit demselben Bezeichner wie das native VLAN des Switches erstellt werden. Befindet sich beispielsweise die Netzwerkschnittstelle e0b im nativen VLAN 10, sollte kein VLAN e0b-10 auf dieser Schnittstelle erstellt werden.
 
 
 
 [[create-a-vlan]]
-== Erstellen Sie eine VLAN
+== Eine VLAN erstellen
 
-Sie können ein VLAN erstellen, um separate Broadcast-Domänen innerhalb derselben Netzwerkdomäne mit System Manager oder dem `network port vlan create` Befehl zu verwalten.
+Ein VLAN kann erstellt werden, um separate Broadcast-Domänen innerhalb derselben Netzwerkdomäne zu verwalten, indem System Manager oder der  `network port vlan create` Befehl verwendet wird.
 
 .Bevor Sie beginnen
-Vergewissern Sie sich, dass die folgenden Anforderungen erfüllt sind:
+Es wurde bestätigt, dass die folgenden Anforderungen erfüllt sind:
 
-* Die im Netzwerk implementierten Switches müssen entweder den IEEE 802.1Q Standards entsprechen oder über eine anbieterspezifische Implementierung von VLANs verfügen.
-* Um mehrere VLANs zu unterstützen, muss eine Endstation statisch konfiguriert werden, damit sie zu einem oder mehreren VLANs gehören.
-* Das VLAN ist nicht an einen Port angehängt, der eine Cluster-LIF hostet.
-* Das VLAN ist nicht an Ports angeschlossen, die dem Cluster-IPspace zugewiesen sind.
-* Das VLAN wird nicht auf einem Port für Schnittstellengruppen erstellt, der keine Mitgliedsports enthält.
+* Die im Netzwerk eingesetzten Switches müssen entweder den IEEE 802.1Q-Standards entsprechen oder eine herstellerspezifische Implementierung von VLANs aufweisen.
+* Zur Unterstützung mehrerer VLANs muss eine Endstation statisch so konfiguriert werden, dass sie zu einem oder mehreren VLANs gehört.
+* Das VLAN ist nicht an einen Port angebunden, der eine Cluster-LIF hostet.
+* Das VLAN ist nicht an Ports angebunden, die dem Cluster IPspace zugewiesen sind.
+* Das VLAN wird nicht auf einem Schnittstellengruppen-Basis-Port erstellt, der keine Mitgliedsports enthält.
 
 
 .Über diese Aufgabe
-Beim Erstellen eines VLANs wird das VLAN an den Netzwerkanschluss auf einem angegebenen Node in einem Cluster angeschlossen.
+Durch das Erstellen eines VLANs wird das VLAN an den Netzwerk-Port eines bestimmten Knotens in einem Cluster angebunden.
 
-Wenn Sie ein VLAN zum ersten Mal über einen Port konfigurieren, könnte der Port ausfallen, was zu einer vorübergehenden Trennung des Netzwerks führt. Nachfolgende VLAN-Erweiterungen zum selben Port wirken sich nicht auf den Portstatus aus.
+Wenn ein VLAN zum ersten Mal über einen Port konfiguriert wird, kann der Port ausfallen, was zu einer vorübergehenden Trennung des Netzwerks führt. Das anschließende Hinzufügen weiterer VLANs zum selben Port wirkt sich nicht auf den Portzustand aus.
 
 
-NOTE: Sie sollten kein VLAN auf einer Netzwerkschnittstelle mit derselben Kennung wie das native VLAN des Switches erstellen. Wenn beispielsweise die Netzwerkschnittstelle e0b auf nativem VLAN 10 ist, sollten Sie keine VLAN e0b-10 auf dieser Schnittstelle erstellen.
+NOTE: Ein VLAN sollte nicht auf einer Netzwerkschnittstelle mit demselben Bezeichner wie das native VLAN des Switches erstellt werden. Befindet sich beispielsweise die Netzwerkschnittstelle e0b im nativen VLAN 10, sollte kein VLAN e0b-10 auf dieser Schnittstelle erstellt werden.
 
-Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
+Die Vorgehensweise hängt von der verwendeten Schnittstelle ab, System Manager oder CLI:
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-*Verwenden Sie den System Manager, um ein VLAN zu erstellen*
+*Mit dem System Manager ein VLAN erstellen*
 
-Ab ONTAP 9.12.0 können Sie die Broadcast-Domäne automatisch auswählen oder manuell ein aus der Liste auswählen. Zuvor wurden Broadcast-Domänen immer automatisch ausgewählt, basierend auf Layer-2-Konnektivität. Wenn Sie eine Broadcast-Domäne manuell auswählen, wird eine Warnung angezeigt, die darauf hinweist, dass die manuelle Auswahl einer Broadcast-Domäne zu einem Verbindungsverlust führen kann.
+Ab ONTAP 9.12.0 kann die Broadcast-Domäne automatisch ausgewählt oder manuell aus der Liste ausgewählt werden. Zuvor wurden Broadcast-Domänen immer automatisch basierend auf der Layer-2-Konnektivität ausgewählt. Bei manueller Auswahl einer Broadcast-Domäne erscheint eine Warnung, dass die manuelle Auswahl einer Broadcast-Domäne zu einem Verbindungsverlust führen kann.
 
 .Schritte
-. Wählen Sie *Netzwerk > Ethernet-Port > + VLAN*.
-. Wählen Sie den Knoten aus der Dropdown-Liste aus.
-. Wählen Sie eine der folgenden Optionen:
+. *Netzwerk > Ethernet-Port > + VLAN* auswählen.
+. Den Knoten aus der Dropdown-Liste auswählen.
+. Wählen Sie aus den folgenden Optionen:
 +
-.. ONTAP to *Broadcast-Domain automatisch auswählen (empfohlen)*.
-.. So wählen Sie eine Broadcast-Domäne aus der Liste manuell aus.
+.. ONTAP auf *Automatische Auswahl der Broadcast-Domäne (empfohlen)*.
+.. Manuelle Auswahl einer Broadcast-Domäne aus der Liste.
 
 
-. Wählen Sie die Ports aus, die das VLAN bilden sollen.
+. Wählen Sie die Ports aus, die das VLAN bilden.
 . Geben Sie die VLAN-ID an.
-. Speichern Sie die Änderungen.
+. Speichern Sie Ihre Änderungen.
 
 
 --
 .CLI
 --
-*Verwenden Sie die CLI, um ein VLAN zu erstellen*
+*Die CLI wird verwendet, um eine VLAN zu erstellen*
 
-Wenn Sie unter bestimmten Umständen den VLAN-Port auf einem heruntergestuften Port erstellen möchten, ohne das Hardware-Problem oder eine Fehlkonfiguration der Software zu beheben, können Sie den `-ignore-health-status` Parameter des `network port modify` Befehls als einstellen `true`.
+Unter bestimmten Umständen kann der VLAN-Port auf einem beeinträchtigten Port erstellt werden, ohne das Hardwareproblem oder eine Softwarefehlkonfiguration zu beheben, indem der  `-ignore-health-status` Parameter des  `network port modify` Befehls auf  `true` gesetzt wird.
 
-Erfahren Sie mehr über `network port modify` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-modify.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-modify.html["ONTAP-Befehlsreferenz"^].
 
 .Schritte
-. Verwenden Sie den `network port vlan create` Befehl, um ein VLAN zu erstellen.
-. Sie müssen `vlan-name` `port` `vlan-id` beim Erstellen eines VLAN entweder die Optionen oder und angeben. Der VLAN-Name ist eine Kombination aus dem Namen des Ports (oder der Schnittstellengruppe) und der Netzwerk-Switch-VLAN-ID, mit einem Bindestrich dazwischen. Beispielsweise `e0c-24` `e1c-80` sind und gültige VLAN-Namen.
+. Mit dem  `network port vlan create` Befehl wird ein VLAN erstellt.
+. Es muss entweder die `vlan-name`- oder die `port`- und `vlan-id`-Option beim Erstellen eines VLANs angegeben werden. Der VLAN-Name ist eine Kombination aus dem Namen des Ports (oder der Schnittstellengruppe) und der Netzwerk-Switch VLAN-Kennung, mit einem Bindestrich dazwischen. Zum Beispiel sind `e0c-24` und `e1c-80` gültige VLAN-Namen.
 
 
-Das folgende Beispiel zeigt, wie ein VLAN erstellt `e1c-80` `e1c` `cluster-1-01` wird, das an den Netzwerkport auf dem Knoten angeschlossen ist:
+Das folgende Beispiel zeigt, wie ein VLAN `e1c-80` an den Netzwerk-Port `e1c` des Node `cluster-1-01` erstellt wird:
 
 ....
 network port vlan create -node cluster-1-01 -vlan-name e1c-80
 ....
-Ab ONTAP 9.8 werden VLANs etwa eine Minute nach ihrer Erstellung automatisch in geeignete Broadcast-Domänen platziert. Wenn Sie dies nicht möchten, dass ONTAP das VLAN manuell in einer Broadcast-Domäne platziert, geben Sie den `-skip-broadcast-domain-placement` Parameter als Teil des `vlan create` Befehls an.
+Ab ONTAP 9.8 werden VLANs automatisch etwa eine Minute nach ihrer Erstellung den entsprechenden Broadcast-Domänen zugeordnet. Wenn ONTAP dies nicht übernehmen soll und stattdessen eine manuelle Zuordnung des VLANs zu einer Broadcast-Domäne bevorzugt wird, ist der `-skip-broadcast-domain-placement` Parameter als Teil des `vlan create` Befehls anzugeben.
 
-Erfahren Sie mehr über `network port vlan create` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-vlan-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port vlan create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-vlan-create.html["ONTAP-Befehlsreferenz"^].
 
 --
 ====
 
 
 [[edit-a-vlan]]
-== VLAN bearbeiten
+== Bearbeiten einer VLAN
 
 Sie können die Broadcast-Domäne ändern oder ein VLAN deaktivieren.
 
-.Verwenden Sie System Manager, um ein VLAN zu bearbeiten
-Ab ONTAP 9.12.0 können Sie die Broadcast-Domäne automatisch auswählen oder manuell ein aus der Liste auswählen. Zuvor wurden Broadcast-Domänen immer automatisch ausgewählt, basierend auf Layer 2-Konnektivität. Wenn Sie eine Broadcast-Domäne manuell auswählen, wird eine Warnung angezeigt, die darauf hinweist, dass die manuelle Auswahl einer Broadcast-Domäne zu einem Verbindungsverlust führen kann.
+.Mit System Manager ein VLAN bearbeiten
+Ab ONTAP 9.12.0 kann die Broadcast-Domäne automatisch ausgewählt oder manuell aus der Liste ausgewählt werden. Zuvor wurden Broadcast-Domänen immer automatisch basierend auf der Layer-2-Konnektivität ausgewählt. Bei manueller Auswahl einer Broadcast-Domäne erscheint eine Warnung, dass die manuelle Auswahl einer Broadcast-Domäne zu einem Verbindungsverlust führen kann.
 
 .Schritte
-. Wählen Sie *Netzwerk > Ethernet-Port > VLAN*.
-. Wählen Sie das Bearbeitungssymbol.
+. *Netzwerk > Ethernet-Port > VLAN* auswählen.
+. Das Bearbeitungssymbol auswählen.
 . Führen Sie einen der folgenden Schritte aus:
 +
-** Ändern Sie die Broadcast-Domäne, indem Sie eine andere aus der Liste auswählen.
-** Deaktivieren Sie das Kontrollkästchen * aktiviert*.
+** Die Broadcast-Domäne kann geändert werden, indem eine andere aus der Liste ausgewählt wird.
+** Deaktivieren Sie das Kästchen *Aktiviert*.
 
 
-. Speichern Sie die Änderungen.
+. Speichern Sie Ihre Änderungen.
 
 
 
@@ -128,42 +128,42 @@ Ab ONTAP 9.12.0 können Sie die Broadcast-Domäne automatisch auswählen oder ma
 [[delete-a-vlan]]
 == Löschen eines VLAN
 
-Möglicherweise müssen Sie ein VLAN löschen, bevor Sie einen NIC aus seinem Steckplatz entfernen. Wenn Sie ein VLAN löschen, wird es automatisch aus allen Failover-Regeln und -Gruppen entfernt, die es verwenden.
+Möglicherweise muss ein VLAN gelöscht werden, bevor eine Netzwerkkarte aus ihrem Steckplatz entfernt wird. Beim Löschen eines VLANs wird es automatisch aus allen Failover-Regeln und -Gruppen entfernt, die es verwenden.
 
 .Bevor Sie beginnen
-Stellen Sie sicher, dass dem VLAN keine LIFs zugewiesen sind.
+Stellen Sie sicher, dass dem VLAN keine LIFs zugeordnet sind.
 
 .Über diese Aufgabe
-Das Löschen des letzten VLAN von einem Port kann zu einer vorübergehenden Trennung des Netzwerks vom Port führen.
+Das Löschen des letzten VLAN von einem Port kann eine vorübergehende Trennung des Netzwerks vom Port verursachen.
 
-Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
+Die Vorgehensweise hängt von der verwendeten Schnittstelle ab, System Manager oder CLI:
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-*Verwenden Sie den System Manager, um ein VLAN zu löschen*
+*Mit dem System Manager ein VLAN löschen*
 
 .Schritte
-. Wählen Sie *Netzwerk > Ethernet-Port > VLAN*.
-. Wählen Sie das VLAN aus, das Sie entfernen möchten.
-. Klicken Sie Auf *Löschen*.
+. *Netzwerk > Ethernet-Port > VLAN* auswählen.
+. Wählen Sie das VLAN aus, das entfernt werden soll.
+. Klicken Sie auf *Delete*.
 
 
 --
 .CLI
 --
-*Verwenden Sie die CLI, um ein VLAN* zu löschen
+*Die CLI wird verwendet, um ein VLAN zu löschen*
 
 .Schritt
-Verwenden Sie den `network port vlan delete` Befehl, um ein VLAN zu löschen.
+Der  `network port vlan delete` Befehl dient zum Löschen eines VLANs.
 
-Das folgende Beispiel zeigt, wie man VLAN `e1c-80` vom Netzwerkport `e1c` auf dem Knoten löscht `cluster-1-01`:
+Das folgende Beispiel zeigt, wie ein VLAN `e1c-80` vom Netzwerk-Port `e1c` auf dem Node `cluster-1-01` gelöscht wird:
 
 ....
 network port vlan delete -node cluster-1-01 -vlan-name e1c-80
 ....
-Erfahren Sie mehr über `network port vlan delete` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-vlan-delete.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port vlan delete` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-vlan-delete.html["ONTAP-Befehlsreferenz"^].
 
 --
 ====

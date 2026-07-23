@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: snapmirror-active-sync/planned-failover-task.html 
 keywords: SM-BC, testing failover, planned failover, maintenance, quorum, snapmirror active sync 
-summary: Sie können ein geplantes Failover durchführen, um die Disaster-Recovery-Konfiguration zu testen oder um Wartungsarbeiten am primären Cluster durchzuführen. 
+summary: Ein geplantes Failover kann durchgeführt werden, um die Disaster-Recovery-Konfiguration zu testen oder Wartungsarbeiten am primären Cluster vorzunehmen. 
 ---
-= Führen Sie ein geplantes Failover von ONTAP Clustern in einer SnapMirror Active Sync-Beziehung durch
+= Geplantes Failover von ONTAP Clustern in einer SnapMirror Active Sync-Beziehung durchführen
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,21 +14,21 @@ summary: Sie können ein geplantes Failover durchführen, um die Disaster-Recove
 
 
 [role="lead"]
-Bei einem geplanten Failover von ONTAP Clustern in einer aktiven SnapMirror Synchronisierungsbeziehung wechseln Sie die Rollen des primären und sekundären Clusters, sodass das sekundäre Cluster vom primären Cluster übernimmt. Während eines Failovers verarbeitet das sekundäre Cluster normalerweise Input- und Output-Anfragen lokal, ohne den Client-Betrieb zu unterbrechen.
+Bei einem geplanten Failover von ONTAP Clustern in einer SnapMirror active sync Beziehung werden die Rollen des primären und sekundären Clusters getauscht, sodass der sekundäre Cluster die Aufgaben des primären Clusters übernimmt. Während eines Failovers verarbeitet der normalerweise sekundäre Cluster Ein- und Ausgabeanforderungen lokal, ohne den Clientbetrieb zu unterbrechen.
 
-Sie können ein geplantes Failover durchführen, um den Zustand Ihrer Disaster-Recovery-Konfiguration zu testen oder Wartungsarbeiten am primären Cluster durchzuführen.
+Ein geplantes Failover kann durchgeführt werden, um die Funktionsfähigkeit der Disaster-Recovery-Konfiguration zu testen oder Wartungsarbeiten am primären Cluster vorzunehmen.
 
 .Über diese Aufgabe
-Der Administrator des sekundären Clusters initiiert einen geplanten Failover. Der Vorgang erfordert das Umschalten der primären und sekundären Rollen, damit das sekundäre Cluster vom primären Standort übernommen wird. Das neue primäre Cluster kann dann ohne Unterbrechung der Client-Prozesse mit der lokalen Verarbeitung von ein- und Ausgabeanfragen beginnen.
+Ein geplanter Failover wird vom Administrator des sekundären Clusters initiiert. Der Vorgang erfordert das Tauschen der primären und sekundären Rollen, sodass der sekundäre Cluster die Aufgaben des primären Clusters übernimmt. Der neue primäre Cluster kann dann die Verarbeitung von Ein- und Ausgabeanfragen lokal aufnehmen, ohne den Clientbetrieb zu unterbrechen.
 
 .Bevor Sie beginnen
-* Die SnapMirror Active Sync Beziehung muss synchron sein.
-* Sie können kein geplantes Failover initiieren, wenn gerade ein unterbrechungsfreier Betrieb läuft. Zu den unterbrechungsfreien Abläufen gehören Verschiebung von Volumes, Verschiebung von Aggregaten und Failover für Storage.
-* Der ONTAP-Mediator muss konfiguriert, verbunden und quorumfähig sein.
+* Die SnapMirror active sync-Beziehung muss synchron sein.
+* Ein geplanter Failover kann nicht eingeleitet werden, wenn ein unterbrechungsfreier Vorgang ausgeführt wird. Unterbrechungsfreie Vorgänge umfassen Volume-Verschiebungen, Aggregat-Relokationen und Storage Failover.
+* Der ONTAP Mediator muss konfiguriert, verbunden und im Quorum sein.
 
 
 .Schritte
-Sie können ein geplantes Failover mithilfe der ONTAP CLI oder System Manager durchführen.
+Ein geplantes Failover kann mithilfe der ONTAP CLI oder des System Manager durchgeführt werden.
 
 [role="tabbed-block"]
 ====
@@ -37,32 +37,44 @@ Sie können ein geplantes Failover mithilfe der ONTAP CLI oder System Manager du
 
 IMPORTANT: Von ONTAP 9.8 bis ONTAP 9.14.1 wird SnapMirror active sync als SnapMirror Business Continuity (SM-BC) bezeichnet.
 
-. Wählen Sie in System Manager **Schutz > Übersicht > Beziehungen**.
-. Identifizieren Sie die SnapMirror Active Sync Beziehung, die Sie für ein Failover verwenden möchten. Wählen Sie `...` neben dem Namen der Beziehung das Feld neben dem Namen der Beziehung aus, und wählen Sie dann **Failover**.
-. Verwenden Sie zum Überwachen des Status des Failover `snapmirror failover show` in der ONTAP-CLI.
+. Im System Manager **Schutz > Übersicht > Beziehungen** auswählen.
+. Identifizieren Sie die SnapMirror Active Sync-Beziehung, für die ein Failover durchgeführt werden soll. Neben dem Namen der Beziehung das  `...` auswählen und anschließend **Failover** wählen.
+. Zum Überwachen des Status des Failovers kann der  `snapmirror failover show` Befehl in der ONTAP CLI genutzt werden.
 
 
 --
 .CLI
 --
-. Initiieren Sie vom Ziel-Cluster den Failover-Vorgang:
+. Vom Ziel-Cluster aus den Failover-Vorgang einleiten:
 +
-`destination::>snapmirror failover start -destination-path   vs1_dst:/cg/cg_dst`
+`snapmirror failover start -destination-path  <path>`
 
-. Überwachen Sie den Status des Failover:
 +
-`destination::>snapmirror failover show`
+Beispiel für das Failover einer SAN-Konfiguration:
 
-. Nach Abschluss des Failover-Vorgangs können Sie vom Ziel aus den Status der SnapMirror Synchronous Protection Relationship überwachen:
 +
-`destination::>snapmirror show`
+destination::>snapmirror failover start -destination-path vs1_dst:/cg/cg_dst
+
++
+Beispiel für das Failover einer NAS-Konfiguration:
+
++
+destination::>snapmirror failover start -destination-path vs_b:
+
+. Vom Ziel aus lässt sich der Fortschritt des Failovers überwachen:
++
+`snapmirror failover show`
+
+. Nach Abschluss des Failover-Vorgangs kann der Status der SnapMirror synchronen Schutzbeziehung vom Ziel-Cluster aus überwacht werden:
++
+`snapmirror show`
 
 
 
 --
 ====
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-failover-show.html["Snapmirror-Failover-Show"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-failover-start.html["Snapmirror-Failover-Start"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["Snapmirror-Show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-failover-show.html["snapmirror failover show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-failover-start.html["SnapMirror Failover Start"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["snapmirror show"^]
 

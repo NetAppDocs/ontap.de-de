@@ -2,83 +2,83 @@
 permalink: data-protection/exclude-network-name-service-svm-replication-task.html 
 sidebar: sidebar 
 keywords: exclude, network, name service, other settings, svm replication, disaster recovery 
-summary: Mit der Option -identitätsbebeibehalten false lässt sich der befehl snapmirror create nur die Volumes und Sicherheitskonfigurationen einer SVM replizieren. 
+summary: Mit der Option -identity-preserve false des Befehls snapmirror create werden nur die Volumes und Sicherheitskonfigurationen einer SVM repliziert. 
 ---
-= Ausschließen von Netzwerk-, Name-Service- und anderen Einstellungen von der SVM-Replizierung mit ONTAP
+= Netzwerk-, Namensdienst- und andere Einstellungen von der SVM-Replikation mit ONTAP ausschließen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Möglicherweise möchten Sie Netzwerk-, Name-Service- und andere Einstellungen von einer SVM-Replizierungsbeziehung ausschließen, um Konflikte oder Konfigurationsunterschiede mit der Ziel-SVM zu vermeiden.
+Es kann sinnvoll sein, Netzwerk-, Namensdienst- und andere Einstellungen von einer SVM-Replikationsbeziehung auszuschließen, um Konflikte oder Konfigurationsunterschiede mit der Ziel-SVM zu vermeiden.
 
-Sie können mit der `-identity-preserve false` Option des `snapmirror create` Befehls nur die Volumes und Sicherheitskonfigurationen einer SVM replizieren. Einige Protokoll- und Namensdiensteinstellungen bleiben ebenfalls erhalten.
+Die  `-identity-preserve false` Option des  `snapmirror create` Befehls ermöglicht die Replikation ausschließlich der Volume- und Sicherheitskonfigurationen einer SVM. Einige Protokoll- und Namensdiensteinstellungen werden ebenfalls beibehalten.
 
 .Über diese Aufgabe
-Eine Liste der erhaltenen Protokoll- und Namensdiensteinstellungen finden Sie unter link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-disaster-recovery-relationships["Konfigurationen in SVM-DR-Beziehungen repliziert"].
+Eine Liste der gespeicherten Protokoll- und Namensdiensteinstellungen ist unter link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-disaster-recovery-relationships["Konfigurationen, die in SVM DR-Beziehungen repliziert werden"] zu finden.
 
 .Bevor Sie beginnen
-Quell- und Ziel-Cluster sowie SVMs müssen Peering durchgeführt werden.
+Die Quell- und Ziel-Cluster sowie die SVMs müssen miteinander verbunden sein.
 
-Weitere Informationen finden Sie unter link:../peering/create-cluster-relationship-93-later-task.html["Erstellen einer Cluster-Peer-Beziehung"] und link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM-Peer-Beziehung"].
+Weitere Informationen finden Sie unter link:../peering/create-cluster-relationship-93-later-task.html["Erstellen einer Cluster Peer-Beziehung"] und link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM Intercluster Peer-Beziehung"].
 
 .Schritte
-. Ziel-SVM erstellen:
+. Erstellen einer Ziel-SVM:
 +
 `vserver create -vserver _SVM_ -subtype dp-destination`
 
 +
-Der SVM-Name muss über die Quell- und Ziel-Cluster hinweg eindeutig sein.
+Der SVM-Name muss sowohl im Quell-Cluster als auch im Ziel-Cluster eindeutig sein.
 
 +
-Im folgenden Beispiel wird eine Ziel-SVM mit dem Namen erstellt `svm_backup`:
+Das folgende Beispiel erstellt eine Ziel-SVM mit dem Namen `svm_backup`:
 
 +
 [listing]
 ----
 cluster_dst:> vserver create -vserver svm_backup -subtype dp-destination
 ----
-. Erstellen Sie über den `vserver peer create` Befehl aus dem Ziel-Cluster eine SVM-Peer-Beziehung.
+. Vom Ziel-Cluster aus eine SVM Peer-Beziehung mit dem  `vserver peer create` Befehl erstellen.
 +
-Weitere Informationen finden Sie unter link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM-Peer-Beziehung"].
+Weitere Informationen finden sich unter link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer SVM Intercluster Peer-Beziehung"].
 
 +
-Erfahren Sie mehr über `vserver peer create` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-peer-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `vserver peer create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-peer-create.html["ONTAP-Befehlsreferenz"^].
 
-. Erstellen eines Replikationsauftragplans:
+. Erstellen eines Replikationsauftragszeitplans:
 +
 `job schedule cron create -name _job_name_ -month _month_ -dayofweek _day_of_week_ -day _day_of_month_ -hour _hour_ -minute _minute_`
 
 +
-Für `-month`, `-dayofweek` und `-hour` können Sie festlegen `all`, dass der Job jeden Monat, Wochentag und jede Stunde ausgeführt werden soll.
+Für  `-month`,  `-dayofweek` und  `-hour` kann  `all` angegeben werden, damit der Job jeden Monat, an jedem Wochentag bzw. zu jeder Stunde ausgeführt wird.
 
 +
 [NOTE]
 ====
-Der unterstützte Zeitplan (RPO) für FlexVol Volumes in einer SVM SnapMirror Beziehung beträgt mindestens 15 Minuten. Der unterstützte Zeitplan (RPO) für FlexGroup Volumes in einer SVM SnapMirror Beziehung beträgt mindestens 30 Minuten.
+Der minimal unterstützte Zeitplan (RPO) für FlexVol Volumes in einer SVM SnapMirror Beziehung beträgt 15 Minuten. Der minimal unterstützte Zeitplan (RPO) für FlexGroup Volumes in einer SVM SnapMirror Beziehung beträgt 30 Minuten.
 
 ====
 +
-Im folgenden Beispiel wird ein Jobzeitplan mit dem Namen erstellt `my_weekly`, der samstags um 3:00 Uhr ausgeführt wird:
+Das folgende Beispiel erstellt einen Jobplan mit dem Namen  `my_weekly`, der samstags um 3:00 Uhr morgens ausgeführt wird:
 
 +
 [listing]
 ----
 cluster_dst::> job schedule cron create -name my_weekly -dayofweek "Saturday" -hour 3 -minute 0
 ----
-. Erstellen einer Replikationsbeziehung, die Netzwerk, Name Service und andere Konfigurationseinstellungen ausschließt:
+. Eine Replikationsbeziehung erstellen, die Netzwerk-, Namensdienst- und andere Konfigurationseinstellungen ausschließt:
 +
 `snapmirror create -source-path _SVM_: -destination-path _SVM_: -type DP|XDP -schedule schedule -policy policy -identity-preserve false`
 
 +
 [NOTE]
 ====
-In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Sehen Sie sich die Beispiele unten an. Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
+Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Die folgenden Beispiele veranschaulichen dies. Dieser Befehl muss von der Ziel-SVM oder dem Ziel-Cluster ausgeführt werden.
 
 ====
 +
-Im folgenden Beispiel wird eine SnapMirror-DR-Beziehung mithilfe der Standardrichtlinie erstellt `MirrorAllSnapshots`. Bei der Beziehung werden Netzwerk, Name Service und andere Konfigurationseinstellungen von der SVM-Replizierung ausgeschlossen:
+Das folgende Beispiel erstellt eine SnapMirror DR-Beziehung mithilfe der Standard `MirrorAllSnapshots`richtlinie. Die Beziehung schließt Netzwerk-, Namensdienst- und andere Konfigurationseinstellungen von der SVM-Replikation aus:
 
 +
 [listing]
@@ -86,7 +86,7 @@ Im folgenden Beispiel wird eine SnapMirror-DR-Beziehung mithilfe der Standardric
 cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy MirrorAllSnapshots -identity-preserve false
 ----
 +
-Im folgenden Beispiel wird mithilfe der Standardrichtlinie eine einheitliche Replikationsbeziehung erstellt `MirrorAndVault`. Die Beziehung schließt Netzwerk-, Namensdienst- und andere Konfigurationseinstellungen aus:
+Das folgende Beispiel erstellt eine einheitliche Replikationsbeziehung mithilfe der Standard `MirrorAndVault`richtlinie. Die Beziehung schließt Netzwerk-, Namensdienst- und andere Konfigurationseinstellungen aus:
 
 +
 [listing]
@@ -94,7 +94,7 @@ Im folgenden Beispiel wird mithilfe der Standardrichtlinie eine einheitliche Rep
 cluster_dst:> snapmirror create svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy MirrorAndVault -identity-preserve false
 ----
 +
-Wenn Sie eine benutzerdefinierte Richtlinie mit dem Richtlinientyp erstellt haben `async-mirror`, wird im folgenden Beispiel eine SnapMirror-DR-Beziehung erstellt. Bei der Beziehung werden Netzwerk, Name Service und andere Konfigurationseinstellungen von der SVM-Replizierung ausgeschlossen:
+Angenommen, Sie haben eine benutzerdefinierte Richtlinie mit dem Richtlinientyp  `async-mirror` erstellt, erstellt das folgende Beispiel eine SnapMirror DR-Beziehung. Die Beziehung schließt Netzwerk-, Namensdienst- und andere Konfigurationseinstellungen von der SVM-Replikation aus:
 
 +
 [listing]
@@ -102,7 +102,7 @@ Wenn Sie eine benutzerdefinierte Richtlinie mit dem Richtlinientyp erstellt habe
 cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy my_mirrored -identity-preserve false
 ----
 +
-Wenn Sie eine benutzerdefinierte Richtlinie mit dem Richtlinientyp erstellt haben `mirror-vault`, wird im folgenden Beispiel eine einheitliche Replikationsbeziehung erstellt. Bei der Beziehung werden Netzwerk, Name Service und andere Konfigurationseinstellungen von der SVM-Replizierung ausgeschlossen:
+Angenommen, Sie haben eine benutzerdefinierte Richtlinie mit dem Richtlinientyp `mirror-vault` erstellt, erstellt das folgende Beispiel eine einheitliche Replikationsbeziehung. Die Beziehung schließt Netzwerk-, Namensdienst- und andere Konfigurationseinstellungen von der SVM-Replikation aus:
 
 +
 [listing]
@@ -110,9 +110,9 @@ Wenn Sie eine benutzerdefinierte Richtlinie mit dem Richtlinientyp erstellt habe
 cluster_dst::> snapmirror create -source-path svm1: -destination-path svm_backup: -type XDP -schedule my_daily -policy my_unified -identity-preserve false
 ----
 +
-Erfahren Sie mehr über `snapmirror create` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
 
-. Ziel-SVM stoppen:
+. Die Ziel-SVM anhalten:
 +
 `vserver stop`
 
@@ -120,25 +120,25 @@ Erfahren Sie mehr über `snapmirror create` in der link:https://docs.netapp.com/
 `_SVM name_`
 
 +
-Im folgenden Beispiel wird eine Ziel-SVM namens dvs1 angehalten:
+Das folgende Beispiel stoppt eine Ziel-SVM namens dvs1:
 
 +
 [listing]
 ----
 destination_cluster::> vserver stop -vserver dvs1
 ----
-. Wenn Sie SMB verwenden, müssen Sie auch einen SMB-Server konfigurieren.
+. Wenn Sie SMB verwenden, muss auch ein SMB-Server konfiguriert werden.
 +
 Siehe link:create-smb-server-task.html["Nur SMB: Erstellen eines SMB-Servers"].
 
-. Initialisieren Sie die SVM-Replizierungsbeziehung von der Ziel-SVM oder dem Ziel-Cluster:
+. Vom Ziel-SVM oder Ziel-Cluster aus die SVM-Replikationsbeziehung initialisieren:
 +
 `snapmirror initialize -source-path _SVM_name_: -destination-path _SVM_name_:`
 
 +
-Erfahren Sie mehr über `snapmirror initialize` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror initialize` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
 
 
 
 .Nachdem Sie fertig sind
-Sie müssen das Netzwerk und die Protokolle auf der Ziel-SVM für den Datenzugriff bei einem Ausfall konfigurieren.
+Das Netzwerk und die Protokolle auf der Ziel-SVM sind für den Datenzugriff im Katastrophenfall zu konfigurieren.

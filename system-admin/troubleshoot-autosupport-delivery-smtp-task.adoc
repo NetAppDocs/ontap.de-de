@@ -2,81 +2,81 @@
 permalink: system-admin/troubleshoot-autosupport-delivery-smtp-task.html 
 sidebar: sidebar 
 keywords: troubleshoot, autosupport, deliver, system, smtp, settings, resolve, problem 
-summary: Wenn das System keine AutoSupport Meldungen über SMTP liefern kann, können Sie eine Reihe von Einstellungen überprüfen, um das Problem zu lösen. 
+summary: Wenn das System AutoSupport-Nachrichten nicht über SMTP zustellen kann, lassen sich verschiedene Einstellungen überprüfen, um das Problem zu lösen. 
 ---
-= Fehlerbehebung bei der ONTAP AutoSupport-Nachrichtenübermittlung über SMTP
+= Fehlerbehebung bei der ONTAP AutoSupport Nachrichtenübermittlung über SMTP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn das System keine AutoSupport Meldungen über SMTP liefern kann, können Sie eine Reihe von Einstellungen überprüfen, um das Problem zu lösen.
+Wenn das System AutoSupport-Nachrichten nicht über SMTP zustellen kann, lassen sich verschiedene Einstellungen überprüfen, um das Problem zu lösen.
 
 .Bevor Sie beginnen
-Sie sollten die grundlegende Netzwerkverbindung und das DNS-Lookup bestätigt haben:
+Die grundlegende Netzwerkverbindung und die DNS-Auflösung sollten bestätigt worden sein:
 
-* Die Node-Management-LIF muss den Status „Betriebs“ und „Administration“ aufweisen.
-* Sie müssen in der Lage sein, einen funktionierenden Host in demselben Subnetz von der Cluster-Management-LIF zu pingen (keine LIF auf keinem der Nodes).
-* Sie müssen in der Lage sein, einen funktionierenden Host außerhalb des Subnetzes von der Cluster-Management-LIF zu pingen.
-* Sie müssen in der Lage sein, einen funktionierenden Host außerhalb des Subnetzes von der Cluster-Management-LIF mit dem Namen des Hosts (nicht die IP-Adresse) anzupingen.
+* Ihre Node Management LIF muss für den Betriebs- und Administrationsstatus aktiviert sein.
+* Es muss möglich sein, einen funktionierenden Host im selben Subnetz vom Cluster-Management-LIF aus anzupingen (nicht von einem LIF auf einem der Knoten).
+* Von der Cluster-Management-LIF aus muss ein funktionierender Host außerhalb des Subnetzes angepingt werden können.
+* Es muss möglich sein, einen funktionierenden Host außerhalb des Subnetzes vom Cluster-Management-LIF aus mit dem Namen des Hosts (nicht der IP-Adresse) anzupingen.
 
 
 .Über diese Aufgabe
-Diese Schritte sind für Fälle, in denen Sie festgestellt haben, dass AutoSupport die Meldung generieren kann, die Meldung jedoch nicht über SMTP liefern kann.
+Diese Schritte gelten für Fälle, in denen festgestellt wurde, dass AutoSupport die Nachricht generieren kann, aber nicht über SMTP zustellen kann.
 
-Wenn bei diesem Vorgang Fehler auftreten oder ein Schritt nicht ausgeführt werden kann, ermitteln und beheben Sie das Problem, bevor Sie mit dem nächsten Schritt fortfahren.
+Falls Fehler auftreten oder ein Schritt in diesem Verfahren nicht abgeschlossen werden kann, sollte das Problem ermittelt und behoben werden, bevor mit dem nächsten Schritt fortgefahren wird.
 
-Sofern nicht anders angegeben, werden alle Befehle über die ONTAP-Befehlszeilenschnittstelle eingegeben.
+Alle Befehle werden an der ONTAP Befehlszeilenschnittstelle eingegeben, sofern nichts anderes angegeben ist.
 
 .Schritte
-. Überprüfen Sie den Status der Node-Management-LIF:
+. Der Status der Node-Management-LIF kann überprüft werden:
 +
 `*network interface show -home-node local -role node-mgmt -fields vserver,lif,status-oper,status-admin,address,role*`
 
 +
-Die `status-oper` `status-admin` Felder und sollten zurückgegeben werden `up`. Erfahren Sie mehr über `up` in der link:https://docs.netapp.com/us-en/ontap-cli/up.html["ONTAP-Befehlsreferenz"^].
+Die Felder  `status-oper` und  `status-admin` sollten  `up` zurückgeben. Weitere Informationen zu  `up` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/up.html["ONTAP-Befehlsreferenz"^].
 
-. Notieren Sie den SVM-Namen, den LIF-Namen und die LIF-IP-Adresse für die spätere Verwendung.
-. Stellen Sie sicher, dass DNS richtig aktiviert und konfiguriert ist:
+. Der SVM-Name, der LIF-Name und die LIF-IP-Adresse sollten für die spätere Verwendung festgehalten werden.
+. Es ist sicherzustellen, dass DNS aktiviert und korrekt konfiguriert ist:
 +
 `*vserver services name-service dns show*`
 
-. Alle Server anzeigen, die für die Verwendung durch AutoSupport konfiguriert sind:
+. Alle Server, die für die Verwendung durch AutoSupport konfiguriert sind, werden angezeigt:
 +
 `*system node autosupport show -fields mail-hosts*`
 
 +
-Notieren Sie alle angezeigten Servernamen.
+Alle angezeigten Servernamen protokollieren.
 
-.  `support.netapp.com`Stellen Sie für jeden Server, der durch den vorherigen Schritt angezeigt wird, und sicher, dass der Server oder die URL vom Knoten erreicht werden kann:
+. Für jeden im vorherigen Schritt angezeigten Server und `support.netapp.com`die URL ist sicherzustellen, dass der Server bzw. die URL vom Knoten aus erreichbar ist:
 +
 `*network traceroute -node local -destination _server_name_*`
 
 +
-Wenn eine dieser Routen nicht funktioniert, versuchen Sie die gleiche Route von einem funktionierenden Host im selben Subnetz wie das Cluster, indem Sie das Dienstprogramm „`traceroute`“ oder „`tracert`“ verwenden, das auf den meisten Netzwerk-Clients von Drittanbietern gefunden wurde. Dadurch können Sie herausfinden, ob das Problem in Ihrer Netzwerkkonfiguration oder der Cluster-Konfiguration vorliegt.
+Falls eine dieser Routen nicht funktioniert, kann dieselbe Route von einem funktionierenden Host im selben Subnetz wie der Cluster mit dem Dienstprogramm „traceroute“ oder „tracert“, das in den meisten Netzwerkclients von Drittanbietern enthalten ist, ausprobiert werden. Dies unterstützt bei der Feststellung, ob das Problem in der Netzwerkkonfiguration oder der Clusterkonfiguration liegt.
 
-. Melden Sie sich beim Host an, der als E-Mail-Host bezeichnet wird, und stellen Sie sicher, dass er SMTP-Anforderungen bereitstellen kann:
+. Melden Sie sich bei dem als Mail-Host festgelegten Host an und stellen Sie sicher, dass er SMTP-Anfragen bearbeiten kann:
 +
 `*netstat -aAn|grep 25*`
 
 +
-`25` Ist die Listener-SMTP-Portnummer.
+`25` ist die SMTP-Portnummer des Listeners.
 
 +
-Es wird eine Meldung wie der folgende Text angezeigt:
+Es wird eine Meldung angezeigt, die in etwa folgendem Text entspricht:
 
 +
 [listing]
 ----
 ff64878c tcp        0      0  *.25    *.*    LISTEN.
 ----
-. Öffnen Sie von einem anderen Host eine Telnet-Sitzung mit dem SMTP-Port des Mail-Hosts:
+. Von einem anderen Host aus eine Telnet-Sitzung mit dem SMTP-Port des Mail-Hosts öffnen:
 +
 `*telnet _mailhost_ 25*`
 
 +
-Es wird eine Meldung wie der folgende Text angezeigt:
+Es wird eine Meldung angezeigt, die in etwa folgendem Text entspricht:
 
 +
 [listing]
@@ -84,7 +84,7 @@ Es wird eine Meldung wie der folgende Text angezeigt:
 
 220 filer.yourco.com Sendmail 4.1/SMI-4.1 ready at Thu, 30 Nov 2014 10:49:04 PST
 ----
-. Stellen Sie an der Eingabeaufforderung Telnet sicher, dass eine Nachricht von Ihrem Mail-Host weitergeleitet werden kann:
+. An der Telnet-Eingabeaufforderung sollte sichergestellt sein, dass eine Nachricht von Ihrem Mail-Host weitergeleitet werden kann:
 +
 `*HELO _domain_name_*`
 
@@ -95,12 +95,12 @@ Es wird eine Meldung wie der folgende Text angezeigt:
 `*RCPT TO: \autosupport@netapp.com*`
 
 +
-`domain_name` Ist der Domänenname Ihres Netzwerks.
+`domain_name` ist der Domänenname Ihres Netzwerks.
 
 +
-Wenn ein Fehler zurückgegeben wird, der besagt, dass das Relying verweigert wird, ist das Relying auf dem Mail-Host nicht aktiviert. Wenden Sie sich an Ihren Systemadministrator.
+Wird eine Fehlermeldung zurückgegeben, die besagt, dass die Weiterleitung verweigert wurde, ist die Weiterleitung auf dem Mailhost nicht aktiviert. Der Systemadministrator sollte kontaktiert werden.
 
-. Senden Sie an der Eingabeaufforderung Telnet eine Testmeldung:
+. An der Telnet-Eingabeaufforderung wird eine Testnachricht gesendet:
 +
 `*DATA*`
 
@@ -114,39 +114,39 @@ Wenn ein Fehler zurückgegeben wird, der besagt, dass das Relying verweigert wir
 +
 [NOTE]
 ====
-Stellen Sie sicher, dass Sie den letzten Zeitraum (.) in einer Zeile selbst eingeben. Der Zeitraum gibt dem Mail-Host an, dass die Nachricht abgeschlossen ist.
+Stellen Sie sicher, dass Sie den letzten Punkt (.) in einer eigenen Zeile eingeben. Der Punkt zeigt dem Mail-Host an, dass die Nachricht vollständig ist.
 
 ====
 +
-Wenn ein Fehler zurückgegeben wird, ist Ihr Mail-Host nicht richtig konfiguriert. Wenden Sie sich an Ihren Systemadministrator.
+Wenn ein Fehler zurückgegeben wird, ist Ihr Mailserver nicht korrekt konfiguriert. Der Systemadministrator sollte kontaktiert werden.
 
-. Senden Sie über die ONTAP Befehlszeilenschnittstelle eine AutoSupport-Testmeldung an eine vertrauenswürdige E-Mail-Adresse, auf die Sie Zugriff haben:
+. Über die ONTAP-Befehlszeilenschnittstelle eine AutoSupport-Testnachricht an eine vertrauenswürdige E-Mail-Adresse senden, auf die Sie Zugriff haben:
 +
 `*system node autosupport invoke -node local -type test*`
 
-. Suchen Sie die Sequenznummer des Versuchs:
+. Die Sequenznummer des Versuchs finden:
 +
 `*system node autosupport history show -node local -destination smtp*`
 
 +
-Suchen Sie die Sequenznummer Ihres Versuchs basierend auf dem Zeitstempel. Es ist wahrscheinlich der jüngste Versuch.
+Die Sequenznummer des Versuchs lässt sich anhand des Zeitstempels bestimmen. Vermutlich handelt es sich um den aktuellsten Versuch.
 
-. Zeigen Sie den Fehler für den Versuch der Testmeldung an:
+. Der Fehler für Ihren Testnachrichtenversuch wird angezeigt:
 +
 `*system node autosupport history show -node local -seq-num seq_num -fields error*`
 
 +
-Wenn der angezeigte Fehler lautet `Login denied`, akzeptiert der SMTP-Server keine Sendeanforderungen von der Cluster-Management-LIF. Wenn Sie als Transportprotokoll nicht zu HTTPS wechseln möchten, wenden Sie sich an den Standortnetzwerkadministrator, um die SMTP-Gateways zu konfigurieren, um dieses Problem zu beheben.
+Wenn die Fehlermeldung  `Login denied` angezeigt wird, akzeptiert Ihr SMTP-Server keine Sendeanfragen vom Cluster-Management-LIF. Wenn keine Umstellung auf HTTPS als Transportprotokoll gewünscht ist, sollte der Netzwerkadministrator kontaktiert werden, damit die SMTP-Gateways entsprechend konfiguriert werden können, um dieses Problem zu beheben.
 
 +
-Wenn dieser Test erfolgreich ist, aber dieselbe Nachricht an mailto:autosupport@netapp.com nicht gesendet wird, stellen Sie sicher, dass SMTP-Relais auf allen Ihren SMTP-Mail-Hosts aktiviert ist, oder verwenden Sie HTTPS als Transportprotokoll.
+Wenn dieser Test erfolgreich ist, die gleiche Nachricht jedoch an mailto:autosupport@netapp.com nicht gesendet werden kann, sollte sichergestellt werden, dass SMTP Relay auf allen SMTP-Mail-Hosts aktiviert ist oder HTTPS als Transportprotokoll verwendet wird.
 
 +
-Wenn auch die Meldung an das lokal verwaltete E-Mail-Konto nicht erfolgreich ist, bestätigen Sie, dass Ihre SMTP-Server so konfiguriert sind, dass Anlagen mit beiden folgenden Eigenschaften weitergeleitet werden:
+Falls auch die Nachricht an das lokal verwaltete E-Mail-Konto nicht zugestellt werden kann, bestätigen Sie, dass Ihre SMTP-Server so konfiguriert sind, dass sie Anhänge mit beiden dieser Eigenschaften weiterleiten:
 
 +
-** Das Suffix „`7z`“
-** Der Typ „`Application/x-7x-compressed`“ MIME.
+** Das Suffix "`7z`"
+** Der MIME-Typ "`application/x-7x-compressed`".
 
 
 

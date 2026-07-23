@@ -2,17 +2,17 @@
 permalink: flexcache-writeback/flexcache-write-back-use-cases.html 
 sidebar: sidebar 
 keywords: tr-4743, flexcache writeback, flexcache write-back, use cases, workloads, technical report, netapp tr, ontap tr 
-summary: Dies sind Schreibprofile, die sich am besten für eine schreibBack-fähige FlexCache eignen. Sie sollten Ihren Workload testen, um festzustellen, ob Write-Back- oder Write-Around die beste Performance bietet. 
+summary: Dies sind Schreibprofile, die sich am besten für einen Write-Back-aktivierten FlexCache eignen. Es empfiehlt sich, die eigene Arbeitslast zu testen, um festzustellen, ob Write-Back oder Write-Around die beste Leistung bietet. 
 ---
-= Anwendungsfälle für die ONTAP FlexCache-Rückschreibung
+= ONTAP FlexCache Write-Back-Anwendungsfälle
 :allow-uri-read: 
 
 
 [role="lead"]
-Dies sind Schreibprofile, die sich am besten für eine schreibBack-fähige FlexCache eignen. Sie sollten Ihren Workload testen, um festzustellen, ob Write-Back- oder Write-Around die beste Performance bietet.
+Dies sind Schreibprofile, die sich am besten für einen Write-Back-aktivierten FlexCache eignen. Es empfiehlt sich, die eigene Arbeitslast zu testen, um festzustellen, ob Write-Back oder Write-Around die beste Leistung bietet.
 
 
-NOTE: Write-Back ist kein Ersatz für Write-Around. Obwohl Write-Back-Anwendungen mit schreibintensiven Workloads konzipiert sind, ist die Write-Around-Lösung immer noch die bessere Wahl für viele Workloads.
+NOTE: Write-back ist kein Ersatz für Write-around. Obwohl Write-back für schreibintensive Workloads konzipiert wurde, ist Write-around für viele Workloads dennoch die bessere Wahl.
 
 
 
@@ -20,12 +20,12 @@ NOTE: Write-Back ist kein Ersatz für Write-Around. Obwohl Write-Back-Anwendunge
 == Ziel-Workloads
 
 .Dateigröße
-Die Dateigröße ist weniger wichtig als die Anzahl der Schreibvorgänge, die zwischen dem und -Aufrufen für eine Datei ausgegeben `OPEN` `CLOSE` wurden. Kleine Dateien haben von Natur aus weniger `WRITE` Anrufe, wodurch sie weniger ideal für das Zurückschreiben sind. Große Dateien können mehr Schreibvorgänge zwischen und Aufrufen haben `OPEN` `CLOSE` , aber dies ist nicht garantiert.
+Die Dateigröße ist weniger wichtig als die Anzahl der Schreibvorgänge zwischen den  `OPEN` und  `CLOSE` Aufrufen für eine Datei. Kleine Dateien haben naturgemäß weniger  `WRITE` Aufrufe, was sie weniger ideal für Write-Back macht. Große Dateien können mehr Schreibvorgänge zwischen  `OPEN` und  `CLOSE` Aufrufen haben, dies ist jedoch nicht garantiert.
 
-Auf der link:../flexcache-writeback/flexcache-write-back-guidelines.html["FlexCache-Rückschreibrichtlinien"] Seite finden Sie die aktuellen Empfehlungen zur maximalen Dateigröße.
+Die link:../flexcache-writeback/flexcache-write-back-guidelines.html["FlexCache Richtlinien für Rückschreiben"] Seite enthält die aktuellsten Empfehlungen zur maximalen Dateigröße.
 
 .Schreibgröße
-Beim Schreiben von einem Client sind andere modifizierende NAS-Anrufe außer Schreibanrufe beteiligt. Dazu gehören unter anderem:
+Beim Schreiben von einem Client aus sind neben Schreibaufrufen auch andere modifizierende NAS-Aufrufe beteiligt. Dazu gehören unter anderem:
 
 * `CREATE`
 * `OPEN`
@@ -34,29 +34,29 @@ Beim Schreiben von einem Client sind andere modifizierende NAS-Anrufe außer Sch
 * `SET_INFO`
 
 
-`SETATTR` Und `SET_INFO` Aufrufe, die gesetzt `mtime`, , , , `atime` `ctime` `owner` `group` oder `size` werden im Cache verarbeitet. Der Rest dieser Aufrufe muss am Ursprung verarbeitet werden und einen Rückschreibvorgang für alle schmutzigen Daten auslösen, die im schreibBack-aktivierten Cache für die Datei gesammelt werden, auf der ausgeführt wird. IO auf die Datei wird stillgelegt, bis der Schreibvorgang abgeschlossen ist.
+`SETATTR` und  `SET_INFO`-Aufrufe, die  `mtime`,  `atime`,  `ctime`,  `owner`,  `group` oder  `size` setzen, werden im Cache verarbeitet. Die übrigen Aufrufe müssen am Ursprung verarbeitet werden und lösen ein Zurückschreiben aller schmutzigen Daten aus, die sich im Write-Back-fähigen Cache für die betreffende Datei angesammelt haben. Die IO zur Datei wird bis zum Abschluss des Rückschreibens angehalten.
 
-Wenn Sie wissen, dass diese Anrufe das WAN durchlaufen müssen, können Sie Workloads identifizieren, die sich für Write-Back eignen. Je mehr Schreibvorgänge zwischen `OPEN` und `CLOSE` Anrufen erfolgen können, ohne dass einer der oben aufgeführten Anrufe ausgegeben wird, desto besser ist die Performance-Steigerung des Rückschreibens.
+Die Erkenntnis, dass diese Aufrufe das WAN durchlaufen müssen, hilft Ihnen, Workloads zu identifizieren, die sich für Write-Back eignen. Generell gilt: Je mehr Schreibvorgänge zwischen  `OPEN` und  `CLOSE` Aufrufen durchgeführt werden können, ohne dass einer der anderen oben genannten Aufrufe erfolgt, desto größer ist der Leistungsgewinn durch Write-Back.
 
-.Read-after-Write
-Workloads mit Lese-/Schreibzugriff hatten in der Vergangenheit bei FlexCache eine schlechte Performance. Dies ist auf den Schreibmodus vor 9.15.1 zurückzuführen. Der `WRITE` Aufruf der Datei muss am Ursprung erfolgen, und der nachfolgende `READ` Aufruf müsste die Daten zurück in den Cache verschieben. Dies führt dazu, dass beide Vorgänge die WAN-Einbußen nach sich nehmen. Daher werden für FlexCache im Write-Around-Modus von Read-after-Write-Workloads abgeraten. Mit der Einführung von Write-Back im Jahr 9.15.1 werden Daten nun im Cache gespeichert und können sofort aus dem Cache gelesen werden, wodurch die WAN-Einbußen eliminiert werden. Wenn Ihr Workload auf FlexCache Volumes Lese-nach-Schreiben beinhaltet, sollten Sie den Cache für den Write-Back-Modus konfigurieren.
+.Lesen nach dem Schreiben
+Lese-nach-Schreib-Workloads wiesen in der Vergangenheit bei FlexCache eine schlechte Performance auf. Dies ist auf den Write-Around-Betriebsmodus vor 9.15.1 zurückzuführen. Der  `WRITE` Aufruf der Datei musste am Ursprung abgeschlossen werden, und der nachfolgende  `READ` Aufruf musste die Daten zurück in den Cache holen. Dadurch fielen bei beiden Operationen die Latenzen des WAN an. Daher sind Lese-nach-Schreib-Workloads für FlexCache im Write-Around-Modus nicht empfohlen. Mit der Einführung von Write-Back in 9.15.1 werden Daten nun im Cache gespeichert und können sofort aus dem Cache gelesen werden, wodurch die WAN-Latenz entfällt. Wenn der Workload Lese-nach-Schreib-Operationen auf FlexCache Volumes umfasst, sollte der Cache für den Write-Back-Modus konfiguriert werden.
 
 
-TIP: Wenn Read-after-write ein wichtiger Teil Ihrer Arbeitslast ist, sollten Sie Ihren Cache so konfigurieren, dass er im Write-Back-Modus arbeitet.
+TIP: Wenn lesen nach schreiben ein kritischer Bestandteil Ihrer Arbeitslast ist, empfiehlt sich die Konfiguration des Caches für den Betrieb im Write-Back-Modus.
 
 .Write-after-Write
-Wenn eine Datei schmutzige Daten in einem Cache akkumuliert, schreibt der Cache die Daten asynchron zurück zum Ursprung. Dies führt natürlich zu Zeiten, wenn der Client die Datei mit schmutzigen Daten schließt, die noch darauf warten, wieder an den Ursprung zurückgespült zu werden. Wenn für die gerade geschlossene Datei ein weiterer offener oder ein anderer Schreibvorgang eingeht und noch schmutzige Daten enthält, wird der Schreibvorgang unterbrochen, bis alle fehlerhaften Daten auf den Ursprung übertragen wurden.
+Wenn sich schmutzige Daten in einem Cache in einer Datei ansammeln, schreibt der Cache diese Daten asynchron zurück an den Ursprung. Dies führt dazu, dass der Client die Datei schließt, während schmutzige Daten noch darauf warten, an den Ursprung zurückgeschrieben zu werden. Wenn ein weiterer Öffnungs- oder Schreibvorgang für die gerade geschlossene Datei erfolgt, die noch schmutzige Daten enthält, wird der Schreibvorgang ausgesetzt, bis alle schmutzigen Daten an den Ursprung zurückgeschrieben wurden.
 
 
 
 [[latency-considerations]]
-== Überlegungen zur Latenz
+== Latenzüberlegungen
 
-Wenn FlexCache im Write-Back-Modus arbeitet, ist dies für NAS-Clients mit zunehmender Latenz vorteilhafter. Es gibt jedoch einen Punkt, an dem der Overhead von Write-Back die Vorteile überwiegt, die in Umgebungen mit niedriger Latenz erzielt werden. In einigen NetApp-Tests führten die Write-Back-Ergebnisse zu einer minimalen Latenz zwischen Cache und Ursprung von 8 ms. Diese Latenz variiert je nach Workload. Stellen Sie daher sicher, dass Sie den Endpunkt Ihres Workloads kennen.
+Wenn FlexCache im Write-Back-Betriebsmodus arbeitet, profitieren NAS-Clients mit zunehmender Latenz stärker. Es gibt jedoch einen Punkt, an dem der Overhead des Write-Back die in Umgebungen mit niedriger Latenz gewonnenen Vorteile überwiegt. In einigen NetApp Tests traten die Vorteile des Write-Back ab einer minimalen Latenz zwischen Cache und Ursprung von etwa 8 ms auf. Diese Latenz variiert je nach Arbeitslast, daher empfiehlt sich ein Test, um den optimalen Wendepunkt für die eigene Arbeitslast zu bestimmen.
 
-Das folgende Diagramm zeigt den Rückgabepunkt für den Rückschreibvorgang in NetApp Labortests. Die `x` Achse ist die Dateigröße und die `y` Achse die verstrichene Zeit. Bei dem Test wurde NFSv3 verwendet, wobei ein und 256 KB und 64 ms WAN-Latenz gemountet `rsize` `wsize` werden. Dieser Test wurde mit einer kleinen ONTAP Select-Instanz sowohl für den Cache als auch für den Ursprungs sowie mit einem einzigen Thread-Schreibvorgang durchgeführt. Ihre Ergebnisse können variieren.
+Die folgende Grafik zeigt den Zeitpunkt des Rückschreibens in NetApp Labortests. Die  `x`-Achse stellt die Dateigröße dar, die  `y`-Achse die verstrichene Zeit. Der Test wurde mit NFSv3 durchgeführt, wobei eine Mount- `rsize` und  `wsize` von 256 KB sowie eine WAN-Latenz von 64 ms verwendet wurden. Für Cache und Ursprung wurde eine kleine ONTAP Select Instanz verwendet, und es kam ein einzelner Schreibvorgang mit einem Thread zum Einsatz. Die Ergebnisse können variieren.
 
-image:flexcache-write-back-point-of-return-nfs3.png["Point of Return"]
+image:flexcache-write-back-point-of-return-nfs3.png["Rückkehrpunkt"]
 
 
 IMPORTANT: Write-Back sollte nicht für Intracluster-Caching verwendet werden. Intracluster-Caching findet statt, wenn sich Ursprung und Cache im selben Cluster befinden.

@@ -2,55 +2,55 @@
 permalink: data-protection/convert-volume-svm-replication-task.html 
 sidebar: sidebar 
 keywords: convert, volume, replication, relationships, svm 
-summary: 'Sie können Replizierungsbeziehungen zwischen Volumes in eine Replizierungsbeziehung zwischen den Storage Virtual Machines (SVMs) umwandeln, die die Volumes besitzen, vorausgesetzt, dass jedes Volume des Quellvolumes (mit Ausnahme des Root-Volumes) repliziert wird. Und jedes Volumen auf dem Quelldatenträger (einschließlich des Wurzelvolumens) hat den gleichen Namen wie das Volumen auf dem Zielspeicherort.' 
+summary: 'Es ist möglich, Replikationsbeziehungen zwischen Volumes in eine Replikationsbeziehung zwischen den Storage Virtual Machines (SVMs), denen die Volumes gehören, zu konvertieren, sofern jedes Volume auf dem Quell-Cluster (außer dem Root-Volume) repliziert wird und jedes Volume auf dem Quell-Cluster (einschließlich des Root-Volumes) denselben Namen wie das Volume auf dem Ziel-Cluster hat.' 
 ---
-= Umwandeln einer ONTAP SnapMirror Volume-DR-Beziehung in eine SVM-DR-Beziehung
+= Konvertieren einer ONTAP SnapMirror Volume DR-Beziehung in eine SVM DR-Beziehung
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können Replizierungsbeziehungen zwischen Volumes in eine Replizierungsbeziehung zwischen den Storage Virtual Machines (SVMs) umwandeln, die die Volumes besitzen, vorausgesetzt, dass jedes Volume des Quellvolumes (mit Ausnahme des Root-Volumes) repliziert wird. Und jedes Volumen auf dem Quelldatenträger (einschließlich des Wurzelvolumens) hat den gleichen Namen wie das Volumen auf dem Zielspeicherort.
+Es ist möglich, Replikationsbeziehungen zwischen Volumes in eine Replikationsbeziehung zwischen den Storage Virtual Machines (SVMs), denen die Volumes gehören, zu konvertieren, sofern jedes Volume auf dem Quell-Cluster (außer dem Root-Volume) repliziert wird und jedes Volume auf dem Quell-Cluster (einschließlich des Root-Volumes) denselben Namen wie das Volume auf dem Ziel-Cluster hat.
 
 .Über diese Aufgabe
-Verwenden Sie den `volume rename` Befehl, wenn die SnapMirror-Beziehung inaktiv ist, um Ziel-Volumes umzubenennen, falls erforderlich. Erfahren Sie mehr über `volume rename` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-rename.html["ONTAP-Befehlsreferenz"^].
+Der  `volume rename` Befehl kann verwendet werden, wenn die SnapMirror Beziehung inaktiv ist, um Ziel-Volumes bei Bedarf umzubenennen. Weitere Informationen zu  `volume rename` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-rename.html["ONTAP-Befehlsreferenz"^].
 
 .Schritte
-. Führen Sie auf der Ziel-SVM oder dem Ziel-Cluster den folgenden Befehl aus, um die Quell- und Ziel-Volumes neu zu synchronisieren:
+. Von der Ziel-SVM oder dem Ziel-Cluster aus den folgenden Befehl ausführen, um die Quell- und Ziel-Volumes neu zu synchronisieren:
 +
 `snapmirror resync -source-path <SVM:volume> -destination-path <SVM:volume> -type DP|XDP -policy <policy>`
 
 +
-Erfahren Sie mehr über `snapmirror resync` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror resync` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["ONTAP-Befehlsreferenz"^].
 
 +
 [NOTE]
 ====
-Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen.
+Obwohl für die Resynchronisierung kein Basistransfer erforderlich ist, kann sie zeitaufwändig sein. Die Resynchronisierung kann außerhalb der Spitzenzeiten durchgeführt werden.
 
 ====
 +
-Im folgenden Beispiel wird die Beziehung zwischen dem Quell-Volume `volA` auf `svm1` und dem Ziel-Volume `volA` auf neu synchronisiert `svm_backup`:
+Das folgende Beispiel synchronisiert die Beziehung zwischen dem Quellvolume `volA` auf `svm1` und dem Zielvolume `volA` auf `svm_backup`:
 
 +
 [listing]
 ----
 cluster_dst::> snapmirror resync -source-path svm1:volA -destination-path svm_backup:volA
 ----
-. Erstellen Sie eine SVM-Replizierungsbeziehung zwischen den Quell- und Ziel-SVMs, wie in beschriebenlink:replicate-entire-svm-config-task.html["Replizierung von SVM-Konfigurationen"].
+. Eine SVM-Replikationsbeziehung zwischen der Quell-SVM und der Ziel-SVM wird erstellt, wie in link:replicate-entire-svm-config-task.html["Replikation von SVM Konfigurationen"] beschrieben.
 +
-Sie müssen die `-identity-preserve true` Option des `snapmirror create` Befehls beim Erstellen Ihrer Replikationsbeziehung verwenden.
+Sie müssen die  `-identity-preserve true` Option des  `snapmirror create` Befehls verwenden, wenn Sie Ihre Replikationsbeziehung erstellen.
 
 +
-Erfahren Sie mehr über `snapmirror create` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
 
-. Ziel-SVM stoppen:
+. Die Ziel-SVM anhalten:
 +
 `vserver stop -vserver _SVM_`
 
 +
-Erfahren Sie mehr über `vserver stop` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-stop.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `vserver stop` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-stop.html["ONTAP-Befehlsreferenz"^].
 
 +
 Das folgende Beispiel stoppt die Ziel-SVM `svm_backup`:
@@ -60,20 +60,20 @@ Das folgende Beispiel stoppt die Ziel-SVM `svm_backup`:
 ----
 cluster_dst::> vserver stop svm_backup
 ----
-. Führen Sie auf der Ziel-SVM oder dem Ziel-Cluster den folgenden Befehl aus, um die Quell- und Ziel-SVMs neu zu synchronisieren:
+. Von der Ziel-SVM oder dem Ziel-Cluster aus den folgenden Befehl ausführen, um die Quell- und Ziel-SVMs neu zu synchronisieren:
 +
 `snapmirror resync -source-path <SVM>: -destination-path <SVM>: -type DP|XDP -policy <policy>`
 
 +
 [NOTE]
 ====
-In den `-source-path` `-destination-path` Optionen und müssen Sie nach dem SVM-Namen einen Doppelpunkt (:) eingeben. Siehe das folgende Beispiel.
+Sie müssen nach dem SVM-Namen in den  `-source-path` und  `-destination-path` Optionen einen Doppelpunkt (:) eingeben. Das folgende Beispiel verdeutlicht dies.
 
-Auch wenn die Resynchronisierung keinen Basistransfer erfordert, kann sie zeitaufwendig sein. Möglicherweise möchten Sie die Neusynchronisierung in Zeiten nach außerhalb der Stoßzeiten durchführen.
+Obwohl für die Resynchronisierung kein Basistransfer erforderlich ist, kann sie zeitaufwändig sein. Die Resynchronisierung kann außerhalb der Spitzenzeiten durchgeführt werden.
 
 ====
 +
-Im folgenden Beispiel wird die Beziehung zwischen der Quell-SVM `svm1` und der Ziel-SVM neu synchronisiert `svm_backup`:
+Das folgende Beispiel synchronisiert die Beziehung zwischen der Quell-SVM `svm1` und der Ziel-SVM `svm_backup`:
 
 +
 [listing]
@@ -83,6 +83,6 @@ cluster_dst::> snapmirror resync -source-path svm1: -destination-path svm_backup
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["snapmirror erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror-Neusynchronisierung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["snapmirror create"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror Resynchronisierung"^]
 

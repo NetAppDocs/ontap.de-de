@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: snapmirror-active-sync/add-remove-consistency-group-task.html 
 keywords: SM-BC, SMBC, volume, consistency group, remove volume, add volume, snapmirror active sync 
-summary: Wenn Sie die Zusammensetzung der Consistency Group durch Hinzufügen oder Entfernen eines Volumes ändern möchten, müssen Sie zuerst die ursprüngliche Beziehung löschen und dann die Consistency Group erneut mit der neuen Zusammensetzung erstellen. 
+summary: Wenn Sie die Zusammensetzung der Konsistenzgruppe in einer SAN-Konfiguration durch Hinzufügen oder Entfernen eines Volumes ändern möchten, muss zunächst die ursprüngliche Beziehung gelöscht und anschließend die Konsistenzgruppe mit der neuen Zusammensetzung erneut erstellt werden. 
 ---
-= Hinzufügen oder Entfernen von Volumes zu einer ONTAP Konsistenzgruppe
+= Volumes zu einer ONTAP Konsistenzgruppe hinzufügen oder entfernen
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,19 +14,19 @@ summary: Wenn Sie die Zusammensetzung der Consistency Group durch Hinzufügen od
 
 
 [role="lead"]
-Wenn sich die Workload-Anforderungen Ihrer Applikationen ändern, müssen Sie möglicherweise Volumes einer Konsistenzgruppe hinzufügen oder aus ihr entfernen, um Business Continuity zu gewährleisten. Der Prozess zum Hinzufügen und Entfernen von Volumes in einer aktiven SnapMirror aktiven Sync Beziehung hängt von der verwendeten Version von ONTAP ab.
+Wenn sich die Anforderungen Ihrer Anwendungs-Workloads ändern, kann es erforderlich sein, Volumes zu einer Konsistenzgruppe hinzuzufügen oder daraus zu entfernen, um die Geschäftskontinuität in Ihrer SAN-Konfiguration sicherzustellen. Der Prozess zum Hinzufügen und Entfernen von Volumes in einer aktiven SnapMirror active sync-Beziehung hängt von der verwendeten ONTAP-Version ab.
 
-In den meisten Fällen führt dies zu Unterbrechungen des Betriebs, die dazu führen, dass Sie die SnapMirror Beziehung löschen, die Konsistenzgruppe ändern und den Schutz wieder aufnehmen. Ab ONTAP 9.13.1 ist das Hinzufügen von Volumes zu einer Konsistenzgruppe mit einer aktiven SnapMirror Beziehung ein unterbrechungsfreier Vorgang.
+In den meisten Fällen handelt es sich um einen disruptiven Prozess, bei dem die SnapMirror Beziehung gelöscht, die Konsistenzgruppe geändert und anschließend der Schutz wieder aufgenommen werden muss. Ab ONTAP 9.13.1 ist das Hinzufügen von Volumes zu einer Konsistenzgruppe mit einer aktiven SnapMirror Beziehung ein nicht-disruptiver Vorgang.
 
 .Über diese Aufgabe
-* In ONTAP 9.9 können Sie mithilfe der ONTAP-CLI Volumes zu einer Konsistenzgruppe hinzufügen oder entfernen.
-* Ab ONTAP 9.10.1 wird empfohlen, die Verwaltung link:../consistency-groups/index.html["Konsistenzgruppen"] über System Manager oder über die ONTAP REST-API durchzuführen.
+* In ONTAP 9.9.1 können Volumes mithilfe der ONTAP CLI zu einer Konsistenzgruppe hinzugefügt oder daraus entfernt werden.
+* Ab ONTAP 9.10.1 wird empfohlen, link:../consistency-groups/index.html["Konsistenzgruppen"] über den System Manager oder mit der ONTAP REST API zu verwalten.
 +
-Wenn Sie die Zusammensetzung der Consistency Group durch Hinzufügen oder Entfernen eines Volumes ändern möchten, müssen Sie zuerst die ursprüngliche Beziehung löschen und dann die Consistency Group erneut mit der neuen Zusammensetzung erstellen.
+Wenn Sie die Zusammensetzung der Konsistenzgruppe durch Hinzufügen oder Entfernen eines Volumes ändern möchten, muss zunächst die ursprüngliche Beziehung gelöscht und anschließend die Konsistenzgruppe mit der neuen Zusammensetzung erneut erstellt werden.
 
-* Ab ONTAP 9.13.1 können Sie Volumes mit einer aktiven SnapMirror -Beziehung unterbrechungsfrei von der Quelle oder dem Ziel zu einer Konsistenzgruppe hinzufügen. Diese Aktion wird vom NVMe-Protokoll nicht unterstützt.
+* Ab ONTAP 9.13.1 ist es möglich, Volumes ohne Unterbrechung zu einer Konsistenzgruppe mit einer aktiven SnapMirror Beziehung vom Quell- oder Zielsystem hinzuzufügen. Diese Aktion wird mit dem NVMe-Protokoll nicht unterstützt.
 +
-Das Entfernen von Volumes verursacht Unterbrechungen. Sie müssen die SnapMirror-Beziehung löschen, bevor Sie Volumes entfernen.
+Das Entfernen von Volumes ist ein störender Vorgang. Die SnapMirror Beziehung muss gelöscht werden, bevor Volumes entfernt werden.
 
 
 
@@ -35,40 +35,40 @@ Das Entfernen von Volumes verursacht Unterbrechungen. Sie müssen die SnapMirror
 .ONTAP 9.9.1-9.13.0
 --
 .Bevor Sie beginnen
-* Sie können nicht damit beginnen, die Konsistenzgruppe zu ändern, während sie `InSync` den Status aufweist.
-* Das Ziel-Volume sollte vom Typ DP sein.
-* Das neue Volume, das Sie zur Erweiterung der Konsistenzgruppe hinzufügen, muss über ein Paar gemeinsamer Snapshots zwischen den Quell- und Zielvolumes verfügen.
+* Die Konsistenzgruppe kann nicht geändert werden, solange sie sich im  `InSync` Zustand befindet.
+* Das Zielvolume sollte vom Typ DP sein.
+* Das neue Volume, das zur Erweiterung der Konsistenzgruppe hinzugefügt wird, muss über ein Paar gemeinsamer Snapshots zwischen dem Quell- und dem Zielvolume verfügen.
 
 
 .Schritte
-Die in zwei Volume-Zuordnungen gezeigten Beispiele: `vol_src1` <--> `vol_dst1` und `vol_src2` <--> `vol_dst2`, in einer Konsistenzgruppenbeziehung zwischen den Endpunkten `vs1_src:/cg/cg_src` und `vs1_dst:/cg/cg_dst`.
+Die Beispiele werden in zwei Volumenzuordnungen gezeigt:  `vol_src1` <--> `vol_dst1` und `vol_src2` <--> `vol_dst2`, in einer Konsistenzgruppenbeziehung zwischen den Endpunkten `vs1_src:/cg/cg_src` und `vs1_dst:/cg/cg_dst`.
 
-. Überprüfen Sie mit dem Befehl, ob auf den Quell- und Ziel-Clustern ein gemeinsamer Snapshot zwischen den Quell- und Ziel-Clustern vorhanden ist `snapshot show -vserver _svm_name_ -volume _volume_name_ -snapshot _snapmirror_`
+. Auf den Quell- und Ziel-Clustern lässt sich mit dem Befehl überprüfen, ob ein gemeinsamer Snapshot zwischen den Quell- und Ziel-Clustern vorhanden ist. `snapshot show -vserver _svm_name_ -volume _volume_name_ -snapshot _snapmirror_`
 +
 `source::>snapshot show -vserver vs1_src -volume vol_src3 -snapshot snapmirror*`
 
 +
 `destination::>snapshot show -vserver vs1_dst -volume vol_dst3 -snapshot snapmirror*`
 
-. Wenn kein gemeinsamer Snapshot vorhanden ist, erstellen und initialisieren Sie eine FlexVol SnapMirror Beziehung:
+. Falls kein gemeinsamer Snapshot existiert, eine FlexVol SnapMirror Beziehung erstellen und initialisieren:
 +
 `destination::>snapmirror initialize -source-path vs1_src:vol_src3 -destination-path vs1_dst:vol_dst3`
 
-. Löschen Sie die Konsistenzgruppenbeziehung:
+. Die Konsistenzgruppenbeziehung löschen:
 +
 `destination::>snapmirror delete -destination-path vs1_dst:/cg/cg_dst`
 
-. Geben Sie die Quell-SnapMirror-Beziehung frei und behalten Sie die gemeinsamen Snapshots bei:
+. Die Quell-SnapMirror Beziehung aufheben und die gemeinsamen Snapshots beibehalten:
 +
 `source::>snapmirror release -relationship-info-only true -destination-path vs1_dst:vol_dst3`
 
-. LUN-Zuordnung aufheben und die vorhandene Konsistenzgruppe löschen:
+. Die LUNs aufheben und die bestehende Konsistenzgruppenbeziehung löschen:
 +
 `destination::>lun mapping delete -vserver vs1_dst -path <lun_path> -igroup <igroup_name>`
 
 +
 
-NOTE: Die Zuordnung der Ziel-LUNs wird aufgehoben, während die LUNs auf der primären Kopie weiterhin für den Host-I/O bereit sind
+NOTE: Die Ziel-LUNs sind nicht zugeordnet, während die LUNs auf der primären Kopie weiterhin die Host-I/O bedienen.
 
 +
 `destination::>snapmirror delete -destination-path vs1_dst:/cg/cg_dst`
@@ -76,47 +76,47 @@ NOTE: Die Zuordnung der Ziel-LUNs wird aufgehoben, während die LUNs auf der pri
 +
 `source::>snapmirror release -destination-path vs1_dst:/cg/cg_dst -relationship-info-only true`
 
-. **Wenn Sie ONTAP 9.10.1 bis 9.13.0 verwenden,** löschen Sie die Konsistenzgruppe auf der Quelle und erstellen Sie sie mit der richtigen Zusammensetzung neu. Folgen Sie den Schritten in link:../consistency-groups/delete-task.html["Löschen einer Konsistenzgruppe"] und dann link:../consistency-groups/configure-task.html["Konfigurieren einer einzelnen Konsistenzgruppe"] . In ONTAP 9.10.1 und höher müssen Sie die Lösch- und Erstellungsvorgänge im System Manager oder mit der ONTAP REST API durchführen; es gibt kein CLI-Verfahren.
+. **Wenn Sie ONTAP 9.10.1 bis 9.13.0 verwenden,** die Konsistenzgruppe auf der Quelle mit der korrekten Zusammensetzung löschen und neu erstellen. Die Schritte in link:../consistency-groups/delete-task.html["Eine Konsistenzgruppe löschen"] und dann link:../consistency-groups/configure-task.html["Eine einzelne Konsistenzgruppe konfigurieren"] sind zu befolgen. In ONTAP 9.10.1 und höher müssen die Lösch- und Erstellungsvorgänge im System Manager oder mit der ONTAP REST API durchgeführt werden; es gibt kein CLI-Verfahren.
 +
-**Wenn Sie ONTAP 9.9 verwenden, fahren Sie mit dem nächsten Schritt fort.**
+**Wenn Sie ONTAP 9.9.1 verwenden, zum nächsten Schritt wechseln.**
 
-. Erstellen Sie die neue Consistency Group auf dem Ziel mit der neuen Zusammensetzung:
+. Die neue Konsistenzgruppe wird auf dem Ziel mit der neuen Zusammensetzung erstellt:
 +
 `destination::>snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol_src1:@vol_dst1, vol_src2:@vol_dst2, vol_src3:@vol_dst3`
 
-. Synchronisieren Sie die RTO-Konsistenzgruppenbeziehung mit Null, um sicherzustellen, dass sie synchronisiert ist:
+. Die Zero-RTO-Konsistenzgruppe-Beziehung wird resynchronisiert, um sicherzustellen, dass sie synchron ist:
 +
 `destination::>snapmirror resync -destination-path vs1_dst:/cg/cg_dst`
 
-. Ordnen Sie die LUNs, die Sie in Schritt 5 nicht zugeordnet haben, erneut zu:
+. Ordnen Sie die in Schritt 5 aufgehobenen LUNs wieder zu:
 +
 `destination::> lun map -vserver vs1_dst -path _lun_path_ -igroup _igroup_name_`
 
-. Wiederherstellen aller Pfade zu den LUNs durch erneute Überprüfung der Host-LUN-I/O-Pfade
+. Die Host-LUN-I/O-Pfade werden erneut gescannt, um alle Pfade zu den LUNs wiederherzustellen.
 
 
 --
 .ONTAP 9.13.1 und höher
 --
-Ab ONTAP 9.13.1 können Sie Volumes unterbrechungsfrei zu einer Konsistenzgruppe mit einer aktiven SnapMirror-Beziehung hinzufügen. SnapMirror Active Sync unterstützt das Hinzufügen von Volumes sowohl aus der Quelle als auch aus dem Ziel.
+Ab ONTAP 9.13.1 ist es möglich, Volumes unterbrechungsfrei zu einer Konsistenzgruppe mit einer aktiven SnapMirror active sync Beziehung hinzuzufügen. SnapMirror active sync unterstützt das Hinzufügen von Volumes sowohl vom Quell- als auch vom Zielsystem.
 
 
 IMPORTANT: Von ONTAP 9.8 bis ONTAP 9.14.1 wird SnapMirror active sync als SnapMirror Business Continuity (SM-BC) bezeichnet.
 
-Weitere Informationen zum Hinzufügen von Volumes aus der Quell-Konsistenzgruppe finden Sie unter xref:../consistency-groups/modify-task.html[Ändern einer Konsistenzgruppe].
+Weitere Informationen zum Hinzufügen von Volumes aus der Konsistenzgruppe finden Sie unter xref:../consistency-groups/modify-task.html[Eine Konsistenzgruppe ändern].
 
-.Fügen Sie ein Volume aus dem Ziel-Cluster hinzu
-. Wählen Sie auf dem Zielcluster **Schutz** > **Beziehungen**.
-. Suchen Sie die SnapMirror Konfiguration, der Sie Volumes hinzufügen möchten. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] dann **erweitern**.
-. Wählen Sie die Volume-Beziehungen aus, deren Volumes zur Konsistenzgruppe hinzugefügt werden sollen
-. Wählen Sie **Erweitern**.
+.Ein Volume aus dem Ziel-Cluster hinzufügen
+. Im Ziel-Cluster **Schutz** > **Beziehungen** auswählen.
+. Suchen Sie die SnapMirror Konfiguration, zu der Sie Volumes hinzufügen möchten. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und anschließend **Erweitern**.
+. Wählen Sie die Volumenbeziehungen aus, deren Volumes zur Konsistenzgruppe hinzugefügt werden sollen
+. **Erweitern** auswählen.
 
 
 --
 ====
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-delete.html["snapmirror löschen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["snapmirror Initialisierung"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-release.html["snapmirror Release"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror-Neusynchronisierung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-delete.html["snapmirror delete"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["snapmirror initialize"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-release.html["SnapMirror Release"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror Resynchronisierung"^]
 

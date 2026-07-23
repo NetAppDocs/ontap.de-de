@@ -2,24 +2,24 @@
 permalink: encryption-at-rest/emergency-shred-data-disks-storage-encryption-task.html 
 sidebar: sidebar 
 keywords: sanitize, fips, drive, sed, psid, physical secure ID, nrd plus, emergency 
-summary: Im Falle eines Sicherheitsnotfalls können Sie den Zugriff auf ein FIPS-Laufwerk oder eine SED umgehend verhindern, auch wenn dem Storage-System oder dem KMIP-Server keine Stromversorgung zur Verfügung steht. 
+summary: Im Falle eines Sicherheitsnotfalls kann der Zugriff auf ein FIPS-Laufwerk oder eine SED sofort verhindert werden, selbst wenn das Speichersystem oder der KMIP-Server nicht mit Strom versorgt wird. 
 ---
-= Notfall shred Daten auf einem FIPS-Laufwerk oder SED in ONTAP
+= Notfall-Datenvernichtung auf einem FIPS-Laufwerk oder SED in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Im Falle eines Sicherheitsnotfalls können Sie den Zugriff auf ein FIPS-Laufwerk oder eine SED umgehend verhindern, auch wenn dem Storage-System oder dem KMIP-Server keine Stromversorgung zur Verfügung steht.
+Im Falle eines Sicherheitsnotfalls kann der Zugriff auf ein FIPS-Laufwerk oder eine SED sofort verhindert werden, selbst wenn das Speichersystem oder der KMIP-Server nicht mit Strom versorgt wird.
 
 .Bevor Sie beginnen
-* Wenn Sie einen KMIP-Server ohne Stromversorgung verwenden, muss der KMIP-Server mit einem einfach zerstörten Authentifizierungselement (z. B. eine Smartcard oder ein USB-Laufwerk) konfiguriert werden.
-* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+* Wenn ein KMIP-Server ohne verfügbare Stromversorgung verwendet wird, muss der KMIP-Server mit einem leicht zu zerstörenden Authentifizierungsobjekt (zum Beispiel einer Smartcard oder einem USB-Laufwerk) konfiguriert werden.
+* Sie müssen Cluster-Administrator sein, um diese Aufgabe ausführen zu können.
 
 
 .Schritt
-. Daten im Notfall auf einem FIPS-Laufwerk oder SED sreddern:
+. Notfallvernichtung von Daten auf einem FIPS-Laufwerk oder SED durchführen:
 +
 |===
 
@@ -28,43 +28,43 @@ Im Falle eines Sicherheitsnotfalls können Sie den Zugriff auf ein FIPS-Laufwerk
 
 
  a| 
-Das Storage-System verfügt über einen Stromanstieg, und Sie können das Storage-System normal offline schalten
+Die Stromversorgung des Speichersystems ist gewährleistet und es besteht ausreichend Zeit, das Speichersystem ordnungsgemäß offline zu nehmen.
  a| 
-.. Wenn das Storage-System als HA-Paar konfiguriert ist, deaktivieren Sie Takeover.
-.. Alle Aggregate offline schalten und löschen.
-.. Stellen Sie die Berechtigungsebene auf erweitert: + ein
+.. Wenn das Speichersystem als HA-Paar konfiguriert ist, sollte die Übernahme deaktiviert werden.
+.. Alle Aggregate offline nehmen und löschen.
+.. Die Berechtigungsstufe wird auf „Erweitert“ gesetzt: +
 `set -privilege advanced`
-.. Wenn sich das Laufwerk im FIPS-Compliance-Modus befindet, setzen Sie die FIPS-Authentifizierungsschlüssel-ID für den Node auf die Standard-MSID: + zurück
+.. Wenn sich das Laufwerk im FIPS-Konformitätsmodus befindet, wird die FIPS-Authentifizierungsschlüssel-ID für den Knoten wieder auf die Standard-MSID gesetzt: +
 `storage encryption disk modify -disk * -fips-key-id 0x0`
-.. Stoppen Sie das Speichersystem.
-.. Booten Sie im Wartungsmodus.
-.. Desinfizieren oder zerstören Sie die Festplatten:
+.. Das Speichersystem anhalten.
+.. Im Wartungsmodus starten.
+.. Datenträger bereinigen oder zerstören:
 +
-*** Wenn Sie die Daten auf den Festplatten unzugänglich machen und die Festplatten weiterhin wiederverwenden können, bereinigen Sie die Festplatten: +
+*** Wenn die Daten auf den Festplatten unzugänglich gemacht werden sollen und die Festplatten dennoch wiederverwendet werden können, empfiehlt sich eine Bereinigung der Festplatten: +
 `disk encrypt sanitize -all`
-*** Wenn Sie die Daten auf den Festplatten unzugänglich machen möchten und Sie die Festplatten nicht speichern müssen, zerstören Sie die Festplatten: +
+*** Wenn die Daten auf den Datenträgern unzugänglich gemacht werden sollen und die Datenträger nicht aufbewahrt werden müssen, zerstören Sie die Datenträger: +
 `disk encrypt destroy disk_id1 disk_id2 …`
 
 
 +
 
-NOTE: Die `disk encrypt sanitize` `disk encrypt destroy` Befehle und sind nur für den Wartungsmodus reserviert. Diese Befehle müssen auf jedem HA-Node ausgeführt werden und sind nicht für fehlerhafte Festplatten verfügbar.
+NOTE: Die  `disk encrypt sanitize` und  `disk encrypt destroy` Befehle sind ausschließlich für den Wartungsmodus reserviert. Diese Befehle müssen auf jedem HA-Knoten ausgeführt werden und stehen für defekte Festplatten nicht zur Verfügung.
 
-.. Wiederholen Sie diese Schritte für den Partner-Node. Dadurch verlässt das Speichersystem den Status „dauerhaft deaktiviert“, wobei alle Daten gelöscht werden. Um das System erneut zu verwenden, müssen Sie es neu konfigurieren.
+.. Wiederholen Sie diese Schritte für den Partnerknoten. Dadurch befindet sich das Speichersystem dauerhaft in einem deaktivierten Zustand und alle Daten werden gelöscht. Um das System erneut zu verwenden, ist eine Neukonfiguration erforderlich.
 
 
 
 
  a| 
-Dem Storage-System steht Strom zur Verfügung, und Sie müssen die Daten sofort schüttelt haben
+Die Stromversorgung des Speichersystems ist gewährleistet, und die Daten müssen sofort vernichtet werden.
  a| 
-.. *Wenn Sie die Daten auf den Datenträgern unzugänglich machen und die Festplatten noch wiederverwenden können, desinfizieren Sie die Festplatten:*
-.. Wenn das Storage-System als HA-Paar konfiguriert ist, deaktivieren Sie Takeover.
-.. Legen Sie die Berechtigungsebene auf erweitert fest:
+.. *Wenn Sie die Daten auf den Festplatten unzugänglich machen und die Festplatten dennoch wiederverwenden möchten, bereinigen Sie die Festplatten:*
+.. Wenn das Speichersystem als HA-Paar konfiguriert ist, sollte die Übernahme deaktiviert werden.
+.. Stellen Sie die Berechtigungsstufe auf „Erweitert“ ein:
 +
 `set -privilege advanced`
 
-.. Wenn sich das Laufwerk im FIPS-Compliance-Modus befindet, legen Sie die FIPS-Authentifizierungsschlüssel-ID für den Node wieder auf die Standard-MSID fest:
+.. Wenn sich das Laufwerk im FIPS-Konformitätsmodus befindet, wird die FIPS-Authentifizierungsschlüssel-ID für den Knoten wieder auf die Standard-MSID gesetzt:
 +
 `storage encryption disk modify -disk * -fips-key-id 0x0`
 
@@ -74,9 +74,9 @@ Dem Storage-System steht Strom zur Verfügung, und Sie müssen die Daten sofort 
 
 
  a| 
-.. *Wenn Sie die Daten auf den Datenträgern unzugänglich machen und Sie nicht brauchen, um die Festplatten zu speichern, zerstören Sie die Festplatten:*
-.. Wenn das Storage-System als HA-Paar konfiguriert ist, deaktivieren Sie Takeover.
-.. Legen Sie die Berechtigungsebene auf erweitert fest:
+.. *Wenn die Daten auf den Datenträgern unzugänglich gemacht werden sollen und die Datenträger nicht aufbewahrt werden müssen, die Datenträger zerstören:*
+.. Wenn das Speichersystem als HA-Paar konfiguriert ist, sollte die Übernahme deaktiviert werden.
+.. Stellen Sie die Berechtigungsstufe auf „Erweitert“ ein:
 +
 `set -privilege advanced`
 
@@ -87,29 +87,29 @@ Dem Storage-System steht Strom zur Verfügung, und Sie müssen die Daten sofort 
 
 
  a| 
-Das Speichersystem kommt zu einer Panik, sodass das System dauerhaft deaktiviert ist, während alle Daten gelöscht werden. Um das System erneut zu verwenden, müssen Sie es neu konfigurieren.
+Das Speichersystem stürzt ab und befindet sich dadurch in einem dauerhaft deaktivierten Zustand, wobei alle Daten gelöscht werden. Um das System erneut zu verwenden, ist eine Neukonfiguration erforderlich.
 
 
 
  a| 
-Der KMIP-Server mit Strom ist, nicht jedoch für das Storage-System verfügbar
+Strom ist für den KMIP-Server verfügbar, jedoch nicht für das Speichersystem.
  a| 
-.. Melden Sie sich beim KMIP-Server an.
-.. Vernichten Sie alle Schlüssel, die den FIPS-Laufwerken oder SEDs zugeordnet sind, die die Daten enthalten, auf die Sie Zugriff verhindern möchten. Dadurch wird der Zugriff auf die Festplattenverschlüsselung durch das Speichersystem verhindert.
+.. Melden Sie sich beim KMIP Server an.
+.. Alle Schlüssel, die mit den FIPS-Laufwerken oder Self-Encrypting Drives verknüpft sind und die Daten enthalten, auf die kein Zugriff mehr möglich sein soll, werden zerstört. Dadurch wird der Zugriff des Speichersystems auf die Festplattenverschlüsselungsschlüssel verhindert.
 
 
 
 
  a| 
-Der KMIP-Server oder das Storage-System bieten keine Stromversorgung
+Strom ist für den KMIP-Server oder das Speichersystem nicht verfügbar.
  a| 
-Zerstören Sie das Authentifizierungselement für den KMIP-Server (z. B. die Smart Card). Dadurch wird der Zugriff auf die Festplattenverschlüsselung durch das Speichersystem verhindert.
+Das Authentifizierungselement für den KMIP-Server (zum Beispiel die Smartcard) wird zerstört. Dadurch wird der Zugriff des Speichersystems auf die Festplattenverschlüsselungsschlüssel verhindert.
 
 |===
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-destroy.html["Speicherverschlüsselung Festplatte zerstören"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-modify.html["Speicherverschlüsselung Datenträger ändern"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-sanitize.html["Speicherverschlüsselung Datenträgerbereinigung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-destroy.html["Speicherverschlüsselungsfestplatte zerstören"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-modify.html["Speicherverschlüsselung Festplatte ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-sanitize.html["Speicherverschlüsselung Festplattenbereinigung"^]
 

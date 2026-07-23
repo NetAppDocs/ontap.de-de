@@ -2,38 +2,38 @@
 permalink: disks-aggregates/setup-active-passive-config-root-data-task.html 
 sidebar: sidebar 
 keywords: setting, active-passive, configuration, node, root-data, partitioning, configure, active passive, 
-summary: Wenn ein HA-Paar für die Verwendung der Root-Daten-Partitionierung durch die Fabrik konfiguriert ist, werden die Datenpartitionen auf beide Nodes im Paar aufgeteilt, um in einer aktiv/aktiv-Konfiguration verwendet zu werden. Wenn Sie das HA-Paar in einer aktiv/Passiv-Konfiguration verwenden möchten, müssen Sie die Partitionseigentümer aktualisieren, bevor Sie die Daten-lokale Tier erstellen. 
+summary: Wenn ein HA-Paar werkseitig für die Verwendung der Root-Datenpartitionierung konfiguriert ist, wird die Eigentümerschaft der Datenpartitionen zwischen beiden Knoten des Paares für die Nutzung in einer Aktiv/Aktiv-Konfiguration aufgeteilt. Soll das HA-Paar in einer Aktiv/Passiv-Konfiguration verwendet werden, ist die Partitionseigentümerschaft vor der Erstellung der lokalen Datenebene zu aktualisieren. 
 ---
-= Richten Sie eine aktiv/Passiv-Konfiguration auf ONTAP Nodes mithilfe der Root-Daten-Partitionierung ein
+= Eine Aktiv/Passiv-Konfiguration auf ONTAP Knoten mit Root-Datenpartitionierung einrichten
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn ein HA-Paar für die Verwendung der Root-Daten-Partitionierung durch die Fabrik konfiguriert ist, werden die Datenpartitionen auf beide Nodes im Paar aufgeteilt, um in einer aktiv/aktiv-Konfiguration verwendet zu werden. Wenn Sie das HA-Paar in einer aktiv/Passiv-Konfiguration verwenden möchten, müssen Sie die Partitionseigentümer aktualisieren, bevor Sie die Daten-lokale Tier erstellen.
+Wenn ein HA-Paar werkseitig für die Verwendung der Root-Datenpartitionierung konfiguriert ist, wird die Eigentümerschaft der Datenpartitionen zwischen beiden Knoten des Paares für die Nutzung in einer Aktiv/Aktiv-Konfiguration aufgeteilt. Soll das HA-Paar in einer Aktiv/Passiv-Konfiguration verwendet werden, ist die Partitionseigentümerschaft vor der Erstellung der lokalen Datenebene zu aktualisieren.
 
 .Bevor Sie beginnen
-* Sie sollten sich entscheiden, welcher Node der aktive Node sein wird und welcher Node der passive Node sein wird.
-* Storage Failover muss auf dem HA-Paar konfiguriert werden.
+* Es sollte festgelegt sein, welcher Knoten der aktive und welcher der passive Knoten ist.
+* Die Speicherausfallsicherung muss auf dem HA Pair konfiguriert werden.
 
 
 .Über diese Aufgabe
-Diese Aufgabe wird auf zwei Knoten durchgeführt: Knoten A und Knoten B.
+Diese Aufgabe wird auf zwei Knoten ausgeführt: Knoten A und Knoten B.
 
-Dieses Verfahren wurde für Nodes entwickelt, für die keine lokale Data Tier aus den partitionierten Laufwerken erstellt wurde.
+Dieses Verfahren ist für Knoten vorgesehen, für die kein Datenaggregat aus den partitionierten Festplatten erstellt wurde.
 
-Erfahren Sie mehr über link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/What_are_the_rules_for_Advanced_Disk_Partitioning%3F["Erweiterte Festplattenpartitionierung"^].
+Informationen dazu link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/What_are_the_rules_for_Advanced_Disk_Partitioning%3F["Erweiterte Festplattenpartitionierung"^].
 
 .Schritte
-Alle Befehle werden an der Cluster-Shell eingegeben.
+Alle Befehle werden in der Cluster-Shell eingegeben.
 
-. Aktuelle Eigentümerschaft der Datenpartitionen anzeigen:
+. Die aktuelle Eigentümerstruktur der Datenpartitionen wird angezeigt:
 +
 `storage aggregate show-spare-disks`
 
 +
-Die Ausgabe zeigt, dass die Hälfte der Daten-Partitionen im Besitz eines Node und der Hälfte im Besitz des anderen Node ist. Alle Daten-Partitionen sollten frei sein.
+Die Ausgabe zeigt, dass die Hälfte der Datenpartitionen einem Knoten und die andere Hälfte dem anderen Knoten zugeordnet ist. Alle Datenpartitionen sollten Reservepartitionen sein.
 
 +
 [listing]
@@ -70,24 +70,24 @@ Original Owner: cluster1-02
  1.0.9                       BSAS    7200 block           753.8GB       0B  828.0GB
 12 entries were displayed.
 ----
-. Geben Sie die erweiterte Berechtigungsebene ein:
+. Die erweiterte Berechtigungsstufe eingeben:
 +
 `set advanced`
 
-. Weisen Sie ihn für jede Datenpartition des Node, der der passive Node ist, dem aktiven Node zu:
+. Für jede Datenpartition, die dem Knoten gehört, der der passive Knoten sein wird, wird sie dem aktiven Knoten zugewiesen:
 +
 `storage disk assign -force -data true -owner _active_node_name_ -disk _disk_name_`
 
 +
-Sie müssen die Partition nicht als Teil des Festplattennamens einschließen.
+Sie müssen die Partition nicht als Teil des Datenträgernamens angeben.
 
 +
-Geben Sie einen Befehl ein, der dem folgenden Beispiel ähnelt, für jede Datenpartition, die Sie neu zuweisen müssen:
+Für jede Datenpartition, die Sie neu zuweisen müssen, wäre ein Befehl ähnlich dem folgenden Beispiel einzugeben:
 
 +
 `storage disk assign -force -data true -owner cluster1-01 -disk 1.0.3`
 
-. Vergewissern Sie sich, dass dem aktiven Knoten alle Partitionen zugewiesen sind.
+. Bestätigen Sie, dass alle Partitionen dem aktiven Knoten zugewiesen sind.
 +
 [listing]
 ----
@@ -124,23 +124,23 @@ Original Owner: cluster1-02
 13 entries were displayed.
 ----
 +
-Beachten Sie, dass cluster1-02 immer noch eine freie Root-Partition besitzt.
+Beachten Sie, dass cluster1-02 weiterhin eine freie Root-Partition besitzt.
 
-. Zurück zur Administratorberechtigung:
+. Zurück zu als Administrator angemeldet:
 +
 `set admin`
 
-. Erstellen Sie Ihre Daten-lokale Tier, so dass mindestens eine Datenpartition als Reserve:
+. Erstellen Sie Ihre lokale Datenebene und lassen Sie mindestens eine Datenpartition als Reserve:
 +
 `storage aggregate create _new_aggr_name_ -diskcount _number_of_partitions_ -node _active_node_name_`
 
 +
-Die lokale Daten-Tier wird erstellt und gehört dem aktiven Node.
+Die lokale Datenebene wird erstellt und gehört dem aktiven Knoten.
 
 
 
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-create.html["Speicheraggregat erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+show["Storage-Aggregate zeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+show["storage aggregate show"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-assign.html["Speicherdatenträger zuweisen"^]
 

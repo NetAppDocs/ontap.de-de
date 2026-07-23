@@ -2,33 +2,33 @@
 permalink: nfs-admin/security-types-client-access-levels-concept.html 
 sidebar: sidebar 
 keywords: security, type, determine, client, access, level 
-summary: Der Sicherheitstyp, mit dem der Client authentifiziert wurde, spielt eine besondere Rolle in den Exportregeln. Sie müssen verstehen, wie der Sicherheitstyp die Zugriffsebenen bestimmt, die der Client zu einem Volume oder qtree erhält. 
+summary: Der Sicherheitstyp, mit dem sich der Client authentifiziert hat, spielt eine besondere Rolle bei den Exportregeln. Es ist wichtig zu verstehen, wie der Sicherheitstyp die Zugangsstufen des Clients auf ein Volume oder einen Qtree bestimmt. 
 ---
-= So bestimmen ONTAP-Sicherheitstypen die Zugriffsebenen von NFS-Clients
+= Wie ONTAP Sicherheitstypen die Zugangsstufen für NFS-Clients bestimmen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Der Sicherheitstyp, mit dem der Client authentifiziert wurde, spielt eine besondere Rolle in den Exportregeln. Sie müssen verstehen, wie der Sicherheitstyp die Zugriffsebenen bestimmt, die der Client zu einem Volume oder qtree erhält.
+Der Sicherheitstyp, mit dem sich der Client authentifiziert hat, spielt eine besondere Rolle bei den Exportregeln. Es ist wichtig zu verstehen, wie der Sicherheitstyp die Zugangsstufen des Clients auf ein Volume oder einen Qtree bestimmt.
 
-Die drei möglichen Zugriffsebenen sind wie folgt:
+Die drei möglichen Zugangsstufen sind wie folgt:
 
-. Schreibgeschützt
-. Lesen und schreiben
+. Nur lesbar
+. Lese-Schreib
 . Superuser (für Clients mit Benutzer-ID 0)
 
 
-Da die Zugriffsebene nach Sicherheitstyp in dieser Reihenfolge ausgewertet wird, müssen Sie beim Erstellen von Parametern auf Zugriffsebene in Exportregeln folgende Regeln beachten:
+Da die Zugangsstufe nach Sicherheitstyp in dieser Reihenfolge ausgewertet wird, sind beim Erstellen von Zugangsstufenparametern in Exportregeln die folgenden Regeln zu beachten:
 
 [cols="2*"]
 |===
-| Damit ein Client die Zugriffsebene abrufen kann... | Diese Zugriffsparameter müssen dem Sicherheitstyp des Clients entsprechen... 
+| Damit ein Client die Zugangsstufe erhält... | Diese Zugriffsparameter müssen dem Sicherheitstyp des Clients entsprechen... 
 
 
  a| 
-Normaler Benutzer schreibgeschützt
+Normaler Benutzer, nur Lesezugriff
  a| 
 Schreibgeschützt (`-rorule`)
 
@@ -37,30 +37,30 @@ Schreibgeschützt (`-rorule`)
  a| 
 Normaler Benutzer Lese-/Schreibzugriff
  a| 
-Read-only(`-rorule`) und read-write (`-rwrule`)
+Schreibgeschützt (`-rorule`) und Lese-/Schreibzugriff (`-rwrule`)
 
 
 
  a| 
-Schreibgeschützt für Superuser
+Superuser schreibgeschützt
  a| 
-Read-only (`-rorule`) und `-superuser`
+Schreibgeschützt (`-rorule`) und `-superuser`
 
 
 
  a| 
-Superuser lesen und schreiben
+Superuser Lese-/Schreibzugriff
  a| 
-Read-only (`-rorule`) und read-write (`-rwrule`) und `-superuser`
+Schreibgeschützt (`-rorule`) und Schreib-/Lesezugriff (`-rwrule`) und `-superuser`
 
 |===
-Die folgenden Sicherheitstypen sind für jeden der folgenden drei Zugriffsparameter gültig:
+Folgende Sicherheitstypen sind für jeden dieser drei Zugriffsparameter gültig:
 
 * `any`
 * `none`
 * `never`
 +
-Dieser Sicherheitstyp ist für die Verwendung mit dem `-superuser` Parameter nicht gültig.
+Dieser Sicherheitstyp ist für die Verwendung mit dem  `-superuser` Parameter nicht gültig.
 
 * `krb5`
 * `krb5i`
@@ -69,35 +69,35 @@ Dieser Sicherheitstyp ist für die Verwendung mit dem `-superuser` Parameter nic
 * `sys`
 
 
-Beim Abgleich des Sicherheitstyps eines Clients mit jedem der drei Zugriffsparameter gibt es drei mögliche Ergebnisse:
+Beim Abgleich des Sicherheitstyps eines Clients mit jedem der drei Zugriffsparameter ergeben sich drei mögliche Ergebnisse:
 
 [cols="2*"]
 |===
-| Falls der Sicherheitstyp des Clients... | Dann der Client... 
+| Wenn der Sicherheitstyp des Clients... | Dann der Client... 
 
 
  a| 
-Stimmt mit dem im Zugriffsparameter angegebenen überein.
+Entspricht dem im Zugriffsparameter angegebenen Wert.
  a| 
-Erhält Zugriff auf dieses Level mit eigener Benutzer-ID.
-
-
-
- a| 
-Stimmt nicht mit dem angegebenen überein, aber der Zugriffsparameter enthält die Option `none`.
- a| 
-Erhält Zugriff für diese Ebene, jedoch als anonymer Benutzer mit der vom `-anon` Parameter angegebenen Benutzer-ID.
+Erhält Zugriff auf diese Ebene mit seiner eigenen Benutzer-ID.
 
 
 
  a| 
-Stimmt nicht mit dem angegebenen überein und der Zugriffsparameter enthält nicht die Option `none`.
+Stimmt nicht mit dem angegebenen Wert überein, aber der Zugriffsparameter enthält die Option  `none`.
  a| 
-Erhält keinen Zugriff auf diese Ebene.Dies gilt nicht für den `-superuser` Parameter, da er immer `none` auch dann einbezieht, wenn er nicht angegeben ist.
+Erhält Zugriff auf diese Ebene, jedoch als anonymer Benutzer mit der durch den  `-anon` Parameter angegebenen Benutzer-ID.
+
+
+
+ a| 
+Stimmt nicht mit dem angegebenen Wert überein und der Zugriffsparameter enthält die Option  `none` nicht.
+ a| 
+Er erhält keinen Zugriff auf diese Ebene. Dies gilt nicht für den  `-superuser` Parameter, da dieser immer  `none` enthält, auch wenn er nicht angegeben ist.
 
 |===
 .Beispiel
-Die Exportrichtlinie enthält eine Exportregel mit den folgenden Parametern:
+Die Exportrichtlinie enthält eine Exportregel mit folgenden Parametern:
 
 * `-protocol` `nfs3`
 * `-clientmatch` `10.1.16.0/255.255.255.0`
@@ -106,12 +106,12 @@ Die Exportrichtlinie enthält eine Exportregel mit den folgenden Parametern:
 * `-superuser` `krb5`
 
 
-Client #1 hat die IP-Adresse 10.1.16.207, hat Benutzer-ID 0, sendet eine Zugriffsanfrage über das NFSv3-Protokoll und authentifiziert mit Kerberos v5.
+Client #1 hat die IP-Adresse 10.1.16.207, die Benutzer-ID 0, sendet eine Zugriffsanfrage über das NFSv3-Protokoll und wurde mit Kerberos v5 authentifiziert.
 
-Client #2 hat die IP-Adresse 10.1.16.211, hat Benutzer-ID 0, sendet eine Zugriffsanfrage über das NFSv3-Protokoll und authentifiziert mit AUTH_SYS.
+Client #2 hat die IP-Adresse 10.1.16.211, hat die Benutzer-ID 0, sendet eine Zugriffsanfrage mit dem NFSv3-Protokoll und wurde mit AUTH_SYS authentifiziert.
 
-Client #3 hat die IP-Adresse 10.1.16.234, hat Benutzer-ID 0, sendet eine Zugriffsanforderung über das NFSv3-Protokoll und authentifiziert nicht (AUTH_NONE).
+Client #3 hat die IP-Adresse 10.1.16.234, hat die Benutzer-ID 0, sendet eine Zugriffsanfrage über das NFSv3-Protokoll und hat sich nicht authentifiziert (AUTH_NONE).
 
-Das Client-Zugriffsprotokoll und die IP-Adresse stimmen mit allen drei Clients überein. Der schreibgeschützte Parameter ermöglicht den schreibgeschützten Zugriff auf alle Clients unabhängig vom Sicherheitstyp. Der Lese-Schreib-Parameter ermöglicht den Lese-Schreib-Zugriff auf Clients mit eigener Benutzer-ID, die mit AUTH_SYS oder Kerberos v5 authentifiziert wurden. Der Superuser-Parameter ermöglicht Superuser-Zugriff auf Clients mit Benutzer-ID 0, die mit Kerberos v5 authentifiziert wurden.
+Das Clientzugriffsprotokoll und die IP-Adresse stimmen bei allen drei Clients überein. Der Parameter „Schreibgeschützt“ ermöglicht allen Clients unabhängig vom Sicherheitstyp Lesezugriff. Der Parameter „Lese-/Schreibzugriff“ ermöglicht Clients mit eigener Benutzer-ID, die sich mit AUTH_SYS oder Kerberos v5 authentifiziert haben, Lese- und Schreibzugriff. Der Parameter „Superuser“ ermöglicht Clients mit Benutzer-ID 0, die sich mit Kerberos v5 authentifiziert haben, Superuser-Zugriff.
 
-Client #1 erhält daher Lese-/Schreibzugriff für Superuser, da er alle drei Zugriffsparameter einordnet. Client #2 erhält Lese-/Schreibzugriff, aber keinen Superuser-Zugriff. Client #3 erhält nur Lesezugriff, aber keinen Superuser-Zugriff.
+Daher erhält Client #1 Lese- und Schreibzugriff mit Superuser-Rechten, da er alle drei Zugriffsparameter erfüllt. Client #2 erhält Lese- und Schreibzugriff, aber keinen Superuser-Zugriff. Client #3 erhält nur Lesezugriff, aber keinen Superuser-Zugriff.

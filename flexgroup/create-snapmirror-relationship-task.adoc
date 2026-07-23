@@ -2,7 +2,7 @@
 permalink: flexgroup/create-snapmirror-relationship-task.html 
 sidebar: sidebar 
 keywords: create, snapmirror, relationship, flexgroup, volume, snap mirror, flex group, peered svm, replicate, replicating, disaster 
-summary: Erstellen Sie eine SnapMirror Beziehung zwischen dem FlexGroup Quell-Volume und dem FlexGroup Ziel-Volume auf einer Peering-SVM, um Daten für die Disaster Recovery zu replizieren. 
+summary: Eine SnapMirror Beziehung zwischen Quell-FlexGroup Volume und Ziel-FlexGroup Volume auf einer gepeerten SVM ermöglicht die Replikation von Daten für die Notfallwiederherstellung. 
 ---
 = Erstellung von SnapMirror Beziehungen für ONTAP FlexGroup Volumes
 :allow-uri-read: 
@@ -11,26 +11,26 @@ summary: Erstellen Sie eine SnapMirror Beziehung zwischen dem FlexGroup Quell-Vo
 
 
 [role="lead"]
-Sie können eine SnapMirror Beziehung zwischen dem Quell-FlexGroup Volume und dem Ziel-FlexGroup Volume auf einer Peering SVM zur Replizierung der Daten für Disaster Recovery erstellen. Die Spiegelkopien des FlexGroup Volumes können für die Wiederherstellung von Daten im Notfall verwendet werden.
+Es kann eine SnapMirror Beziehung zwischen dem Quell-FlexGroup Volume und dem Ziel-FlexGroup Volume auf einer verbundenen SVM erstellt werden, um Daten für die Notfallwiederherstellung zu replizieren. Die Spiegelkopien des FlexGroup Volumes können zur Wiederherstellung von Daten im Katastrophenfall verwendet werden.
 
 .Bevor Sie beginnen
-Sie müssen die Cluster-Peering-Beziehung und die SVM Peering-Beziehung erstellt haben.
+Die Cluster-Peering Beziehung und die SVM-Peering Beziehung müssen erstellt worden sein.
 
 link:../peering/index.html["Cluster- und SVM-Peering"]
 
 .Über diese Aufgabe
-* Ab ONTAP 9.9 können Sie die ONTAP CLI verwenden, um SnapMirror Kaskadierungs- und Fanout-Beziehungen für FlexGroup Volumes zu erstellen. Weitere Informationen finden Sie unter link:create-snapmirror-cascade-fanout-reference.html["Überlegungen für die Erstellung von SnapMirror-Kaskadierungs- und Fanout-Beziehungen für FlexGroup Volumes"].
-* Sowohl SnapMirror Beziehungen zwischen Clustern als auch SnapMirror Beziehungen zwischen Clustern lassen sich für FlexGroup Volumes erstellen.
-* Ab ONTAP 9.3 können Sie die FlexGroup Volumes in einer SnapMirror Beziehung erweitern.
+* Ab ONTAP 9.9.1 kann die ONTAP CLI verwendet werden, um SnapMirror Kaskaden- und Fanout-Beziehungen für FlexGroup Volumes zu erstellen. Weitere Details finden sich unter link:create-snapmirror-cascade-fanout-reference.html["Überlegungen zur Erstellung von SnapMirror Kaskaden- und Fächerbeziehungen für FlexGroup Volumes"].
+* Sowohl Intercluster-SnapMirror Beziehungen als auch Intracluster-SnapMirror Beziehungen können für FlexGroup Volumes erstellt werden.
+* Ab ONTAP 9.3 können FlexGroup Volumes, die sich in einer SnapMirror Beziehung befinden, erweitert werden.
 +
-Wenn Sie eine Version von ONTAP vor ONTAP 9.3 verwenden, erweitern Sie FlexGroup Volumes nicht, nachdem eine SnapMirror-Beziehung hergestellt wurde. Sie können jedoch die Kapazität von FlexGroup Volumes nach dem Aufbau einer SnapMirror-Beziehung erhöhen. Wenn Sie das FlexGroup-Quell-Volume erweitern, nachdem Sie die SnapMirror Beziehung in Versionen vor ONTAP 9.3 gebrochen haben, müssen Sie einen Basistransfer zum Ziel-FlexGroup-Volume durchführen.
+Wenn eine Version von ONTAP vor ONTAP 9.3 verwendet wird, sollten FlexGroup Volumes nach dem Herstellen einer SnapMirror Beziehung nicht erweitert werden; die Kapazität von FlexGroup Volumes kann jedoch nach dem Herstellen einer SnapMirror Beziehung erhöht werden. Wenn das Quell FlexGroup Volume nach dem Aufheben der SnapMirror Beziehung in Versionen vor ONTAP 9.3 erweitert wird, ist ein Basistransfer auf das Ziel FlexGroup Volume erforderlich.
 
 
 
 .Schritte
-. Erstellen Sie ein Ziel-FlexGroup-Volume `DP` mit derselben Anzahl an Komponenten wie das FlexGroup Quell-Volume:
+. Ein Ziel-FlexGroup-Volume vom Typ  `DP` erstellen, das die gleiche Anzahl an Bestandteilen wie das Quell-FlexGroup-Volume aufweist:
 +
-.. Bestimmen Sie aus dem Quell-Cluster die Anzahl der Komponenten im Quell-FlexGroup Volume: `volume show -volume volume_name* -is-constituent true`
+.. Im Quell-Cluster die Anzahl der Bestandteile im Quell-FlexGroup-Volume ermitteln: `volume show -volume volume_name* -is-constituent true`
 +
 [listing]
 ----
@@ -47,7 +47,7 @@ vss       srcFG__0006    aggr1        online     RW         25TB    10.64TB   57
 vss       srcFG__0007    Aggr_cmode   online     RW         25TB    10.63TB   57%
 ...
 ----
-.. Erstellen Sie aus dem Ziel-Cluster ein Ziel-FlexGroup-Volume des Typs `DP` mit derselben Anzahl von Komponenten wie das Quell-FlexGroup Volume.
+.. Vom Ziel-Cluster aus ein Ziel-FlexGroup Volume vom Typ  `DP` mit der gleichen Anzahl an Bestandteilen wie das Quell-FlexGroup Volume erstellen.
 +
 [listing]
 ----
@@ -57,7 +57,7 @@ Warning: The FlexGroup volume "dstFG" will be created with the following number 
 Do you want to continue? {y|n}: y
 [Job 766] Job succeeded: Successful
 ----
-.. Überprüfen Sie vom Ziel-Cluster aus die Anzahl der Komponenten im Ziel-FlexGroup-Volume: `volume show -volume volume_name* -is-constituent true`
+.. Vom Ziel-Cluster aus die Anzahl der Bestandteile im Ziel-FlexGroup Volume überprüfen: `volume show -volume volume_name* -is-constituent true`
 +
 [listing]
 ----
@@ -76,37 +76,37 @@ vsd       dstFG__0007    Aggr_cmode   online     DP         25TB    10.63TB   57
 ----
 
 
-. Erstellen eines Jobplans: `job schedule cron create -name job_name -month month -dayofweek day_of_week -day day_of_month -hour hour -minute minute`
+. Einen Arbeitsplan erstellen: `job schedule cron create -name job_name -month month -dayofweek day_of_week -day day_of_month -hour hour -minute minute`
 +
-Für die `-month` `-dayofweek` `-hour` Optionen , und können Sie festlegen `all`, dass der Job jeden Monat, jeden Tag der Woche bzw. jede Stunde ausgeführt wird.
+Für die  `-month`,  `-dayofweek` und  `-hour` Optionen kann  `all` angegeben werden, um den Job jeden Monat, jeden Wochentag bzw. jede Stunde auszuführen.
 
 +
-Im folgenden Beispiel wird ein Jobzeitplan mit dem Namen erstellt `my_weekly`, der samstags um 3:00 Uhr ausgeführt wird:
+Das folgende Beispiel erstellt einen Jobplan mit dem Namen  `my_weekly`, der samstags um 3:00 Uhr morgens ausgeführt wird:
 
 +
 [listing]
 ----
 cluster1::> job schedule cron create -name my_weekly -dayofweek "Saturday" -hour 3 -minute 0
 ----
-. Benutzerdefinierte Richtlinie des Typs `async-mirror` für die SnapMirror Beziehung erstellen: `snapmirror policy create -vserver SVM -policy snapmirror_policy -type async-mirror`
+. Eine benutzerdefinierte Richtlinie vom Typ  `async-mirror` für die SnapMirror Beziehung erstellen: `snapmirror policy create -vserver SVM -policy snapmirror_policy -type async-mirror`
 +
-Wenn Sie keine benutzerdefinierte Richtlinie erstellen, sollten Sie die `MirrorAllSnapshots` Richtlinie für SnapMirror-Beziehungen angeben.
+Wenn Sie keine benutzerdefinierte Richtlinie erstellen, sollte die  `MirrorAllSnapshots` Richtlinie für SnapMirror Beziehungen angegeben werden.
 
-. Erstellen Sie aus dem Ziel-Cluster eine SnapMirror-Beziehung zwischen dem Quell-FlexGroup-Volume und dem Ziel-FlexGroup-Volume: `snapmirror create -source-path src_svm:src_flexgroup -destination-path dest_svm:dest_flexgroup -type XDP -policy snapmirror_policy -schedule sched_name`
+. Vom Ziel-Cluster aus eine SnapMirror Beziehung zwischen dem Quell-FlexGroup Volume und dem Ziel-FlexGroup Volume erstellen: `snapmirror create -source-path src_svm:src_flexgroup -destination-path dest_svm:dest_flexgroup -type XDP -policy snapmirror_policy -schedule sched_name`
 +
-SnapMirror Beziehungen für FlexGroup Volumes müssen vom Typ sein `XDP`.
+SnapMirror Beziehungen für FlexGroup Volumes müssen vom Typ  `XDP` sein.
 
 +
-Wenn Sie für die SnapMirror-Beziehung für das FlexGroup-Volume einen Drosselwert angeben, verwendet jede Komponente denselben Drosselwert. Der Drosselwert wird nicht unter die Bestandteile aufgeteilt.
+Wenn Sie für die SnapMirror Beziehung des FlexGroup Volumes einen Drosselungswert festlegen, verwendet jede Komponente denselben Drosselungswert. Der Drosselungswert wird nicht auf die einzelnen Komponenten aufgeteilt.
 
 +
 [NOTE]
 ====
-Sie können keine SnapMirror-Labels von Snapshots für FlexGroup Volumes verwenden.
+Sie können keine SnapMirror Bezeichnungen von Snapshots für FlexGroup Volumes verwenden.
 
 ====
 +
-Wenn in ONTAP 9.4 und früher die Policy nicht mit dem `snapmirror create` Befehl angegeben `MirrorAllSnapshots` wird, wird die Policy standardmäßig verwendet. Wenn in ONTAP 9.5 die Richtlinie nicht mit dem `snapmirror create` Befehl angegeben wird, `MirrorAndVault` wird die Richtlinie standardmäßig verwendet.
+In ONTAP 9.4 und früher, wenn die Richtlinie nicht mit dem `snapmirror create` Befehl angegeben wird, wird standardmäßig die `MirrorAllSnapshots` Richtlinie verwendet. In ONTAP 9.5, wenn die Richtlinie nicht mit dem `snapmirror create` Befehl angegeben wird, wird standardmäßig die `MirrorAndVault` Richtlinie verwendet.
 
 +
 [listing]
@@ -114,9 +114,9 @@ Wenn in ONTAP 9.4 und früher die Policy nicht mit dem `snapmirror create` Befeh
 cluster2::> snapmirror create -source-path vss:srcFG -destination-path vsd:dstFG -type XDP -policy MirrorAllSnapshots -schedule hourly
 Operation succeeded: snapmirror create for the relationship with destination "vsd:dstFG".
 ----
-. Initialisieren Sie vom Ziel-Cluster die SnapMirror Beziehung durch einen Basistransfer: `snapmirror initialize -destination-path dest_svm:dest_flexgroup`
+. Vom Ziel-Cluster aus wird die SnapMirror Beziehung durch einen Basistransfer initialisiert: `snapmirror initialize -destination-path dest_svm:dest_flexgroup`
 +
-Nachdem der Basistransfer abgeschlossen ist, wird das Ziel-FlexGroup-Volume regelmäßig aktualisiert, basierend auf dem Zeitplan der SnapMirror Beziehung.
+Nach Abschluss des Basistransfers wird das Ziel-FlexGroup-Volume regelmäßig entsprechend dem Zeitplan der SnapMirror Beziehung aktualisiert.
 
 +
 [listing]
@@ -127,17 +127,17 @@ Operation is queued: snapmirror initialize of destination "vsd:dstFG".
 +
 [NOTE]
 ====
-Wenn Sie eine SnapMirror Beziehung zwischen FlexGroup-Volumes erstellt haben, auf dem Quell-Cluster, auf dem ONTAP 9.3 ausgeführt wird, und dem Ziel-Cluster, auf dem ONTAP 9.2 oder eine frühere Version ausgeführt wird, und wenn Sie qtrees im Quell-FlexGroup-Volume erstellen, schlagen die SnapMirror-Updates fehl. Um in dieser Situation ein Recovery durchzuführen, müssen Sie alle nicht standardmäßigen qtrees im FlexGroup Volume löschen, die qtree-Funktion auf dem FlexGroup Volume deaktivieren und anschließend alle Snapshots löschen, die mit der qtree-Funktion aktiviert sind.
+Wenn eine SnapMirror Beziehung zwischen FlexGroup Volumes besteht, wobei das Quell-Cluster ONTAP 9.3 und das Ziel-Cluster ONTAP 9.2 oder älter ausführt, und wenn im Quell-FlexGroup Volume Qtrees erstellt werden, schlagen die SnapMirror Aktualisierungen fehl. Zur Behebung dieser Situation sind alle nicht standardmäßigen Qtrees im FlexGroup Volume zu löschen, die Qtree-Funktionalität im FlexGroup Volume zu deaktivieren und anschließend alle Snapshots zu löschen, bei denen die Qtree-Funktionalität aktiviert ist.
 
 ====
 
 
 .Nachdem Sie fertig sind
-Sie sollten Ziel-SVM für den Datenzugriff einrichten, indem Sie erforderliche Konfigurationen wie LIFs und Exportrichtlinien einrichten.
+Die Ziel-SVM wird für den Datenzugriff eingerichtet, indem die erforderlichen Konfigurationen wie LIFs und Exportrichtlinien festgelegt werden.
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["snapmirror erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["snapmirror Initialisierung"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-policy-create.html["Snapmirror-Richtlinie erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["Snapmirror-Update"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["snapmirror create"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["snapmirror initialize"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-policy-create.html["snapmirror policy create"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-update.html["SnapMirror update"^]
 

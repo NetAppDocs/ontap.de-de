@@ -2,92 +2,92 @@
 permalink: flexcache-writeback/flexcache-write-back-overview.html 
 sidebar: sidebar 
 keywords: tr-4743, flexcache writeback, flexcache write-back, overview, technical report, netapp tr, ontap tr 
-summary: Seit ONTAP 9.15.1 ist FlexCache Write-Back ein alternativer Betriebsmodus zum Schreiben in einen Cache. 
+summary: Eingeführt in ONTAP 9.15.1, ist FlexCache Write-Back ein alternativer Betriebsmodus für das Schreiben in einem Cache. 
 ---
 = Erfahren Sie mehr über ONTAP FlexCache Write-Back
 :allow-uri-read: 
 
 
 [role="lead"]
-Seit ONTAP 9.15.1 ist FlexCache Write-Back ein alternativer Betriebsmodus zum Schreiben in einen Cache. Mit Write-Back kann der Schreibvorgang auf stabilen Storage im Cache übertragen und dem Client bestätigt werden, ohne darauf zu warten, dass die Daten zum Ursprung gebracht werden. Die Daten werden asynchron an den Ursprung zurückgespült. Das Ergebnis ist ein weltweit verteiltes Filesystem, mit dem Schreibvorgänge für spezifische Workloads und Umgebungen mit nahezu lokaler Geschwindigkeit ausgeführt werden können und das mit deutlichen Performance-Vorteilen verbunden ist.
+Eingeführt in ONTAP 9.15.1, ist FlexCache Write-Back ein alternativer Betriebsmodus für das Schreiben in einem Cache. Write-Back ermöglicht es, dass der Schreibvorgang im Cache auf einem stabilen Speicher gesichert und dem Client bestätigt wird, ohne darauf zu warten, dass die Daten den Ursprung erreichen. Die Daten werden asynchron an den Ursprung zurückgeschrieben. Das Ergebnis ist ein global verteiltes Dateisystem, das Schreibvorgänge mit nahezu lokaler Geschwindigkeit für bestimmte Arbeitslasten und Umgebungen ermöglicht und erhebliche Leistungsverbesserungen bietet.
 
 
-NOTE: ONTAP 9.12.1 hat eine Write-Back-Funktion als öffentliche Vorschau eingeführt. Dies wird als Write-Back-Version 1 (wbv1) bezeichnet und sollte nicht als Write-Back in ONTAP 9.15.1, das als Write-Back-Version 2 (wbv2) bezeichnet wird, gedacht werden.
+NOTE: ONTAP 9.12.1 führte eine Write-Back-Funktion als öffentliche Vorschau ein. Diese wird als Write-Back Version 1 (wbv1) bezeichnet und sollte nicht mit der Write-Back-Funktion in ONTAP 9.15.1 verwechselt werden, die als Write-Back Version 2 (wbv2) bezeichnet wird.
 
 
 
 [[write-back-vs-write-around]]
-== Write Back vs Write Around
+== Write-back vs Write-around
 
-Seit der Einführung von FlexCache in ONTAP 9.5 handelt es sich um einen Lese- und Schreibzugriff-Cache, der jedoch im Write-Around-Modus betrieben wird. Schreibvorgänge im Cache wurden an den Ursprung gesendet, um in einen stabilen Storage verschoben zu werden. Nachdem der Ursprung den Schreibvorgang erfolgreich in einen stabilen Speicher übertragen hat, hat er den Schreibvorgang in den Cache bestätigt. Der Cache bestätigt dann den Schreibvorgang an den Client. Dies führte dazu, dass bei jedem Schreibvorgang der Vorgang des Durchquerens des Netzwerks zwischen dem Cache und dem Ursprung beeinträchtigt wird. FlexCache Write-Back ändert dies.
+Seit FlexCache in ONTAP 9.5 eingeführt wurde, ist es ein les- und beschreibbarer Cache; jedoch arbeitete es im Write-Around-Betriebsmodus. Schreibvorgänge im Cache wurden an den Ursprung gesendet, um dort im permanenten Speicher gesichert zu werden. Nachdem der Ursprung den Schreibvorgang erfolgreich im permanenten Speicher gesichert hatte, bestätigte er den Schreibvorgang an den Cache. Der Cache bestätigte den Schreibvorgang anschließend an den Client. Dadurch verursachte jeder Schreibvorgang den Nachteil, das Netzwerk zwischen Cache und Ursprung zu durchlaufen. FlexCache Write-Back ändert dies.
 
 
-NOTE: Nach der Aktualisierung auf ONTAP 9.15.1 können Sie einen herkömmlichen Write-Around-Cache in einen Write-Back-Cache und, falls erforderlich, wieder in einen Write-Around konvertieren. Dies kann jedoch das Lesen von Diagnoseprotokollen erschweren, sollte ein Problem auftreten.
+NOTE: Nach dem Upgrade auf ONTAP 9.15.1 ist es möglich, einen herkömmlichen Write-Around-Cache in einen Write-Back-Cache zu konvertieren und bei Bedarf wieder zurück in einen Write-Around-Cache. Dies kann jedoch das Lesen von Diagnoseprotokollen erschweren, falls ein Problem auftritt.
 
 |===
-|  | Umschreibung | Zurückschreiben 
+|  | Write-around | Write-Back 
 
 
-| ONTAP-Version | 9,6+ | 9.15.1+ 
+| ONTAP Version | 9.6+ | 9.15.1+ 
 
 
-| Anwendungsfall | Leseintensive Workload | Schreibintensive Workload 
+| Anwendungsfall | Leseintensive Arbeitslast | Schreibintensive Arbeitslast 
 
 
-| Daten werden übertragen bei | Ursprung | Cache 
+| Daten festgeschrieben am | Herkunft | Cache 
 
 
-| Kundenerfahrung | WAN-ähnlich | LAN-ähnlich 
+| Kundenerlebnis | WAN-ähnlich | LAN-ähnlich 
 
 
-| Begrenzungen | 100 pro Herkunft | 10 pro Herkunft 
+| Grenzen | 100 pro Herkunft | 10 pro Herkunft 
 
 
-| https://en.wikipedia.org/wiki/CAP_theorem["CAP Theorem"^] | Verfügbar und partitiontolerant | Verfügbar und konsistent 
+| https://en.wikipedia.org/wiki/CAP_theorem["CAP-Theorem"^] | Verfügbar und partitionstolerant | Verfügbar und konsistent 
 |===
 
 
 [[flexcache-write-back-terminology]]
 == FlexCache Write-Back-Terminologie
 
-Verstehen Sie Schlüsselkonzepte und -Begriffe in der Arbeit mit FlexCache Write-Back.
+Wichtige Konzepte und Begriffe im Zusammenhang mit FlexCache Write-Back.
 
 [cols="12%,88%"]
 |===
-| Laufzeit | Definition 
+| Begriff | Definition 
 
 
-| [[Dirty-Data]]*schmutzige Daten* | Daten, die zwar in stabilen Speicher im Cache gespeichert wurden, aber nicht in den Ursprungsort gelöscht wurden. 
+| [[dirty-data]]*schmutzige Daten* | Daten, die im Cache zur dauerhaften Speicherung hinterlegt wurden, aber noch nicht an den Ursprung übertragen wurden. 
 
 
-| *Exklusiv Lock Delegation (XLD)* | Eine Sperrberechtigung auf Protokollebene, die einem Cache pro Datei gewährt wird. Diese Berechtigung ermöglicht es dem Cache, exklusive Schreibsperren an Clients zu übergeben, ohne den Ursprung zu kontaktieren. 
+| *Exklusive Sperrdelegierung (XLD)* | Eine Sperrberechtigung auf Protokollebene, die einem Cache pro Datei gewährt wird. Diese Berechtigung ermöglicht dem Cache, exklusive Schreibsperren an Clients zu vergeben, ohne den Ursprung zu kontaktieren. 
 
 
-| *Shared Lock Delegation (SLD)* | Eine Sperrberechtigung auf Protokollebene, die einem Cache pro Datei gewährt wird. Diese Berechtigung ermöglicht es dem Cache, freigegebene Lesesperren an Clients zu übergeben, ohne den Ursprung zu kontaktieren. 
+| *Gemeinsame Sperrdelegierung (SLD)* | Eine Sperrberechtigung auf Protokollebene, die einem Cache pro Datei gewährt wird. Diese Berechtigung ermöglicht dem Cache, gemeinsame Lesesperren an Clients zu vergeben, ohne den Ursprung zu kontaktieren. 
 
 
-| *Rückschreiben* | Dieser Modus von FlexCache-Vorgang, bei dem Schreibvorgänge in einen Cache auf stabilen Storage in diesem Cache übertragen und dem Client sofort bestätigt werden. Die Daten werden asynchron zurück in den Ursprung geschrieben. 
+| *Write-back* | Ein Betriebsmodus von FlexCache, bei dem Schreibvorgänge in einem Cache auf dem stabilen Speicher dieses Caches festgeschrieben und dem Client sofort bestätigt werden. Die Daten werden asynchron an den Ursprung zurückgeschrieben. 
 
 
-| *Write-Around* | Dieser Modus von FlexCache-Vorgang, bei dem Schreibvorgänge an einen Cache an den Ursprung weitergeleitet werden, um sie in stabilen Speicher zu speichern. Nach der Erstellung bestätigt der Ursprung den Schreibvorgang in den Cache, und der Cache bestätigt den Schreibvorgang an den Client. 
+| *Write-around* | Ein Betriebsmodus von FlexCache, bei dem Schreibvorgänge in einen Cache an den Ursprung weitergeleitet werden, um dort dauerhaft gespeichert zu werden. Nach der Speicherung bestätigt der Ursprung den Schreibvorgang gegenüber dem Cache, und der Cache bestätigt den Schreibvorgang gegenüber dem Client. 
 
 
-| *Dirty Data Record System (DDRS)* | Ein proprietärer Mechanismus, der die fehlerhaften Daten in einem Write-Back-aktivierten Cache pro Datei verfolgt. 
+| *System zur Erfassung schmutziger Daten (DDRS)* | Ein proprietärer Mechanismus, der die schmutzigen Daten in einem Write-Back-fähigen Cache dateiweise verfolgt. 
 
 
-| *Ursprung* | Eine FlexGroup oder FlexVol, die die Quelldaten für alle FlexCache Cache Volumes enthält. Sie ist die zentrale Quelle der Wahrheit, orchestriert Sperrungen und sorgt für 100%ige Datenkonsistenz, Währung und Kohärenz. 
+| *Herkunft* | Ein FlexGroup oder FlexVol, das die Quelldaten für alle FlexCache Cache-Volumes enthält. Es ist die zentrale Datenquelle, steuert die Sperrung und gewährleistet 100% Datenkonsistenz, Aktualität und Kohärenz. 
 
 
-| *Cache* | Eine FlexGroup, die ein spärliches Cache-Volume des Ursprungs von FlexCache ist. 
+| *Cache* | Ein FlexGroup, das ein spärlich belegtes Cache-Volume des FlexCache Ursprungs ist. 
 |===
 
 
 [[consistent-current-and-coherent]]
 === Konsistent, aktuell und kohärent
 
-FlexCache ist die Lösung von NetApp, die darauf abstellt, jederzeit und überall die richtigen Daten zu haben. FlexCache ist zu 100 % konsistent, aktuell und in 100 % der Zeit kohärent:
+FlexCache ist NetApps Lösung, um die richtigen Daten jederzeit und überall bereitzustellen. FlexCache ist zu 100 % konsistent, aktuell und kohärent – und das zu 100 % der Zeit:
 
-* *Konsistent:* die Daten sind überall dort gleich, wo sie abgerufen werden.
-* *Aktuell:* die Daten sind immer aktuell.
-* *Kohärent:* die Daten sind korrekt/nicht beschädigt.
+* *Konsistent:* Die Daten sind überall dort gleich, wo auf sie zugegriffen wird.
+* *Aktuell:* Die Daten sind immer auf dem neuesten Stand.
+* *Kohärent:* Die Daten sind korrekt/nicht beschädigt.
 

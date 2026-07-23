@@ -2,79 +2,79 @@
 permalink: san-admin/restore-single-lun-snapshot-copy-task.html 
 sidebar: sidebar 
 keywords: restore, single lun, snapshot copy 
-summary: Sie können eine einzelne LUN aus einem Snapshot wiederherstellen, ohne das gesamte Volume wiederherzustellen, das die einzelne LUN enthält. Sie können die LUN selbst oder einen neuen Pfad im Volume wiederherstellen. Der Vorgang stellt nur die einzelne LUN wieder her, ohne dass andere Dateien oder LUNs im Volume beeinträchtigt werden. Sie können Dateien auch mit Streams wiederherstellen. 
+summary: Sie können eine einzelne LUN aus einem Snapshot wiederherstellen, ohne das gesamte Volume, das die einzelne LUN enthält, wiederherzustellen. Die LUN kann am selben Ort oder an einem neuen Pfad im Volume wiederhergestellt werden. Der Vorgang stellt nur die einzelne LUN wieder her, ohne andere Dateien oder LUNs im Volume zu beeinträchtigen. Auch Dateien mit Streams können wiederhergestellt werden. 
 ---
-= Stellen Sie eine einzelne LUN aus einem ONTAP-Snapshot wieder her
+= Wiederherstellung einer einzelnen LUN aus einem ONTAP Snapshot
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können eine einzelne LUN aus einem Snapshot wiederherstellen, ohne das gesamte Volume wiederherzustellen, das die einzelne LUN enthält. Sie können die LUN selbst oder einen neuen Pfad im Volume wiederherstellen. Der Vorgang stellt nur die einzelne LUN wieder her, ohne dass andere Dateien oder LUNs im Volume beeinträchtigt werden. Sie können Dateien auch mit Streams wiederherstellen.
+Sie können eine einzelne LUN aus einem Snapshot wiederherstellen, ohne das gesamte Volume, das die einzelne LUN enthält, wiederherzustellen. Die LUN kann am selben Ort oder an einem neuen Pfad im Volume wiederhergestellt werden. Der Vorgang stellt nur die einzelne LUN wieder her, ohne andere Dateien oder LUNs im Volume zu beeinträchtigen. Auch Dateien mit Streams können wiederhergestellt werden.
 
 .Bevor Sie beginnen
-* Sie müssen genügend Speicherplatz auf Ihrem Volume haben, um den Wiederherstellungsvorgang abzuschließen:
+* Sie benötigen ausreichend Speicherplatz auf Ihrem Volume, um den Wiederherstellungsvorgang abzuschließen:
 +
-** Wenn Sie eine platzreservierte LUN wiederherstellen, wo die fraktionale Reserve 0% beträgt, benötigen Sie ein Mal die Größe der wiederhergestellten LUN.
-** Wenn Sie eine platzreservierte LUN wiederherstellen, wo die fraktionale Reserve 100% beträgt, benötigen Sie die doppelte Größe der wiederhergestellten LUN.
-** Wenn Sie eine nicht-speicherreservierte LUN wiederherstellen, benötigen Sie nur den tatsächlich für die wiederhergestellte LUN verwendeten Speicherplatz.
+** Wenn Sie eine speicherplatzreservierte LUN wiederherstellen, bei der die fraktionelle Reserve 0 % beträgt, wird der einmalige Speicherplatzbedarf in der Größe der wiederhergestellten LUN benötigt.
+** Wenn Sie eine speicherplatzreservierte LUN wiederherstellen, bei der die Teilreserve 100 % beträgt, benötigen Sie die doppelte Größe der wiederherzustellenden LUN.
+** Wenn Sie eine nicht speicherplatzreservierte LUN wiederherstellen, wird nur der tatsächlich für die wiederhergestellte LUN verwendete Speicherplatz benötigt.
 
 
-* Es muss ein Snapshot der Ziel-LUN erstellt worden sein.
+* Ein Snapshot der Ziel-LUN muss erstellt worden sein.
 +
-Wenn der Wiederherstellungsvorgang fehlschlägt, kann die Ziel-LUN gekürzt werden. In solchen Fällen können Sie den Snapshot verwenden, um Datenverlust zu vermeiden.
+Schlägt die Wiederherstellung fehl, kann die Ziel-LUN abgeschnitten werden. In solchen Fällen lässt sich der Snapshot verwenden, um Datenverlust zu verhindern.
 
 * Es muss ein Snapshot der Quell-LUN erstellt worden sein.
 +
-In seltenen Fällen kann die LUN-Wiederherstellung fehlschlagen, sodass die Quell-LUN nicht mehr verwendet werden kann. In diesem Fall können Sie den Snapshot verwenden, um die LUN kurz vor der Wiederherstellung in den Status zurückzusetzen.
+In seltenen Fällen kann die Wiederherstellung der LUN fehlschlagen, wodurch die Quell-LUN unbrauchbar wird. Tritt dies auf, kann mithilfe des Snapshots die LUN in den Zustand unmittelbar vor dem Wiederherstellungsversuch zurückgesetzt werden.
 
-* Die Ziel-LUN und die Quell-LUN müssen den gleichen OS-Typ aufweisen.
+* Die Ziel-LUN und die Quell-LUN müssen denselben Betriebssystemtyp aufweisen.
 +
-Wenn die Ziel-LUN einen anderen OS-Typ als die Quell-LUN aufweist, kann der Host nach der Wiederherstellung den Datenzugriff auf die Ziel-LUN verlieren.
+Wenn Ihre Ziel-LUN einen anderen Betriebssystemtyp als Ihre Quell-LUN aufweist, kann Ihr Host nach dem Wiederherstellungsvorgang den Datenzugriff auf die Ziel-LUN verlieren.
 
 
 
 .Schritte
-. Beenden Sie vom Host den gesamten Host-Zugriff auf die LUN.
-. Heben Sie die Bereitstellung der LUN auf dem Host auf, damit der Host nicht auf die LUN zugreifen kann.
+. Vom Host aus sollte jeglicher Hostzugriff auf die LUN beendet werden.
+. Hängen Sie die LUN auf dem Host aus, sodass der Host nicht mehr auf die LUN zugreifen kann.
 . LUN-Zuordnung aufheben:
 +
 [source, cli]
 ----
 lun mapping delete -vserver <SVM_name> -volume <volume_name> -lun <lun_name> -igroup <igroup_name>
 ----
-. Legen Sie den Snapshot fest, den Sie für die Wiederherstellung der LUN verwenden möchten:
+. Bestimmen Sie den Snapshot, auf den Ihre LUN wiederhergestellt werden soll:
 +
 [source, cli]
 ----
 volume snapshot show -vserver <SVM_name> -volume <volume_name>
 ----
-. Erstellen Sie vor dem Wiederherstellen der LUN einen Snapshot der LUN:
+. Vor der Wiederherstellung der LUN einen Snapshot der LUN erstellen:
 +
 [source, cli]
 ----
 volume snapshot create -vserver <SVM_name> -volume <volume_name> -snapshot <snapshot_name>
 ----
-. Stellen Sie die angegebene LUN in einem Volume wieder her:
+. Die angegebene LUN in einem Volume wiederherstellen:
 +
 [source, cli]
 ----
 volume snapshot restore-file -vserver <SVM_name> -volume <volume_name> -snapshot <snapshot_name> -path <lun_path>
 ----
-. Befolgen Sie die Schritte auf dem Bildschirm.
-. Versetzen Sie die LUN bei Bedarf in den Online-Modus:
+. Folgen Sie den Anweisungen auf dem Bildschirm.
+. Falls erforderlich kann die LUN online geschaltet werden:
 +
 [source, cli]
 ----
 lun modify -vserver <SVM_name> -path <lun_path> -state online
 ----
-. Falls erforderlich, LUN erneut zuordnen:
+. Falls erforderlich kann die LUN neu zugeordnet werden:
 +
 [souce]
 ----
 lun mapping create -vserver <SVM_name> -volume <volume_name> -lun <lun_name> -igroup <igroup_name>
 ----
-. Mounten Sie die LUN vom Host neu.
-. Starten Sie den Zugriff auf die LUN vom Host aus neu.
+. Vom Host aus die LUN erneut einbinden.
+. Vom Host aus wird der Zugriff auf die LUN neu gestartet.
 

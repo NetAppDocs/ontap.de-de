@@ -2,101 +2,101 @@
 permalink: nfs-trunking/prepare-network-task.html 
 sidebar: sidebar 
 keywords: NFS, servers, network, prepare, NFS trunking, LIF, trunking group, NIC 
-summary: Um die Vorteile des NFSv4.1 Trunking zu nutzen, müssen sich die LIFs in einer Trunking-Gruppe auf demselben Node befinden und über Home Ports auf demselben Node verfügen. 
+summary: Um die Vorteile von NFSv4.1 Trunking zu nutzen, müssen sich die LIFs in einer Trunking-Gruppe auf demselben Knoten befinden und Home-Ports auf demselben Knoten haben. 
 ---
-= Bereiten Sie Ihr Netzwerk auf das ONTAP NFS Trunking vor
+= Bereiten Sie Ihr Netzwerk für ONTAP NFS Trunking vor.
 :allow-uri-read: 
 
 
 [role="lead"]
-Um die Vorteile des NFSv4.1 Trunking zu nutzen, müssen sich die LIFs in einer Trunking-Gruppe auf demselben Node befinden und über Home Ports auf demselben Node verfügen. Die LIFs sollten in einer Failover-Gruppe auf demselben Node konfiguriert werden.
+Um die Vorteile von NFSv4.1 Trunking zu nutzen, müssen sich die LIFs in einer Trunking-Gruppe auf demselben Knoten befinden und Home-Ports auf demselben Knoten haben. Die LIFs sollten in einer Failover-Gruppe auf demselben Knoten konfiguriert sein.
 
 .Über diese Aufgabe
-Eine 1:1-Zuordnung von LIFs und NICs bietet den größten Performance-Zuwachs, ist jedoch nicht für die Aktivierung des Trunkings erforderlich. Wenn mindestens zwei NICs installiert sind, kann dies einen Leistungsvorteil bieten, der jedoch nicht erforderlich ist.
+Eine 1:1-Zuordnung von LIFs und NICs erzielt den größten Leistungszuwachs, ist aber für die Aktivierung von Trunking nicht erforderlich. Mindestens zwei installierte NICs können einen Leistungsvorteil bieten, sind jedoch nicht erforderlich.
 
-Alle LIFs in der Trunking-Gruppe sollten derselben Failover-Gruppe angehören. Wenn die LIFs in einer Failover-Gruppe auf demselben Node konfiguriert sind, kann ein Controller Failover auf diesem Node dazu führen, dass die LIFs offline gehen. Wenn die LIFs nicht in einer Failover-Gruppe auf demselben Node und beim Failover zu einem anderen Node konfiguriert sind, funktioniert das Trunking nicht mehr.
+Alle LIFs in der Trunking-Gruppe sollten derselben Failover-Gruppe angehören. Es ist zu beachten, dass ein Controller-Failover auf demselben Node dazu führen kann, dass die LIFs offline gehen, wenn sie in einer Failover-Gruppe auf demselben Node konfiguriert sind. Wenn die LIFs nicht in einer Failover-Gruppe auf demselben Node konfiguriert sind und ein Failover auf einen anderen Node erfolgt, funktioniert das Trunking nicht mehr.
 
-Sie sollten die Trunking Failover-Gruppe jedes Mal anpassen, wenn Sie Verbindungen (und zugrunde liegende NICs) zu einer Failover-Gruppe hinzufügen oder entfernen.
+Die Trunking Failover-Gruppe ist immer dann anzupassen, wenn Verbindungen (und die zugrunde liegenden Netzwerkkarten) zu einer Failover-Gruppe hinzugefügt oder daraus entfernt werden.
 
 .Bevor Sie beginnen
-* Sie müssen die mit den NICs verknüpften Portnamen kennen, um eine Failover-Gruppe zu erstellen.
+* Die Port-Namen, die den NICs zugeordnet sind, müssen bekannt sein, um eine Failover-Gruppe zu erstellen.
 * Die Ports müssen sich alle auf demselben Node befinden.
 
 
 .Schritte
-. Überprüfen Sie die Namen und den Status der Netzwerkports, die Sie verwenden möchten:
+. Die Namen und den Status der Netzwerkanschlüsse, die verwendet werden sollen, überprüfen:
 +
 [source, cli]
 ----
 network port show
 ----
-. Erstellen Sie die Failover-Gruppe:
+. Die Failover-Gruppe erstellen:
 +
 `network interface failover-groups create -vserver <svm_name> -failover-group <failover_group_name> -targets <ports_list>`
 
 +
 
-NOTE: Eine Failover-Gruppe ist nicht erforderlich, wird jedoch dringend empfohlen.
+NOTE: Es ist nicht erforderlich, eine Failover-Gruppe zu haben, aber es wird dringend empfohlen.
 
 +
-** `<svm_name>` Ist der Name der SVM, die den NFS-Server enthält.
-** `<ports_list>` Ist die Liste der Ports, die der Failover-Gruppe hinzugefügt werden.
+** `<svm_name>` ist der Name der SVM, die den NFS-Server enthält.
+** `<ports_list>` ist die Liste der Ports, die der Failover-Gruppe hinzugefügt werden.
 +
-Ports werden im Format hinzugefügt `<node_name>:<port_number>`, zum Beispiel: `node1:e0c`.
+Ports werden im Format  `<node_name>:<port_number>` hinzugefügt, zum Beispiel  `node1:e0c`.
 
 +
-Mit dem folgenden Befehl wird die Failover-Gruppe fg3 für SVM vs1 erstellt und drei Ports hinzugefügt:
+Der folgende Befehl erstellt die Failover-Gruppe fg3 für SVM vs1 und fügt drei Ports hinzu:
 
 +
 `network interface failover-groups create -vserver vs1 -failover-group fg3 -targets cluster1-01:e0c,cluster1-01:e0d,cluster1-01:e0e`
 
 +
-Weitere Informationen zu link:../networking/configure_failover_groups_and_policies_for_lifs_overview.html["Failover-Gruppen."]
+Erfahren Sie mehr überlink:../networking/configure_failover_groups_and_policies_for_lifs_overview.html["Failover-Gruppen."]
 
 +
-Erfahren Sie mehr über `network interface failover-groups create` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-failover-groups-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network interface failover-groups create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-failover-groups-create.html["ONTAP-Befehlsreferenz"^].
 
 
 
-. Falls erforderlich, erstellen Sie LIFs für Mitglieder der Trunking-Gruppe:
+. Falls erforderlich, LIFs für Mitglieder der Trunking-Gruppe erstellen:
 +
 `network interface create -vserver <svm_name> -lif <lif_name> -home-node <node_name> -home-port <port_name> -address <IP_address> -netmask <IP_address> [-service-policy <policy>] [-auto-revert <true|false>]`
 
 +
-** `-home-node` - Der Knoten, zu dem die LIF zurückgibt, wenn der Befehl Network Interface revert auf der LIF ausgeführt wird.
+** `-home-node` - der Knoten, zu dem die LIF zurückkehrt, wenn der Befehl "network interface revert" auf der LIF ausgeführt wird.
 +
-Sie können außerdem angeben, ob die LIF mithilfe der `-auto-revert` Option automatisch zum Home Node und Home Port zurückgesetzt werden soll.
+Sie können auch angeben, ob die LIF mit der  `-auto-revert` Option automatisch auf den Home-Node und Home-Port zurückkehren soll.
 
-** `-home-port` Ist der physische oder logische Port, zu dem die LIF zurückgibt, wenn der Befehl zum Zurücksetzen der Netzwerkschnittstelle auf der LIF ausgeführt wird.
-** Sie können eine IP-Adresse mit den `-address` `-netmask` Optionen und angeben, nicht mit der `-subnet` Option.
-** Wenn Sie IP-Adressen zuweisen, müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, wenn Clients oder Domänencontroller in einem anderen IP-Subnetz vorhanden sind. Weitere Informationen zum `network route create` Erstellen einer statischen Route innerhalb einer SVM finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/network-route-create.html["ONTAP-Befehlsreferenz"^].
-** `-service-policy` - Die Service Policy für die LIF. Wenn keine Richtlinie angegeben wird, wird automatisch eine Standardrichtlinie zugewiesen. Mit dem `network interface service-policy show` Befehl können Sie die verfügbaren Service-Richtlinien überprüfen.
-** `-auto-revert` - Geben Sie an, ob eine Daten-LIF automatisch auf ihren Heimatknoten zurückgesetzt wird, unter Umständen wie Start, Änderungen des Status der Management-Datenbank oder wenn die Netzwerkverbindung hergestellt wird. Die Standardeinstellung ist FALSE, Sie können sie jedoch abhängig von den Netzwerkverwaltungsrichtlinien in Ihrer Umgebung auf TRUE setzen.
+** `-home-port` ist der physische oder logische Port, zu dem die LIF zurückkehrt, wenn der Befehl "network interface revert" auf der LIF ausgeführt wird.
+** Sie können eine IP-Adresse mit den  `-address` und  `-netmask` Optionen angeben, nicht mit der  `-subnet` Option.
+** Bei der Zuweisung von IP-Adressen kann es erforderlich sein, eine Standardroute zu einem Gateway zu konfigurieren, wenn sich Clients oder Domänencontroller in einem anderen IP-Subnetz befinden. Weitere Informationen zu  `network route create` und zum Erstellen einer statischen Route innerhalb einer SVM finden sich im link:https://docs.netapp.com/us-en/ontap-cli/network-route-create.html["ONTAP-Befehlsreferenz"^].
+** `-service-policy` Die Servicerichtlinie für den LIF. Wenn keine Richtlinie angegeben ist, wird automatisch eine Standardrichtlinie zugewiesen. Mit dem  `network interface service-policy show` Befehl lassen sich die verfügbaren Servicerichtlinien überprüfen.
+** `-auto-revert` - gibt an, ob eine Daten-LIF unter Umständen wie Systemstart, Änderungen am Status der Management-Datenbank oder beim Herstellen der Netzwerkverbindung automatisch auf ihren Heimatknoten zurückkehrt. Die Standardeinstellung ist false, kann jedoch abhängig von den Netzwerkverwaltungsrichtlinien in Ihrer Umgebung auf true gesetzt werden.
 +
-Wiederholen Sie diesen Schritt für jede LIF in der Trunking-Gruppe.
+Dieser Schritt ist für jedes LIF in der Trunking-Gruppe zu wiederholen.
 
 +
-Der folgende Befehl erstellt `lif-A` für die SVM `vs1`, auf dem Port `e0c` des Knotens `cluster1_01`:
+Der folgende Befehl erstellt `lif-A` für die SVM `vs1`, auf Port `e0c` des Knotens `cluster1_01`:
 
 +
 `network interface create -vserver vs1 -lif lif-A -service-policy default-intercluster -home-node cluster1_01 -home-port e0c -address 192.0.2.0`
 
 +
-Weitere Informationen zu link:../networking/create_lifs.html["LIF-Erstellung:"]
+Erfahren Sie mehr überlink:../networking/create_lifs.html["LIF Erstellung."]
 
 
 
-. Überprüfen Sie, ob die LIFs erstellt wurden:
+. Es wird überprüft, ob die LIFs erstellt wurden:
 +
 [source, cli]
 ----
 network interface show
 ----
-. Überprüfen Sie, ob die konfigurierte IP-Adresse erreichbar ist:
+. Es wird überprüft, ob die konfigurierte IP-Adresse erreichbar ist:
 +
 [cols="25,75"]
 |===
-| Überprüfen einer... | Verwenden... 
+| Zur Überprüfung einer... | Verwenden... 
 
 
 | IPv4-Adresse | `network ping` 
@@ -109,5 +109,5 @@ network interface show
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/network-ping.html["Netzwerk-Ping"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+interface["Netzwerkschnittstelle"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/network-port-show.html["Netzwerkport zeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/network-port-show.html["Netzwerkport anzeigen"^]
 

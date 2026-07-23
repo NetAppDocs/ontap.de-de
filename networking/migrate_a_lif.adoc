@@ -4,7 +4,7 @@ permalink: networking/migrate_a_lif.html
 keywords: move the lif, change lif port, migrate a lif, migrate a LIF to a different port on the same node or a different node within the cluster 
 summary: Migrieren Sie eine LIF zu einem anderen Port auf demselben Knoten oder zu einem anderen Knoten innerhalb des Clusters. 
 ---
-= Migrieren Sie ONTAP LIFs
+= ONTAP LIFs migrieren
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,74 +14,74 @@ summary: Migrieren Sie eine LIF zu einem anderen Port auf demselben Knoten oder 
 
 
 [role="lead"]
-Möglicherweise müssen Sie eine LIF zu einem anderen Port desselben Node oder eines anderen Node im Cluster migrieren, wenn der Port fehlerhaft ist oder Wartungsarbeiten erforderlich sind. Die Migration eines LIF ähnelt dem LIF Failover, allerdings ist die LIF-Migration ein manueller Vorgang, während bei einem LIF Failover die automatische Migration eines LIF als Reaktion auf einen Linkfehler am aktuellen Netzwerkport des LIF ist.
+Unter Umständen müssen Sie eine LIF auf einen anderen Port desselben Knotens oder auf einen anderen Knoten innerhalb des Clusters migrieren, falls der Port fehlerhaft ist oder gewartet werden muss. Die Migration einer LIF ähnelt dem LIF Failover, jedoch ist die LIF Migration ein manueller Vorgang, während das LIF Failover die automatische Migration einer LIF als Reaktion auf einen Verbindungsfehler am aktuellen Netzwerkport der LIF darstellt.
 
 .Bevor Sie beginnen
-* Eine Failover-Gruppe muss für die LIFs konfiguriert worden sein.
-* Der Ziel-Node und die Ports müssen betriebsbereit sein und auf dasselbe Netzwerk wie der Quellport zugreifen können.
+* Für die LIFs muss eine Failover-Gruppe konfiguriert worden sein.
+* Der Zielknoten und die Ports müssen betriebsbereit sein und auf dasselbe Netzwerk wie der Quellport zugreifen können.
 
 
 .Über diese Aufgabe
-* BGP LIFs befinden sich im Home Port und können nicht zu einem anderen Node oder Port migriert werden.
-* Sie müssen LIFs migrieren, die auf den Ports, die zu einer NIC gehören, zu anderen Ports im Cluster gehostet werden, bevor Sie die NIC vom Node entfernen.
-* Sie müssen den Befehl zum Migrieren einer Cluster-LIF von dem Node ausführen, auf dem die Cluster-LIF gehostet wird.
-* Eine LIF mit Node-Umfang, z. B. eine Management-LIF mit Node-Umfang, Cluster-LIF und Clusterschnittstelle, kann nicht zu einem Remote Node migriert werden.
-* Wenn eine NFSv4-LIF zwischen Nodes migriert wird, ergibt sich eine Verzögerung von bis zu 45 Sekunden, bevor die LIF auf einem neuen Port verfügbar ist.
+* BGP LIFs befinden sich auf dem Home-Port und können nicht auf einen anderen Node oder Port migriert werden.
+* Die auf den Ports einer Netzwerkkarte gehosteten LIFs müssen auf andere Ports im Cluster migriert werden, bevor die Netzwerkkarte vom Knoten entfernt wird.
+* Der Befehl zur Migration eines Cluster-LIF ist auf dem Knoten auszuführen, auf dem der Cluster-LIF gehostet wird.
+* Eine knotenbezogene LIF, wie z. B. eine knotenbezogene Management-LIF, eine Cluster-LIF oder eine Intercluster-LIF, kann nicht auf einen Remote-Knoten migriert werden.
+* Wenn eine NFSv4 LIF zwischen Knoten migriert wird, tritt eine Verzögerung von bis zu 45 Sekunden auf, bevor die LIF an einem neuen Port verfügbar ist.
 +
-Um dieses Problem zu umgehen, verwenden Sie NFSv4.1, wo keine Verzögerung aufgetreten ist.
+Um dieses Problem zu umgehen, kann NFSv4.1 verwendet werden, bei dem keine Verzögerung auftritt.
 
-* Sie können iSCSI LIFs auf All-Flash SAN-Array-Plattformen (ASA) mit ONTAP 9.11.1 oder höher migrieren.
+* Sie können iSCSI LIFs auf All-Flash SAN Array (ASA) Plattformen migrieren, auf denen ONTAP 9.11.1 oder höher ausgeführt wird.
 +
-Die Migration von iSCSI LIFs ist auf Ports am Home-Node oder am HA-Partner begrenzt.
+Die Migration von iSCSI LIFs ist auf Ports am Home-Node oder am HA Partner beschränkt.
 
-* Wenn es sich bei Ihrer Plattform nicht um eine All-Flash SAN-Array (ASA)-Plattform handelt, auf der ONTAP Version 9.11.1 oder höher ausgeführt wird, können Sie iSCSI LIFs nicht von einem Node auf einen anderen Node migrieren.
+* Wenn es sich bei Ihrer Plattform nicht um eine All-Flash SAN Array (ASA) Plattform handelt, die ONTAP Version 9.11.1 oder höher ausführt, ist eine Migration von iSCSI LIFs von einem Knoten auf einen anderen nicht möglich.
 +
-Um diese Einschränkung zu umgehen, müssen Sie auf dem Ziel-Node eine iSCSI-LIF erstellen. Erfahren Sie mehr über link:../networking/create_a_lif.html["Erstellen von iSCSI-LIFs"].
+Um diese Einschränkung zu umgehen, muss eine iSCSI-LIF auf dem Zielknoten erstellt werden. Informationen dazu link:../networking/create_a_lif.html["Erstellen von iSCSI LIFs"].
 
-* Wenn Sie eine LIF (Netzwerkschnittstelle) für NFS über RDMA migrieren möchten, müssen Sie sicherstellen, dass der Ziel-Port RoCE-fähig ist. Sie müssen ONTAP 9.10.1 oder höher ausführen, um eine LIF mit der CLI zu migrieren, oder ONTAP 9.12.1 für die Migration mit System Manager. Wenn Sie in System Manager Ihren RoCE-fähigen Ziel-Port ausgewählt haben, müssen Sie das Kontrollkästchen neben *RoCE-Ports verwenden* aktivieren, um die Migration erfolgreich abzuschließen. Erfahren Sie mehr über link:../nfs-rdma/configure-lifs-task.html["Konfigurieren von LIFs für NFS über RDMA"].
-* Beim Migrieren der Quell- oder Ziel-LIF schlägt der Copy-Offload von VMware VAAI fehl. Weitere Informationen zum Offload von Kopien:
+* Wenn Sie eine LIF (Netzwerkschnittstelle) für NFS über RDMA migrieren möchten, muss der Zielport RoCE-fähig sein. Für die Migration einer LIF mit der CLI muss ONTAP 9.10.1 oder höher ausgeführt werden, für die Migration mit System Manager ist ONTAP 9.12.1 erforderlich. Im System Manager muss nach Auswahl des RoCE-fähigen Zielports das Kontrollkästchen neben *RoCE-Ports verwenden* aktiviert werden, damit die Migration erfolgreich abgeschlossen werden kann. Weitere Informationen zu link:../nfs-rdma/configure-lifs-task.html["Konfiguration von LIFs für NFS über RDMA"].
+* VMware VAAI Copy-Offload-Vorgänge schlagen fehl, wenn die Quell- oder Ziel-LIF migriert wird. Informationen zum Copy-Offload:
 +
-** link:../nfs-admin/support-vmware-vstorage-over-nfs-concept.html["NFS-Umgebungen"]
-** link:../san-admin/storage-virtualization-vmware-copy-offload-concept.html["SAN-Umgebungen"]
+** link:../nfs-admin/support-vmware-vstorage-over-nfs-concept.html["NFS Umgebungen"]
+** link:../san-admin/storage-virtualization-vmware-copy-offload-concept.html["SAN Umgebungen"]
 
 
 
 
-Die folgende Vorgehensweise ist abhängig von der Schnittstelle, die Sie --System Manager oder die CLI verwenden:
+Die Vorgehensweise hängt von der verwendeten Schnittstelle ab, System Manager oder CLI:
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-*Verwenden Sie System Manager, um eine Netzwerkschnittstelle zu migrieren*
+*Mit System Manager eine Netzwerkschnittstelle migrieren*
 
 .Schritte
-. Wählen Sie *Netzwerk > Übersicht > Netzwerkschnittstellen*.
-. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] *> Migrate* neben der Netzwerkschnittstelle aus, die Sie ändern möchten.
+. *Netzwerk > Übersicht > Netzwerkschnittstellen* auswählen.
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] *> Migrieren* neben der Netzwerkschnittstelle aus, die geändert werden soll.
 +
 
-NOTE: Wählen Sie für eine iSCSI-LIF im Dialogfeld *Migrate Interface* den Zielknoten und den Port des HA-Partners aus.
+NOTE: Für eine iSCSI LIF im Dialogfeld *Schnittstelle migrieren* den Zielknoten und den Port des HA-Partners auswählen.
 
 +
-Wenn Sie die iSCSI-LIF dauerhaft migrieren möchten, aktivieren Sie das Kontrollkästchen. Das iSCSI LIF muss offline sein, bevor es dauerhaft migriert wird. Darüber hinaus kann eine iSCSI LIF, sobald sie dauerhaft migriert ist, nicht rückgängig gemacht werden. Es gibt keine Option zum Zurücksetzen.
+Wenn Sie die iSCSI-LIF dauerhaft migrieren möchten, muss das Kontrollkästchen aktiviert werden. Die iSCSI-LIF muss offline sein, bevor sie dauerhaft migriert wird. Zudem kann eine dauerhafte Migration einer iSCSI-LIF nach deren Durchführung nicht mehr rückgängig gemacht werden. Es gibt keine Option zum Zurücksetzen.
 
-. Klicken Sie Auf * Migrieren*.
-. Speichern Sie die Änderungen.
+. Auf *Migrieren* klicken.
+. Speichern Sie Ihre Änderungen.
 
 
 --
 .CLI
 --
-*Verwenden Sie die CLI, um eine LIF zu migrieren*
+*Verwendung der CLI zur Migration einer LIF*
 
 .Schritt
-Je nachdem, ob Sie eine bestimmte LIF oder alle LIFs migrieren möchten, führen Sie die entsprechende Aktion durch:
+Je nachdem, ob eine bestimmte LIF oder alle LIFs migriert werden sollen, ist die entsprechende Aktion auszuführen:
 
 [cols="30,70"]
 |===
 
 
-| Migration... | Geben Sie den folgenden Befehl ein... 
+| Wenn Sie migrieren möchten... | Führen Sie den folgenden Befehl aus... 
 
 
  a| 
@@ -92,24 +92,24 @@ Ein spezifisches LIF
 
 
  a| 
-Alle Daten- und Cluster-Management-LIFs auf einem Node
+Alle Daten- und Cluster-Management-LIFs auf einem Knoten
  a| 
 `network interface migrate-all`
 
 
 
  a| 
-Alle LIFs abseits eines Ports
+Alle LIFs von einem Port
  a| 
 `network interface migrate-all -node <node> -port <port>`
 
 |===
-Das folgende Beispiel zeigt, wie eine LIF mit dem Namen `datalif1` auf der SVM `vs0` zum Port auf migriert `e0d` `node0b` wird:
+Das folgende Beispiel zeigt, wie eine LIF mit dem Namen  `datalif1` auf der SVM  `vs0` auf den Port  `e0d` auf  `node0b` migriert wird:
 
 ....
 network interface migrate -vserver vs0 -lif datalif1 -dest-node node0b -dest-port e0d
 ....
-Das folgende Beispiel zeigt, wie alle Daten- und Cluster-Management-LIFs vom aktuellen (lokalen) Node migriert werden:
+Das folgende Beispiel zeigt, wie alle Daten- und Cluster-Management-LIFs vom aktuellen (lokalen) Knoten migriert werden:
 
 ....
 network interface migrate-all -node local
@@ -117,5 +117,5 @@ network interface migrate-all -node local
 --
 ====
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/network-interface-migrate.html["Migration der Netzwerkschnittstelle"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/network-interface-migrate.html["Netzwerkschnittstelle migrieren"^]
 

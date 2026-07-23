@@ -2,41 +2,41 @@
 permalink: s3-config/create-install-ca-certificate-svm-task.html 
 sidebar: sidebar 
 keywords: create, install, ca certificate, svm 
-summary: Um den HTTPS-Datenverkehr von S3-Clients auf die S3-fähige SVM zu aktivieren, ist ein CA-Zertifikat erforderlich. 
+summary: 'Um HTTPS-Datenverkehr von S3-Clients zur S3-fähigen SVM zu ermöglichen, ist ein Zertifikat einer Zertifizierungsstelle (CA-Zertifikat) erforderlich.' 
 ---
-= Erstellen und Installieren eines CA-Zertifikats auf einer S3-fähigen ONTAP SVM
+= Erstellen und Installieren eines CA-Zertifikats auf einer ONTAP S3-fähigen SVM
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-S3-Clients benötigen ein CA-Zertifikat (Certificate Authority), um HTTPS-Verkehr an die S3-fähige SVM zu senden.  CA-Zertifikate stellen eine vertrauenswürdige Beziehung zwischen Clientanwendungen und dem ONTAP Objektspeicherserver her.  Sie sollten ein CA-Zertifikat auf ONTAP installieren, bevor Sie es als für Remote-Clients zugänglichen Objektspeicher verwenden.
+S3-Clients benötigen ein Zertifikat einer Zertifizierungsstelle (CA), um HTTPS-Datenverkehr an die S3-fähige SVM zu senden. CA-Zertifikate schaffen eine Vertrauensbeziehung zwischen Clientanwendungen und dem ONTAP Objektspeicher-Server. Ein CA-Zertifikat sollte auf ONTAP installiert werden, bevor es als Objektspeicher für Remote-Clients genutzt wird.
 
 .Über diese Aufgabe
-Zwar ist es möglich, einen S3-Server so zu konfigurieren, dass nur HTTP verwendet wird. Clients können zwar auch ohne CA-Zertifikat konfiguriert werden, es empfiehlt sich jedoch, den HTTPS-Datenverkehr auf ONTAP S3-Servern mit einem CA-Zertifikat zu sichern.
+Obwohl es möglich ist, einen S3-Server so zu konfigurieren, dass er nur HTTP verwendet, und obwohl es möglich ist, Clients ohne CA-Zertifikatsanforderung zu konfigurieren, gilt es als bewährte Methode, den HTTPS-Datenverkehr zu ONTAP S3-Servern mit einem CA-Zertifikat abzusichern.
 
-Ein CA-Zertifikat ist nicht erforderlich für einen lokalen Tiering-Anwendungsfall, bei dem der IP-Traffic nur über die Cluster LIFs erfolgt.
+Ein CA-Zertifikat ist für einen lokalen Tiering-Anwendungsfall, bei dem der IP-Verkehr ausschließlich über Cluster-LIFs erfolgt, nicht erforderlich.
 
-Die Anweisungen in diesem Verfahren erstellen und installieren ein selbstsigniertes ONTAP-Zertifikat. Obwohl ONTAP selbstsignierte Zertifikate generieren kann, empfiehlt es sich, signierte Zertifikate von einer Zertifizierungsstelle eines Drittanbieters zu verwenden. Weitere Informationen finden Sie in der Dokumentation zur Administratorauthentifizierung.
+Die Anweisungen in diesem Verfahren erstellen und installieren ein selbstsigniertes ONTAP-Zertifikat. Obwohl ONTAP selbstsignierte Zertifikate generieren kann, wird die Verwendung signierter Zertifikate von einer Drittanbieter-Zertifizierungsstelle als empfohlene Best Practice angesehen; weitere Informationen enthält die Administrator-Authentifizierungsdokumentation.
 
 link:../authentication/index.html["Administratorauthentifizierung und RBAC"]
 
-Weitere Informationen zu `security certificate` und zusätzlichen Konfigurationsoptionen finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+certificate["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `security certificate` und zusätzlichen Konfigurationsoptionen finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+certificate["ONTAP-Befehlsreferenz"^].
 
 .Schritte
-. Erstellen eines selbstsignierten digitalen Zertifikats:
+. Ein selbstsigniertes digitales Zertifikat erstellen:
 +
 `security certificate create -vserver _svm_name_ -type root-ca -common-name _ca_cert_name_`
 
 +
-Die `-type root-ca` Option erstellt und installiert ein selbstsigniertes digitales Zertifikat, um andere Zertifikate durch die Funktion einer Zertifizierungsstelle zu signieren.
+Die  `-type root-ca`Option erstellt und installiert ein selbstsigniertes digitales Zertifikat, das zum Signieren anderer Zertifikate dient, indem es als Zertifizierungsstelle (CA) fungiert.
 
 +
-Die `-common-name` Option erstellt den Namen der Zertifizierungsstelle (CA) der SVM und wird verwendet, wenn der vollständige Name des Zertifikats generiert wird.
+Die  `-common-name`Option erstellt den Certificate Authority (CA)-Namen der SVM und wird beim Generieren des vollständigen Namens des Zertifikats verwendet.
 
 +
-Die standardmäßige Zertifikatsgröße beträgt 2048 Bit.
+Die Standardzertifikatsgröße beträgt 2048 Bit.
 
 +
 Beispiel
@@ -49,73 +49,73 @@ cluster-1::> security certificate create -vserver svm1.example.com -type root-ca
 The certificate's generated name for reference: svm1_ca_159D1587CE21E9D4_svm1_ca
 ----
 +
-Wenn der generierte Name des Zertifikats angezeigt wird, speichern Sie ihn für die nachfolgenden Schritte.
+Wenn der generierte Name des Zertifikats angezeigt wird, sollte dieser für spätere Schritte in diesem Verfahren gespeichert werden.
 
 +
-Erfahren Sie mehr über `security certificate create` in der link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `security certificate create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-create.html["ONTAP-Befehlsreferenz"^].
 
-. Erzeugen einer Anfrage zum Signieren eines Zertifikats:
+. Eine Zertifikatsignierungsanforderung generieren:
 +
 `security certificate generate-csr -common-name _s3_server_name_ [additional_options]`
 
 +
-Der `-common-name` Parameter für die Signaturanforderung muss der S3-Servername (FQDN) sein.
+Der  `-common-name`Parameter für die Signierungsanforderung muss der S3-Servername (FQDN) sein.
 
 +
-Gegebenenfalls können Sie den Speicherort und weitere detaillierte Informationen zur SVM angeben.
+Sie können bei Bedarf den Standort und weitere detaillierte Informationen zur SVM angeben.
 
 +
-Der `-dns-name` Der Parameter wird von Clients häufig benötigt, um die Erweiterung „Subject Alternate Name“ anzugeben, die eine Liste von DNS-Namen bereitstellt.
+Der  `-dns-name`Parameter wird häufig von Clients benötigt, um die Subject Alternate Name-Erweiterung anzugeben, die eine Liste von DNS-Namen bereitstellt.
 
 +
-Der `-ipaddr` Der Parameter wird von Clients häufig benötigt, um die Erweiterung „Subject Alternate Name“ anzugeben, die eine Liste von IP-Adressen bereitstellt.
+Der  `-ipaddr`Parameter wird häufig von Clients benötigt, um die Subject Alternate Name-Erweiterung anzugeben, die eine Liste von IP-Adressen bereitstellt.
 
 +
-Sie werden aufgefordert, eine Kopie Ihrer Zertifikatsanfrage und einen privaten Schlüssel für zukünftige Referenz aufzubewahren.
+Sie werden aufgefordert, eine Kopie Ihrer Zertifikatsanforderung und Ihres privaten Schlüssels für zukünftige Referenz aufzubewahren.
 
 +
-Erfahren Sie mehr über `security certificate generate-csr` in der link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-generate-csr.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `security certificate generate-csr` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-generate-csr.html["ONTAP-Befehlsreferenz"^].
 
-. Signieren Sie die CSR mit SVM_CA, um das S3-Server-Zertifikat zu generieren:
+. Der CSR wird mit SVM_CA signiert, um das Zertifikat des S3 Servers zu generieren:
 +
 `security certificate sign -vserver _svm_name_ -ca _ca_cert_name_ -ca-serial _ca_cert_serial_number_ [additional_options]`
 
 +
-Geben Sie die Befehlsoptionen ein, die Sie in früheren Schritten verwendet haben:
+Geben Sie die Befehlsoptionen ein, die Sie in den vorherigen Schritten verwendet haben:
 
 +
-** `-ca` -- der allgemeine Name der CA, den Sie in Schritt 1 eingegeben haben.
-** `-ca-serial` -- die CA-Seriennummer aus Schritt 1. Wenn der Name des CA-Zertifikats beispielsweise svm1_ca_159D1587CE21E9D4_svm1_ca lautet, lautet die Seriennummer 159D1587CE21E9D4.
+** `-ca` -- der gebräuchliche Name der CA, den Sie in Schritt 1 eingegeben haben.
+** `-ca-serial` -- die CA-Seriennummer aus Schritt 1. Wenn beispielsweise der Name des CA-Zertifikats svm1_ca_159D1587CE21E9D4_svm1_ca ist, ist die Seriennummer 159D1587CE21E9D4.
 +
-Standardmäßig läuft das signierte Zertifikat in 365 Tagen ab. Sie können einen anderen Wert auswählen und weitere Signierungsdetails angeben.
-
-+
-Wenn Sie dazu aufgefordert werden, kopieren Sie die Zeichenfolge für die Zertifikatanforderung, die Sie in Schritt 2 gespeichert haben, und geben Sie sie ein.
+Standardmäßig läuft das signierte Zertifikat nach 365 Tagen ab. Es kann ein anderer Wert ausgewählt und weitere Signaturdetails angegeben werden.
 
 +
-Es wird ein signiertes Zertifikat angezeigt und zur späteren Verwendung gespeichert.
+Wenn Sie dazu aufgefordert werden, kopieren und geben Sie die in Schritt 2 gespeicherte Zertifikatsanforderungszeichenfolge ein.
+
++
+Ein signiertes Zertifikat wird angezeigt; dieses für die spätere Verwendung speichern.
 
 
 
-. Installieren Sie das signierte Zertifikat auf der S3-fähigen SVM:
+. Das signierte Zertifikat auf der S3-fähigen SVM installieren:
 +
 `security certificate install -type server -vserver _svm_name_`
 
 +
-Geben Sie bei Aufforderung das Zertifikat und den privaten Schlüssel ein.
+Bei Aufforderung sind das Zertifikat und der private Schlüssel einzugeben.
 
 +
-Sie haben die Möglichkeit, Zwischenzertifikate einzugeben, wenn eine Zertifikatkette gewünscht wird.
+Sie haben die Möglichkeit, Zwischenzertifikate einzugeben, falls eine Zertifikatskette gewünscht ist.
 
 +
-Wenn der private Schlüssel und das CA-signierte digitale Zertifikat angezeigt werden, speichern Sie sie für zukünftige Referenz.
+Wenn der private Schlüssel und das von der Zertifizierungsstelle signierte digitale Zertifikat angezeigt werden, sollten diese für eine spätere Referenz gespeichert werden.
 
-. Holen Sie sich das Zertifikat für den öffentlichen Schlüssel:
+. Öffentliches Schlüsselzertifikat:
 +
 `security certificate show -vserver _svm_name_ -common-name _ca_cert_name_ -type root-ca -instance`
 
 +
-Speichern Sie das Zertifikat für den öffentlichen Schlüssel für eine spätere Client-seitige Konfiguration.
+Das öffentliche Schlüsselzertifikat für die spätere Client-seitige Konfiguration speichern.
 
 +
 Beispiel
@@ -154,5 +154,5 @@ Contact Administrator's Email Address:
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-install.html["Sicherheitszertifikat installieren"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-show.html["Sicherheitszertifikat anzeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-sign.html["Sicherheitszertifikatzeichen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-certificate-sign.html["Sicherheitszertifikat signieren"^]
 

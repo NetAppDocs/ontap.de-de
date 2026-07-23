@@ -2,36 +2,36 @@
 permalink: nfs-admin/fpolicy-first-read-first-write-filters-concept.html 
 sidebar: sidebar 
 keywords: fpolicy, first, read, write, filter, work, nfs 
-summary: NFS-Clients erleben während hoher Lese-/Schreib-Traffic-Anforderungen eine hohe Reaktionszeit, wenn die FPolicy über einen externen FPolicy-Server mit Lese-/Schreibvorgängen als überwachte Ereignisse aktiviert wird. Für NFS-Clients verringert die Verwendung von Filtern mit dem ersten Lesen und Schreiben in der FPolicy die Anzahl an FPolicy Benachrichtigungen und verbessert die Performance. 
+summary: NFS-Clients erleben eine hohe Antwortzeit bei hohem Datenverkehr von lesen/schreiben-Anfragen, wenn die FPolicy unter Verwendung eines externen FPolicy-Servers mit lesen/schreiben-Operationen als überwachte Ereignisse aktiviert ist. Für NFS-Clients verringert der Einsatz von First-Read- und First-Write-Filtern in der FPolicy die Anzahl der FPolicy-Benachrichtigungen und verbessert die Performance. 
 ---
-= Erfahren Sie, wie ONTAP FPolicy First-Read- und First-Write-Filter mit NFS funktionieren
+= Funktionsweise der ONTAP FPolicy-Filter für Erstlesen und Erstschreiben mit NFS
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-NFS-Clients erleben während hoher Lese-/Schreib-Traffic-Anforderungen eine hohe Reaktionszeit, wenn die FPolicy über einen externen FPolicy-Server mit Lese-/Schreibvorgängen als überwachte Ereignisse aktiviert wird. Für NFS-Clients verringert die Verwendung von Filtern mit dem ersten Lesen und Schreiben in der FPolicy die Anzahl an FPolicy Benachrichtigungen und verbessert die Performance.
+NFS-Clients erleben eine hohe Antwortzeit bei hohem Datenverkehr von lesen/schreiben-Anfragen, wenn die FPolicy unter Verwendung eines externen FPolicy-Servers mit lesen/schreiben-Operationen als überwachte Ereignisse aktiviert ist. Für NFS-Clients verringert der Einsatz von First-Read- und First-Write-Filtern in der FPolicy die Anzahl der FPolicy-Benachrichtigungen und verbessert die Performance.
 
-In NFS führt der Client I/O-Vorgänge in einer Datei aus, indem er den Griff ruft. Dieses Handle bleibt bei einem Neustart des Servers und des Clients unter Umständen weiterhin gültig. Somit kann der Client den Griff zwischenspeichern und Anfragen darauf senden, ohne die Griffe erneut abzurufen. In einer normalen Sitzung werden viele Lese-/Schreibanfragen an den Dateiserver gesendet. Wenn Benachrichtigungen für alle diese Anforderungen erzeugt werden, kann dies zu folgenden Problemen führen:
+Bei NFS führt der Client Ein-/Ausgabeoperationen an einer Datei durch, indem er deren Handle abruft. Dieses Handle kann auch nach Neustarts von Server und Client gültig bleiben. Daher kann der Client das Handle zwischenspeichern und Anfragen darüber senden, ohne die Handles erneut abrufen zu müssen. In einer regulären Sitzung werden zahlreiche Lese-/Schreibanfragen an den Dateiserver gesendet. Wenn für all diese Anfragen Benachrichtigungen generiert werden, kann dies zu folgenden Problemen führen:
 
-* Eine größere Last durch zusätzliche Benachrichtigungsverarbeitung und höhere Reaktionszeit.
-* Eine große Anzahl von Benachrichtigungen an den FPolicy-Server gesendet wird, obwohl der Server von allen Benachrichtigungen nicht betroffen ist.
+* Eine höhere Last aufgrund zusätzlicher Benachrichtigungsverarbeitung und längerer Reaktionszeit.
+* Es werden zahlreiche Benachrichtigungen an den FPolicy Server gesendet, obwohl der Server von keiner der Benachrichtigungen betroffen ist.
 
 
-Nachdem Sie die erste Lese-/Schreibanforderung eines Clients für eine bestimmte Datei erhalten haben, wird ein Cache-Eintrag erstellt und die Anzahl der Lese-/Schreibvorgänge wird erhöht. Diese Anforderung wird als erster Lese-/Schreibvorgang markiert und ein FPolicy-Ereignis generiert. Bevor Sie Ihre FPolicy Filter für einen NFS-Client planen und erstellen, sollten Sie die Grundlagen der Funktionsweise von FPolicy-Filtern verstehen.
+Nach dem Empfang der ersten lesen/schreiben-Anfrage eines Clients für eine bestimmte Datei wird ein Cache-Eintrag erstellt und der lesen/schreiben-Zähler erhöht. Diese Anfrage wird als erster lesen/schreiben-Schreibvorgang markiert und ein FPolicy-Ereignis wird generiert. Vor der Planung und Erstellung von FPolicy-Filtern für einen NFS-Client ist es wichtig, die Grundlagen der Funktionsweise von FPolicy-Filtern zu verstehen.
 
-* First-read: Filtert die Leseanforderungen des Clients nach First-Read.
+* First-read: Filtert die Client-Leseanfragen für First-read.
 +
-Wenn dieser Filter für NFS-Ereignisse verwendet wird, `-file-session-io-grouping-count` `-file-session-io-grouping-duration` bestimmen die Einstellungen und die erste Leseanforderung, für die FPolicy verarbeitet wird.
+Wenn dieser Filter für NFS-Ereignisse verwendet wird, bestimmen die  `-file-session-io-grouping-count`- und  `-file-session-io-grouping-duration`-Einstellungen die erste Leseanforderung, für die FPolicy verarbeitet wird.
 
-* First-Write: Filtert die Schreibanforderungen des Clients nach First-Write.
+* First-write: Filtert die Schreibanfragen des Clients nach dem Prinzip „First-write“.
 +
-Wenn dieser Filter für NFS-Ereignisse verwendet wird, `-file-session-io-grouping-count` `-file-session-io-grouping-duration` bestimmen die Einstellungen und die erste Schreibanforderung, für die FPolicy verarbeitet hat.
+Wenn dieser Filter für NFS-Ereignisse verwendet wird, bestimmen die  `-file-session-io-grouping-count`- und  `-file-session-io-grouping-duration`-Einstellungen die erste Schreibanforderung, die von FPolicy verarbeitet wurde.
 
 
 
-Die folgenden Optionen werden in der NFS-Server-Datenbank hinzugefügt.
+Die folgenden Optionen werden in die NFS-Datenbank aufgenommen.
 
 [listing]
 ----

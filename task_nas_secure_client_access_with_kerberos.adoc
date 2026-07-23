@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: task_nas_secure_client_access_with_kerberos.html 
 keywords: netapp, ontap, kerberos, security, client access, group permissions, user permissions, UNIX permissions, name mapping, NAS client, storage access 
-summary: Aktivieren Sie Kerberos, um den Speicherzugriff für NAS-Clients zu sichern. 
+summary: Kerberos kann aktiviert werden, um den Speicherzugriff für NAS-Clients abzusichern. 
 ---
 = Sicherer Clientzugriff mit Kerberos mithilfe von ONTAP System Manager
 :hardbreaks:
@@ -16,20 +16,20 @@ summary: Aktivieren Sie Kerberos, um den Speicherzugriff für NAS-Clients zu sic
 
 
 [role="lead"]
-Aktivieren Sie Kerberos, um den Speicherzugriff für NAS-Clients zu sichern.
+Kerberos kann aktiviert werden, um den Speicherzugriff für NAS-Clients abzusichern.
 
-Mit diesem Verfahren werden Kerberos auf einer vorhandenen Speicher-VM konfiguriertlink:task_nas_enable_linux_nfs.html["NFS"]link:task_nas_enable_windows_smb.html["SMB"], die für  oder aktiviert ist.
+Dieses Verfahren konfiguriert Kerberos auf einer vorhandenen Storage-VM, die für link:task_nas_enable_linux_nfs.html["NFS"] oder link:task_nas_enable_windows_smb.html["SMB"] aktiviert ist.
 
-Vor dem Start sollten Sie DNS, NTP und link:task_nas_provide_client_access_with_name_services.html["LDAP"] auf dem Storage-System konfiguriert haben.
+Vor Beginn sollten DNS, NTP und link:task_nas_provide_client_access_with_name_services.html["LDAP"] auf dem Speichersystem konfiguriert worden sein.
 
 image:workflow_nas_secure_client_access_with_kerberos.gif["Workflow-Zusammenfassung: 1 UNIX-Berechtigungen festlegen 2 Benutzerberechtigungen festlegen 3 Gruppenberechtigungen festlegen 4 Kerberos konfigurieren 5 Namenszuordnungen hinzufügen, falls erforderlich"]
 
 .Schritte
-. Legen Sie in der ONTAP-Befehlszeile UNIX-Berechtigungen für das Root-Volume der Storage VM fest.
+. An der ONTAP Befehlszeile werden UNIX-Berechtigungen für das Root-Volume der Storage-VM festgelegt.
 +
-.. Anzeigen der entsprechenden Berechtigungen für das Root-Volume der Speicher-VM: `volume show -volume _root_vol_name_-fields user,group,unix-permissions`. Erfahren Sie mehr über `volume show` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-show.html["ONTAP-Befehlsreferenz"^].
+.. Die relevanten Berechtigungen für das Root-Volume der Storage-VM anzeigen: `volume show -volume _root_vol_name_-fields user,group,unix-permissions`. Weitere Informationen zu  `volume show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-show.html["ONTAP-Befehlsreferenz"^].
 +
-Das Root-Volume der Storage-VM muss über folgende Konfiguration verfügen:
+Das Root-Volume der Storage-VM muss die folgende Konfiguration aufweisen:
 
 +
 [cols="2"]
@@ -37,45 +37,45 @@ Das Root-Volume der Storage-VM muss über folgende Konfiguration verfügen:
 | Name... | Einstellung... 
 
 
-| UID | Root oder ID 0 
+| UID | Root-Benutzer oder ID 0 
 
 
-| GID | Root oder ID 0 
+| GID | Root-Benutzer oder ID 0 
 
 
 | UNIX-Berechtigungen | 755 
 |===
-.. Werden diese Werte nicht angezeigt, `volume modify` aktualisieren Sie sie mit dem Befehl. Erfahren Sie mehr über `volume modify` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-modify.html["ONTAP-Befehlsreferenz"^].
+.. Falls diese Werte nicht angezeigt werden, kann der  `volume modify` Befehl zur Aktualisierung verwendet werden. Weitere Informationen zu  `volume modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-modify.html["ONTAP-Befehlsreferenz"^].
 
 
-. Legen Sie Benutzerberechtigungen für das Root-Volume der Storage-VM fest.
+. Benutzerberechtigungen für das Stammvolume der Storage-VM festlegen.
 +
-.. Lokale UNIX-Benutzer anzeigen: `vserver services name-service unix-user show -vserver _vserver_name_`. Erfahren Sie mehr über `vserver services name-service unix-user show` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-user-show.html["ONTAP-Befehlsreferenz"^].
+.. Lokale UNIX-Benutzer anzeigen: `vserver services name-service unix-user show -vserver _vserver_name_`. Weitere Informationen zu  `vserver services name-service unix-user show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-user-show.html["ONTAP-Befehlsreferenz"^].
 +
-Die Storage VM sollte die folgenden UNIX-Benutzer konfiguriert haben:
+Die Storage-VM sollte mit den folgenden UNIX-Benutzern konfiguriert sein:
 
 +
 [cols="3"]
 |===
-| Benutzername | User-ID | ID der primären Gruppe 
+| Benutzername | Benutzer-ID | Primäre Gruppen-ID 
 
 
-| nfs | 500 | 0 
+| NFS | 500 | 0 
 
 
-| Stamm | 0 | 0 
+| root | 0 | 0 
 |===
 +
-*Hinweis:* der NFS-Benutzer ist nicht erforderlich, wenn eine Kerberos-UNIX Namenszuweisung für den SPN des NFS Client-Benutzers vorhanden ist; siehe Schritt 5.
+*Hinweis:* Der NFS-Benutzer ist nicht erforderlich, wenn eine Kerberos-UNIX-Namenszuordnung für den SPN des NFS-Client-Benutzers existiert; siehe Schritt 5.
 
-.. Werden diese Werte nicht angezeigt, `vserver services name-service unix-user modify` aktualisieren Sie sie mit dem Befehl. Erfahren Sie mehr über `vserver services name-service unix-user modify` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-user-modify.html["ONTAP-Befehlsreferenz"^].
+.. Falls diese Werte nicht angezeigt werden, kann der  `vserver services name-service unix-user modify` Befehl zur Aktualisierung verwendet werden. Weitere Informationen zu  `vserver services name-service unix-user modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-user-modify.html["ONTAP-Befehlsreferenz"^].
 
 
-. Legen Sie Gruppenberechtigungen für das Root-Volume der Storage-VM fest.
+. Gruppenberechtigungen für das Stammvolume der Storage-VM festlegen.
 +
-.. Lokale UNIX-Gruppen anzeigen: `vserver services name-service unix-group show -vserver _vserver_name_`. Erfahren Sie mehr über `vserver services name-service unix-group show` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-group-show.html["ONTAP-Befehlsreferenz"^].
+.. Lokale UNIX-Gruppen anzeigen: `vserver services name-service unix-group show -vserver _vserver_name_`. Weitere Informationen zu  `vserver services name-service unix-group show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-group-show.html["ONTAP-Befehlsreferenz"^].
 +
-Die Storage VM sollte die folgenden UNIX-Gruppen konfiguriert haben:
+Die Storage-VM sollte die folgenden UNIX-Gruppen konfiguriert haben:
 
 +
 [cols="2"]
@@ -83,35 +83,35 @@ Die Storage VM sollte die folgenden UNIX-Gruppen konfiguriert haben:
 | Gruppenname | Gruppen-ID 
 
 
-| Dämon | 1 
+| Daemon | 1 
 
 
-| Stamm | 0 
+| root | 0 
 |===
-.. Werden diese Werte nicht angezeigt, `vserver services name-service unix-group modify` aktualisieren Sie sie mit dem Befehl. Erfahren Sie mehr über `vserver services name-service unix-group modify` in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-group-modify.html["ONTAP-Befehlsreferenz"^].
+.. Falls diese Werte nicht angezeigt werden, kann der  `vserver services name-service unix-group modify` Befehl zur Aktualisierung verwendet werden. Weitere Informationen zu  `vserver services name-service unix-group modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-unix-group-modify.html["ONTAP-Befehlsreferenz"^].
 
 
-. Wechseln Sie zu System Manager, um Kerberos zu konfigurieren
-. Klicken Sie im System Manager auf *Storage > Storage VMs* und wählen Sie die Storage VM aus.
-. Klicken Sie Auf *Einstellungen*.
+. Zum System Manager wechseln, um Kerberos zu konfigurieren.
+. Im System Manager unter *Speicher > Speicher-VMs* die gewünschte Speicher-VM auswählen.
+. Auf *Einstellungen* klicken.
 . Klicken Sie image:icon_arrow.gif["Pfeilsymbol"] unter Kerberos.
-. Klicken Sie unter Kerberos-Bereich auf *Hinzufügen*, und füllen Sie die folgenden Abschnitte aus:
+. Unter Kerberos Realm auf *Hinzufügen* klicken und die folgenden Abschnitte ausfüllen:
 +
-** Kerberos-Bereich Hinzufügen
+** Kerberos Realm hinzufügen
 +
-Konfigurationsdetails je nach KDC-Anbieter eingeben.
+Konfigurationsdetails sind abhängig vom KDC-Anbieter einzugeben.
 
-** Fügen Sie der Netzwerkschnittstelle zu Bereich hinzu
+** Netzwerkschnittstelle zum Realm hinzufügen
 +
-Klicken Sie auf *Hinzufügen* und wählen Sie eine Netzwerkschnittstelle aus.
+*Hinzufügen* auswählen und eine Netzwerkschnittstelle wählen.
 
 
 
-. Fügen Sie bei Bedarf Zuordnungen von Kerberos-Hauptnamen zu lokalen Benutzernamen hinzu.
+. Bei Bedarf lassen sich Zuordnungen von Kerberos-Prinzipalnamen zu lokalen Benutzernamen hinzufügen.
 +
-.. Klicken Sie auf *Storage > Storage VMs* und wählen Sie die Speicher-VM aus.
-.. Klicken Sie auf *Einstellungen* und dann image:icon_arrow.gif["Pfeilsymbol"] unter *Namenszuordnung*.
-.. Fügen Sie unter *Kerberos to UNIX* Muster und Ersetzungen mithilfe regelmäßiger Ausdrücke hinzu.
+.. Klicken Sie auf *Speicher > Speicher-VMs* und wählen Sie die Speicher-VM aus.
+.. Klicken Sie auf *Einstellungen* und dann auf image:icon_arrow.gif["Pfeilsymbol"] unter *Namenszuordnung*.
+.. Unter *Kerberos zu UNIX* Muster und Ersetzungen mithilfe regulärer Ausdrücke hinzufügen.
 
 
 

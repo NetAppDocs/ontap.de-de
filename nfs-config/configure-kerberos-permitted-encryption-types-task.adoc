@@ -4,43 +4,43 @@ sidebar: sidebar
 keywords: configure, nfs, kerberos, permitted, encryption, types 
 summary: 'Standardmäßig unterstützt ONTAP die folgenden Verschlüsselungstypen für NFS Kerberos: DES, 3DES, AES-128 und AES-256. Sie können die zulässigen Verschlüsselungstypen für jede SVM an die Sicherheitsanforderungen Ihrer jeweiligen Umgebung anpassen, indem Sie den Befehl vserver nfs modify mit dem Parameter -permitted-enc-types verwenden.' 
 ---
-= Konfigurieren Sie die von NFS Kerberos zugelassenen Verschlüsselungstypen für ONTAP SVMs
+= NFS-Kerberos zulässige Verschlüsselungstypen für ONTAP SVMs konfigurieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Standardmäßig unterstützt ONTAP die folgenden Verschlüsselungstypen für NFS Kerberos: DES, 3DES, AES-128 und AES-256. Sie können die zulässigen Verschlüsselungstypen für jede SVM mithilfe des `vserver nfs modify` Befehls mit dem `-permitted-enc-types` Parameter so konfigurieren, dass sie den Sicherheitsanforderungen Ihrer jeweiligen Umgebung entsprechen.
+Standardmäßig unterstützt ONTAP die folgenden Verschlüsselungstypen für NFS Kerberos: DES, 3DES, AES-128 und AES-256. Die zulässigen Verschlüsselungstypen können für jede SVM entsprechend den Sicherheitsanforderungen der jeweiligen Umgebung mit dem  `vserver nfs modify` Befehl und dem  `-permitted-enc-types` Parameter konfiguriert werden.
 
 .Über diese Aufgabe
-Für eine maximale Client-Kompatibilität unterstützt ONTAP standardmäßig sowohl schwache DES als auch eine starke AES-Verschlüsselung. Wenn Sie beispielsweise die Sicherheit erhöhen und die Umgebung unterstützt, können Sie mit diesem Verfahren DAS und 3DES deaktivieren und benötigen von Clients nur die AES-Verschlüsselung.
+Für größtmögliche Client-Kompatibilität unterstützt ONTAP standardmäßig sowohl die schwache DES- als auch die starke AES-Verschlüsselung. Das bedeutet beispielsweise, dass, wenn eine Erhöhung der Sicherheit gewünscht ist und die Umgebung dies unterstützt, mit diesem Verfahren DES und 3DES deaktiviert werden können und Clients ausschließlich AES-Verschlüsselung verwenden müssen.
 
-Sie sollten die stärkste verfügbare Verschlüsselung verwenden. Für ONTAP, also AES-256. Sie sollten mit Ihrem KDC-Administrator bestätigen, dass diese Verschlüsselungsstufe in Ihrer Umgebung unterstützt wird.
+Sie sollten die stärkste verfügbare Verschlüsselung verwenden. Für ONTAP ist das AES-256. Es sollte mit Ihrem KDC-Administrator bestätigt werden, dass diese Verschlüsselungsstufe in Ihrer Umgebung unterstützt wird.
 
-* Die vollständige Aktivierung oder Deaktivierung von AES (AES-128 und AES-256) auf SVMs führt zu Unterbrechungen, da dies die ursprüngliche DES-Principal/Keytab-Datei zerstört. Dadurch muss die Kerberos-Konfiguration auf allen LIFs für die SVM deaktiviert werden.
+* Das vollständige Aktivieren oder Deaktivieren von AES (sowohl AES-128 als auch AES-256) auf SVMs ist störend, da dabei die ursprüngliche DES-Principal-/Keytab-Datei zerstört wird, wodurch die Kerberos-Konfiguration auf allen LIFs für die SVM deaktiviert werden muss.
 +
-Bevor Sie diese Änderung vornehmen, sollten Sie überprüfen, ob NFS-Clients auf der AES-Verschlüsselung auf der SVM basieren.
+Vor dieser Änderung sollte überprüft werden, ob NFS Clients auf der SVM nicht auf AES Verschlüsselung angewiesen sind.
 
-* Das Aktivieren oder Deaktivieren VON DES oder 3DES erfordert keine Änderungen an der Kerberos-Konfiguration auf den LIFs.
+* Das Aktivieren oder Deaktivieren von DES oder 3DES erfordert keine Änderungen an der Kerberos-Konfiguration auf LIFs.
 
 
 .Schritt
-. Aktivieren oder deaktivieren Sie den gewünschten Verschlüsselungstyp:
+. Den gewünschten zulässigen Verschlüsselungstyp aktivieren oder deaktivieren:
 +
 |===
-| Wenn Sie aktivieren oder deaktivieren möchten... | Führen Sie die folgenden Schritte aus... 
+| Wenn Sie aktivieren oder deaktivieren möchten... | Folgen Sie diesen Schritten... 
 
 
  a| 
 DES oder 3DES
  a| 
-.. Konfigurieren Sie die zulässigen NFS-Kerberos-Verschlüsselungstypen der SVM: +
+.. Die zulässigen Verschlüsselungstypen für NFS Kerberos der SVM konfigurieren: +
 `vserver nfs modify -vserver _vserver_name_ -permitted-enc-types _encryption_types_`
 +
-Trennen Sie mehrere Verschlüsselungstypen durch ein Komma.
+Mehrere Verschlüsselungstypen durch ein Komma trennen.
 
-.. Überprüfen Sie, ob die Änderung erfolgreich war: +
+.. Es sollte überprüft werden, ob die Änderung erfolgreich war: +
 `vserver nfs show -vserver _vserver_name_ -fields permitted-enc-types`
 
 
@@ -49,20 +49,20 @@ Trennen Sie mehrere Verschlüsselungstypen durch ein Komma.
  a| 
 AES-128 oder AES-256
  a| 
-.. Ermitteln, auf welcher SVM und welcher LIF Kerberos aktiviert ist: +
+.. Ermitteln, auf welcher SVM und LIF Kerberos aktiviert ist: +
 `vserver nfs kerberos interface show`
-.. Deaktivieren Sie Kerberos auf allen LIFs auf der SVM, deren NFS Kerberos den Verschlüsselungstyp zulässt, den Sie ändern möchten: +
+.. Kerberos auf allen LIFs der SVM deaktivieren, deren NFS Kerberos zulässigen Verschlüsselungstyp Sie ändern möchten: 
 `vserver nfs kerberos interface disable -lif _lif_name_`
-.. Konfigurieren Sie die zulässigen NFS-Kerberos-Verschlüsselungstypen der SVM: +
+.. Die zulässigen Verschlüsselungstypen für NFS Kerberos der SVM konfigurieren: +
 `vserver nfs modify -vserver _vserver_name_ -permitted-enc-types _encryption_types_`
 +
-Trennen Sie mehrere Verschlüsselungstypen durch ein Komma.
+Mehrere Verschlüsselungstypen durch ein Komma trennen.
 
-.. Überprüfen Sie, ob die Änderung erfolgreich war: +
+.. Es sollte überprüft werden, ob die Änderung erfolgreich war: +
 `vserver nfs show -vserver _vserver_name_ -fields permitted-enc-types`
-.. Aktivieren Sie Kerberos auf allen LIFs auf der SVM: +
+.. Kerberos auf allen LIFs auf der SVM wieder aktivieren: +
 `vserver nfs kerberos interface enable -lif _lif_name_ -spn _service_principal_name_`
-.. Überprüfen Sie, ob Kerberos auf allen LIFs aktiviert ist: +
+.. Es sollte überprüft werden, dass Kerberos auf allen LIFs aktiviert ist: +
 `vserver nfs kerberos interface show`
 
 

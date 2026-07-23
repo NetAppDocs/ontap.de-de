@@ -2,53 +2,53 @@
 permalink: disks-aggregates/correct-misaligned-spare-partitions-task.html 
 sidebar: sidebar 
 keywords: correct, misaligned, partition, disk 
-summary: Wenn Sie partitionierte Laufwerke zu einem lokalen Tier hinzufügen, müssen Sie eine Festplatte mit der Root- und der Datenpartition als Ersatz für jeden Node zur Verfügung stellen. Wenn dies nicht der Fall ist und der Node eine Unterbrechung erfährt, kann ONTAP den Core nicht zur freien Datenpartition ablegen. 
+summary: Beim Hinzufügen partitionierter Festplatten zu einer lokalen Ebene muss für jeden Node eine Festplatte mit sowohl der Root- als auch der Datenpartition als Ersatzfestplatte verfügbar sein. Wenn dies nicht der Fall ist und ein Node eine Störung aufweist, kann ONTAP den Core nicht auf die Ersatzdatenpartition schreiben. 
 ---
-= Falsch ausgerichtete ONTAP-Spare-Partitionen korrigieren
+= Falsch ausgerichtete ONTAP Ersatzpartitionen korrigieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn Sie partitionierte Laufwerke zu einem lokalen Tier hinzufügen, müssen Sie eine Festplatte mit der Root- und der Datenpartition als Ersatz für jeden Node zur Verfügung stellen. Wenn dies nicht der Fall ist und der Node eine Unterbrechung erfährt, kann ONTAP den Core nicht zur freien Datenpartition ablegen.
+Beim Hinzufügen partitionierter Festplatten zu einer lokalen Ebene muss für jeden Node eine Festplatte mit sowohl der Root- als auch der Datenpartition als Ersatzfestplatte verfügbar sein. Wenn dies nicht der Fall ist und ein Node eine Störung aufweist, kann ONTAP den Core nicht auf die Ersatzdatenpartition schreiben.
 
 
-NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um eine „_Local Tier_“ zu beschreiben. Unabhängig von Ihrer ONTAP-Version verwendet die ONTAP CLI den Begriff _Aggregate_. Weitere Informationen zu lokalen Ebenen finden Sie unter link:../disks-aggregates/index.html["Festplatten und lokale Tiers"].
+NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff _aggregate_, um eine _lokale Ebene_ zu beschreiben. Unabhängig von der ONTAP Version verwendet die ONTAP CLI den Begriff _aggregate_. Weitere Informationen zu lokalen Ebenen finden sich unter link:../disks-aggregates/index.html["Festplatten und lokale Ebenen"].
 
 .Bevor Sie beginnen
-Sie müssen über eine Ersatzdatenpartition und eine freie Root-Partition auf dem gleichen Laufwerkstyp verfügen, der dem gleichen Node gehört.
+Sowohl eine Ersatzdatenpartition als auch eine Ersatzstammpartition müssen sich auf demselben Festplattentyp befinden, der demselben Node gehört.
 
 .Schritte
-. Zeigen Sie mithilfe der CLI die Ersatzpartitionen für den Knoten an:
+. Mit der CLI werden die Ersatzpartitionen für den Node angezeigt:
 +
 `storage aggregate show-spare-disks -original-owner _node_name_`
 
 +
-Beachten Sie, welche Festplatte über eine Ersatzdatenpartition (Spare_Data) verfügt und welche Festplatte eine Ersatzroot-Partition (Spare_root) hat. Die Ersatzpartition zeigt einen Wert ungleich Null unter der `Local Data Usable` `Local Root Usable` Spalte oder an.
+Notieren Sie, welche Festplatte eine Ersatzdatenpartition (spare_data) und welche Festplatte eine Ersatzrootpartition (spare_root) hat. Die Ersatzpartition zeigt einen Wert ungleich null in der  `Local Data Usable`- oder  `Local Root Usable`-Spalte an.
 
-. Ersetzen Sie die Festplatte durch eine Ersatzdatenpartition durch die Festplatte mit der Ersatzroot-Partition:
+. Die Festplatte mit der Ersatzdatenpartition durch die Festplatte mit der Ersatz-Root-Partition ersetzen:
 +
 `storage disk replace -disk _spare_data_ -replacement _spare_root_ -action start`
 
 +
-Sie können die Daten in beide Richtungen kopieren, allerdings dauert das Kopieren der Root-Partition weniger Zeit bis zum Abschluss.
+Sie können die Daten in beide Richtungen kopieren; das Kopieren der Stammpartition benötigt jedoch weniger Zeit.
 
-. Überwachen Sie den Fortschritt des Festplattenaustauschs:
+. Den Fortschritt des Festplattenaustauschs überwachen:
 +
 `storage aggregate show-status -aggregate _aggr_name_`
 
-. Wenn der Ersatzvorgang abgeschlossen ist, zeigen Sie die Ersatzteile erneut an, um zu bestätigen, dass Sie über eine vollständige Ersatzfestplatte verfügen:
+. Nachdem der Austauschvorgang abgeschlossen ist, werden die Ersatzfestplatten erneut angezeigt, um zu bestätigen, dass eine vollständige Ersatzfestplatte vorhanden ist:
 +
 `storage aggregate show-spare-disks -original-owner _node_name_`
 
 +
-Unter „`Local Data Usable`“ und „ sollte eine Ersatzfestplatte mit nutzbarem Speicherplatz angezeigt werden `Local Root Usable`.
+Eine Ersatzfestplatte mit nutzbarem Speicherplatz sollte sowohl unter „`Local Data Usable`“ als auch unter  `Local Root Usable` angezeigt werden.
 
 
 
 .Beispiel
-Sie zeigen Ihre Ersatzpartitionen für Knoten c1-01 an und sehen, dass Ihre Ersatzpartitionen nicht ausgerichtet sind:
+Sie zeigen Ihre Ersatzpartitionen für Node c1-01 an und sehen, dass Ihre Ersatzpartitionen nicht ausgerichtet sind:
 
 [listing]
 ----
@@ -64,13 +64,13 @@ Original Owner: c1-01
  1.0.1   BSAS  7200 block    753.8GB     0B   828.0GB
  1.0.10  BSAS  7200 block         0B 73.89GB  828.0GB
 ----
-Sie starten den Ersatzauftrag der Festplatte:
+Der Festplattenaustausch wird gestartet:
 
 [listing]
 ----
 c1::> storage disk replace -disk 1.0.1 -replacement 1.0.10 -action start
 ----
-Während Sie auf den Abschluss des Ersatzvorgangs warten, wird der Fortschritt des Vorgangs angezeigt:
+Während Sie auf den Abschluss des Austauschvorgangs warten, wird der Fortschritt des Vorgangs angezeigt:
 
 [listing]
 ----
@@ -90,7 +90,7 @@ Owner Node: c1-01
  shared   1.0.6    0   BSAS  7200  73.89GB  828.0GB (normal)
  shared   1.0.5    0   BSAS  7200  73.89GB  828.0GB (normal)
 ----
-Nachdem der Ersatzvorgang abgeschlossen ist, vergewissern Sie sich, dass Sie über eine vollständige Ersatzfestplatte verfügen:
+Nach Abschluss des Austauschvorgangs sollte eine vollständige Ersatzfestplatte vorhanden sein:
 
 [listing]
 ----
@@ -106,6 +106,6 @@ Original Owner: c1-01
  1.0.1  BSAS  7200 block    753.8GB  73.89GB  828.0GB
 ----
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+show["Storage-Aggregate zeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+show["storage aggregate show"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-replace.html["Speicherfestplatte ersetzen"^]
 

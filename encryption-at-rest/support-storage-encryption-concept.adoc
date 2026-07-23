@@ -2,84 +2,84 @@
 permalink: encryption-at-rest/support-storage-encryption-concept.html 
 sidebar: sidebar 
 keywords: configuring, netapp, hardware-based, encryption 
-summary: 'Die hardwarebasierte Verschlüsselung von NetApp unterstützt die vollständige Festplattenverschlüsselung (Full Disk Encryption, FDE) von Daten beim Schreiben. Ohne einen auf der Firmware gespeicherten Verschlüsselungsschlüssel können die Daten nicht gelesen werden. Der Verschlüsselungsschlüssel wiederum ist nur für einen authentifizierten Knoten zugänglich.' 
+summary: 'NetApp hardwarebasierte Verschlüsselung unterstützt die vollständige Festplattenverschlüsselung (FDE) von Daten während des Schreibvorgangs. Die Daten können ohne einen auf der Firmware gespeicherten Verschlüsselungsschlüssel nicht gelesen werden. Der Verschlüsselungsschlüssel ist wiederum nur für einen authentifizierten Knoten zugänglich.' 
 ---
-= Erfahren Sie mehr über die hardwarebasierte Verschlüsselung von ONTAP
+= Informationen zu ONTAP hardwarebasierter Verschlüsselung
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Die hardwarebasierte Verschlüsselung von NetApp unterstützt die vollständige Festplattenverschlüsselung (Full Disk Encryption, FDE) von Daten beim Schreiben. Ohne einen auf der Firmware gespeicherten Verschlüsselungsschlüssel können die Daten nicht gelesen werden. Der Verschlüsselungsschlüssel wiederum ist nur für einen authentifizierten Knoten zugänglich.
+NetApp hardwarebasierte Verschlüsselung unterstützt die vollständige Festplattenverschlüsselung (FDE) von Daten während des Schreibvorgangs. Die Daten können ohne einen auf der Firmware gespeicherten Verschlüsselungsschlüssel nicht gelesen werden. Der Verschlüsselungsschlüssel ist wiederum nur für einen authentifizierten Knoten zugänglich.
 
 
 
 [[understanding-netapp-hardware-based-encryption]]
-== Allgemeines zur hardwarebasierten Verschlüsselung von NetApp
+== Verständnis der NetApp hardwarebasierten Verschlüsselung
 
-Ein Node authentifiziert sich selbst auf einem Self-Encrypting Drive, wobei ein Authentifizierungsschlüssel von einem externen Verschlüsselungsmanagement-Server oder Onboard Key Manager abgerufen wird:
+Ein Knoten authentifiziert sich gegenüber einem Self-Encrypting Drive mithilfe eines Authentifizierungsschlüssels, der von einem externen Schlüsselverwaltungsserver oder dem Onboard Key Manager abgerufen wird:
 
-* Der externe Verschlüsselungsmanagement-Server ist ein Drittanbietersystem in der Storage-Umgebung, das mithilfe des Key Management Interoperability Protocol (KMIP) Schlüssel zu Nodes bereitstellt. Als Best Practice wird empfohlen, externe Verschlüsselungsmanagementserver auf einem anderen Storage-System zu Ihren Daten zu konfigurieren.
-* Der integrierte Onboard Key Manager ist ein Tool, das Authentifizierungsschlüssel für Nodes aus demselben Storage-System wie Ihre Daten bereitstellt.
-
-
-Mit NetApp Volume Encryption mit hardwarebasierter Verschlüsselung können Daten auf Self-Encrypting Drives `double Encryption` verschlüsselt werden.
-
-Bei Aktivierung von Self-Encrypting Drives wird der Core Dump ebenfalls verschlüsselt.
+* Der externe Schlüsselverwaltungsserver ist ein Drittanbietersystem in Ihrer Speicherumgebung, das Schlüssel für Knoten mithilfe des Key Management Interoperability Protocol (KMIP) bereitstellt. Es gilt als Best Practice, externe Schlüsselverwaltungsserver auf einem anderen Speichersystem als Ihren Daten zu konfigurieren.
+* Der Onboard Key Manager ist ein integriertes Tool, das Authentifizierungsschlüssel für Knoten aus demselben Speichersystem bereitstellt wie Ihre Daten.
 
 
-NOTE: Wenn ein HA-Paar SAS- oder NVMe-Laufwerke (SED, NSE, FIPS) verschlüsselt, müssen Sie xref:return-seds-unprotected-mode-task.html[Ein FIPS-Laufwerk oder eine SED-Festplatte in den ungeschützten Modus zurückkehren]vor der Initialisierung des Systems die Anweisungen im Thema  für alle Laufwerke innerhalb des HA-Paars befolgen (Boot-Optionen 4 oder 9). Andernfalls kann es zu künftigen Datenverlusten kommen, wenn die Laufwerke einer anderen Verwendung zugewiesen werden.
+Sie können NetApp Volume Encryption mit hardwarebasierter Verschlüsselung verwenden, um Daten auf Self-Encrypting Drives „doppelt zu verschlüsseln“.
+
+Wenn Self-Encrypting Drives aktiviert sind, wird auch der Core Dump verschlüsselt.
+
+
+NOTE: Wenn ein HA-Paar verschlüsselnde SAS- oder NVMe-Laufwerke (SED, NSE, FIPS) verwendet, sind die Anweisungen im Thema xref:return-seds-unprotected-mode-task.html[Zurückstellen eines FIPS-Laufwerks oder SED in den ungeschützten Modus] für alle Laufwerke innerhalb des HA-Paares vor der Initialisierung des Systems (Boot-Optionen 4 oder 9) zu beachten. Andernfalls kann es in Zukunft zu Datenverlust kommen, wenn die Laufwerke wiederverwendet werden.
 
 
 
 [[supported-self-encrypting-drive-types]]
-== Unterstützte Self-Encrypting Drives
+== Unterstützte Self-Encrypting Drives Typen
 
 Es werden zwei Arten von Self-Encrypting Drives unterstützt:
 
-* FIPS-zertifizierte Self-Encrypting-SAS- oder NVMe-Laufwerke werden auf allen FAS und AFF Systemen unterstützt. Diese Laufwerke, so genannte _FIPS-Laufwerke_, entsprechen den Anforderungen der Federal Information Processing Standard Publication 140-2, Level 2. Die zertifizierten Funktionen ermöglichen neben der Verschlüsselung auch Schutz, beispielsweise die Verhinderung von Denial-of-Service-Angriffen auf dem Laufwerk. FIPS-Laufwerke können nicht mit anderen Laufwerkstypen auf demselben Node oder HA-Paar kombiniert werden.
-* Ab ONTAP 9.6 werden Self-Encrypting-NVMe-Laufwerke, die noch keine FIPS-Tests durchlaufen haben, auf AFF A800, A320 und neueren Systemen unterstützt. Diese Laufwerke, sogenannte _SEDs_, bieten dieselben Verschlüsselungsfunktionen wie FIPS-Laufwerke, können aber ohne Verschlüsselung von Laufwerken auf demselben Node oder HA-Paar kombiniert werden.
-* Alle FIPS-validierten Laufwerke verwenden ein kryptografisches Firmware-Modul, das durch die FIPS-Validierung erfolgt. Das FIPS-Laufwerk-kryptografische Modul verwendet keine Schlüssel, die außerhalb des Laufwerks generiert werden (die Authentifizierungs-Passphrase, die an das Laufwerk eingegeben wird, wird vom Laufwerk-Firmware-kryptographic-Modul verwendet, um einen Schlüssel zu erhalten).
+* Self-Encrypting Drives (FIPS-zertifizierte SAS- oder NVMe-Laufwerke) werden auf allen FAS und AFF Systemen unterstützt. Diese Laufwerke, sogenannte FIPS Drives, erfüllen die Anforderungen der Federal Information Processing Standard Publication 140-2, Level 2. Die zertifizierten Funktionen ermöglichen neben der Verschlüsselung weitere Schutzmechanismen, wie beispielsweise die Abwehr von Denial-of-Service-Angriffen. FIPS-Laufwerke dürfen nicht mit anderen Laufwerkstypen auf demselben Node oder HA-Paar kombiniert werden.
+* Ab ONTAP 9.6 werden Self-Encrypting NVMe Drives, die nicht dem FIPS-Test unterzogen wurden, auf AFF A800, A320 und späteren Systemen unterstützt. Diese Laufwerke, sogenannte SEDs, bieten dieselben Verschlüsselungsfunktionen wie FIPS Drives, können aber zusammen mit nicht verschlüsselnden Laufwerken auf demselben Node oder HA-Paar eingesetzt werden.
+* Alle FIPS-validierten Laufwerke verwenden ein Firmware-Kryptografiemodul, das die FIPS-Validierung durchlaufen hat. Das FIPS-Kryptografiemodul des Laufwerks verwendet keine Schlüssel, die außerhalb des Laufwerks generiert werden (die Authentifizierungs-Passphrase, die für das Laufwerk eingegeben wird, wird vom Firmware-Kryptografiemodul des Laufwerks verwendet, um einen Schlüssel zur Verschlüsselung zu erhalten).
 
 
 
-NOTE: Laufwerke ohne Verschlüsselung sind Laufwerke, die keine SEDs oder FIPS-Laufwerke sind.
+NOTE: Nicht verschlüsselnde Laufwerke sind Laufwerke, die weder SEDs noch FIPS-Laufwerke sind.
 
 
-NOTE: Wenn Sie NSE in einem System mit einem Flash Cache Modul verwenden, sollten Sie auch NVE oder NAE aktivieren. NSE verschlüsselt keine Daten im Flash Cache Modul.
+NOTE: Wenn Sie NSE auf einem System mit Flash Cache Modul verwenden, sollten Sie auch NVE oder NAE aktivieren. NSE verschlüsselt keine Daten, die sich auf dem Flash Cache Modul befinden.
 
 
 
 [[when-to-use-external-key-management]]
-== Wann Sie externes Verschlüsselungsmanagement verwenden sollten
+== Wann wird externes Schlüsselmanagement verwendet?
 
-Obwohl es kostengünstiger und in der Regel bequemer ist, den Onboard-Schlüsselmanager zu verwenden, sollten Sie ein externes Verschlüsselungsmanagement nutzen, wenn eine der folgenden zutrifft:
+Auch wenn die Verwendung des integrierten Schlüsselmanagers kostengünstiger und in der Regel bequemer ist, empfiehlt sich die Nutzung einer externen Schlüsselverwaltung, wenn einer der folgenden Punkte zutrifft:
 
-* Die Richtlinie Ihres Unternehmens erfordert eine Verschlüsselungsmanagementlösung, die ein kryptografisches Modul nach FIPS 140-2 Level 2 (oder höher) verwendet.
-* Sie benötigen eine Multi-Cluster-Lösung mit zentralem Management von Verschlüsselungen.
-* Ihr Unternehmen erfordert die zusätzliche Sicherheit beim Speichern von Authentifizierungsschlüsseln auf einem System oder an einem anderen Speicherort als den Daten.
+* Die Richtlinie Ihrer Organisation erfordert eine Schlüsselverwaltungslösung, die ein kryptografisches Modul gemäß FIPS 140-2 Level 2 (oder höher) verwendet.
+* Sie benötigen eine Multi-Cluster-Lösung mit zentralisierter Verwaltung der Verschlüsselungsschlüssel.
+* Ihr Unternehmen benötigt die zusätzliche Sicherheit, Authentifizierungsschlüssel auf einem System oder an einem anderen Ort als die Daten zu speichern.
 
 
 
 
 [[support-details]]
-== Support-Details
+== Supportdetails
 
-In der folgenden Tabelle sind wichtige Details zur Unterstützung der Hardwareverschlüsselung aufgeführt. In der Interoperabilitäts-Matrix finden Sie die neuesten Informationen zu unterstützten KMIP-Servern, Storage-Systemen und Festplatten-Shelfs.
+Die folgende Tabelle enthält wichtige Details zur Hardware-Verschlüsselungsunterstützung. Die Interoperabilitätsmatrix enthält aktuelle Informationen zu unterstützten KMIP-Servern, Speichersystemen und Festplattengehäusen.
 
 [cols="30,70"]
 |===
 
 
-| Ressource oder Funktion | Support-Details 
+| Ressource oder Funktion | Supportdetails 
 
 
  a| 
-Nicht homogene Festplattengruppen
+Nicht-homogene Festplattensätze
  a| 
-* FIPS-Laufwerke können nicht mit anderen Laufwerkstypen auf demselben Node oder HA-Paar kombiniert werden. Die Einhaltung der HA-Paare kann bei nicht übereinstimmenden HA-Paaren im selben Cluster vorhanden sein.
-* SEDs können mit Laufwerken ohne Verschlüsselung auf demselben Node oder HA-Paar kombiniert werden.
+* FIPS-Laufwerke dürfen nicht mit anderen Laufwerkstypen auf demselben Node oder HA-Paar kombiniert werden. Konforme HA-Paare können im selben Cluster neben nicht-konformen HA-Paaren existieren.
+* SEDs können mit nicht verschlüsselnden Laufwerken auf demselben Node oder HA Pair gemischt werden.
 
 
 
@@ -94,16 +94,16 @@ Laufwerkstyp
 
 
  a| 
-10-GB-Netzwerkschnittstellen
+10 Gb Netzwerkschnittstellen
  a| 
-Ab ONTAP 9.3 unterstützen die KMIP-Verschlüsselungsmanagementkonfigurationen 10 GB-Netzwerkschnittstellen für die Kommunikation mit externen Verschlüsselungsmanagement-Servern.
+Ab ONTAP 9.3 unterstützen KMIP-Schlüsselverwaltungskonfigurationen 10 Gb Netzwerkschnittstellen für die Kommunikation mit externen Schlüsselverwaltungsservern.
 
 
 
  a| 
 Ports für die Kommunikation mit dem Schlüsselverwaltungsserver
  a| 
-Ab ONTAP 9.3 können Sie jeden beliebigen Storage Controller Port zur Kommunikation mit dem Schlüsselmanagement-Server verwenden. Andernfalls sollten Sie Port E0M für die Kommunikation mit Schlüsselmanagement-Servern verwenden. Je nach Storage-Controller-Modell sind während des Bootvorgangs möglicherweise bestimmte Netzwerkschnittstellen zur Kommunikation mit wichtigen Management-Servern nicht verfügbar.
+Ab ONTAP 9.3 kann jeder beliebige Port des Storage Controllers für die Kommunikation mit dem Key Management Server verwendet werden. Andernfalls sollte Port e0M für die Kommunikation mit Key Management Servern verwendet werden. Je nach Storage Controller Modell sind bestimmte Netzwerkschnittstellen während des Bootvorgangs möglicherweise nicht für die Kommunikation mit Key Management Servern verfügbar.
 
 
 
@@ -118,11 +118,11 @@ MetroCluster (MCC)
 
 
 [[hardware-based-encryption-workflow]]
-== Hardwarebasierter Verschlüsselungs-Workflow
+== Hardwarebasierter Verschlüsselungsworkflow
 
-Sie müssen Verschlüsselungsmanagementdienste konfigurieren, bevor sich das Cluster auf dem Self-Encrypting Drive authentifizieren kann. Sie können einen externen Verschlüsselungsmanagementserver oder einen integrierten Schlüsselmanager verwenden.
+Die Schlüsselverwaltungsdienste müssen konfiguriert werden, bevor sich der Cluster gegenüber den Self-Encrypting Drives authentifizieren kann. Es kann ein externer Schlüsselverwaltungsserver oder ein integrierter Schlüsselmanager verwendet werden.
 
-image:nse-workflow.gif["Hardwarebasierter Verschlüsselungs-Workflow"]
+image:nse-workflow.gif["Hardwarebasierter Verschlüsselungsworkflow"]
 
 .Verwandte Informationen
 * link:https://hwu.netapp.com/["NetApp Hardware Universe"^]

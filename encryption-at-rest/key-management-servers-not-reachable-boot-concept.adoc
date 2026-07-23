@@ -2,34 +2,34 @@
 permalink: encryption-at-rest/key-management-servers-not-reachable-boot-concept.html 
 sidebar: sidebar 
 keywords: what, happens, key management servers, not reachable, boot, process 
-summary: ONTAP ergreift Maßnahmen, um unerwünschte Verhaltensweisen zu vermeiden, wenn ein mit NSE konfiguriertes Storage-System während des Bootens keinen der angegebenen Verschlüsselungsmanagementserver erreichen kann. 
+summary: ONTAP trifft bestimmte Vorkehrungen, um unerwünschtes Verhalten zu vermeiden, falls ein für NSE konfiguriertes Speichersystem während des Bootvorgangs keinen der angegebenen Schlüsselverwaltungsserver erreichen kann. 
 ---
-= Was passiert, wenn Schlüsselverwaltungsserver während des ONTAP Bootvorgangs nicht erreichbar sind?
+= Was geschieht, wenn die Schlüsselverwaltungsserver während des ONTAP-Bootvorgangs nicht erreichbar sind?
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-ONTAP ergreift Maßnahmen, um unerwünschte Verhaltensweisen zu vermeiden, wenn ein mit NSE konfiguriertes Storage-System während des Bootens keinen der angegebenen Verschlüsselungsmanagementserver erreichen kann.
+ONTAP trifft bestimmte Vorkehrungen, um unerwünschtes Verhalten zu vermeiden, falls ein für NSE konfiguriertes Speichersystem während des Bootvorgangs keinen der angegebenen Schlüsselverwaltungsserver erreichen kann.
 
-Wenn das Storage-System für NSE konfiguriert ist, werden die SEDs rekeyed und gesperrt und die SEDs eingeschaltet. Das Storage-System muss die erforderlichen Authentifizierungsschlüssel von den Verschlüsselungsmanagement-Servern abrufen, um sich bei SEDs zu authentifizieren, bevor es auf die Daten zugreifen kann.
+Wenn das Speichersystem für NSE konfiguriert ist, die SEDs neu verschlüsselt und gesperrt sind und die SEDs eingeschaltet sind, muss das Speichersystem die erforderlichen Authentifizierungsschlüssel von den Schlüsselverwaltungsservern abrufen, um sich gegenüber den SEDs zu authentifizieren, bevor auf die Daten zugegriffen werden kann.
 
-Das Storage-System versucht, bis zu drei Stunden lang die angegebenen Schlüsselmanagementserver zu kontaktieren. Sollte das Storage-System zu diesem Zeitpunkt keinen Zugang haben, wird der Bootvorgang abgebrochen und das Storage-System stoppt.
+Das Speichersystem versucht bis zu drei Stunden lang, die angegebenen Schlüsselverwaltungsserver zu kontaktieren. Wenn das Speichersystem nach dieser Zeit keinen von ihnen erreichen kann, stoppt der Startvorgang und das Speichersystem wird angehalten.
 
-Wenn das Speichersystem einen bestimmten Schlüsselverwaltungsserver erfolgreich kontaktiert, versucht es dann, eine SSL-Verbindung für bis zu 15 Minuten herzustellen. Wenn das Storage-System keine SSL-Verbindung zu einem angegebenen Schlüsselmanagementserver herstellen kann, wird der Bootvorgang angehalten und das Speichersystem wird angehalten.
+Wenn das Speichersystem erfolgreich Kontakt zu einem angegebenen Schlüsselverwaltungsserver aufnimmt, versucht es anschließend bis zu 15 Minuten lang, eine SSL-Verbindung herzustellen. Wenn das Speichersystem keine SSL-Verbindung zu einem angegebenen Schlüsselverwaltungsserver herstellen kann, wird der Startvorgang gestoppt und das Speichersystem angehalten.
 
-Während das Speichersystem versucht, sich mit wichtigen Managementservern zu verbinden und eine Verbindung herzustellen, werden in der CLI detaillierte Informationen über fehlgeschlagene Kontaktversuche angezeigt. Sie können die Kontaktversuche jederzeit unterbrechen, indem Sie Strg-C drücken
+Während das Speichersystem versucht, Kontakt zu den Schlüsselverwaltungsservern aufzunehmen und eine Verbindung herzustellen, werden in der Befehlszeile detaillierte Informationen über die fehlgeschlagenen Kontaktversuche angezeigt. Die Kontaktversuche lassen sich jederzeit durch Drücken von Strg+C unterbrechen.
 
-Als Sicherheitsmaßnahme erlauben SEDs nur eine begrenzte Anzahl von unbefugten Zugriffsversuchen, wonach sie den Zugriff auf die vorhandenen Daten deaktivieren. Wenn das Speichersystem keine bestimmten Schlüsselverwaltungsserver kontaktieren kann, um die richtigen Authentifizierungsschlüssel zu erhalten, kann es nur versuchen, sich mit dem Standardschlüssel zu authentifizieren, der zu einem fehlgeschlagenen Versuch und einem Panikzustand führt. Wenn das Storage-System so konfiguriert ist, dass es im Falle eines Panikzustands automatisch neu gestartet wird, wird eine Boot-Schleife erzeugt, die zu kontinuierlichen fehlgeschlagenen Authentifizierungsversuchen von SEDs führt.
+Als Sicherheitsmaßnahme erlauben SEDs nur eine begrenzte Anzahl unautorisierter Zugriffsversuche, danach wird der Zugriff auf die vorhandenen Daten deaktiviert. Wenn das Speichersystem keinen der angegebenen Schlüsselverwaltungsserver kontaktieren kann, um die richtigen Authentifizierungsschlüssel zu erhalten, kann es nur versuchen, sich mit dem Standardschlüssel zu authentifizieren, was zu einem Fehlschlag und einem Systemabsturz führt. Wenn das Speichersystem so konfiguriert ist, dass es im Falle eines Systemabsturzes automatisch neu startet, gerät es in eine Boot-Schleife, was zu kontinuierlich fehlgeschlagenen Authentifizierungsversuchen auf den SEDs führt.
 
-Das Anhalten des Storage-Systems in diesen Szenarien ist durch das Design zu verhindern, dass das Storage-System in einen Boot-Loop und möglichen unbeabsichtigten Datenverlust durch die dauerhaft gesperrten SEDs gelangt, da es die Sicherheitsgrenze einer bestimmten Anzahl aufeinander folgender fehlgeschlagener Authentifizierungsversuche überschreitet. Der Grenzwert und die Art des Sperrschutzes hängen von den Herstellungsspezifikationen und dem Typ der SED ab:
+Das Anhalten des Speichersystems in diesen Szenarien ist beabsichtigt, um zu verhindern, dass das Speichersystem in eine Boot-Schleife gerät und möglicher unbeabsichtigter Datenverlust entsteht, wenn die SEDs dauerhaft gesperrt werden, weil das Sicherheitslimit für eine bestimmte Anzahl aufeinanderfolgender fehlgeschlagener Authentifizierungsversuche überschritten wurde. Das Limit und die Art des Sperrschutzes hängen von den Herstellerspezifikationen und dem jeweiligen SED-Typ ab.
 
 [cols="30,15,55"]
 |===
 
 
-| SED-Typ | Anzahl aufeinanderfolgender fehlgeschlagener Authentifizierungsversuche, die zu einer Sperrung führen | Sicherungstyp sperren, wenn die Sicherheitsgrenze erreicht ist 
+| SED-Typ | Anzahl aufeinanderfolgender fehlgeschlagener Authentifizierungsversuche, die zur Sperrung führen | Sperrschutzart bei Erreichen des Sicherheitsgrenzwerts 
 
 
  a| 
@@ -37,54 +37,54 @@ HDD
  a| 
 1024
  a| 
-Dauerhaft: Daten können nicht wiederhergestellt werden, selbst wenn der richtige Authentifizierungsschlüssel wieder verfügbar ist.
+Unwiderruflich. Die Daten können nicht wiederhergestellt werden, selbst wenn der korrekte Authentifizierungsschlüssel wieder verfügbar ist.
 
 
 
  a| 
-X440_PHM2800MCTO 800 GB NSE SSDs mit Firmware-Versionen NA00 oder NA01
- a| 
-5
- a| 
-Temporär. Die Sperrung wird nur wirksam, bis die Festplatte aus- und wieder eingeschaltet wird.
-
-
-
- a| 
-X577_PHM2800MCTO 800 GB NSE SSDs mit Firmware-Versionen NA00 oder NA01
+X440_PHM2800MCTO 800GB NSE SSDs mit Firmware-Revisionen NA00 oder NA01
  a| 
 5
  a| 
-Temporär. Die Sperrung wird nur wirksam, bis die Festplatte aus- und wieder eingeschaltet wird.
+Vorübergehend. Die Sperre ist nur bis zum Neustart der Festplatte aktiv.
 
 
 
  a| 
-X440_PHM2800MCTO 800 GB NSE SSDs mit höherer Firmware-Version
+X577_PHM2800MCTO 800GB NSE SSDs mit Firmware-Revisionen NA00 oder NA01
  a| 
-1024
+5
  a| 
-Dauerhaft: Daten können nicht wiederhergestellt werden, selbst wenn der richtige Authentifizierungsschlüssel wieder verfügbar ist.
+Vorübergehend. Die Sperre ist nur bis zum Neustart der Festplatte aktiv.
 
 
 
  a| 
-X577_PHM2800MCTO 800 GB NSE SSDs mit höherer Firmware-Version
- a| 
-1024
- a| 
-Dauerhaft: Daten können nicht wiederhergestellt werden, selbst wenn der richtige Authentifizierungsschlüssel wieder verfügbar ist.
-
-
-
- a| 
-Alle anderen SSD-Modelle
+X440_PHM2800MCTO 800GB NSE SSDs mit höheren Firmware-Revisionen
  a| 
 1024
  a| 
-Dauerhaft: Daten können nicht wiederhergestellt werden, selbst wenn der richtige Authentifizierungsschlüssel wieder verfügbar ist.
+Unwiderruflich. Die Daten können nicht wiederhergestellt werden, selbst wenn der korrekte Authentifizierungsschlüssel wieder verfügbar ist.
+
+
+
+ a| 
+X577_PHM2800MCTO 800GB NSE SSDs mit höheren Firmware-Revisionen
+ a| 
+1024
+ a| 
+Unwiderruflich. Die Daten können nicht wiederhergestellt werden, selbst wenn der korrekte Authentifizierungsschlüssel wieder verfügbar ist.
+
+
+
+ a| 
+Alle anderen SSD Modelle
+ a| 
+1024
+ a| 
+Unwiderruflich. Die Daten können nicht wiederhergestellt werden, selbst wenn der korrekte Authentifizierungsschlüssel wieder verfügbar ist.
 
 |===
-Bei allen SED-Typen wird durch eine erfolgreiche Authentifizierung die Anzahl der Versuche auf Null zurückgesetzt.
+Für alle SED-Typen wird der Versuchszähler nach einer erfolgreichen Authentifizierung auf null zurückgesetzt.
 
-Wenn dieses Szenario auftritt, bei dem das Speichersystem aufgrund eines Fehlers angehalten wird, um irgendwelche angegebenen Schlüsselverwaltungsserver zu erreichen, müssen Sie zuerst die Ursache für den Kommunikationsfehler identifizieren und korrigieren, bevor Sie versuchen, das Speichersystem weiterhin zu booten.
+Wenn Sie auf dieses Szenario stoßen, in dem das Speichersystem aufgrund des Nichterreichens eines der angegebenen Schlüsselverwaltungsserver angehalten wird, muss zunächst die Ursache für den Kommunikationsfehler ermittelt und behoben werden, bevor versucht wird, das Speichersystem weiter zu starten.

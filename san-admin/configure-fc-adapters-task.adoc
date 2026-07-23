@@ -4,28 +4,28 @@ sidebar: sidebar
 keywords: configure, fc, adapters, target, initiator, mode 
 summary: Jeder Onboard-FC-Port kann einzeln als Initiator oder Target konfiguriert werden. Ports bestimmter FC-Adapter können, genau wie die Onboard-FC-Ports, ebenfalls einzeln als Target-Port oder Initiator-Port konfiguriert werden. 
 ---
-= Konfigurieren Sie FC-Adapter
+= FC Adapter konfigurieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Onboard FC-Adapter und einige FC-Erweiterungskarten können individuell als Initiatoren oder Ziel-Ports konfiguriert werden. Andere FC-Erweiterungsadapter sind werkseitig als Initiatoren oder Ziele konfiguriert und können nicht geändert werden. Zusätzliche FC-Ports sind auch über unterstützte UTA2-Karten verfügbar, die mit FC SFP+-Adaptern konfiguriert sind.
+Onboard FC Adapter und einige FC-Erweiterungsadapterkarten können individuell als Initiator- oder Target-Ports konfiguriert werden. Andere FC-Erweiterungsadapter sind im Werk als Initiator- oder Target-Ports konfiguriert und können nicht geändert werden. Zusätzliche FC-Ports sind auch über unterstützte UTA2-Karten verfügbar, die mit FC SFP+ Adaptern konfiguriert sind.
 
-Initiator-Ports können zur direkten Verbindung mit Back-End-Platten-Shelfs und möglicherweise mit fremden Storage-Arrays verwendet werden. Mit Zielports können nur Verbindungen zu FC-Switches hergestellt werden.
+Initiator-Ports können verwendet werden, um direkt mit Backend-Disk-Shelves und gegebenenfalls mit fremden Speichersystemen verbunden zu werden. Target-Ports können nur zur Verbindung mit FC-Switches verwendet werden.
 
-Die Anzahl der für FC konfigurierten integrierten Ports und CNA/UTA2-Ports variiert je nach Modell des Controllers. Die unterstützten Target-Erweiterungsadapter variieren ebenfalls je nach Controller-Modell. Eine vollständige Liste der integrierten FC-Ports und der unterstützten Zielerweiterungsadapter für Ihr Controller-Modell finden Sie unterlink:https://hwu.netapp.com["NetApp Hardware Universe"^].
+Die Anzahl der Onboard-Ports und der für FC konfigurierten CNA/UTA2-Ports variiert je nach Controller-Modell. Auch die unterstützten Zielerweiterungsadapter sind modellabhängig. Siehe link:https://hwu.netapp.com["NetApp Hardware Universe"^] für eine vollständige Liste der Onboard-FC-Ports und der unterstützten Zielerweiterungsadapter für Ihr Controller-Modell.
 
 
 
 [[configure-fc-adapters-for-initiator-mode]]
-== Konfigurieren Sie FC-Adapter für den Initiator-Modus
+== FC-Adapter für den Initiatormodus konfigurieren
 
 Der Initiatormodus wird verwendet, um die Ports mit Bandlaufwerken, Bandbibliotheken oder Storage von Drittanbietern link:https://docs.netapp.com/us-en/ontap-fli/get-started/learn-about-san-data-migration.html["Foreign LUN Import (FLI)"^] zu verbinden.
 
 .Bevor Sie beginnen
-* LIFs auf dem Adapter müssen von allen Port-Sets, deren Mitglieder sie sind, entfernt werden.
+* Die LIFs auf dem Adapter müssen aus allen Portsets entfernt werden, zu denen sie gehören.
 * Alle LIFs aller Storage Virtual Machines (SVMs), die den zu modifizierenden physischen Port verwenden, müssen migriert oder zerstört werden, bevor die Persönlichkeit des physischen Ports von Target auf Initiator geändert wird.
 
 
@@ -35,35 +35,35 @@ NVMe/FC unterstützt den Initiator-Modus nicht.
 
 ====
 .Schritte
-. Entfernen Sie alle LIFs vom Adapter:
+. Alle LIFs vom Adapter entfernen:
 +
 [source, cli]
 ----
 network interface delete -vserver _SVM_name_ -lif _lif_name_,_lif_name_
 ----
-. Versetzen Sie Ihren Adapter in den Offline-Modus:
+. Adapter offline schalten:
 +
 [source, cli]
 ----
 network fcp adapter modify -node _node_name_ -adapter _adapter_port_ -status-admin down
 ----
 +
-Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+Wenn der Adapter nicht offline geht, kann das Kabel auch vom entsprechenden Adapterport am System entfernt werden.
 
-. Ändern Sie den Adapter von Ziel zu Initiator:
+. Den Adapter von Ziel auf Initiator ändern:
 +
 [source, cli]
 ----
 system hardware unified-connect modify -t initiator _adapter_port_
 ----
-. Booten Sie den Node neu, der den Adapter hostet, den Sie geändert haben.
-. Vergewissern Sie sich, dass die FC-Ports für Ihre Konfiguration im richtigen Status konfiguriert sind:
+. Der Knoten, auf dem der geänderte Adapter gehostet wird, muss neu gestartet werden.
+. Es sollte sichergestellt werden, dass die FC-Ports für Ihre Konfiguration im richtigen Zustand konfiguriert sind:
 +
 [source, cli]
 ----
 system hardware unified-connect show
 ----
-. Versetzen Sie den Adapter wieder in den Online-Modus:
+. Den Adapter wieder online bringen:
 +
 [source, cli]
 ----
@@ -74,36 +74,36 @@ node run -node _node_name_ storage enable adapter _adapter_port_
 
 
 [[configure-fc-adapters-for-target-mode]]
-== Konfigurieren Sie FC-Adapter für den Zielmodus
+== FC-Adapter für den Zielmodus konfigurieren
 
 Der Zielmodus wird verwendet, um die Ports mit FC-Initiatoren zu verbinden.
 
-Mit diesen Schritten werden FC-Adapter für das FC-Protokoll und das FC-NVMe-Protokoll konfiguriert. Jedoch unterstützen nur bestimmte FC-Adapter FC-NVMe. Im link:https://hwu.netapp.com["NetApp Hardware Universe"^] finden Sie eine Liste mit Adaptern, die das FC-NVMe-Protokoll unterstützen.
+Die Konfiguration von FC-Adaptern für das FC-Protokoll und das FC-NVMe-Protokoll erfolgt nach denselben Schritten. Allerdings unterstützen nur bestimmte FC-Adapter FC-NVMe. Siehe link:https://hwu.netapp.com["NetApp Hardware Universe"^] für eine Liste der Adapter, die das FC-NVMe-Protokoll unterstützen.
 
 .Schritte
-. Versetzen Sie den Adapter in den Offline-Modus:
+. Den Adapter offline schalten:
 +
 [source, cli]
 ----
 node run -node _node_name_ storage disable adapter _adapter_name_
 ----
 +
-Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+Wenn der Adapter nicht offline geht, kann das Kabel auch vom entsprechenden Adapterport am System entfernt werden.
 
-. Ändern Sie den Adapter von Initiator zu Ziel:
+. Den Adapter von Initiator auf Ziel ändern:
 +
 [source, cli]
 ----
 system node hardware unified-connect modify -t target -node _node_name_ adapter _adapter_name_
 ----
-. Booten Sie den Node neu, der den Adapter hostet, den Sie geändert haben.
-. Vergewissern Sie sich, dass der Zielport die richtige Konfiguration hat:
+. Der Knoten, auf dem der geänderte Adapter gehostet wird, muss neu gestartet werden.
+. Es sollte sichergestellt werden, dass der Zielport die korrekte Konfiguration aufweist:
 +
 [source, cli]
 ----
 network fcp adapter show -node _node_name_
 ----
-. Schalten Sie Ihren Adapter online:
+. Adapter online schalten:
 +
 [source, cli]
 ----
@@ -126,7 +126,7 @@ Für FC-Ports, die in Direktanschlusskonfigurationen verwendet werden, gelten fo
 
 
 .Bevor Sie beginnen
-Sie müssen ein Cluster-Administrator sein.
+Sie müssen Cluster-Administrator sein.
 
 [role="tabbed-block"]
 ====
@@ -143,7 +143,7 @@ Sie müssen ein Cluster-Administrator sein.
 .. Wählen Sie das FC- oder NVMe/FC-Protokoll.
 .. Benennen Sie die LIF oder übernehmen Sie den von ONTAP generierten Namen.
 .. Wählen Sie den Home-Port aus.
-.. Wählen Sie *Speichern*.
+.. *Speichern* auswählen.
 +
 Der Port wird automatisch online geschaltet, sobald das LIF erstellt wird.
 
@@ -181,7 +181,7 @@ network interface modify -vserver <SVM_name> -lif * -home-port <adapter_port> -s
 ----
 network interface delete -vserver <SVM_name> -lif * -home-port <adapter_port>
 ----
-. Versetzen Sie den Adapter in den Offline-Modus:
+. Den Adapter offline schalten:
 +
 [source, cli]
 ----
@@ -217,60 +217,60 @@ Die Topologie sollte als direkt angezeigt werden.
 --
 ====
 .Verwandte Informationen
-* Erfahren Sie mehr über link:../san-config/configure-fc-nvme-hosts-ha-pairs-reference.html["FC- und FC-NVMe-Fabrics und Direktanschlusskonfigurationen"].
+* Informationen dazu link:../san-config/configure-fc-nvme-hosts-ha-pairs-reference.html["FC- und FC-NVMe-Fabrics und Direktanschlusskonfigurationen"].
 
 
 
 
 [[configure-fc-adapter-speed]]
-== Konfigurieren Sie die FC-Adaptergeschwindigkeit
+== FC-Adaptergeschwindigkeit konfigurieren
 
-Sie sollten die Zielportgeschwindigkeit des Adapters so konfigurieren, dass sie mit der Geschwindigkeit des Geräts übereinstimmt, zu dem die Verbindung hergestellt wird, anstatt die Autonegotiation zu verwenden. Ein Port, der auf die Autonegotiation festgelegt ist, kann nach einer Übernahme/Rückgabe oder einer anderen Unterbrechung länger dauern, bis die Verbindung wiederhergestellt ist.
+Sie sollten die Zielportgeschwindigkeit Ihres Adapters an die Geschwindigkeit des Geräts anpassen, mit dem er verbunden ist, anstatt die automatische Aushandlung zu verwenden. Ein Port, der auf automatische Aushandlung eingestellt ist, kann nach einer Übernahme/Rückgabe oder einer anderen Unterbrechung länger für die Wiederherstellung der Verbindung benötigen.
 
 .Über diese Aufgabe
-Da diese Aufgabe alle Storage Virtual Machines (SVMs) und alle LIFs in einem Cluster umfasst, müssen Sie den `-home-port` `-home-lif` Umfang dieses Vorgangs mit den Parametern und begrenzen. Wenn Sie diese Parameter nicht verwenden, gilt der Vorgang für alle LIFs im Cluster, die möglicherweise nicht wünschenswert wären.
+Da diese Aufgabe alle Storage Virtual Machines (SVMs) und alle LIFs in einem Cluster umfasst, müssen die `-home-port` und `-home-lif` Parameter verwendet werden, um den Umfang dieser Operation einzuschränken. Wenn diese Parameter nicht verwendet werden, gilt die Operation für alle LIFs im Cluster, was möglicherweise nicht erwünscht ist.
 
 .Bevor Sie beginnen
-Alle LIFs, die diesen Adapter als Home-Port verwenden, müssen offline sein.
+Alle LIFs, die diesen Adapter als ihren Home-Port verwenden, müssen offline sein.
 
 .Schritte
-. Versetzen Sie alle LIFs auf diesem Adapter in den Offline-Modus:
+. Alle LIFs dieses Adapters offline schalten:
 +
 [source, cli]
 ----
 network interface modify -vserver * -lif * { -home-node node1 -home-port 0c } -status-admin down
 ----
-. Versetzen Sie den Adapter in den Offline-Modus:
+. Den Adapter offline schalten:
 +
 [source, cli]
 ----
 network fcp adapter modify -node node1 -adapter 0c -state down
 ----
 +
-Wenn der Adapter nicht in den Offline-Modus versetzt wird, können Sie das Kabel auch vom entsprechenden Adapterport im System entfernen.
+Wenn der Adapter nicht offline geht, kann das Kabel auch vom entsprechenden Adapterport am System entfernt werden.
 
-. Bestimmen Sie die maximale Geschwindigkeit für den Port-Adapter:
+. Die maximale Geschwindigkeit für den Portadapter bestimmen:
 +
 [source, cli]
 ----
 fcp adapter show -instance
 ----
 +
-Sie können die Adaptergeschwindigkeit nicht über die Höchstgeschwindigkeit hinaus ändern.
+Die Adaptergeschwindigkeit kann nicht über die maximale Geschwindigkeit hinaus verändert werden.
 
-. Ändern Sie die Adaptergeschwindigkeit:
+. Adaptergeschwindigkeit ändern:
 +
 [source, cli]
 ----
 network fcp adapter modify -node node1 -adapter 0c -speed 16
 ----
-. Versetzen Sie den Adapter in den Online-Modus:
+. Den Adapter online schalten:
 +
 [source, cli]
 ----
 network fcp adapter modify -node node1 -adapter 0c -state up
 ----
-. Versetzen Sie alle LIFs am Adapter in den Online-Modus:
+. Alle LIFs auf dem Adapter online schalten:
 +
 [source, cli]
 ----
@@ -279,6 +279,6 @@ network interface modify -vserver * -lif * { -home-node node1 -home-port 0c } -s
 
 
 .Verwandte Informationen
-* Erfahren Sie mehr über link:limit-lun-access-portsets-igroups-concept.html["Möglichkeiten zur Einschränkung des LUN-Zugriffs mit Portsätzen und Initiatorgruppen"].
-* Erfahren Sie, wie link:selective-lun-map-concept.html#determine-whether-slm-is-enabled-on-a-lun-map["Selektive LUN-Zuordnung (SLM)"] die Pfade eingeschränkt werden, die für den Zugriff auf die LUNs eines HA-Paares verwendet werden.
+* Informationen dazu link:limit-lun-access-portsets-igroups-concept.html["Möglichkeiten zur Einschränkung des LUN-Zugriffs mit Portsätzen und Initiatorgruppen"].
+* Erfahren Sie, wie link:selective-lun-map-concept.html#determine-whether-slm-is-enabled-on-a-lun-map["Selektives LUN Mapping (SLM)"] die Pfade eingeschränkt werden, die für den Zugriff auf die LUNs eines HA-Paares verwendet werden.
 

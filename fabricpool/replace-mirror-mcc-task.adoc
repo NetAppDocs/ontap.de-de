@@ -2,52 +2,52 @@
 permalink: fabricpool/replace-mirror-mcc-task.html 
 sidebar: sidebar 
 keywords: replacing, fabricpool, mirror, metrocluster, configuration 
-summary: Wenn einer der Objektspeicher in einer FabricPool-Spiegelung zerstört wird oder bei einer MetroCluster-Konfiguration permanent nicht mehr verfügbar ist, können Sie den Objektspeicher zur Spiegelung machen, wenn es sich nicht bereits um die Spiegelung handelt, entfernen Sie den beschädigten Objektspeicher aus der FabricPool-Spiegelung. Anschließend fügen Sie der FabricPool eine neue Objektspeicherspiegelung hinzu. 
+summary: Wenn einer der Objektspeicher in einem FabricPool Spiegel zerstört wird oder in einer MetroCluster Konfiguration dauerhaft nicht mehr verfügbar ist, kann der Objektspeicher zum Spiegel gemacht werden, falls er nicht bereits der Spiegel ist, der beschädigte Objektspeicher aus dem FabricPool Spiegel entfernt und anschließend ein neuer Objektspeicher Spiegel zum FabricPool hinzugefügt werden. 
 ---
-= Ersetzen Sie eine FabricPool-Spiegelung in einer ONTAP MetroCluster-Konfiguration
+= Einen FabricPool Spiegel in einer ONTAP MetroCluster Konfiguration ersetzen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn einer der Objektspeicher in einer FabricPool-Spiegelung zerstört wird oder bei einer MetroCluster-Konfiguration permanent nicht mehr verfügbar ist, können Sie den Objektspeicher zur Spiegelung machen, wenn es sich nicht bereits um die Spiegelung handelt, entfernen Sie den beschädigten Objektspeicher aus der FabricPool-Spiegelung. Anschließend fügen Sie der FabricPool eine neue Objektspeicherspiegelung hinzu.
+Wenn einer der Objektspeicher in einem FabricPool Spiegel zerstört wird oder in einer MetroCluster Konfiguration dauerhaft nicht mehr verfügbar ist, kann der Objektspeicher zum Spiegel gemacht werden, falls er nicht bereits der Spiegel ist, der beschädigte Objektspeicher aus dem FabricPool Spiegel entfernt und anschließend ein neuer Objektspeicher Spiegel zum FabricPool hinzugefügt werden.
 
 .Schritte
-. Wenn der beschädigte Objektspeicher nicht bereits die Spiegelung ist, machen Sie den Objektspeicher mit dem `storage aggregate object-store modify` Befehl zur Spiegelung.
+. Falls der beschädigte Objektspeicher noch nicht der Spiegel ist, wird der Objektspeicher mit dem  `storage aggregate object-store modify` Befehl zum Spiegel gemacht.
 +
 [listing]
 ----
 storage aggregate object-store modify -aggregate -aggregate fp_aggr1_A01 -name mcc1_ostore1 -mirror-type mirror
 ----
-. Entfernen Sie die Objektspeicherrspiegelung mit dem `storage aggregate object-store unmirror` Befehl aus der FabricPool.
+. Die Objektspeicherspiegelung wird mithilfe des Befehls  `storage aggregate object-store unmirror` aus dem FabricPool entfernt.
 +
 [listing]
 ----
 storage aggregate object-store unmirror -aggregate <aggregate name> -name mcc1_ostore1
 ----
-. Sie können die Wiederaufnahme des Tiering im primären Datenspeicher erzwingen, nachdem Sie den gespiegelten Datenspeicher entfernt `storage aggregate object-store modify` `-force-tiering-on-metrocluster true` haben, indem Sie die Option mit verwenden.
+. Sie können das Tiering auf dem primären Datenspeicher fortsetzen, nachdem Sie den gespiegelten Datenspeicher entfernt haben, indem Sie  `storage aggregate object-store modify` mit der  `-force-tiering-on-metrocluster true` Option verwenden.
 +
-Das Fehlen eines Spiegels beeinträchtigt die Replikationsanforderungen einer MetroCluster-Konfiguration.
+Das Fehlen eines Spiegels beeinträchtigt die Replikationsanforderungen einer MetroCluster Konfiguration.
 
 +
 [listing]
 ----
 storage aggregate object-store modify -aggregate <aggregate name> -name mcc1_ostore1 -force-tiering-on-metrocluster true
 ----
-. Erstellen Sie mit dem `storage aggregate object-store config create` Befehl einen Ersatzobjektspeicher.
+. Ein Ersatz-Objektspeicher wird mithilfe des  `storage aggregate object-store config create` Befehls erstellt.
 +
 [listing]
 ----
 storage aggregate object-store config create -object-store-name mcc1_ostore3 -cluster clusterA -provider-type SGWS -server <SGWS-server-1> -container-name <SGWS-bucket-1> -access-key <key> -secret-password <password> -encrypt <true|false> -provider <provider-type> -is-ssl-enabled <true|false> ipspace <IPSpace>
 ----
-. Fügen Sie mit dem `storage aggregate object-store mirror` Befehl die Objektspeicherspiegelung der FabricPool-Spiegelung hinzu.
+. Den Objektspeicher-Mirror zur FabricPool Mirror mithilfe des  `storage aggregate object-store mirror` Befehls hinzufügen.
 +
 [listing]
 ----
 storage aggregate object-store mirror -aggregate aggr1 -name mcc1_ostore3-mc
 ----
-. Zeigen Sie mit dem `storage aggregate object-store show` Befehl die Informationen zum Objektspeicher an.
+. Die Objektspeicherinformationen werden mit dem  `storage aggregate object-store show` Befehl angezeigt.
 +
 [listing]
 ----
@@ -61,7 +61,7 @@ aggregate      object-store-name mirror-type     is-mirror-degraded
 aggr1          mcc1_ostore1-mc    primary           -
                mcc1_ostore3-mc    mirror          true
 ----
-. Mit dem `storage aggregate object-store show-resync-status` Befehl wird der Status der Neusynchronisierung der Spiegelung überwacht.
+. Der Status der Spiegel-Resynchronisierung kann mit dem  `storage aggregate object-store show-resync-status` Befehl überwacht werden.
 +
 [listing]
 ----
@@ -78,10 +78,10 @@ storage aggregate object-store show-resync-status -aggregate aggr1
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-config-create.html["Speicheraggregat Objektspeicher Konfiguration erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-mirror.html["Speicheraggregat Objektspeicherspiegel"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-modify.html["Speicheraggregat-Objektspeicher ändern"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-show.html["Speicheraggregat-Objektspeicher anzeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-show-resync-status.html["Speicheraggregat-Objektspeicher, Resynchronisierungsstatus anzeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-unmirror.html["Speicheraggregat-Objektspeicher-Unmirror"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-config-create.html["storage aggregate Objektspeicher config create"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-mirror.html["Speicheraggregate Objektspeicher Spiegelung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-modify.html["storage aggregate object-store modify"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-show.html["storage aggregate object-store show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-show-resync-status.html["storage aggregate object-store show-resync-status"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-unmirror.html["storage aggregate Objektspeicher Spiegelung aufheben"^]
 

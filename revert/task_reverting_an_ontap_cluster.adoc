@@ -2,43 +2,43 @@
 permalink: revert/task_reverting_an_ontap_cluster.html 
 sidebar: sidebar 
 keywords: ontap, revert, reverting, reversion, cluster 
-summary: Um das Cluster offline zu schalten und auf eine frühere ONTAP Version zurückzusetzen, müssen Sie den Storage Failover und die Daten-LIFs deaktivieren, Voraussetzungen zur Änderung der Version erfüllen, die Konfigurationen für das Cluster und das Filesystem auf einem Node zurücksetzen und den Prozess für jeden zusätzlichen Node im Cluster wiederholen. 
+summary: Um den Cluster offline zu nehmen, um auf eine frühere ONTAP Version zurückzukehren, müssen das Storage-Failover und die Daten-LIFs deaktiviert, die Voraussetzungen für die Rückkehr erfüllt, die Cluster- und Dateisystemkonfigurationen auf einem Knoten zurückgesetzt und dieser Vorgang dann für jeden weiteren Knoten im Cluster wiederholt werden. 
 ---
-= Zurücksetzen eines ONTAP Clusters
+= Ein ONTAP Cluster zurücksetzen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Das Zurücksetzen eines ONTAP-Clusters verursacht Unterbrechungen. Sie müssen das Cluster für die Dauer der Reversion in den Offline-Modus versetzen. Sie sollten einen Produktions-Cluster nicht ohne Unterstützung durch den technischen Support zurücksetzen.
+Das Zurücksetzen eines ONTAP Clusters ist mit Unterbrechungen verbunden. Der Cluster muss für die Dauer des Zurücksetzens offline genommen werden. Ein produktiver Cluster sollte nicht ohne Unterstützung des technischen Supports zurückgesetzt werden.
 
-Um einen neuen oder einen Testcluster zurückzusetzen, müssen Sie das Storage Failover und die logischen Daten deaktivieren und Voraussetzungen für die Reversion erfüllen. Anschließend müssen Sie die Cluster- und Filesystem-Konfiguration auf jedem Node im Cluster zurücksetzen.
+Um einen neuen oder Test-Cluster zurückzusetzen, müssen Storage-Failover und Daten-LIFs deaktiviert und die Voraussetzungen für die Rücksetzung erfüllt werden; anschließend sind die Cluster- und Dateisystemkonfiguration auf jedem Node im Cluster zurückzusetzen.
 
 .Bevor Sie beginnen.
-* Sie sollten die abgeschlossen habenlink:task_things_to_verify_before_revert.html["Überprüfungen vor der Rückstellung"].
-* Sie sollten die erforderlichen abgeschlossen habenlink:concept_pre_revert_checks.html["Vorabprüfungen für Ihre spezifische ONTAP Version"].
-* Sie sollten link:task_download_and_install_ontap_software_image.html["das Ziel-ONTAP-Software-Image heruntergeladen und installiert"] .
+* Sie sollten die link:task_things_to_verify_before_revert.html["Vorabüberprüfungen vor dem Zurücksetzen"] abgeschlossen haben.
+* Sie sollten die erforderlichen link:concept_pre_revert_checks.html["Vorabprüfungen für Ihre spezifische ONTAP Version"] abgeschlossen haben.
+* Sie sollten link:task_download_and_install_ontap_software_image.html["das Ziel-ONTAP Software-Image heruntergeladen und installiert"] haben.
 
 
 
 
 [[step-1-prepare-the-cluster-for-reversion]]
-== Schritt 1: Bereiten Sie den Cluster auf die erneute Version vor
+== Schritt 1: Cluster für die Rücksetzung vorbereiten
 
-Bevor Sie einen der Cluster-Nodes zurücksetzen, sollten Sie überprüfen, ob das Ziel-ONTAP-Image installiert ist und dass Sie alle Daten-LIFs im Cluster deaktivieren sollten.
+Bevor Sie einen Ihrer Clusterknoten zurücksetzen, sollte überprüft werden, ob Ihr Ziel-ONTAP-Image installiert ist, und alle Daten-LIFs im Cluster sollten deaktiviert werden.
 
 .Schritte
-. Legen Sie die Berechtigungsebene auf erweitert fest:
+. Stellen Sie die Berechtigungsstufe auf „Erweitert“ ein:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
 +
-Geben Sie *y* ein, wenn Sie zum Fortfahren aufgefordert werden.
+*y* eingeben, wenn zur Fortsetzung aufgefordert wird.
 
-. Vergewissern Sie sich, dass die ONTAP-Zielsoftware installiert ist:
+. Es sollte überprüft werden, ob die Ziel ONTAP Software installiert ist:
 +
 [source, cli]
 ----
@@ -62,19 +62,19 @@ node1
          image2  false   false   9.13.1      MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Deaktivieren Sie alle Daten-LIFs im Cluster:
+. Alle Daten-LIFs im Cluster deaktivieren:
 +
 [source, cli]
 ----
 network interface modify {-role data} -status-admin down
 ----
-. Ermitteln Sie, ob Sie FlexCache-Beziehungen zwischen Clustern haben:
+. Feststellen, ob zwischen Clustern FlexCache Beziehungen bestehen:
 +
 [source, cli]
 ----
 flexcache origin show-caches -relationship-type inter-cluster
 ----
-. Wenn zwischen Clustern vorhandene Flexcaches vorhanden sind, deaktivieren Sie die Daten-Lifs auf dem Cache-Cluster:
+. Falls Intercluster-Flexcaches vorhanden sind, werden die Data-LIFs auf dem Cache-Cluster deaktiviert:
 +
 [source, cli]
 ----
@@ -85,9 +85,9 @@ network interface modify -vserver <vserver_name> -lif <lif_name> -status-admin d
 
 
 [[step-2-revert-cluster-nodes]]
-== Schritt 2: Zurücksetzen der Clusterknoten
+== Schritt 2: Cluster-Nodes zurücksetzen
 
-Um den Cluster zurückzusetzen, müssen Sie den ersten Node in einem HA-Paar zurücksetzen und dann den Partner-Node zurücksetzen. Wiederholen Sie diesen Prozess für jedes HA-Paar im Cluster, bis alle Nodes zurückgesetzt werden. Wenn Sie über eine MetroCluster-Konfiguration verfügen, müssen Sie diese Schritte für beide Cluster in der Konfiguration wiederholen.
+Um Ihren Cluster zurückzusetzen, muss zuerst der erste Node eines HA-Paares und anschließend der Partner-Node zurückgesetzt werden. Dieser Vorgang wird für jedes HA-Paar im Cluster wiederholt, bis alle Nodes zurückgesetzt sind. Wenn eine MetroCluster Konfiguration vorliegt, sind diese Schritte für beide Cluster in der Konfiguration zu wiederholen.
 
 [role="tabbed-block"]
 ====
@@ -96,31 +96,31 @@ Um den Cluster zurückzusetzen, müssen Sie den ersten Node in einem HA-Paar zur
 .Schritte
 . Melden Sie sich bei dem Node an, den Sie zurücksetzen möchten.
 +
-Um einen Node zurückzusetzen, müssen Sie über die Node-Management-LIF des Node beim Cluster angemeldet sein.
+Um einen Node zurückzusetzen, muss eine Anmeldung am Cluster über die Node-Management-LIF des Nodes erfolgen.
 
-. Deaktivieren Sie das Storage-Failover für die Nodes im HA-Paar:
+. Speicherausfallsicherung für die Knoten im HA-Paar deaktivieren:
 +
 [source, cli]
 ----
 storage failover modify -node <nodename> -enabled false
 ----
 +
-Sie müssen den Storage-Failover nur einmal für das HA-Paar deaktivieren. Wenn Sie den Storage-Failover für einen Node deaktivieren, ist auch das Storage-Failover beim Partner des Nodes deaktiviert.
+Sie müssen das Speicher-Failover nur einmal für das HA-Paar deaktivieren. Wenn das Speicher-Failover für einen Knoten deaktiviert wird, ist es auch auf dem Partnerknoten deaktiviert.
 
-. Legen Sie für das Ziel-ONTAP-Software-Image des Nodes fest, dass es das Standard-Image sein soll:
+. Das Ziel-ONTAP-Software-Image des Knotens wird als Standard-Image festgelegt:
 +
 [source, cli]
 ----
 system image modify -node <nodename> -image <target_image> -isdefault true
 ----
-. Vergewissern Sie sich, dass das Ziel-Image der ONTAP Software als Standard-Image für den Node festgelegt wird, den Sie zurücksetzen:
+. Es sollte überprüft werden, dass das Ziel ONTAP Software Image als Standard-Image für den Knoten festgelegt ist, der zurückgesetzt wird:
 +
 [source, cli]
 ----
 system image show
 ----
 +
-Das folgende Beispiel zeigt, dass Version 9.13.1 als Standardbild auf node0 festgelegt ist:
+Das folgende Beispiel zeigt, dass Version 9.13.1 als Standardimage auf node0 festgelegt ist:
 
 +
 [listing]
@@ -137,68 +137,68 @@ node1
          image2  false   false   9.13.1      MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Vergewissern Sie sich, dass der Node bereit für die Reversion ist:
+. Es sollte überprüft werden, ob der Knoten für die Rücksetzung bereit ist:
 +
 [source, cli]
 ----
 system node revert-to -node <nodename> -check-only true -version 9.x
 ----
 +
-Der `check-only` Parameter gibt alle Voraussetzungen an, die vor dem Zurücksetzen erfüllt werden müssen, z. B. das Deaktivieren der Snapshot-Richtlinie oder das Löschen von Snapshots, die nach dem Upgrade auf die spätere Version von ONTAP erstellt wurden.
+Der  `check-only`Parameter kennzeichnet alle Vorbedingungen, die vor dem Zurücksetzen erfüllt sein müssen, wie das Deaktivieren der Snapshot-Richtlinie oder das Löschen von Snapshots, die nach dem Upgrade auf die neuere Version von ONTAP erstellt wurden.
 
 +
-Die `-version` Option bezieht sich auf das ONTAP Release, auf das Sie zurücksetzen. Wenn Sie beispielsweise von 9.14.1 auf 9.13.1 zurücksetzen, ist der richtige Wert der `-version` Option 9.13.1.
+Die  `-version` Option bezieht sich auf die ONTAP Version, auf die Sie zurücksetzen. Wenn Sie beispielsweise von 9.14.1 auf 9.13.1 zurücksetzen, ist der korrekte Wert der `-version` Option 9.13.1.
 
-. Zurücksetzen der Cluster-Konfiguration des Node:
+. Die Clusterkonfiguration des Knotens zurücksetzen:
 +
 [source, cli]
 ----
 system node revert-to -node <nodename> -version 9.x
 ----
 +
-Die Cluster-Konfiguration ist zurückgesetzt, und dann sind Sie von der Cluster-Shell angemeldet.
+Die Clusterkonfiguration wird zurückgesetzt, und anschließend erfolgt die Abmeldung aus der Clustershell.
 
-. Warten Sie auf die Anmeldeaufforderung; geben Sie dann *Nein* ein, wenn Sie gefragt werden, ob Sie sich bei der Systemshell anmelden möchten.
+. Warten Sie auf die Anmeldeaufforderung; dann *Nein* eingeben, wenn gefragt wird, ob eine Anmeldung an der Systemshell erfolgen soll.
 +
-Es kann bis zu 30 Minuten oder länger dauern, bis die Anmeldeaufforderung angezeigt wird.
+Es kann bis zu 30 Minuten oder länger dauern, bis die Anmeldeaufforderung erscheint.
 
-. Melden Sie sich mit admin bei der Clustershell an.
-. Wechseln Sie zur Nodeshell:
+. Anmeldung an der Clustershell mit admin.
+. Zum Nodeshell wechseln:
 +
 [source, cli]
 ----
 run -node <nodename>
 ----
 +
-Nach dem erneuten Einloggen auf der clustershell kann es einige Minuten dauern, bis es bereit ist, den nodeshell Befehl zu akzeptieren. Wenn der Befehl ausfällt, warten Sie ein paar Minuten, und versuchen Sie es erneut.
+Nach erneuter Anmeldung an der Clustershell kann es einige Minuten dauern, bis der nodeshell-Befehl akzeptiert wird. Falls der Befehl fehlschlägt, empfiehlt es sich, einige Minuten zu warten und es dann erneut zu versuchen.
 
-. Zurücksetzen der Filesystem-Konfiguration des Node:
+. Die Dateisystemkonfiguration des Knotens wird zurückgesetzt:
 +
 [source, cli]
 ----
 revert_to 9.x
 ----
 +
-Mit diesem Befehl wird überprüft, ob die Filesystem-Konfiguration des Node bereit ist, zurückgesetzt zu werden. Wenn Vorbedingungen erkannt werden, müssen Sie diese erfüllen und den Befehl erneut ausführen `revert_to`.
+Dieser Befehl prüft, ob die Dateisystemkonfiguration des Knotens zur Wiederherstellung bereit ist, und stellt sie anschließend wieder her. Wenn Vorbedingungen festgestellt werden, müssen diese behoben werden und anschließend der  `revert_to` Befehl erneut ausgeführt werden.
 
 +
 
-NOTE: Wenn Sie eine Systemkonsole verwenden, um den Revert-Prozess zu überwachen, werden größere Details angezeigt als in nodeshell.
+NOTE: Die Überwachung des Revert-Prozesses über eine Systemkonsole liefert detailliertere Informationen als in NodeShell.
 
 +
-Wenn AUTOBOOT stimmt, wird der Node nach Abschluss des Befehls neu auf ONTAP gebootet.
+Wenn AUTOBOOT auf „true“ gesetzt ist, startet der Knoten nach Abschluss des Befehls in ONTAP neu.
 
 +
-Wenn AUTOBOOT den Wert FALSE lautet und der Befehl ausgeführt wird, wird die Loader-Eingabeaufforderung angezeigt. Geben Sie ein `yes`, um `boot_ontap` den Node zurückzusetzen, und verwenden Sie dann, um den Node manuell neu zu booten.
+Wenn AUTOBOOT auf „false“ gesetzt ist, wird nach Abschluss des Befehls die LOADER-Eingabeaufforderung angezeigt.  `yes` eingeben, um die Änderung rückgängig zu machen; anschließend  `boot_ontap` verwenden, um den Knoten manuell neu zu starten.
 
-. Vergewissern Sie sich, dass nach dem Neubooten des Node die neue Software ausgeführt wird:
+. Nachdem der Knoten neu gestartet wurde, ist zu bestätigen, dass die neue Software ausgeführt wird:
 +
 [source, cli]
 ----
 system node image show
 ----
 +
-Im folgenden Beispiel ist image1 die neue ONTAP-Version und wird als aktuelle Version auf node0 gesetzt:
+Im folgenden Beispiel ist image1 die neue ONTAP Version und als aktuelle Version auf node0 festgelegt:
 
 +
 [listing]
@@ -215,20 +215,20 @@ node1
          image2  false   true    Y.Y.Y      MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Vergewissern Sie sich, dass der Revert-Status für den Node vollständig ist:
+. Es sollte überprüft werden, ob der Wiederherstellungsstatus für den Knoten abgeschlossen ist:
 +
 [source, cli]
 ----
 system node upgrade-revert show -node <nodename>
 ----
 +
-Der Status sollte als „Abschließen“, „nicht erforderlich“ oder „Es wurden keine Tabelleneinträge zurückgegeben“ aufgeführt werden.
+Der Status sollte als „abgeschlossen“, „nicht erforderlich“ oder „es wurden keine Tabelleneinträge zurückgegeben“ aufgeführt sein.
 
-. Wiederholen Sie diese Schritte für den anderen Node im HA-Paar und wiederholen Sie dann diese Schritte für jedes zusätzliche HA-Paar.
+. Diese Schritte sind am anderen Knoten des HA-Paares zu wiederholen, anschließend für jedes weitere HA-Paar.
 +
-Wenn Sie über eine MetroCluster-Konfiguration verfügen, müssen Sie diese Schritte auf beiden Clustern in der Konfiguration wiederholen
+Wenn Sie eine MetroCluster Konfiguration haben, müssen diese Schritte auf beiden Clustern in der Konfiguration wiederholt werden.
 
-. Nachdem alle Nodes zurückgesetzt wurden, aktivieren Sie die Hochverfügbarkeit für den Cluster erneut:
+. Nachdem alle Knoten zurückgesetzt wurden, wird die Hochverfügbarkeit für den Cluster wieder aktiviert:
 +
 [source, cli]
 ----
@@ -237,41 +237,41 @@ storage failover modify -node* -enabled true
 
 
 --
-.Cluster mit 2 Nodes
+.2-Node Cluster
 --
 . Melden Sie sich bei dem Node an, den Sie zurücksetzen möchten.
 +
-Um einen Node zurückzusetzen, müssen Sie über die Node-Management-LIF des Node beim Cluster angemeldet sein.
+Um einen Node zurückzusetzen, muss eine Anmeldung am Cluster über die Node-Management-LIF des Nodes erfolgen.
 
-. Deaktivieren Sie Cluster-Hochverfügbarkeit (HA):
+. Cluster-High Availability (HA) deaktivieren:
 +
 [source, cli]
 ----
 cluster ha modify -configured false
 ----
-. Deaktivier Speicher-Failover:
+. Storage-Failover deaktivieren:
 +
 [source, cli]
 ----
 storage failover modify -node <nodename> -enabled false
 ----
 +
-Sie müssen den Storage-Failover nur einmal für das HA-Paar deaktivieren. Wenn Sie den Storage-Failover für einen Node deaktivieren, ist auch das Storage-Failover beim Partner des Nodes deaktiviert.
+Sie müssen das Speicher-Failover nur einmal für das HA-Paar deaktivieren. Wenn das Speicher-Failover für einen Knoten deaktiviert wird, ist es auch auf dem Partnerknoten deaktiviert.
 
-. Legen Sie für das Ziel-ONTAP-Software-Image des Nodes fest, dass es das Standard-Image sein soll:
+. Das Ziel-ONTAP-Software-Image des Knotens wird als Standard-Image festgelegt:
 +
 [source, cli]
 ----
 system image modify -node <nodename> -image <target_image> -isdefault true
 ----
-. Vergewissern Sie sich, dass das Ziel-Image der ONTAP Software als Standard-Image für den Node festgelegt wird, den Sie zurücksetzen:
+. Es sollte überprüft werden, dass das Ziel ONTAP Software Image als Standard-Image für den Knoten festgelegt ist, der zurückgesetzt wird:
 +
 [source, cli]
 ----
 system image show
 ----
 +
-Das folgende Beispiel zeigt, dass Version 9.13.1 als Standardbild auf node0 festgelegt ist:
+Das folgende Beispiel zeigt, dass Version 9.13.1 als Standardimage auf node0 festgelegt ist:
 
 +
 [listing]
@@ -288,14 +288,14 @@ node1
          image2  false   false   9.13.1      MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Prüfen Sie, ob der Knoten aktuell Epsilon enthält:
+. Es wird geprüft, ob der Knoten aktuell Epsilon enthält:
 +
 [source, cli]
 ----
 cluster show -node <nodename>
 ----
 +
-Das folgende Beispiel zeigt, dass der Knoten Epsilon hält:
+Das folgende Beispiel zeigt, dass der Knoten Epsilon enthält:
 
 +
 [listing]
@@ -309,13 +309,13 @@ cluster1::*> cluster show -node node1
         Health: true
 ----
 +
-.. Wenn der Knoten Epsilon enthält, markieren Sie Epsilon als „false“ auf dem Knoten, damit Epsilon an den Partner des Node übertragen werden kann:
+.. Wenn der Knoten Epsilon enthält, wird Epsilon auf dem Knoten als falsch markiert, sodass Epsilon an den Partnerknoten übertragen werden kann:
 +
 [source, cli]
 ----
 cluster modify -node <nodename> -epsilon false
 ----
-.. Übertragen Sie Epsilon auf den Partner des Node, indem Sie epsilon True auf dem Partner-Node markieren:
+.. Epsilon wird auf den Partnerknoten übertragen, indem Epsilon auf dem Partnerknoten als „true“ markiert wird:
 +
 [source, cli]
 ----
@@ -323,68 +323,68 @@ cluster modify -node <node_partner_name> -epsilon true
 ----
 
 
-. Vergewissern Sie sich, dass der Node bereit für die Reversion ist:
+. Es sollte überprüft werden, ob der Knoten für die Rücksetzung bereit ist:
 +
 [source, cli]
 ----
 system node revert-to -node <nodename> -check-only true -version 9.x
 ----
 +
-Der `check-only` Parameter gibt alle Bedingungen an, die vor dem Zurücksetzen behoben werden müssen, z. B. das Deaktivieren der Snapshot-Richtlinie oder das Löschen von Snapshots, die nach dem Upgrade auf die neuere Version von ONTAP erstellt wurden.
+Der  `check-only`Parameter kennzeichnet alle Bedingungen, die vor dem Zurücksetzen erfüllt sein müssen, wie das Deaktivieren der Snapshot-Richtlinie oder das Löschen von Snapshots, die nach dem Upgrade auf die neuere Version von ONTAP erstellt wurden.
 
 +
-Der `-version` Die Option bezieht sich auf die ONTAP Version, zu der Sie zurückkehren. Es werden nur die ersten beiden Werte der ONTAP Version benötigt. Wenn Sie beispielsweise von Version 9.14.1 auf 9.13.1 zurücksetzen, ist der korrekte Wert des `-version` Option ist 9.13.
+Die  `-version` Option bezieht sich auf die ONTAP Version, auf die Sie zurücksetzen. Nur die ersten beiden Werte der ONTAP Version sind erforderlich. Wenn Sie beispielsweise von 9.14.1 auf 9.13.1 zurücksetzen, ist der korrekte Wert der  `-version` Option 9.13.
 
 +
-Die Cluster-Konfiguration ist zurückgesetzt, und dann sind Sie von der Cluster-Shell angemeldet.
+Die Clusterkonfiguration wird zurückgesetzt, und anschließend erfolgt die Abmeldung aus der Clustershell.
 
-. Zurücksetzen der Cluster-Konfiguration des Node:
+. Die Clusterkonfiguration des Knotens zurücksetzen:
 +
 [source, cli]
 ----
 system node revert-to -node <nodename> -version 9.x
 ----
-. Warten Sie auf die Anmeldeaufforderung. Geben Sie dann ein `No`, wenn Sie gefragt werden, ob Sie sich bei der Systemshell anmelden möchten.
+. Warten Sie auf die Anmeldeaufforderung, dann  `No` eingeben, wenn Sie gefragt werden, ob Sie sich in der Systemshell anmelden möchten.
 +
-Es kann bis zu 30 Minuten oder länger dauern, bis die Anmeldeaufforderung angezeigt wird.
+Es kann bis zu 30 Minuten oder länger dauern, bis die Anmeldeaufforderung erscheint.
 
-. Melden Sie sich mit admin bei der Clustershell an.
-. Wechseln Sie zur Nodeshell:
+. Anmeldung an der Clustershell mit admin.
+. Zum Nodeshell wechseln:
 +
 [source, cli]
 ----
 run -node <nodename>
 ----
 +
-Nach dem erneuten Einloggen auf der clustershell kann es einige Minuten dauern, bis es bereit ist, den nodeshell Befehl zu akzeptieren. Wenn der Befehl ausfällt, warten Sie ein paar Minuten, und versuchen Sie es erneut.
+Nach erneuter Anmeldung an der Clustershell kann es einige Minuten dauern, bis der nodeshell-Befehl akzeptiert wird. Falls der Befehl fehlschlägt, empfiehlt es sich, einige Minuten zu warten und es dann erneut zu versuchen.
 
-. Zurücksetzen der Filesystem-Konfiguration des Node:
+. Die Dateisystemkonfiguration des Knotens wird zurückgesetzt:
 +
 [source, cli]
 ----
 revert_to 9.x
 ----
 +
-Mit diesem Befehl wird überprüft, ob die Filesystem-Konfiguration des Node bereit ist, zurückgesetzt zu werden. Wenn Vorbedingungen erkannt werden, müssen Sie diese erfüllen und den Befehl erneut ausführen `revert_to`.
+Dieser Befehl prüft, ob die Dateisystemkonfiguration des Knotens zur Wiederherstellung bereit ist, und stellt sie anschließend wieder her. Wenn Vorbedingungen festgestellt werden, müssen diese behoben werden und anschließend der  `revert_to` Befehl erneut ausgeführt werden.
 
 +
 
-NOTE: Wenn Sie eine Systemkonsole verwenden, um den Revert-Prozess zu überwachen, werden größere Details angezeigt als in nodeshell.
+NOTE: Die Überwachung des Revert-Prozesses über eine Systemkonsole liefert detailliertere Informationen als in NodeShell.
 
 +
-Wenn AUTOBOOT stimmt, wird der Node nach Abschluss des Befehls neu auf ONTAP gebootet.
+Wenn AUTOBOOT auf „true“ gesetzt ist, startet der Knoten nach Abschluss des Befehls in ONTAP neu.
 
 +
-Wenn AUTOBOOT false ist, wird die LOADER-Eingabeaufforderung angezeigt, wenn der Befehl zum Abschluss des Befehls gehört. Geben Sie ein `yes`, um `boot_ontap` den Node zurückzusetzen, und verwenden Sie dann, um den Node manuell neu zu booten.
+Wenn AUTOBOOT auf „false“ gesetzt ist, wird nach Abschluss des Befehls die LOADER-Eingabeaufforderung angezeigt.  `yes` eingeben, um die Änderung rückgängig zu machen; anschließend  `boot_ontap` verwenden, um den Knoten manuell neu zu starten.
 
-. Vergewissern Sie sich, dass nach dem Neubooten des Node die neue Software ausgeführt wird:
+. Nachdem der Knoten neu gestartet wurde, ist zu bestätigen, dass die neue Software ausgeführt wird:
 +
 [source, cli]
 ----
 system node image show
 ----
 +
-Im folgenden Beispiel ist image1 die neue ONTAP-Version und wird als aktuelle Version auf node0 gesetzt:
+Im folgenden Beispiel ist image1 die neue ONTAP Version und als aktuelle Version auf node0 festgelegt:
 
 +
 [listing]
@@ -401,23 +401,23 @@ node1
          image2  false   true    Y.Y.Y      MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Vergewissern Sie sich, dass der Revert-Status für den Node abgeschlossen ist:
+. Es wird geprüft, ob der Rücksetzungsstatus für den Knoten abgeschlossen ist:
 +
 [source, cli]
 ----
 system node upgrade-revert show -node <nodename>
 ----
 +
-Der Status sollte als „Abschließen“, „nicht erforderlich“ oder „Es wurden keine Tabelleneinträge zurückgegeben“ aufgeführt werden.
+Der Status sollte als „abgeschlossen“, „nicht erforderlich“ oder „es wurden keine Tabelleneinträge zurückgegeben“ aufgeführt sein.
 
-. Wiederholen Sie diese Schritte auf dem anderen Node im HA-Paar.
-. Nachdem beide Nodes zurückgesetzt wurden, aktivieren Sie die Hochverfügbarkeit für das Cluster erneut:
+. Diese Schritte sind am anderen Knoten des HA-Paares ebenfalls auszuführen.
+. Nachdem beide Knoten zurückgesetzt wurden, wird die Hochverfügbarkeit für den Cluster wieder aktiviert:
 +
 [source, cli]
 ----
 cluster ha modify -configured true
 ----
-. Speicher-Failover auf beiden Knoten wieder aktivieren:
+. Speicherausfallsicherung auf beiden Knoten wieder aktivieren:
 +
 [source, cli]
 ----
@@ -428,5 +428,5 @@ storage failover modify -node <nodename> -enabled true
 --
 ====
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-modify.html["Speicherfailover ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-modify.html["storage failover modify"^]
 

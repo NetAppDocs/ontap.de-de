@@ -2,64 +2,64 @@
 permalink: san-config/calculate-queue-depth-task.html 
 sidebar: sidebar 
 keywords: calculate, queue depth 
-summary: Möglicherweise müssen Sie die FC-Warteschlangentiefe auf dem Host anpassen, um die Höchstwerte für ITNs pro Knoten und FC-Port-Fan-in zu erreichen. Die maximale Anzahl an LUNs und die Anzahl der HBAs, die eine Verbindung zu einem FC-Port herstellen können, werden durch die verfügbare Warteschlangentiefe auf den FC-Ziel-Ports begrenzt. 
+summary: Möglicherweise ist eine Anpassung der FC-Warteschlangentiefe auf dem Host erforderlich, um die maximalen Werte für ITNs pro Node und FC-Port-Fan-In zu erreichen. Die maximale Anzahl von LUNs und die Anzahl der HBAs, die eine Verbindung zu einem FC-Port herstellen können, sind durch die verfügbare Warteschlangentiefe an den FC-Zielports begrenzt. 
 ---
-= Berechnung der Warteschlangentiefe für ONTAP FC-Hosts
+= Warteschlangentiefe für ONTAP FC Hosts berechnen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Möglicherweise müssen Sie die FC-Warteschlangentiefe auf dem Host anpassen, um die Höchstwerte für ITNs pro Knoten und FC-Port-Fan-in zu erreichen. Die maximale Anzahl an LUNs und die Anzahl der HBAs, die eine Verbindung zu einem FC-Port herstellen können, werden durch die verfügbare Warteschlangentiefe auf den FC-Ziel-Ports begrenzt.
+Möglicherweise ist eine Anpassung der FC-Warteschlangentiefe auf dem Host erforderlich, um die maximalen Werte für ITNs pro Node und FC-Port-Fan-In zu erreichen. Die maximale Anzahl von LUNs und die Anzahl der HBAs, die eine Verbindung zu einem FC-Port herstellen können, sind durch die verfügbare Warteschlangentiefe an den FC-Zielports begrenzt.
 
 .Über diese Aufgabe
-„Queue depth“ ist die Anzahl von I/O-Anfragen (SCSI-Befehle), die sich gleichzeitig in ein Storage Controller Warteschlange einreihen lassen. Jede I/O-Anforderung vom Initiator-HBA des Hosts zum Zieladapter des Storage-Controllers verbraucht einen Warteschlangeneintrag. Eine höhere Warteschlangentiefe entspricht in der Regel einer besseren Performance. Wenn jedoch die maximale Warteschlangentiefe des Storage Controllers erreicht wird, weist dieser Storage-Controller eingehende Befehle zurück, indem er eine QFULL-Antwort zurückgibt. Wenn eine große Anzahl von Hosts auf einen Speicher-Controller zugreifen, sollten Sie sorgfältig planen, QFULL-Bedingungen zu vermeiden, die die Systemleistung erheblich beeinträchtigen und zu Fehlern bei einigen Systemen führen können.
+Die Warteschlangentiefe ist die Anzahl der E/A-Anforderungen (SCSI-Befehle), die gleichzeitig auf einem Speicherkontroller in die Warteschlange gestellt werden können. Jede E/A-Anforderung vom initiierenden HBA des Hosts an den Zieladapter des Speicherkontrollers belegt einen Eintrag in der Warteschlange. In der Regel entspricht eine höhere Warteschlangentiefe einer besseren Performance. Wird jedoch die maximale Warteschlangentiefe des Speicherkontrollers erreicht, weist dieser eingehende Befehle mit einer QFULL-Antwort zurück. Wenn eine große Anzahl von Hosts auf einen Speicherkontroller zugreift, ist eine sorgfältige Planung erforderlich, um QFULL-Zustände zu vermeiden, da diese die Systemleistung erheblich beeinträchtigen und auf manchen Systemen zu Fehlern führen können.
 
-In einer Konfiguration mit mehreren Initiatoren (Hosts) sollten alle Hosts über ähnliche Warteschlangentiefen verfügen. Aufgrund der Ungleichheit in der Warteschlangentiefe zwischen Hosts, die über denselben Zielport mit dem Storage Controller verbunden sind, wird Hosts mit kleineren Warteschlangentiefen dem Zugriff auf Ressourcen durch Hosts mit größeren Warteschlangentiefen entzogen.
+In einer Konfiguration mit mehreren Initiatoren (Hosts) sollten alle Hosts eine ähnliche Warteschlangentiefe aufweisen. Aufgrund der ungleichen Warteschlangentiefe zwischen Hosts, die über denselben Zielport mit dem Storage-Controller verbunden sind, wird Hosts mit geringerer Warteschlangentiefe der Zugriff auf Ressourcen durch Hosts mit größerer Warteschlangentiefe verwehrt.
 
-Die folgenden allgemeinen Empfehlungen bezüglich „`Tuning`“-Warteschlangentiefe:
+Folgende allgemeine Empfehlungen können hinsichtlich des „Tuning“ der Warteschlangentiefe gegeben werden:
 
-* Verwenden Sie für kleine und mittelgroße Systeme eine HBA-Warteschlangenlänge von 32.
-* Verwenden Sie für große Systeme eine HBA-Warteschlangenlänge von 128.
-* Verwenden Sie für Ausnahmefälle oder Performance-Tests eine Warteschlangentiefe von 256, um mögliche Warteschlangenprobleme zu vermeiden.
-* Für alle Hosts sollten die Warteschlangentiefen auf ähnliche Werte festgelegt sein, um allen Hosts gleichberechtigten Zugriff zu gewähren.
-* Um Performance-Einbußen oder Fehler zu vermeiden, darf die Ziel-FC-Port-Warteschlangentiefe des Storage Controllers nicht überschritten werden.
+* Für kleine bis mittelgroße Systeme ist eine HBA-Warteschlangentiefe von 32 zu verwenden.
+* Für große Systeme wird eine HBA-Warteschlangentiefe von 128 empfohlen.
+* Für Ausnahmefälle oder Leistungstests empfiehlt sich eine Warteschlangenlänge von 256, um mögliche Warteschlangenprobleme zu vermeiden.
+* Alle Hosts sollten ähnliche Warteschlangentiefen eingestellt haben, um allen Hosts gleichen Zugriff zu ermöglichen.
+* Um Leistungseinbußen oder Fehler zu vermeiden, darf die Warteschlangentiefe des Ziel-FC-Ports am Speichercontroller nicht überschritten werden.
 
 
 .Schritte
-. Zählen Sie die Gesamtzahl der FC-Initiatoren auf allen Hosts, die mit einem FC-Zielport verbunden sind.
+. Die Gesamtzahl der FC-Initiatoren in allen Hosts, die mit einem FC-Zielport verbunden sind, ermitteln.
 . Mit 128 multiplizieren.
 +
-** Wenn das Ergebnis unter 2,048 liegt, setzen Sie die Warteschlangentiefe für alle Initiatoren auf 128. Sie haben 15 Hosts, wobei ein Initiator mit jedem der zwei Ziel-Ports auf dem Storage Controller verbunden ist. 15 × 128 = 1,920. Da 1,920 kleiner als das gesamte Warteschlangentiefe von 2,048 ist, können Sie die Warteschlangentiefe für alle Initiatoren auf 128 einstellen.
-** Wenn das Ergebnis größer als 2,048 ist, mit Schritt 3 fortfahren. Sie haben 30 Hosts, wobei ein Initiator mit jedem der zwei Ziel-Ports auf dem Storage Controller verbunden ist. 30 × 128 = 3,840. Da 3,840 die Gesamttiefe der Warteschlange von 2,048 überschreitet, sollten Sie eine der Optionen unter Schritt 3 zur Behebung wählen.
+** Ist das Ergebnis kleiner als 2.048, sollte die Warteschlangentiefe für alle Initiatoren auf 128 gesetzt werden. Sie haben 15 Hosts, wobei jeweils ein Initiator an jeden der beiden Zielports des Storage Controllers angeschlossen ist. 15 × 128 = 1.920. Da 1.920 unter dem Gesamtlimit der Warteschlangentiefe von 2.048 liegt, kann die Warteschlangentiefe für alle Initiatoren auf 128 gesetzt werden.
+** Ist das Ergebnis größer als 2.048, gehen Sie zu Schritt 3. Sie haben 30 Hosts, wobei jeweils ein Initiator an jeden der beiden Zielports des Storage Controllers angeschlossen ist. 30 × 128 = 3.840. Da 3.840 größer als das Gesamtlimit der Warteschlangentiefe von 2.048 ist, sollte eine der Optionen unter Schritt 3 zur Behebung gewählt werden.
 
 
-. Wählen Sie eine der folgenden Optionen, um dem Storage Controller mehr Hosts hinzuzufügen.
+. Wählen Sie eine der folgenden Optionen, um dem Storage Controller weitere Hosts hinzuzufügen.
 +
 ** Option 1:
 +
-... Weitere FC-Ziel-Ports hinzufügen.
-... Neuverteilung Ihrer FC-Initiatoren
-... Wiederholen Sie die Schritte 1 und 2. + die gewünschte Warteschlangentiefe von 3,840 überschreitet die verfügbare Warteschlangentiefe pro Port. Um dies zu beheben, können Sie jedem Controller einen FC-Zieladapter mit zwei Ports hinzufügen und Ihre FC-Switches neu Zone festlegen, so dass 15 Ihrer 30 Hosts mit einem Satz Ports verbunden werden. Die restlichen 15 Hosts verbinden sich mit einem zweiten Port-Satz. Die Warteschlangentiefe pro Port wird dann auf 15 × 128 = 1,920 reduziert.
+... Weitere FC-Zielports hinzufügen.
+... Verteilen Sie Ihre FC-Initiatoren neu.
+... Wiederholen Sie die Schritte 1 und 2. + Die gewünschte Warteschlangentiefe von 3.840 überschreitet die verfügbare Warteschlangentiefe pro Port. Um dies zu beheben, kann jedem Controller ein FC-Zieladapter mit zwei Ports hinzugefügt werden, anschließend werden die FC-Switches so umkonfiguriert, dass 15 der 30 Hosts mit einem Satz von Ports und die verbleibenden 15 Hosts mit einem zweiten Satz von Ports verbunden sind. Die Warteschlangentiefe pro Port wird dadurch auf 15 × 128 = 1.920 reduziert.
 
 
 ** Option 2:
 +
-... Weisen Sie jeden Host basierend auf seinem erwarteten I/O-Bedarf als „`large`“ oder „`small`“ zu.
-... Multiplizieren Sie die Anzahl der großen Initiatoren mit 128.
-... Multiplizieren Sie die Anzahl der kleinen Initiatoren mit 32.
-... Fügen Sie die beiden Ergebnisse zusammen.
-... Wenn das Ergebnis weniger als 2,048 ist, stellen Sie die Warteschlangentiefe für große Hosts auf 128 und die Warteschlangentiefe für kleine Hosts auf 32 ein.
-... Wenn das Ergebnis immer noch größer als 2,048 pro Port ist, reduzieren Sie die Warteschlangentiefe pro Initiator, bis die gesamte Warteschlangentiefe kleiner als oder gleich 2,048 ist.
+... Jeder Host wird entsprechend seines erwarteten E/A-Bedarfs als "`large`" oder "`small`" bezeichnet.
+... Die Anzahl der großen Initiatoren ist mit 128 zu multiplizieren.
+... Die Anzahl der kleinen Initiatoren ist mit 32 zu multiplizieren.
+... Die beiden Ergebnisse werden addiert.
+... Ist das Ergebnis kleiner als 2.048, sollte die Warteschlangentiefe für große Hosts auf 128 und die Warteschlangentiefe für kleine Hosts auf 32 eingestellt werden.
+... Ist das Ergebnis pro Port immer noch größer als 2.048, sollte die Warteschlangenlänge pro Initiator verringert werden, bis die Gesamtwarteschlangenlänge kleiner oder gleich 2.048 ist.
 +
 [NOTE]
 ====
-Um die Warteschlangentiefe zu schätzen, die für einen bestimmten I/O-Durchsatz pro Sekunde erforderlich ist, verwenden Sie folgende Formel:
+Zur Abschätzung der erforderlichen Warteschlangenlänge für einen bestimmten Durchsatz von E/A pro Sekunde gilt folgende Formel:
 
-Benötigte Queue-Tiefe = (Anzahl I/O pro Sekunde) × (Reaktionszeit)
+Erforderliche Warteschlangentiefe = (Anzahl der E/A pro Sekunde) × (Antwortzeit)
 
-Wenn Sie beispielsweise 40,000 I/O pro Sekunde mit einer Reaktionszeit von 3 Millisekunden benötigen, dann ist die benötigte Warteschlangentiefe = 40,000 × (.003) = 120.
+Wenn beispielsweise 40.000 E/A-Vorgänge pro Sekunde bei einer Reaktionszeit von 3 Millisekunden benötigt werden, ergibt sich die erforderliche Warteschlangentiefe zu 40.000 × (0,003) = 120.
 
 ====
 
@@ -68,12 +68,12 @@ Wenn Sie beispielsweise 40,000 I/O pro Sekunde mit einer Reaktionszeit von 3 Mil
 
 
 
-Die maximale Anzahl von Hosts, die Sie mit einem Zielport verbinden können, ist 64, wenn Sie sich entscheiden, die Warteschlangentiefe auf die grundlegende Empfehlung von 32 zu begrenzen. Wenn Sie sich jedoch für eine Warteschlangentiefe von 128 entscheiden, können maximal 16 Hosts mit einem Zielport verbunden sein. Je größer die Warteschlangentiefe, desto weniger Hosts, die ein einziger Zielport unterstützen kann. Wenn Sie eine solche Anforderung haben, dass Sie keine Kompromisse in der Warteschlangentiefe machen können, sollten Sie mehr Zielports erhalten.
+Die maximale Anzahl an Hosts, die Sie mit einem Zielport verbinden können, beträgt 64, wenn Sie die Warteschlangenlänge auf die empfohlene Basislänge von 32 beschränken. Wenn jedoch eine Warteschlangenlänge von 128 gewählt wird, können maximal 16 Hosts mit einem Zielport verbunden werden. Je größer die Warteschlangenlänge, desto weniger Hosts kann ein einzelner Zielport unterstützen. Falls die Anforderungen so sind, dass bei der Warteschlangenlänge keine Kompromisse möglich sind, ist es erforderlich, mehr Zielports zu verwenden.
 
-Die gewünschte Warteschlangentiefe von 3,840 überschreitet die verfügbare Warteschlangentiefe pro Port. Es gibt 10 „`große`“ Hosts mit hohen Storage-I/O-Anforderungen und 20 „`skleine`“ Hosts mit niedrigen I/O-Anforderungen. Setzen Sie die Tiefe der Initiator-Warteschlange auf den großen Hosts auf 128 und die Tiefe der Initiator-Warteschlange auf den kleinen Hosts auf 32.
+Die gewünschte Warteschlangentiefe von 3.840 überschreitet die verfügbare Warteschlangentiefe pro Port. Es sind 10 „large“ Hosts mit hohem Storage-I/O-Bedarf und 20 „small“ Hosts mit geringem I/O-Bedarf vorhanden. Die Initiator-Warteschlangentiefe sollte auf den large Hosts auf 128 und auf den small Hosts auf 32 gesetzt werden.
 
-Ihre resultierende Gesamtwarteschlangentiefe beträgt (10 × 128) + (20 × 32) = 1,920.
+Die resultierende Gesamttiefe der Warteschlange beträgt (10 × 128) + (20 × 32) = 1.920.
 
-Sie können die verfügbare Warteschlangentiefe gleichmäßig auf jeden Initiator verteilen.
+Sie können die verfügbare Warteschlangenlänge gleichmäßig auf alle Initiatoren verteilen.
 
-Ihre resultierende Warteschlangentiefe pro Initiator beträgt 2,048 ÷ 30 = 68.
+Die daraus resultierende Warteschlangenlänge pro Initiator beträgt 2,048 ÷ 30 = 68.

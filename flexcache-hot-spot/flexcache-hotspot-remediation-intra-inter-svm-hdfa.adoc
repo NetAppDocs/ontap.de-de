@@ -2,43 +2,43 @@
 permalink: flexcache-hot-spot/flexcache-hotspot-remediation-intra-inter-svm-hdfa.html 
 sidebar: sidebar 
 keywords: tr, hotspot, flexcache, hdfa, configuration, inter-svm, intra-svm, architecture 
-summary: Nachdem Sie die Dichte Ihres HDFS festgelegt haben, entscheiden Sie, ob Sie über NFS auf das HDFS zugreifen. 
+summary: Nachdem Sie die Dichte Ihrer HDFs ermittelt haben, ist zu entscheiden, ob auf die HDFs über NFS zugegriffen wird. 
 ---
-= Bestimmen Sie eine ONTAP-interne oder SVM-interne HDFA-Option
+= Eine ONTAP Inter-SVM oder Intra-SVM HDFA-Option bestimmen
 :allow-uri-read: 
 
 
 [role="lead"]
-Nachdem Sie die Dichte Ihres HDFS ermittelt haben, entscheiden Sie, ob Sie über NFS auf HDFS zugreifen, und erhalten Sie weitere Informationen zu den HDFA- und HDFA-Optionen zwischen SVMs und Intra-SVM.
+Nachdem die Dichte Ihrer HDFs ermittelt wurde, kann entschieden werden, ob auf die HDFs über NFS zugegriffen wird, und es stehen Informationen zu Inter-SVM HDFA- und Intra-SVM HDFA-Optionen zur Verfügung.
 
 
-TIP: Wenn nur SMB-Clients auf HDFS zugreifen, sollten Sie alle HDFS in einer einzigen SVM erstellen. Informationen zur Verwendung von DFS-Zielen für den Lastausgleich finden Sie in der Windows-Clientkonfiguration.
+TIP: Wenn ausschließlich SMB-Clients auf die HDFs zugreifen, sollten alle HDFs in einer einzigen SVM erstellt werden. In der Windows-Clientkonfiguration ist ersichtlich, wie DFS-Ziele für den Lastausgleich verwendet werden können.
 
 
 
 [[inter-svm-hdfa-deployment]]
-== SVM-interne HDFA-Implementierung
+== Inter-SVM HDFA Bereitstellung
 
-Für eine Inter-SVM HDFA muss für jeden HDF in der HDFA eine SVM erstellt werden. Dadurch können alle HDFS innerhalb der HDFA über denselben Verbindungspfad verfügen, was eine einfachere Konfiguration auf der Client-Seite ermöglicht.
+Ein HDFA zwischen SVMs erfordert, dass für jede HDF im HDFA eine SVM erstellt wird. Dadurch haben alle HDFs innerhalb des HDFA denselben Verbindungspfad, was die Konfiguration auf der Clientseite erleichtert.
 
-In diesem <<Figure-1,Abbildung 1>> Beispiel befindet sich jeder HDF in einer eigenen SVM. Dies ist eine SVM-interne HDFA-Implementierung. Jeder HDF verfügt über einen Verbindungspfad von /Hotspots. Außerdem hat jede IP einen DNS-Eintrag Mit Hostnamen-Cache. Diese Konfiguration nutzt DNS-Round-Robin, um Load-Balancing-Mounts über die verschiedenen HDFS durchzuführen.
+Im <<Figure-1,Abbildung 1>> Beispiel befindet sich jede HDF in ihrer eigenen SVM. Dies ist eine inter-SVM-HDFA-Bereitstellung. Jede HDF hat einen Verbindungspfad von /hotspots. Außerdem hat jede IP einen DNS-A-Record mit dem Hostnamen cache. Diese Konfiguration nutzt DNS-Round-Robin, um die Mounts über die verschiedenen HDFs hinweg im Lastausgleich zu verteilen.
 
 [[Figure-1]]
-.Abbildung 1: 4x1x4 Inter-SVM HDFA-Konfiguration
-image:flexcache-hotspot-hdfa-one-hdf-per-svm.png["Abbildung 1: 4x1x4 Inter-SVM HDFA-Konfiguration"]
+.Abbildung 1: 4x1x4 Inter-SVM HDFA Konfiguration
+image:flexcache-hotspot-hdfa-one-hdf-per-svm.png["Abbildung 1: 4x1x4 Inter-SVM HDFA Konfiguration"]
 
 
 
 [[intra-svm-hdfa-deployment]]
-== SVM-interne HDFA-Implementierung
+== Intra-SVM HDFA Bereitstellung
 
-Bei einer internen SVM muss für jede HDF ein eindeutiger Verbindungspfad vorhanden sein, doch alle HDFS befinden sich in einer SVM. Dieses Setup ist in ONTAP einfacher, da nur eine SVM benötigt wird, jedoch eine erweiterte Konfiguration auf Linux-Seite mit und eine LIF-Platzierung der Daten in ONTAP erforderlich `autofs` ist.
+Eine Intra-SVM erfordert, dass jede HDF einen eindeutigen Verbindungspfad besitzt, jedoch befinden sich alle HDFs in einer einzigen SVM. Diese Konfiguration ist in ONTAP einfacher, da nur eine SVM benötigt wird, erfordert jedoch eine erweiterte Konfiguration auf der Linux-Seite mit  `autofs` und der Platzierung von Daten-LIFs in ONTAP.
 
-Im <<Figure-2,Abbildung 2>>Beispiel befindet sich jede HDF in derselben SVM. Hierbei handelt es sich um eine SVM-interne HDFA-Implementierung, für die die Verbindungspfade eindeutig sein müssen. Damit der Lastausgleich ordnungsgemäß funktioniert, müssen Sie für jede IP einen eindeutigen DNS-Namen erstellen und die von dem Hostnamen auflöst Daten-LIFs nur auf den Nodes platzieren, auf denen sich der HDF befindet. Sie müssen auch mit mehreren Einträgen konfigurieren `autofs`, wie in behandeltlink:flexcache-hotspot-remediation-client-config.html["Linux-Client-Konfiguration"].
+Im <<Figure-2,Abbildung 2>> Beispiel befindet sich jede HDF in derselben SVM. Dies ist eine intra-SVM-HDFA-Bereitstellung und erfordert eindeutige Verbindungspfade. Damit der Lastausgleich ordnungsgemäß funktioniert, ist für jede IP ein eindeutiger DNS-Name zu erstellen und die Daten-LIFs, auf die der Hostname aufgelöst wird, nur auf den Knoten zu platzieren, auf denen sich die HDF befindet. Außerdem ist  `autofs` mit mehreren Einträgen zu konfigurieren, wie in link:flexcache-hotspot-remediation-client-config.html["Linux-Client-Konfiguration"] erläutert.
 
 [[Figure-2]]
-.Abbildung 2: 4 x 1 x 4 intra-SVM-HDFA-Konfiguration
-image:flexcache-hotspot-hdfa-4x1x4-intra-svm-hdfa.png["Abbildung 2: 4 x 1 x 4 intra-SVM HDFA"]
+.Abbildung 2: 4x1x4 Intra-SVM HDFA-Konfiguration
+image:flexcache-hotspot-hdfa-4x1x4-intra-svm-hdfa.png["Abbildung 2: 4x1x4 intra-SVM HDFA"]
 
-.Wie es weiter geht
-Jetzt haben Sie eine Vorstellung davon, wie Sie Ihre HDFAs einsetzen möchten, link:flexcache-hotspot-remediation-ontap-config.html["Stellen Sie die HDFA bereit, und konfigurieren Sie die Clients für den dezentralen Zugriff"].
+.Was kommt als Nächstes
+Nachdem Sie nun eine Vorstellung davon haben, wie Sie Ihre HDFAs einsetzen möchtenlink:flexcache-hotspot-remediation-ontap-config.html["Die HDFA bereitstellen und die Clients so konfigurieren, dass sie in verteilter Weise darauf zugreifen."].

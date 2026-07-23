@@ -2,108 +2,108 @@
 permalink: nfs-rdma/configure-nics-task.html 
 sidebar: sidebar 
 keywords: networking, NICs, NFS over RDMA, NVIDIA, NFS, system manager, ports, ethernet ports 
-summary: In diesem Artikel wird erläutert, wie sowohl die Konfiguration von Client-Systemen als auch von Speicherplattformen und die Anforderungen für NICs zur Verwendung von NFS über RDMA in ONTAP verarbeitet werden. 
+summary: In diesem Artikel werden sowohl die Konfigurationsprozesse als auch die Anforderungen für Client-Systeme und Speicherplattformen hinsichtlich der Verwendung von NFS über RDMA in ONTAP erläutert. 
 ---
-= Konfigurieren Sie NICs für NFS über RDMA
+= Netzwerkkarten für NFS über RDMA konfigurieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-NFS über RDMA erfordert die NIC-Konfiguration sowohl für das Client-System als auch für die Storage-Plattform.
+NFS über RDMA erfordert eine NIC Konfiguration sowohl für das Client-System als auch für die Speicherplattform.
 
 
 
 [[storage-platform-configuration]]
-== Konfiguration der Storage-Plattform
+== Konfiguration der Speicherplattform
 
-Informationen zur Unterstützung von Ziel-RNIC finden Sie im https://hwu.netapp.com/["NetApp Hardware Universe"^].
+Informationen zur Unterstützung von Ziel-RNICs finden sich in der  https://hwu.netapp.com/["NetApp Hardware Universe"^].
 
-Wenn Sie eine HA-Konfiguration (High Availability) verwenden, müssen beide Knoten zur Unterstützung von RDMA-Failover dieselbe RNIC verwenden. Die NIC muss RoCE-fähig sein.
+Bei Verwendung einer Hochverfügbarkeitskonfiguration (HA) müssen beide Knoten dieselbe RNIC verwenden, um RDMA-Failover zu unterstützen. Die NIC muss RoCE-fähig sein.
 
-* Ab ONTAP 9.10.1 können Sie sich mit dem Befehl eine Liste der RDMA-Offload-Protokolle anzeigen lassen:
+* Ab ONTAP 9.10.1 kann eine Liste der RDMA Offload-Protokolle mit dem Befehl angezeigt werden:
 +
 [source, cli]
 ----
 network port show -rdma-protocols roce
 ----
 +
-Erfahren Sie mehr über `network port show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-show.html["ONTAP-Befehlsreferenz"^].
 
-* Ab ONTAP 9.16.1 wird die Verwendung der Priority Flow Control (PFC) empfohlen. Konfigurieren Sie PFC mit dem `network port modify` folgenden Befehl:
+* Ab ONTAP 9.16.1 wird die Verwendung der Prioritätsflusssteuerung (PFC) empfohlen. PFC wird mit dem  `network port modify` Befehl konfiguriert:
 +
 [source, cli]
 ----
 network port modify -node <nodename> -port <portname> -flowcontrol-admin pfc -pfc-queues-admin 3
 ----
-* Vor ONTAP 9.16.1 wird die Verwendung der globalen Standardflusskontrolle (GFC) empfohlen. Wenn die Einstellung für die Flusskontrolle geändert wurde, konfigurieren Sie GFC mit dem `network port modify` folgenden Befehl:
+* Vor ONTAP 9.16.1 wird die Verwendung der standardmäßigen globalen Flusssteuerung (GFC) empfohlen. Wenn die Flusssteuerungseinstellung geändert wurde, kann die GFC mit dem  `network port modify` Befehl konfiguriert werden:
 +
 [source, cli]
 ----
 network port modify -node <nodename> -port <portname> -flowcontrol-admin full
 ----
 +
-Erfahren Sie mehr über `network port modify` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-modify.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-modify.html["ONTAP-Befehlsreferenz"^].
 
 
 
 
 
 [[client-system-configuration]]
-== Client-System-Konfiguration
+== Client-Systemkonfiguration
 
-Informationen zu unterstützten Client-Betriebssystemen für NFS über RDMA finden Sie im https://imt.netapp.com/matrix/["NetApp Interoperabilitätsmatrix (IMT)"^]. Informationen zu von RoCE v2 unterstützten RNICs finden Sie in der entsprechenden RNIC-Herstellerdokumentation.
+Informationen zu unterstützten Client-Betriebssystemen für NFS über RDMA sind in der  https://imt.netapp.com/matrix/["NetApp Interoperabilitätsmatrix (IMT)"^] zu finden. Für RoCE v2 unterstützte RNICs wird auf die jeweilige RNIC-Herstellerdokumentation verwiesen.
 
 Obwohl Client und Server direkt verbunden werden können, wird die Verwendung von Switches für eine verbesserte Failover-Performance empfohlen.
 
-Der Client, der Server, alle Switches und alle Ports auf Switches müssen mithilfe von Jumbo Frames konfiguriert werden. Die Konfiguration der Flusssteuerung auf den Clients und Switches sollte mit der Konfiguration der Flusssteuerung von ONTAP übereinstimmen. Ab ONTAP 9.16.1 empfiehlt es sich, die Priority Flow Control für ONTAP, Switches und Clients zu aktivieren und zu konfigurieren. Vor ONTAP 9.16.1 wird die Verwendung der globalen Flusskontrolle empfohlen.
+Der Client, der Server, alle Switches und alle Ports an den Switches müssen mit Jumbo Frames konfiguriert werden. Die Flusssteuerungskonfiguration auf den Clients und Switches sollte mit der Flusssteuerungskonfiguration von ONTAP übereinstimmen. Ab ONTAP 9.16.1 gilt es als Best Practice, die priorisierte Flusssteuerung auf ONTAP, den Switches und den Clients zu aktivieren und zu konfigurieren. Vor ONTAP 9.16.1 wird empfohlen, die globale Flusssteuerung zu verwenden.
 
-Nachdem diese Konfiguration bestätigt wurde, können Sie den NFS-Export mit RDMA mounten.
+Nachdem diese Konfiguration bestätigt wurde, lässt sich der NFS-Export mithilfe von RDMA einbinden.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-Sie müssen ONTAP 9.12.1 oder höher verwenden, um Netzwerkschnittstellen mit NFS über RDMA mit System Manager zu konfigurieren.
+Es ist erforderlich, ONTAP 9.12.1 oder höher zu verwenden, um Netzwerkschnittstellen mit NFS über RDMA mithilfe von System Manager zu konfigurieren.
 
 .Schritte
-. Prüfung, ob RDMA unterstützt wird. Navigieren Sie zu *Netzwerk > Ethernet-Ports* und wählen Sie den entsprechenden Knoten in der Gruppenansicht aus. Wenn Sie den Knoten erweitern, schauen Sie sich das Feld *RDMA Protokolle* für einen bestimmten Port an: Der Wert *RoCE* steht für RDMA wird unterstützt; ein Bindestrich (*-*) zeigt an, dass es nicht unterstützt wird.
-. Um ein VLAN hinzuzufügen, wählen Sie *+ VLAN* aus. Wählen Sie den entsprechenden Knoten aus. Im Dropdown-Menü *Port* zeigen die verfügbaren Ports den Text *RoCE enabled* an, wenn sie RDMA unterstützen. Wenn RDMA nicht unterstützt wird, wird kein Text angezeigt.
-. Führen Sie den Workflow in ausxref:../task_nas_enable_linux_nfs.html[Aktivieren Sie NAS-Storage für Linux-Server mithilfe von NFS], um einen neuen NFS-Server zu konfigurieren.
+. Es kann überprüft werden, ob RDMA unterstützt wird. Unter *Network > Ethernet Ports* lässt sich in der Gruppenansicht der entsprechende Node auswählen. Beim Erweitern des Node ist im Feld *RDMA protocols* für den jeweiligen Port zu sehen: Der Wert *RoCE* zeigt an, dass RDMA unterstützt wird, ein Bindestrich (*-*) weist darauf hin, dass es nicht unterstützt wird.
+. Zum Hinzufügen eines VLANs *+ VLAN* auswählen. Den entsprechenden Knoten auswählen. Im Dropdown-Menü *Port* wird bei den verfügbaren Ports der Text *RoCE Enabled* angezeigt, wenn diese RDMA unterstützen. Es wird kein Text angezeigt, wenn sie RDMA nicht unterstützen.
+. Im Arbeitsablauf in xref:../task_nas_enable_linux_nfs.html[NAS-Speicher für Linux-Server mit NFS bereitstellen] wird die Konfiguration eines neuen NFS Servers beschrieben.
 +
-Beim Hinzufügen von Netzwerkschnittstellen haben Sie die Möglichkeit, *RoCE-Ports verwenden* auszuwählen. Wählen Sie diese Option für alle Netzwerkschnittstellen aus, für die NFS über RDMA verwendet werden soll.
+Beim Hinzufügen von Netzwerkschnittstellen besteht die Möglichkeit, *Use RoCE ports* auszuwählen. Diese Option ist für alle Netzwerkschnittstellen zu wählen, die NFS über RDMA verwenden sollen.
 
 
 
 --
 .CLI
 --
-. Überprüfen Sie, ob der RDMA-Zugriff auf dem NFS-Server mit dem Befehl aktiviert ist:
+. Es kann mit folgendem Befehl überprüft werden, ob der RDMA-Zugriff auf dem NFS-Server aktiviert ist:
 +
 `vserver nfs show-vserver <SVM_name>`
 
 +
-Standardmäßig `-rdma` sollte aktiviert sein. Wenn das nicht der Fall ist, aktivieren Sie RDMA-Zugriff auf dem NFS-Server:
+Standardmäßig `-rdma` sollte diese Funktion aktiviert sein. Falls sie nicht aktiviert ist, kann der RDMA-Zugriff auf dem NFS-Server aktiviert werden:
 
 +
 `vserver nfs modify -vserver <SVM_name> -rdma enabled`
 
-. Client über NFSv4.0 über RDMA mounten:
+. Den Client über NFSv4.0 über RDMA einbinden:
 +
-.. Die Eingabe für den Proto-Parameter hängt von der Server-IP-Protokollversion ab. Wenn es sich um IPv4 handelt, verwenden Sie `proto=rdma`. Wenn es IPv6 ist, verwenden Sie `proto=rdma6`.
-.. Geben Sie den NFS-Zielport als `port=20049` anstelle des Standardports 2049 an:
+.. Die Eingabe für den Parameter „proto“ hängt von der Server-IP-Protokollversion ab. Handelt es sich um IPv4, verwenden Sie  `proto=rdma`. Handelt es sich um IPv6, verwenden Sie  `proto=rdma6`.
+.. Der NFS-Zielport ist als  `port=20049` anstelle des Standardports 2049 anzugeben:
 +
 `mount -o vers=4,minorversion=0,proto=rdma,port=20049 <Server_IP_address>:/<volume_path> <mount_point>`
 
 
 
-. *OPTIONAL*: Wenn Sie den Client unmounten müssen, führen Sie den Befehl aus `unmount <mount_path>`
+. *OPTIONAL*: Falls Sie den Client aushängen müssen, führen Sie den Befehl  `unmount <mount_path>` aus.
 
 
 --
 ====
 .Weitere Informationen
-* xref:../nfs-config/create-server-task.html[Erstellen Sie ONTAP NFS-Server]
-* xref:../task_nas_enable_linux_nfs.html[Aktivieren Sie NAS-Storage für Linux-Server mithilfe von NFS]
+* xref:../nfs-config/create-server-task.html[ONTAP NFS-Server erstellen]
+* xref:../task_nas_enable_linux_nfs.html[NAS-Speicher für Linux-Server mit NFS bereitstellen]
 

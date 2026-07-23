@@ -2,29 +2,29 @@
 permalink: svm-migrate/migrate-svm-task.html 
 sidebar: sidebar 
 keywords: svm, migrate, defaults, cutover, cleanup 
-summary: Nach Abschluss einer SVM-Migration werden die Clients automatisch auf das Ziel-Cluster übertragen und die unnötige SVM wird aus dem Quell-Cluster entfernt. Die automatische Umstellung und die automatische Bereinigung der Quelle sind standardmäßig aktiviert. Bei Bedarf können Sie die automatische Umstellung des Clients deaktivieren, um die Migration vor der Umstellung auszusetzen, und Sie können auch die automatische SVM-Quellbereinigung deaktivieren. 
+summary: Nach Abschluss einer SVM-Migration werden die Clients automatisch auf den Ziel-Cluster umgeschaltet und die nicht mehr benötigte SVM aus dem Quell-Cluster entfernt. Automatische Umschaltung und automatische Quellbereinigung sind standardmäßig aktiviert. Bei Bedarf kann die automatische Client-Umschaltung deaktiviert werden, um die Migration vor der Umschaltung zu unterbrechen, und auch die automatische Quell-SVM-Bereinigung kann deaktiviert werden. 
 ---
-= Migrieren eines ONTAP SVM
+= Migration einer ONTAP SVM
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Nach Abschluss einer SVM-Migration werden die Clients automatisch auf das Ziel-Cluster übertragen und die unnötige SVM wird aus dem Quell-Cluster entfernt. Die automatische Umstellung und die automatische Bereinigung der Quelle sind standardmäßig aktiviert. Bei Bedarf können Sie die automatische Umstellung des Clients deaktivieren, um die Migration vor der Umstellung auszusetzen, und Sie können auch die automatische SVM-Quellbereinigung deaktivieren.
+Nach Abschluss einer SVM-Migration werden die Clients automatisch auf den Ziel-Cluster umgeschaltet und die nicht mehr benötigte SVM aus dem Quell-Cluster entfernt. Automatische Umschaltung und automatische Quellbereinigung sind standardmäßig aktiviert. Bei Bedarf kann die automatische Client-Umschaltung deaktiviert werden, um die Migration vor der Umschaltung zu unterbrechen, und auch die automatische Quell-SVM-Bereinigung kann deaktiviert werden.
 
 .Über diese Aufgabe
-Dieses Verfahren gilt für FAS, AFF und ASA Systeme.  Wenn Sie ein ASA r2-System (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30, ASA A20 oder ASA C30) besitzen, befolgen Sie die Anweisungen.link:https://docs.netapp.com/us-en/asa-r2/manage-data/migrate-svm.html["Diesen Schritten ausführen"^] um eine SVM zu migrieren. ASA r2-Systeme bieten ein vereinfachtes ONTAP Erlebnis speziell für reine SAN-Kunden.
+Dieses Verfahren gilt für FAS, AFF und ASA Systeme. Bei einem ASA r2 System (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30, ASA A20 oder ASA C30) ist link:https://docs.netapp.com/us-en/asa-r2/manage-data/migrate-svm.html["diese Schritte"^] für die Migration einer SVM zu folgen. ASA r2 Systeme bieten eine vereinfachte ONTAP Erfahrung speziell für ausschließlich SAN-basierte Kunden.
 
 Ab ONTAP 9.19.1 werden Direct-Attachment FC- und FC-NVMe-Konfigurationen für bestimmte AFF, ASA r2 und FAS Systeme unterstützt. Direct-Attachment Konfigurationen unterstützen keine SVM Migration.
 
-* Sie können `-auto-cutover false` die Migration optional aussetzen, wenn die automatische Client-Umstellung normal läuft, und die Umstellung später manuell durchführen.
+* Sie können die  `-auto-cutover false` Option verwenden, um die Migration zu unterbrechen, wenn normalerweise eine automatische Client-Umstellung erfolgt, und die Umstellung später manuell durchführen.
 +
 xref:manual-client-cutover-task.adoc[Manuelle Umstellung der Clients nach der SVM-Migration]
 
-* Mit der `-auto-source-cleanup false` Option für erweiterte Berechtigungen können Sie die Entfernung der Quell-SVM nach der Umstellung deaktivieren und später nach der Umstellung eine manuelle Quellbereinigung auslösen.
+* Sie können die Option für erweiterte Berechtigungen `-auto-source-cleanup false` verwenden, um die Entfernung der Quell-SVM nach der Umstellung zu deaktivieren und die Quellbereinigung später, nach der Umstellung, manuell auszulösen.
 +
-xref:manual-source-removal-task.adoc[Quell-SVM wird nach der Umstellung manuell entfernt]
+xref:manual-source-removal-task.adoc[Quell-SVM nach dem Umschalten manuell entfernen]
 
 
 
@@ -33,53 +33,53 @@ xref:manual-source-removal-task.adoc[Quell-SVM wird nach der Umstellung manuell 
 [[migrate-an-ontap-svm-with-automatic-cutover-enabled]]
 == Migrieren einer ONTAP SVM mit aktivierter automatischer Umschaltung
 
-Standardmäßig werden Clients nach Abschluss der Migration automatisch auf das Ziel-Cluster übertragen und die unnötige SVM wird aus dem Quell-Cluster entfernt.
+Standardmäßig werden die Clients nach Abschluss der Migration automatisch auf den Ziel-Cluster umgeschaltet, und die nicht mehr benötigte SVM wird aus dem Quell-Cluster entfernt.
 
 .Schritte
-. Führen Sie im Ziel-Cluster die Vorabprüfungen für die Migration durch:
+. Vom Ziel-Cluster aus die Migrationsvorprüfungen ausführen:
 +
 [source, cli]
 ----
 vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -check-only true`
 ----
-. Starten Sie über das Ziel-Cluster die SVM-Migration:
+. Von dem Ziel-Cluster aus die SVM-Migration starten:
 +
 [source, cli]
 ----
 vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name>
 ----
-. Prüfen Sie den Migrationsstatus:
+. Migrationsstatus prüfen:
 +
 [source, cli]
 ----
 vserver migrate show
 ----
 +
-Nach Abschluss der SVM-Migration wird als Status „Migration abgeschlossen“ angezeigt.
+Der Status zeigt „migrate-complete“ an, wenn die SVM-Migration abgeschlossen ist.
 
 
 
 
 
 [[migrate-an-ontap-svm-with-automatic-client-cutover-disabled]]
-== Migrieren einer ONTAP SVM mit deaktivierter automatischer Clientumschaltung
+== Migrieren einer ONTAP SVM mit deaktivierter automatischer Client-Umstellung
 
-Sie können die Option -Auto-Umstellungsphase false verwenden, um die Migration zu unterbrechen, wenn die automatische Client-Umstellung normalerweise erfolgt, und führen Sie die Umstellung zu einem späteren Zeitpunkt manuell aus. Siehe xref:manual-client-cutover-task.adoc[Manuelle Umstellung der Clients nach der SVM-Migration].
+Sie können die Option `-auto-cutover false` verwenden, um die Migration anzuhalten, wenn normalerweise eine automatische Client-Umstellung erfolgt, und die Umstellung später manuell durchführen. Siehe xref:manual-client-cutover-task.adoc[Manuelle Umstellung der Clients nach der SVM-Migration].
 
 .Schritte
-. Führen Sie im Ziel-Cluster die Vorabprüfungen für die Migration durch:
+. Vom Ziel-Cluster aus die Migrationsvorprüfungen ausführen:
 +
 [source, cli]
 ----
 vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -check-only true`
 ----
-. Starten Sie über das Ziel-Cluster die SVM-Migration:
+. Von dem Ziel-Cluster aus die SVM-Migration starten:
 +
 [source, cli]
 ----
 vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -auto-cutover false`
 ----
-. Prüfen Sie den Migrationsstatus:
+. Migrationsstatus prüfen:
 +
 [source, cli]
 ----
@@ -87,35 +87,35 @@ vserver migrate show
 ----
 
 
-Der Status wird als „bereit für die Umstellung“ angezeigt, sobald die SVM-Migration die asynchronen Datenübertragungen abgeschlossen hat und das System für den Umstellungsvorgang bereit ist.
+Der Status wird als „bereit für die Umstellung“ angezeigt, wenn die SVM-Migration die asynchronen Datenübertragungen abgeschlossen hat und das System für den Umstellungsvorgang bereit ist.
 
 
 
 [[migrate-an-ontap-svm-with-source-cleanup-disabled]]
-== Migrieren einer ONTAP SVM mit deaktivierter Quellcodebereinigung
+== Migration einer ONTAP SVM mit deaktivierter Quellbereinigung
 
-Sie können die Option Advance -Auto-Source-Cleanup false verwenden, um das Entfernen der Quell-SVM nach der Umstellung zu deaktivieren und anschließend nach der Umstellung manuell die Quellbereinigung auszulösen. Siehe xref:manual-source-removal-task.adoc[Quell-SVM manuell entfernen].
+Sie können die Option `-auto-source-cleanup false` der erweiterten Berechtigung verwenden, um die Entfernung der Quell-SVM nach der Umstellung zu deaktivieren und die Quellbereinigung anschließend nach der Umstellung manuell auszulösen. Siehe xref:manual-source-removal-task.adoc[Quell-SVM manuell entfernen].
 
 .Schritte
-. Führen Sie im Ziel-Cluster die Vorabprüfungen für die Migration durch:
+. Vom Ziel-Cluster aus die Migrationsvorprüfungen ausführen:
 +
 [source, cli]
 ----
 vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -check-only true`
 ----
-. Starten Sie über das Ziel-Cluster die SVM-Migration:
+. Von dem Ziel-Cluster aus die SVM-Migration starten:
 +
 [source, cli]
 ----
 vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -auto-source-cleanup false`
 ----
-. Prüfen Sie den Migrationsstatus:
+. Migrationsstatus prüfen:
 +
 [source, cli]
 ----
 vserver migrate show
 ----
 +
-Der Status zeigt die Bereinigung bereit zur Quelle an, wenn die SVM-Migrationsumstellung abgeschlossen ist und bereit ist, die SVM auf dem Quell-Cluster zu entfernen.
+Der Status zeigt „bereit für die Quellbereinigung“ an, wenn der SVM-Migrationsübergang abgeschlossen ist und die SVM auf dem Quell-Cluster entfernt werden kann.
 
 

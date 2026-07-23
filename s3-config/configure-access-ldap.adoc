@@ -2,9 +2,9 @@
 permalink: s3-config/configure-access-ldap.html 
 sidebar: sidebar 
 keywords: tr-4814, generate, ldap, s3, access keys, secret keys using API 
-summary: Schlüssel für den Zugriff auf S3-Clients können von S3-Benutzern über API neu generiert werden. 
+summary: Schlüssel für den Zugriff auf S3-Clients können von S3-Benutzern mithilfe der API neu generiert werden. 
 ---
-= Konfigurieren Sie externe Verzeichnisdienste für ONTAP S3-Zugriff
+= Externe Verzeichnisdienste für den ONTAP S3-Zugriff konfigurieren
 :hardbreaks:
 :allow-uri-read: 
 :icons: font
@@ -12,28 +12,28 @@ summary: Schlüssel für den Zugriff auf S3-Clients können von S3-Benutzern üb
 
 
 [role="lead"]
-Ab ONTAP 9.14.1 sind Services für externe Verzeichnisse in ONTAP S3 Objekt-Storage integriert. Diese Integration vereinfacht die Benutzer- und Zugriffsverwaltung durch externe Verzeichnisdienste.
+Ab ONTAP 9.14.1 sind Dienste für externe Verzeichnisse in ONTAP S3 Objektspeicher integriert. Diese Integration vereinfacht die Benutzer- und Zugriffsverwaltung über externe Verzeichnisdienste.
 
-Sie können Benutzergruppen, die zu einem externen Verzeichnisdienst gehören, mit Zugriff auf Ihre ONTAP Objekt-Storage-Umgebung versehen. Lightweight Directory Access Protocol (LDAP) ist eine Schnittstelle zur Kommunikation mit Verzeichnisdiensten wie Active Directory, die eine Datenbank und Dienste für Identitäts- und Zugriffsmanagement (IAM) bereitstellen. Für den Zugriff müssen Sie LDAP-Gruppen in Ihrer ONTAP S3-Umgebung konfigurieren. Nachdem Sie den Zugriff konfiguriert haben, haben die Gruppenmitglieder Berechtigungen für ONTAP S3 Buckets. Informationen zu LDAP finden Sie unter link:../nfs-config/using-ldap-concept.html["Erfahren Sie mehr über die Verwendung von LDAP-Namensdiensten auf ONTAP NFS SVMs"].
+Sie können Benutzergruppen eines externen Verzeichnisdienstes Zugriff auf Ihre ONTAP Objektspeicherumgebung gewähren. Das Lightweight Directory Access Protocol (LDAP) ist eine Schnittstelle zur Kommunikation mit Verzeichnisdiensten wie Active Directory, die eine Datenbank und Dienste für Identitäts- und Zugriffsmanagement (IAM) bereitstellen. Um Zugriff bereitzustellen, ist die Konfiguration von LDAP-Gruppen in Ihrer ONTAP S3-Umgebung erforderlich. Nach der Konfiguration verfügen die Gruppenmitglieder über Berechtigungen für ONTAP S3 Buckets. Informationen zu LDAP finden sich unter link:../nfs-config/using-ldap-concept.html["Informationen zur Verwendung von LDAP-Name-Services auf ONTAP NFS SVMs"].
 
-Sie können auch Active Directory-Benutzergruppen für den schnellen Bindungsmodus konfigurieren, sodass die Anmeldeinformationen von Benutzern validiert und S3-Anwendungen von Drittanbietern und Open-Source-Anwendungen über LDAP-Verbindungen authentifiziert werden können.
+Sie können auch Active Directory-Benutzergruppen für den Fast-Bind-Modus konfigurieren, sodass Benutzeranmeldeinformationen validiert und S3-Anwendungen von Drittanbietern sowie Open-Source-S3-Anwendungen über LDAP-Verbindungen authentifiziert werden können.
 
 .Bevor Sie beginnen
-Stellen Sie vor der Konfiguration von LDAP-Gruppen und der Aktivierung des fast-Bind-Modus für den Gruppenzugriff Folgendes sicher:
+Vor der Konfiguration von LDAP-Gruppen und der Aktivierung des Schnellbindungsmodus für den Gruppenzugriff sind die folgenden Punkte zu beachten:
 
-. Es wurde eine S3-fähige Storage-VM erstellt, die einen S3-Server enthält. Siehe link:../s3-config/create-svm-s3-task.html["Erstellung einer SVM für S3"].
-. In dieser Storage-VM wurde ein Bucket erstellt. Siehe link:../s3-config/create-bucket-task.html["Erstellen eines Buckets"].
-. DNS ist auf der Storage-VM konfiguriert. Siehe link:../networking/configure_dns_services_auto.html["Konfigurieren Sie DNS-Dienste"].
-. Auf der Storage-VM wird ein selbstsigniertes CA-Zertifikat (Root Certification Authority) des LDAP-Servers installiert. Siehe link:../nfs-config/install-self-signed-root-ca-certificate-svm-task.html["Installieren Sie selbstsignierte Stamm-CA-Zertifikate auf der SVM"].
-. Ein LDAP-Client wird mit TLS auf der SVM konfiguriert. Siehe link:../nfs-config/create-ldap-client-config-task.html["Erstellen Sie LDAP-Clientkonfigurationen für den ONTAP NFS-Zugriff"] und link:../nfs-config/enable-ldap-svms-task.html["Verknüpfen Sie LDAP-Clientkonfigurationen mit ONTAP NFS SVMs für Informationen"].
+. Es wurde eine S3-fähige Storage-VM mit einem S3-Server erstellt. Siehe link:../s3-config/create-svm-s3-task.html["Eine SVM für S3 erstellen"].
+. In dieser Storage-VM wurde ein Bucket erstellt. Siehe link:../s3-config/create-bucket-task.html["Einen Bucket erstellen"].
+. DNS ist auf der Speicher-VM konfiguriert. Siehe link:../networking/configure_dns_services_auto.html["DNS-Dienste konfigurieren"].
+. Ein selbstsigniertes Stammzertifizierungsstellenzertifikat (CA-Zertifikat) des LDAP-Servers ist auf der Storage-VM installiert. Siehe link:../nfs-config/install-self-signed-root-ca-certificate-svm-task.html["Selbstsignierte Root-CA-Zertifikate auf der SVM installieren"].
+. Ein LDAP-Client ist mit aktiviertem TLS auf der SVM konfiguriert. Siehe link:../nfs-config/create-ldap-client-config-task.html["LDAP-Client-Konfigurationen für ONTAP NFS-Zugriff erstellen"] und link:../nfs-config/enable-ldap-svms-task.html["Zu Informationszwecken können LDAP-Client-Konfigurationen mit ONTAP NFS SVMs verknüpft werden."].
 
 
 
 
 [[configure-s3-access-for-ldap]]
-== Konfigurieren Sie den S3-Zugriff für LDAP
+== S3-Zugriff für LDAP konfigurieren
 
-. Geben Sie LDAP als _Name Service-Datenbank_ der SVM für die Gruppe und Passwort für LDAP an:
+. LDAP als _Namensdienstdatenbank_ der SVM für die Gruppe und das Passwort für LDAP angeben:
 +
 [listing]
 ----
@@ -41,16 +41,16 @@ ns-switch modify -vserver <vserver-name> -database group -sources files,ldap
 ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
 ----
 +
-Weitere Informationen zum Befehl Link:https://docs.NetApp.com/US-en/ONTAP-cli/vserver-services-name-service-ns-switch-modify.html^] finden[`vserver services name-service ns-switch modify` Sie in der ONTAP-Befehlsreferenz.
+Weitere Informationen zum Befehl link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-ns-switch-modify.html[`vserver services name-service ns-switch modify`^] finden Sie in der ONTAP Befehlsreferenz.
 
-. Erstellen Sie eine Objektspeicher-Bucket-Policy-Anweisung mit der `principal` Einstellung auf die LDAP-Gruppe, der Sie Zugriff gewähren möchten:
+. Erstellen Sie eine Objektspeicher-Bucket-Richtlinienanweisung, bei der  `principal` auf die LDAP-Gruppe gesetzt ist, der Zugriff gewährt werden soll:
 +
 [listing]
 ----
 object-store-server bucket policy statement create -bucket <bucket-name> -effect allow -principal nasgroup/<ldap-group-name> -resource <bucket-name>, <bucket-name>/*
 ----
 +
-Beispiel: Im folgenden Beispiel wird eine Bucket Policy-Anweisung für erstellt `buck1`. Die Richtlinie ermöglicht den Zugriff der LDAP-Gruppe `group1` auf die Ressource (Bucket und deren Objekte) `buck1`.
+Beispiel: Das folgende Beispiel erstellt eine Bucket-Richtlinienanweisung für `buck1`. Die Richtlinie erlaubt der LDAP-Gruppe `group1` den Zugriff auf die Ressource (Bucket und seine Objekte) `buck1`.
 
 +
 [listing]
@@ -58,15 +58,15 @@ Beispiel: Im folgenden Beispiel wird eine Bucket Policy-Anweisung für erstellt 
 vserver object-store-server bucket policy add-statement -bucket buck1 -effect allow -action
 GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts, ListBucketVersions,GetObjectTagging,PutObjectTagging,DeleteObjectTagging,GetBucketVersioning,PutBucketVersioning -principal nasgroup/group1 -resource buck1, buck1/*
 ----
-. Vergewissern Sie sich, dass ein Benutzer der LDAP-Gruppe `group1` S3-Vorgänge vom S3-Client ausführen kann.
+. Es wird überprüft, ob ein Benutzer aus der LDAP-Gruppe `group1` in der Lage ist, S3-Operationen vom S3-Client aus durchzuführen.
 
 
 
 
 [[use-ldap-fast-bind-mode-for-authentication]]
-== Verwenden Sie für die Authentifizierung den LDAP-F.A.S.T. Bind-Modus
+== LDAP-Fast-Bind-Modus für die Authentifizierung verwenden
 
-. Geben Sie LDAP als _Name Service-Datenbank_ der SVM für die Gruppe und Passwort für LDAP an:
+. LDAP als _Namensdienstdatenbank_ der SVM für die Gruppe und das Passwort für LDAP angeben:
 +
 [listing]
 ----
@@ -74,19 +74,19 @@ ns-switch modify -vserver <vserver-name> -database group -sources files,ldap
 ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
 ----
 +
-Weitere Informationen zum Befehl Link:https://docs.NetApp.com/US-en/ONTAP-cli/vserver-services-name-service-ns-switch-modify.html^] finden[`vserver services name-service ns-switch modify` Sie in der ONTAP-Befehlsreferenz.
+Weitere Informationen zum Befehl link:https://docs.netapp.com/us-en/ontap-cli/vserver-services-name-service-ns-switch-modify.html[`vserver services name-service ns-switch modify`^] finden Sie in der ONTAP Befehlsreferenz.
 
-. Stellen Sie sicher, dass für einen LDAP-Benutzer, der auf den S3-Bucket zugreift, in den Bucket-Richtlinien definierte Berechtigungen gelten. Weitere Informationen finden Sie unter link:../s3-config/create-modify-bucket-policy-task.html["Ändern einer Bucket-Richtlinie"].
-. Überprüfen Sie, ob ein Benutzer aus der LDAP-Gruppe die folgenden Vorgänge ausführen kann:
+. Stellen Sie sicher, dass ein LDAP-User, der auf den S3-Bucket zugreift, über die in den Bucket-Policies definierten Berechtigungen verfügt. Weitere Informationen finden sich unter link:../s3-config/create-modify-bucket-policy-task.html["Ändern einer Bucket-Richtlinie"].
+. Es sollte überprüft werden, ob ein Benutzer der LDAP-Gruppe die folgenden Operationen ausführen kann:
 +
-.. Konfigurieren Sie den Zugriffsschlüssel auf dem S3-Client in diesem Format:
-`"NTAPFASTBIND" + base64-encode(user-name:password)` Beispiel: `"NTAPFASTBIND"` + base64-encode(ldapuser:password), was dazu führt
-`NTAPFASTBINDbGRhcHVzZXI6cGFzc3dvcmQ=`
+.. Der Zugriffsschlüssel wird auf dem S3-Client in diesem Format konfiguriert:
+`"NTAPFASTBIND" + base64-encode(user-name:password)` Beispiel: `"NTAPFASTBIND"` + base64-encode(ldapuser:password), was zu
+`NTAPFASTBINDbGRhcHVzZXI6cGFzc3dvcmQ=` führt
 +
 
-NOTE: Der S3-Client fordert möglicherweise einen geheimen Schlüssel an. In Ermangelung eines geheimen Schlüssels kann ein Passwort mit mindestens 16 Zeichen eingegeben werden.
+NOTE: Der S3-Client fordert möglicherweise einen geheimen Schlüssel an. Falls kein geheimer Schlüssel vorhanden ist, kann ein beliebiges Passwort mit mindestens 16 Zeichen eingegeben werden.
 
-.. Führen Sie grundlegende S3-Vorgänge über den S3-Client durch, für den der Benutzer Berechtigungen besitzt.
+.. Grundlegende S3-Operationen können über den S3-Client ausgeführt werden, für die der Benutzer die entsprechenden Berechtigungen besitzt.
 
 
 
@@ -96,61 +96,61 @@ NOTE: Der S3-Client fordert möglicherweise einen geheimen Schlüssel an. In Erm
 [[base64-credentials]]
 === Base64-Anmeldeinformationen
 
-Die Standardkonfiguration von ONTAP S3 schließt HTTP aus und verwendet ausschließlich HTTPS und eine TLS-Verbindung (Transport Layer Security). ONTAP kann selbstsignierte Zertifikate generieren, als Best Practice wird jedoch empfohlen, Zertifikate von einer Drittanbieter-Zertifizierungsstelle zu verwenden. Wenn Sie CA-Zertifikate verwenden, erstellen Sie eine vertrauenswürdige Beziehung zwischen Client-Anwendungen und dem ONTAP-Objektspeicher-Server.
+Die Standardkonfiguration von ONTAP S3 schließt HTTP aus und verwendet ausschließlich HTTPS und eine Transport Layer Security (TLS)-Verbindung. ONTAP kann selbstsignierte Zertifikate generieren, aber die empfohlene Best Practice ist die Verwendung von Zertifikaten einer Drittanbieter-Zertifizierungsstelle (CA). Bei der Verwendung von CA-Zertifikaten entsteht eine Vertrauensbeziehung zwischen Client-Anwendungen und dem ONTAP Objektspeicher-Server.
 
-Beachten Sie, dass Anmeldeinformationen, die mit Base64 kodiert werden, leicht decodiert werden. Mit HTTPS werden verschlüsselte Anmeldeinformationen von man-in-the-Middle-Paketabfragern nicht erfasst.
+Beachten Sie, dass mit Base64 codierte Anmeldeinformationen leicht entschlüsselt werden können. Die Verwendung von HTTPS verhindert, dass codierte Anmeldeinformationen von Man-in-the-Middle-Paketsniffern abgefangen werden.
 
-Verwenden Sie beim Erstellen vorsignierter URLs keinen LDAP-Fast-Bind-Modus zur Authentifizierung. Die Authentifizierung basiert ausschließlich auf dem Base64-Zugriffsschlüssel, der in der vorsignierten URL enthalten ist. Der Benutzername und das Passwort werden jedem angezeigt, der den Base64-Zugriffsschlüssel decodiert.
+Der LDAP-Fast-Bind-Modus sollte beim Erstellen vorab signierter URLs nicht für die Authentifizierung verwendet werden. Die Authentifizierung basiert ausschließlich auf dem Base64-Zugriffsschlüssel, der in der vorab signierten URL enthalten ist. Benutzername und Passwort werden jedem offengelegt, der den Base64-Zugriffsschlüssel entschlüsselt.
 
 
 
 [[authentication-method-is-nsswitch-and-ldap-is-enabled-example]]
-=== Authentifizierungsmethode ist nsswitch und LDAP ist aktiviert Beispiel
+=== Authentifizierungsverfahren ist nsswitch und LDAP ist aktiviert Beispiel
 
 [listing]
 ----
 $curl -siku <user>:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user>,"key_time_to_live":"PT6H3M"}
 ----
 
-NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM. Wenn Sie Benutzern erlauben möchten, eigene Schlüssel zu generieren, müssen Sie ihrer Rolle HTTP-Berechtigungen hinzufügen, um Curl zu verwenden. Diese Berechtigung wird zusätzlich zu den S3-API-Berechtigungen gewährt.
+NOTE: Die API ist an das Cluster-Management-LIF und nicht an das Daten-LIF der SVM zu richten. Um Benutzern das Generieren eigener Schlüssel zu ermöglichen, sind ihrer Rolle HTTP-Berechtigungen für die Nutzung von curl hinzuzufügen. Diese Berechtigung kommt zu den S3-API-Berechtigungen hinzu.
 
 
 
 [[configure-s3-access-for-active-directory-or-smb-servers]]
-== Konfigurieren des S3-Zugriffs für Active Directory- oder SMB-Server
+== S3-Zugriff für Active Directory oder SMB-Server konfigurieren
 
-Wenn die in der Bucket-Policy-Anweisung angegebene nasgroup oder die Benutzer, die Teil der nasgroup sind, keine UID und keine GID festgelegt haben, schlagen die Suchen fehl, wenn diese Attribute nicht gefunden werden. Active Directory verwendet SID, nicht UID. Wenn SID-Einträge nicht der UID zugeordnet werden können, müssen die erforderlichen Daten an ONTAP übertragen werden.
+Wenn für die in der Bucket-Richtlinie angegebene nasgroup oder die Benutzer, die dieser nasgroup angehören, keine UID und GID festgelegt sind, schlagen Suchvorgänge fehl, wenn diese Attribute nicht gefunden werden. Active Directory verwendet SID, nicht UID. Können SID-Einträge nicht UID zugeordnet werden, müssen die erforderlichen Daten zu ONTAP gebracht werden.
 
-Verwenden Sie dazu, link:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["Erstellung von vserver Active Directory"]damit sich die SVM bei Active Directory authentifizieren kann und die erforderlichen Benutzer- und Gruppeninformationen abrufen kann.
+Dazu link:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["vserver active-directory create"] verwenden, damit sich die SVM bei Active Directory authentifizieren und die erforderlichen Benutzer- und Gruppeninformationen abrufen kann.
 
-Alternativ können Sie verwendenlink:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["cifs vserver erstellen"], um einen SMB-Server in einer Active Directory-Domäne zu erstellen.
+Alternativ kann link:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["vserver cifs create"] verwendet werden, um einen SMB-Server in einer Active Directory-Domäne zu erstellen.
 
-Wenn Sie unterschiedliche Domänennamen für Nameserver und Objektspeicher verwenden, kann es zu Suchfehlern kommen. Um Suchfehler zu vermeiden, empfiehlt NetApp die Verwendung vertrauenswürdiger Domänen für die Ressourcenautorisierung im UPN-Format:  `nasgroup/group@trusted_domain.com` Vertrauenswürdige Domänen sind diejenigen, die der Liste der vertrauenswürdigen Domänen des SMB-Servers hinzugefügt wurden. Erfahren Sie, wie Sie link:../smb-admin/add-remove-replace-trusted-domains-preferred-lists-task.html["bevorzugte vertrauenswürdige Domänen hinzufügen, entfernen und ändern"] in der SMB-Serverliste.
+Wenn Sie unterschiedliche Domänennamen für Nameserver und Objektspeicher verwenden, kann es zu Namensauflösungsfehlern kommen. Um Namensauflösungsfehler zu vermeiden, empfiehlt NetApp, für die Ressourcenautorisierung vertrauenswürdige Domänen im UPN-Format zu verwenden: `nasgroup/group@trusted_domain.com` Vertrauenswürdige Domänen sind solche, die der Liste der vertrauenswürdigen Domänen des SMB-Servers hinzugefügt wurden. Es wird erläutert, wie link:../smb-admin/add-remove-replace-trusted-domains-preferred-lists-task.html["Bevorzugte vertrauenswürdige Domänen hinzufügen, entfernen und ändern"] in der SMB-Serverliste vorzugehen ist.
 
 
 
 [[generate-keys-when-the-authentication-method-is-domain-and-trusted-domains-are-configured-in-active-directory]]
-=== Generieren Sie Schlüssel, wenn die Authentifizierungsmethode Domain ist und vertrauenswürdige Domänen in Active Directory konfiguriert sind
+=== Schlüssel werden generiert, wenn das Authentifizierungsverfahren „Domäne“ ist und vertrauenswürdige Domänen in Active Directory konfiguriert sind.
 
-Verwenden Sie den `s3/services/<svm_uuid>/users` Endpunkt mit Benutzern, die im UPN-Format angegeben sind. Beispiel:
+Der  `s3/services/<svm_uuid>/users`Endpoint wird mit Benutzern im UPN-Format verwendet. Beispiel:
 
 [listing]
 ----
 $curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user@fqdn>,"key_time_to_live":"PT6H3M"}
 ----
 
-NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM. Wenn Sie Benutzern erlauben möchten, eigene Schlüssel zu generieren, müssen Sie ihrer Rolle HTTP-Berechtigungen hinzufügen, um Curl zu verwenden. Diese Berechtigung wird zusätzlich zu den S3-API-Berechtigungen gewährt.
+NOTE: Die API ist an das Cluster-Management-LIF und nicht an das Daten-LIF der SVM zu richten. Um Benutzern das Generieren eigener Schlüssel zu ermöglichen, sind ihrer Rolle HTTP-Berechtigungen für die Nutzung von curl hinzuzufügen. Diese Berechtigung kommt zu den S3-API-Berechtigungen hinzu.
 
 
 
 [[generate-keys-when-the-authentication-method-is-domain-and-there-are-no-trusted-domains]]
-=== Generieren Sie Schlüssel, wenn die Authentifizierungsmethode Domain ist und keine vertrauenswürdigen Domänen vorhanden sind
+=== Schlüssel generieren, wenn das Authentifizierungsverfahren „Domäne“ ist und keine vertrauenswürdigen Domänen vorhanden sind
 
-Diese Aktion ist möglich, wenn LDAP deaktiviert ist oder nicht-POSIX-Benutzer keine UID und GID konfiguriert haben. Beispiel:
+Diese Aktion ist möglich, wenn LDAP deaktiviert ist oder wenn Nicht-POSIX-Benutzer keine UID und GID konfiguriert haben. Beispiel:
 
 [listing]
 ----
 $curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn]>,"key_time_to_live":"PT6H3M"}
 ----
 
-NOTE: Leiten Sie die API an die Cluster-Management-LIF weiter, nicht an die Daten-LIF der SVM. Wenn Sie Benutzern erlauben möchten, eigene Schlüssel zu generieren, müssen Sie ihrer Rolle HTTP-Berechtigungen hinzufügen, um Curl zu verwenden. Diese Berechtigung wird zusätzlich zu den S3-API-Berechtigungen gewährt. Sie müssen einem Benutzernamen nur den optionalen Domänenwert (@fqdn) hinzufügen, wenn keine vertrauenswürdigen Domänen vorhanden sind.
+NOTE: Die API ist an das Cluster-Management-LIF und nicht an das Daten-LIF der SVM zu richten. Um Benutzern das Generieren eigener Schlüssel zu ermöglichen, sind ihrer Rolle HTTP-Berechtigungen für die Nutzung von curl hinzuzufügen. Diese Berechtigung kommt zu den S3-API-Berechtigungen hinzu. Der optionale Domänenwert (@fqdn) ist einem Benutzernamen nur hinzuzufügen, wenn keine vertrauenswürdigen Domänen vorhanden sind.

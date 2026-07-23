@@ -2,58 +2,58 @@
 permalink: disks-aggregates/setup-active-passive-config-root-data-data-task.html 
 sidebar: sidebar 
 keywords: root-data-data, partitioning, disks, active-passive 
-summary: Wenn ein HA-Paar für die werkseitige Verwendung von Root-Daten-Partitionierung konfiguriert ist, werden die Datenpartitionen auf beide Nodes im Paar aufgeteilt. Die Daten werden in einer aktiv/aktiv-Konfiguration verwendet. Wenn Sie das HA-Paar in einer aktiv/Passiv-Konfiguration verwenden möchten, müssen Sie die Partitionseigentümer aktualisieren, bevor Sie die Daten-lokale Tier erstellen. 
+summary: Wenn ein HA-Paar werkseitig für die Verwendung der Root-Daten-Daten-Partitionierung konfiguriert ist, wird die Eigentümerschaft der Datenpartitionen zwischen beiden Knoten des Paares aufgeteilt, zur Verwendung in einer Aktiv/Aktiv-Konfiguration. Soll das HA-Paar in einer Aktiv/Passiv-Konfiguration verwendet werden, ist die Partitionseigentümerschaft vor der Erstellung der lokalen Datenebene zu aktualisieren. 
 ---
-= Richten Sie mithilfe der Root-Daten-Partitionierung eine aktiv/Passiv-Konfiguration auf ONTAP Nodes ein
+= Eine Aktiv/Passiv-Konfiguration auf ONTAP Knoten mit Root-Daten-Daten-Partitionierung einrichten
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn ein HA-Paar für die werkseitige Verwendung von Root-Daten-Partitionierung konfiguriert ist, werden die Datenpartitionen auf beide Nodes im Paar aufgeteilt, um in einer aktiv/aktiv-Konfiguration verwendet zu werden. Wenn Sie das HA-Paar in einer aktiv/Passiv-Konfiguration verwenden möchten, müssen Sie die Partitionseigentümer aktualisieren, bevor Sie die Daten-lokale Tier erstellen.
+Wenn ein HA-Paar werkseitig für die Verwendung der Root-Daten-Daten-Partitionierung konfiguriert ist, wird die Eigentümerschaft der Datenpartitionen zwischen beiden Knoten des Paares für die Verwendung in einer Aktiv/Aktiv-Konfiguration aufgeteilt. Soll das HA-Paar in einer Aktiv/Passiv-Konfiguration verwendet werden, ist die Partitionseigentümerschaft vor der Erstellung der lokalen Datenebene zu aktualisieren.
 
 .Bevor Sie beginnen
-* Sie sollten sich entscheiden, welcher Node der aktive Node sein wird und welcher Node der passive Node sein wird.
-* Storage Failover muss auf dem HA-Paar konfiguriert werden.
+* Es sollte festgelegt sein, welcher Knoten der aktive und welcher der passive Knoten ist.
+* Die Speicherausfallsicherung muss auf dem HA Pair konfiguriert werden.
 
 
 .Über diese Aufgabe
-Diese Aufgabe wird auf zwei Knoten durchgeführt: Knoten A und Knoten B.
+Diese Aufgabe wird auf zwei Knoten ausgeführt: Knoten A und Knoten B.
 
-Dieses Verfahren wurde für Nodes entwickelt, für die keine lokale Data Tier aus den partitionierten Laufwerken erstellt wurde.
+Dieses Verfahren ist für Knoten vorgesehen, für die kein Datenaggregat aus den partitionierten Festplatten erstellt wurde.
 
-Erfahren Sie mehr über link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/What_are_the_rules_for_Advanced_Disk_Partitioning%3F["Erweiterte Festplattenpartitionierung"^].
+Informationen dazu link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/What_are_the_rules_for_Advanced_Disk_Partitioning%3F["Erweiterte Festplattenpartitionierung"^].
 
 .Schritte
-Alle Befehle werden an der Cluster-Shell eingegeben.
+Alle Befehle werden in der Cluster-Shell eingegeben.
 
-. Aktuelle Eigentümerschaft der Datenpartitionen anzeigen:
+. Die aktuelle Eigentümerstruktur der Datenpartitionen wird angezeigt:
 +
 `storage aggregate show-spare-disks -original-owner _passive_node_name_ -fields local-usable-data1-size, local-usable-data2-size`
 
 +
-Die Ausgabe zeigt, dass die Hälfte der Daten-Partitionen im Besitz eines Node und der Hälfte im Besitz des anderen Node ist. Alle Daten-Partitionen sollten frei sein.
+Die Ausgabe zeigt, dass die Hälfte der Datenpartitionen einem Knoten und die andere Hälfte dem anderen Knoten zugeordnet ist. Alle Datenpartitionen sollten Reservepartitionen sein.
 
-. Geben Sie die erweiterte Berechtigungsebene ein:
+. Die erweiterte Berechtigungsstufe eingeben:
 +
 `set advanced`
 
-. Weisen Sie für jede Daten1-Partition des Node, der der passive Node sein soll, diesen dem aktiven Node zu:
+. Jede data1-Partition, die dem Knoten gehört, der der passive Knoten sein wird, dem aktiven Knoten zuweisen:
 +
 `storage disk assign -force -data1 -owner _active_node_name_ -disk _disk_name_`
 
 +
-Sie müssen die Partition nicht als Teil des Festplattennamens einschließen
+Sie müssen die Partition nicht als Teil des Datenträgernamens angeben.
 
-. Weisen Sie für jede Daten2-Partition des Node, der der passive Node sein soll, diesen dem aktiven Node zu:
+. Jede data2-Partition, die dem Knoten gehört, der der passive Knoten sein wird, dem aktiven Knoten zuweisen:
 +
 `storage disk assign -force -data2 -owner _active_node_name_ -disk _disk_name_`
 
 +
-Sie müssen die Partition nicht als Teil des Festplattennamens einschließen
+Sie müssen die Partition nicht als Teil des Datenträgernamens angeben.
 
-. Vergewissern Sie sich, dass dem aktiven Knoten alle Partitionen zugewiesen sind:
+. Bestätigt wird, dass alle Partitionen dem aktiven Knoten zugewiesen sind:
 +
 `storage aggregate show-spare-disks`
 
@@ -93,20 +93,20 @@ Original Owner: cluster1-02
 13 entries were displayed.
 ----
 +
-Beachten Sie, dass cluster1-02 immer noch eine freie Root-Partition besitzt.
+Beachten Sie, dass cluster1-02 weiterhin eine freie Root-Partition besitzt.
 
-. Zurück zur Administratorberechtigung:
+. Zurück zu als Administrator angemeldet:
 +
 `set admin`
 
-. Erstellen Sie Ihr Datenaggregat, wobei mindestens eine Datenpartition als Ersatz bleibt:
+. Das Datenaggregat wird erstellt, wobei mindestens eine Datenpartition als Reserve verbleibt:
 +
 `storage aggregate create _new_aggr_name_ -diskcount _number_of_partitions_ -node _active_node_name_`
 
 +
-Das Datenaggregat wird erstellt und ist Eigentum des aktiven Nodes.
+Das Datenaggregat wird erstellt und befindet sich im Besitz des aktiven Knotens.
 
-. Alternativ können Sie auch das von ONTAP empfohlene lokale Tier-Layout verwenden, das Best Practices für das Layout von RAID-Gruppen und die Anzahl an Ersatzfestplatten umfasst:
+. Alternativ lässt sich das von ONTAP empfohlene lokale Tier-Layout nutzen, das Best Practices für das RAID-Gruppenlayout und die Anzahl der Ersatzfestplatten umfasst:
 +
 `storage aggregate auto-provision`
 
@@ -115,6 +115,6 @@ Das Datenaggregat wird erstellt und ist Eigentum des aktiven Nodes.
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-auto-provision.html["Automatische Bereitstellung von Speicheraggregaten"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-create.html["Speicheraggregat erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+show["Storage-Aggregate zeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+show["storage aggregate show"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-assign.html["Speicherdatenträger zuweisen"^]
 

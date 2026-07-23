@@ -2,37 +2,37 @@
 permalink: data-protection/restore-single-file-lun-task.html 
 sidebar: sidebar 
 keywords: restore, single file, lun, nvme, namespace, snapmirror, destination, snapshot, copy, snap mirror, baseline, 
-summary: Sie können eine einzelne Datei, eine LUN, einen Satz von Dateien oder LUNs aus einem Snapshot oder einen NVMe-Namespace von einem SnapMirror-Ziel-Volume wiederherstellen. Ab ONTAP 9.7 können auch NVMe-Namespaces von einem synchronen SnapMirror-Ziel wiederhergestellt werden. Sie können Dateien auf dem ursprünglichen Quell-Volume oder auf einem anderen Volume wiederherstellen. 
+summary: Sie können eine einzelne Datei, LUN, eine Gruppe von Dateien oder LUNs aus einem Snapshot oder einen NVMe-Namensraum von einem SnapMirror Ziel-Volume wiederherstellen. Ab ONTAP 9.7 ist auch die Wiederherstellung von NVMe-Namensräumen von einem SnapMirror synchron Ziel möglich. Dateien können auf dem ursprünglichen Quell-Volume oder auf einem anderen Volume wiederhergestellt werden. 
 ---
-= Wiederherstellung einer Datei, einer LUN oder eines NVMe Namespace aus einem ONTAP SnapMirror-Ziel
+= Wiederherstellung einer Datei, LUN oder eines NVMe-Namensraums von einem ONTAP SnapMirror Ziel
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können eine einzelne Datei, eine LUN, einen Satz von Dateien oder LUNs aus einem Snapshot oder einen NVMe-Namespace von einem SnapMirror-Ziel-Volume wiederherstellen. Ab ONTAP 9.7 können auch NVMe-Namespaces von einem synchronen SnapMirror-Ziel wiederhergestellt werden. Sie können Dateien auf dem ursprünglichen Quell-Volume oder auf einem anderen Volume wiederherstellen.
+Sie können eine einzelne Datei, LUN, eine Gruppe von Dateien oder LUNs aus einem Snapshot oder einen NVMe-Namensraum von einem SnapMirror Ziel-Volume wiederherstellen. Ab ONTAP 9.7 ist auch die Wiederherstellung von NVMe-Namensräumen von einem SnapMirror synchron Ziel möglich. Dateien können auf dem ursprünglichen Quell-Volume oder auf einem anderen Volume wiederhergestellt werden.
 
 .Bevor Sie beginnen
-Um eine Datei oder LUN von einem synchronen SnapMirror-Ziel wiederherzustellen (unterstützt ab ONTAP 9.5), müssen Sie zuerst die Beziehung löschen und freigeben.
+Um eine Datei oder LUN von einem SnapMirror synchronen Ziel wiederherzustellen (unterstützt ab ONTAP 9.5), muss zuerst die Beziehung gelöscht und freigegeben werden.
 
 .Über diese Aufgabe
-Das Volume, auf dem Sie Dateien oder LUNs wiederherstellen (das Zielvolume), muss ein Lese-/Schreib-Volume sein:
+Das Volume, auf dem Sie Dateien oder LUNs wiederherstellen (das Zielvolume), muss ein Lese-/Schreibvolume sein:
 
-* SnapMirror führt eine _inkrementelle Wiederherstellung_ durch, wenn die Quell- und Ziel-Volumes einen gemeinsamen Snapshot haben (wie es normalerweise der Fall ist, wenn Sie auf das ursprüngliche Quell-Volume wiederherstellen).
-* Andernfalls führt SnapMirror eine _Baseline restore_ durch, in der der angegebene Snapshot und alle Datenblöcke, auf die er sich bezieht, an das Ziel-Volume übertragen werden.
+* SnapMirror führt eine _inkrementelle Wiederherstellung_ durch, wenn Quell- und Zielvolume einen gemeinsamen Snapshot haben (was typischerweise der Fall ist, wenn auf das ursprüngliche Quellvolume wiederhergestellt wird).
+* Andernfalls führt SnapMirror eine _Basistransfer-Wiederherstellung_ durch, bei der der angegebene Snapshot und alle von ihm referenzierten Datenblöcke auf das Ziel-Volume übertragen werden.
 
 
 .Schritte
-. Führen Sie die Snapshots im Zielvolume auf:
+. Die Snapshots im Ziel-Volume auflisten:
 +
 `volume snapshot show -vserver <SVM> -volume volume`
 
 +
-Erfahren Sie mehr über `volume snapshot show` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-snapshot-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `volume snapshot show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-snapshot-show.html["ONTAP-Befehlsreferenz"^].
 
 +
-Im folgenden Beispiel werden die Snapshots auf dem Ziel angezeigt `vserverB:secondary1`:
+Das folgende Beispiel zeigt die Momentaufnahmen auf dem  `vserverB:secondary1` Ziel-Cluster:
 
 +
 [listing]
@@ -52,18 +52,18 @@ vserverB    secondary1  hourly.2013-01-25_0005  valid   224KB     0%    0%
 
 7 entries were displayed.
 ----
-. Stellen Sie eine einzelne Datei oder eine LUN oder einen Satz von Dateien oder LUNs aus einem Snapshot in einem SnapMirror-Zielvolume wieder her:
+. Eine einzelne Datei oder LUN oder ein Satz von Dateien oder LUNs aus einem Snapshot in einem SnapMirror Ziel-Volume wiederherstellen:
 +
 `snapmirror restore -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ... -source-snapshot snapshot -file-list <source_file_path,@destination_file_path>`
 
 +
 [NOTE]
 ====
-Sie müssen diesen Befehl über die Ziel-SVM oder das Ziel-Cluster ausführen.
+Dieser Befehl muss von der Ziel-SVM oder dem Ziel-Cluster ausgeführt werden.
 
 ====
 +
-Mit dem folgenden Befehl werden die Dateien und `file2` vom Snapshot `daily.2013-01-25_0010` im ursprünglichen Zielvolume `secondary1` an der gleichen Stelle im aktiven Dateisystem des ursprünglichen Quellvolume `primary1` wiederhergestellt `file1`:
+Der folgende Befehl stellt die Dateien  `file1` und  `file2` aus dem Snapshot  `daily.2013-01-25_0010` im ursprünglichen Zielvolume  `secondary1` an derselben Stelle im aktiven Dateisystem des ursprünglichen Quellvolumes  `primary1` wieder her:
 
 +
 [listing]
@@ -74,10 +74,10 @@ cluster_dst::> snapmirror restore -source-path vserverB:secondary1 -destination-
 [Job 3479] Job is queued: snapmirror restore for the relationship with destination vserverA:primary1
 ----
 +
-Mit dem folgenden Befehl werden die Dateien und `file2` vom Snapshot `daily.2013-01-25_0010` im ursprünglichen Zielvolume `secondary1` an einen anderen Speicherort im aktiven Dateisystem des ursprünglichen Quellvolume `primary1` wiederhergestellt `file1`.
+Der folgende Befehl stellt die Dateien  `file1` und  `file2` aus dem Snapshot  `daily.2013-01-25_0010` im ursprünglichen Zielvolume  `secondary1` an einem anderen Ort im aktiven Dateisystem des ursprünglichen Quellvolumes  `primary1` wieder her.
 
 +
-Der Zieldateipfad beginnt mit dem Symbol @, gefolgt vom Pfad der Datei aus dem Stammverzeichnis des ursprünglichen Quell-Volumes. In diesem Beispiel `file1` wird in wiederhergestellt `/dir1/file1.new`, und file2 wird wiederhergestellt auf `/dir2.new/file2` `primary1`:
+Der Zieldateipfad beginnt mit dem @-Symbol, gefolgt vom Pfad der Datei ausgehend vom Stammverzeichnis des ursprünglichen Quell-Volumes. In diesem Beispiel wird  `file1` auf  `/dir1/file1.new` wiederhergestellt und file2 auf  `/dir2.new/file2` auf  `primary1` wiederhergestellt:
 
 +
 [listing]
@@ -88,10 +88,10 @@ cluster_dst::> snapmirror restore -source-path vserverB:secondary1 -destination-
 [Job 3479] Job is queued: snapmirror restore for the relationship with destination vserverA:primary1
 ----
 +
-Mit dem folgenden Befehl werden die Dateien `file1` und `file3` vom Snapshot `daily.2013-01-25_0010` im ursprünglichen Zielvolume `secondary1` an verschiedenen Orten im aktiven Dateisystem des ursprünglichen Quellvolume `primary1` wiederhergestellt und von `snap1` an demselben Ort im aktiven Dateisystem von `primary1` wiederhergestellt `file2`.
+Der folgende Befehl stellt die Dateien  `file1` und  `file3` aus dem Snapshot  `daily.2013-01-25_0010` im ursprünglichen Zielvolume  `secondary1` an verschiedenen Orten im aktiven Dateisystem des ursprünglichen Quellvolumes  `primary1` wieder her und stellt  `file2` von  `snap1` am selben Ort im aktiven Dateisystem von  `primary1` wieder her.
 
 +
-In diesem Beispiel `file1` wird die Datei wiederhergestellt `/dir1/file1.new` und `file3` wiederhergestellt in `/dir3.new/file3`:
+In diesem Beispiel wird die Datei `file1` wiederhergestellt zu `/dir1/file1.new` und `file3` wird wiederhergestellt zu `/dir3.new/file3`:
 
 +
 [listing]
@@ -104,5 +104,5 @@ cluster_dst::> snapmirror restore -source-path vserverB:secondary1 -destination-
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-restore.html["snapmirror Wiederherstellung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-restore.html["SnapMirror Restore"^]
 

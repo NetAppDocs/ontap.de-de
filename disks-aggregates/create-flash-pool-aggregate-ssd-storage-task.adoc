@@ -2,112 +2,112 @@
 permalink: disks-aggregates/create-flash-pool-aggregate-ssd-storage-task.html 
 sidebar: sidebar 
 keywords: create, flash pool, aggregate, local tier, ssd, storage pool, allocation units 
-summary: Sie können einen lokalen Flash Pool Tier konfigurieren, indem Sie einer vorhandenen lokalen HDD-Tier eine oder mehrere Zuweisungseinheiten aus einem SSD-Storage-Pool hinzufügen. 
+summary: Sie können eine Flash Pool lokale Ebene konfigurieren, indem Sie einer bestehenden HDD lokalen Ebene eine oder mehrere Zuordnungseinheiten aus einem SSD-Speicherpool hinzufügen. 
 ---
-= Erstellen Sie eine lokale ONTAP-Flash-Pool-Tier mit SSD-Storage-Pool-Zuweisungseinheiten
+= Einen ONTAP Flash Pool lokalen Tier mit SSD-Speicherpool-Zuordnungseinheiten erstellen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können einen lokalen Flash Pool Tier konfigurieren, indem Sie einer vorhandenen lokalen HDD-Tier eine oder mehrere Zuweisungseinheiten aus einem SSD-Storage-Pool hinzufügen.
+Sie können eine Flash Pool lokale Ebene konfigurieren, indem Sie einer bestehenden HDD lokalen Ebene eine oder mehrere Zuordnungseinheiten aus einem SSD-Speicherpool hinzufügen.
 
 
-NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um eine „_Local Tier_“ zu beschreiben. Unabhängig von Ihrer ONTAP-Version verwendet die ONTAP CLI den Begriff _Aggregate_. Weitere Informationen zu lokalen Ebenen finden Sie unter link:../disks-aggregates/index.html["Festplatten und lokale Tiers"].
+NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff _aggregate_, um eine _lokale Ebene_ zu beschreiben. Unabhängig von der ONTAP Version verwendet die ONTAP CLI den Begriff _aggregate_. Weitere Informationen zu lokalen Ebenen finden sich unter link:../disks-aggregates/index.html["Festplatten und lokale Ebenen"].
 
-Ab ONTAP 9.12.1 können Sie mit dem neu gestalteten System Manager eine lokale Flash Pool Tier unter Verwendung von Storage Pool Zuordnungseinheiten erstellen.
+Ab ONTAP 9.12.1 kann der neu gestaltete System Manager verwendet werden, um eine Flash Pool lokale Ebene mithilfe von Speicherpool-Zuordnungseinheiten zu erstellen.
 
 .Bevor Sie beginnen
-* Sie müssen eine gültige lokale Tier mit HDDs identifiziert haben, um in eine lokale Flash Pool-Ebene umgewandelt werden zu können.
-* Sie müssen die Berechtigung zum Schreib-Caching für die Volumes festgelegt haben, die der lokalen Tier zugeordnet sind, und alle erforderlichen Schritte ausführen, um die Teilnahmevoraussetzungen zu lösen.
-* Sie müssen einen SSD-Speicherpool erstellt haben, um diesen lokalen Flash Pool-Tier den SSD-Cache bereitzustellen.
+* Es muss eine gültige lokale Ebene identifiziert sein, die aus HDDs besteht, um sie in eine Flash Pool lokale Ebene umzuwandeln.
+* Die Schreibcache-Berechtigung der mit der lokalen Ebene verbundenen Volumes muss ermittelt und alle erforderlichen Schritte zur Behebung von Berechtigungsproblemen abgeschlossen sein.
+* Sie müssen einen SSD-Speicherpool erstellt haben, um den SSD-Cache für diese Flash Pool lokale Ebene bereitzustellen.
 +
-Jede Zuordnungseinheit aus dem Storage-Pool, den Sie verwenden möchten, muss demselben Node gehören, der die lokale Tier von Flash Pool besitzt.
+Jede Zuordnungseinheit aus dem Speicherpool, die verwendet werden soll, muss demselben Knoten gehören, dem auch die lokale Flash Pool Ebene gehört.
 
-* Sie müssen festgelegt haben, wie viel Cache Sie der lokalen Ebene hinzufügen möchten.
+* Es muss festgelegt sein, wie viel Cache dem lokalen Speicher hinzugefügt werden soll.
 +
-Sie fügen der lokalen Tier Cache nach Zuordnungseinheiten hinzu. Sie können die Größe der Zuweisungseinheiten später erhöhen, indem Sie bei Platz SSDs zum Speicherpool hinzufügen.
+Sie fügen dem lokalen Tier Cache durch Zuordnungseinheiten hinzu. Die Größe der Zuordnungseinheiten kann später durch das Hinzufügen von SSDs zum Storage Pool erhöht werden, sofern ausreichend Platz vorhanden ist.
 
-* Sie müssen den RAID-Typ ermitteln, den Sie für den SSD-Cache verwenden möchten.
+* Der gewünschte RAID-Typ für den SSD-Cache muss festgelegt sein.
 +
-Nachdem Sie der lokalen Tier aus den SSD-Speicherpools einen Cache hinzugefügt haben, können Sie den RAID-Typ der Cache-RAID-Gruppen nicht ändern.
+Nachdem Sie einen Cache aus SSD-Speicherpools zur lokalen Speicherebene hinzugefügt haben, kann der RAID-Typ der Cache-RAID-Gruppen nicht mehr geändert werden.
 
-* Sie müssen die maximale Cache-Größe für Ihr System festgelegt haben und festgestellt haben, dass das Hinzufügen von SSD-Cache zu Ihrer lokalen Ebene nicht dazu führt, dass Sie sie überschreiten.
+* Sie müssen die maximale Cache-Größe für Ihr System ermittelt und festgestellt haben, dass das Hinzufügen eines SSD-Cache zu Ihrer lokalen Speicherebene nicht dazu führt, dass diese überschritten wird.
 +
-Mit dem `storage pool show` Befehl wird die Cache-Menge angezeigt, die der gesamten Cache-Größe hinzugefügt wird.
+Die Menge des Caches, die zur Gesamtgröße des Caches hinzugefügt wird, lässt sich mit dem  `storage pool show` Befehl anzeigen.
 
-* Sie müssen sich mit den Konfigurationsanforderungen für das lokale Flash Pool Tier vertraut machen.
+* Sie müssen sich mit den Konfigurationsanforderungen für die lokale Ebene von Flash Pool vertraut gemacht haben.
 
 
 .Über diese Aufgabe
-Wenn Sie möchten, dass sich der RAID-Typ des Cache von der der HDD-RAID-Gruppe unterscheidet, müssen Sie beim Hinzufügen der SSD-Kapazität den Cache-RAID-Typ angeben. Nachdem Sie der lokalen Tier die SSD-Kapazität hinzugefügt haben, können Sie den RAID-Typ des Cache nicht mehr ändern.
+Soll der RAID-Typ des Cache von dem der HDD-RAID-Gruppen abweichen, muss der Cache-RAID-Typ beim Hinzufügen der SSD-Kapazität angegeben werden. Nach dem Hinzufügen der SSD-Kapazität zur lokalen Ebene ist eine Änderung des RAID-Typs des Cache nicht mehr möglich.
 
-Nachdem Sie einer lokalen Tier einen SSD-Cache hinzugefügt haben, um eine lokale Flash Pool-Ebene zu erstellen, können Sie den SSD-Cache nicht entfernen, um die lokale Tier zurück in ihre ursprüngliche Konfiguration zu konvertieren.
+Nachdem Sie einem lokalen Tier einen SSD-Cache hinzugefügt haben, um ein Flash Pool lokales Tier zu erstellen, kann der SSD-Cache nicht mehr entfernt werden, um das lokale Tier wieder in seine ursprüngliche Konfiguration zurückzuversetzen.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-Ab ONTAP 9.12.1 können Sie mit System Manager SSDs zu einem SSD Storage-Pool hinzufügen.
+Ab ONTAP 9.12.1 ist es möglich, mit System Manager SSDs zu einem SSD-Speicherpool hinzuzufügen.
 
 .Schritte
-. Klicken Sie auf *Storage > Tiers* und wählen Sie einen vorhandenen lokalen Festplatten-Storage aus.
-. Klicken Sie auf image:icon_kabob.gif["Symbol für Menüoptionen"] , und wählen Sie *Flash Pool Cache hinzufügen*.
-. Wählen Sie *Storage Pools Verwenden*.
+. Klicken Sie auf *Storage > Tiers* und wählen Sie eine vorhandene lokale HDD Storage-Tier aus.
+. Klicken Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und wählen Sie *Add Flash Pool Cache* aus.
+. *Speicherpools verwenden* auswählen.
 . Wählen Sie einen Speicherpool aus.
-. Wählen Sie eine Cache-Größe und RAID-Konfiguration aus.
-. Klicken Sie Auf *Speichern*.
-. Suchen Sie erneut nach der Speicherebene und klicken Sie aufimage:icon_kabob.gif["Symbol für Menüoptionen"]
-. Wählen Sie *Mehr Details* aus, und stellen Sie sicher, dass der Flash Pool als *aktiviert* angezeigt wird.
+. Eine Cache-Größe und eine RAID-Konfiguration auswählen.
+. Auf *Speichern* klicken.
+. Die Speicherebene erneut suchen und auf image:icon_kabob.gif["Symbol für Menüoptionen"] klicken
+. *Weitere Details* auswählen und überprüfen, dass Flash Pool als *Aktiviert* angezeigt wird.
 
 
 --
 .CLI
 --
 .Schritte
-. Markieren Sie den lokalen Tier als berechtigt, ein lokales Flash Pool-Tier zu werden:
+. Die lokale Tier wird als berechtigt markiert, eine Flash Pool lokale Tier zu werden:
 +
 `storage aggregate modify -aggregate _aggr_name_ -hybrid-enabled true`
 
 +
-Wenn dieser Schritt nicht erfolgreich ist, bestimmen Sie die Schreibberechtigung für den lokalen Zieltier.
+Falls dieser Schritt nicht erfolgreich ist, die Schreibcache-Berechtigung für die Zielebene bestimmen.
 
-. Zeigt die verfügbaren Zuweisungseinheiten für SSD-Storage-Pools an:
+. Verfügbare SSD-Speicherpool-Zuordnungseinheiten:
 +
 `storage pool show-available-capacity`
 
-. Fügen Sie die SSD-Kapazität der lokalen Tier hinzu:
+. Die SSD-Kapazität wird der lokalen Ebene hinzugefügt:
 +
 `storage aggregate add _aggr_name_ -storage-pool _sp_name_ -allocation-units _number_of_units_`
 
 +
-Wenn sich der RAID-Typ des Cache von dem der HDD-RAID-Gruppen unterscheiden soll, müssen Sie ihn bei der Eingabe dieses Befehls mit dem `raidtype` Parameter ändern.
+Wenn der RAID-Typ des Caches sich von dem der HDD-RAID-Gruppen unterscheiden soll, muss dies bei der Eingabe dieses Befehls mit dem  `raidtype` Parameter geändert werden.
 
 +
-Sie müssen keine neue RAID-Gruppe angeben. ONTAP setzt den SSD-Cache automatisch in getrennte RAID-Gruppen von den HDD RAID-Gruppen ein.
+Sie müssen keine neue RAID-Gruppe angeben; ONTAP platziert den SSD-Cache automatisch in separate RAID-Gruppen, getrennt von den HDD-RAID-Gruppen.
 
 +
-Sie können die RAID-Gruppengröße des Cache nicht festlegen, er wird durch die Anzahl der SSDs im Storage-Pool bestimmt.
+Die RAID-Gruppengröße des Caches kann nicht festgelegt werden; sie wird durch die Anzahl der SSDs im Speicherpool bestimmt.
 
 +
-Der Cache wird der lokalen Tier hinzugefügt, und die lokale Tier ist jetzt eine lokale Flash Pool Tier. Jede Zuordnungseinheit, die dem lokalen Tier hinzugefügt wird, wird zu einer eigenen RAID-Gruppe.
+Der Cache wird der lokalen Ebene hinzugefügt und die lokale Ebene ist nun eine Flash Pool lokale Ebene. Jede der lokalen Ebene hinzugefügte Zuordnungseinheit bildet eine eigene RAID-Gruppe.
 
-. Überprüfen Sie das Vorhandensein und die Größe des SSD-Caches:
+. Das Vorhandensein und die Größe des SSD-Cache bestätigen:
 +
 `storage aggregate show _aggregate_name_`
 
 +
-Die Größe des Cache ist unter aufgelistet `Total Hybrid Cache Size`.
+Die Größe des Caches ist unter  `Total Hybrid Cache Size` aufgeführt.
 
 
 
 --
 ====
 .Verwandte Informationen
-* https://www.netapp.com/pdf.html?item=/media/19681-tr-4070.pdf["Technischer Bericht 4070 zu NetApp: Flash Pool Design and Implementation Guide"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+add["Speicheraggregat hinzufügen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-modify.html["Speicheraggregat ändern"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-pool-show.html["Speicherpool anzeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-pool-show-available-capacity.html["Speicherpool zeigt verfügbare Kapazität an"^]
+* https://www.netapp.com/pdf.html?item=/media/19681-tr-4070.pdf["NetApp Technischer Bericht 4070: Flash Pool Design und Implementierungsleitfaden"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+add["Speicheraggregate hinzufügen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-modify.html["storage aggregate ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-pool-show.html["storage pool show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-pool-show-available-capacity.html["storage pool show-available-capacity"^]
 

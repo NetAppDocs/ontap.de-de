@@ -2,33 +2,33 @@
 permalink: nfs-trunking/reestablish-client-mount-task.html 
 sidebar: sidebar 
 keywords: NFS, servers, network, NFS trunking, data, shares, Linux, VMware, mounts, client 
-summary: Um nicht-Trunked-Client-Verbindungen in Trunked-Verbindungen zu konvertieren, müssen vorhandene Mounts auf Linux- und VMware-Clients mithilfe von Informationen zu LIFs abgehängt und neu gemountet werden. 
+summary: Um nicht-trunkierte Client-Verbindungen in trunkierte Verbindungen umzuwandeln, müssen bestehende Mounts auf Linux- und VMware-Clients unter Verwendung von Informationen über LIFs ausgehängt und wieder eingehängt werden. 
 ---
-= Remount von ONTAP Volumes oder Datenfreigaben für NFS-Trunking
+= ONTAP Volumes oder Datenfreigaben für NFS Trunking neu einbinden
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Um nicht-Trunked-Client-Verbindungen in Trunked-Verbindungen zu konvertieren, müssen vorhandene Mounts auf Linux- und VMware-Clients mithilfe von Informationen zu LIFs abgehängt und neu gemountet werden.
+Um nicht-trunkierte Client-Verbindungen in trunkierte Verbindungen umzuwandeln, müssen bestehende Mounts auf Linux- und VMware-Clients unter Verwendung von Informationen über LIFs ausgehängt und wieder eingehängt werden.
 
-Erfahren Sie mehr über link:index.html#supported-clients["Unterstützte Clients"].
+Informationen dazu link:index.html#supported-clients["unterstützte Clients"].
 
 
-NOTE: Das Abhängen von VMware-Clients verursacht bei allen VMs auf dem Datenspeicher Unterbrechungen. Eine Alternative wäre die Erstellung eines neuen Datastore, der für das Trunking aktiviert ist, und die Verwendung von *Storage vmotion*, um Ihre VMs vom alten Datenspeicher auf den neuen zu verschieben. Weitere Informationen finden Sie in der VMware-Dokumentation.
+NOTE: Das Aushängen von VMware-Clients ist für alle VMs auf dem Datenspeicher störend. Eine Alternative wäre, einen neuen, für Trunking aktivierten Datenspeicher zu erstellen und *storage vmotion* zu verwenden, um Ihre VMs vom alten Datenspeicher auf den neuen zu verschieben. Einzelheiten sind in der VMware-Dokumentation zu finden.
 
 [role="tabbed-block"]
 ====
-.Anforderungen für den Linux-Client
+.Anforderungen an Linux-Clients
 --
-Wenn Sie ONTAP 9.16.1 oder höher und Red hat Enterprise Linux Version 8.7 oder höher (für RHEL 8) oder 9.2 oder höher (für RHEL 9) als Linux-Client verwenden, ist für die Trunking-Gruppe nur ein Bereitstellungspunkt erforderlich. Mounten Sie die exportierten Volumes mit diesem Befehl. Verwenden Sie dazu die `trunkdiscovery` Option:
+Wenn Sie ONTAP 9.16.1 oder höher und Red Hat Enterprise Linux Version 8.7 oder höher (für RHEL 8) oder 9.2 oder höher (für RHEL 9) als Linux-Client verwenden, ist nur ein Mountpunkt für die Trunking-Gruppe erforderlich. Die exportierten Volumes werden mit diesem Befehl unter Verwendung der  `trunkdiscovery` Option gemountet:
 
 [source, cli]
 ----
 mount <lif_ip>:<volume_name> </mount_path> -o trunkdiscovery,vers=4.1
 ----
-Andernfalls ist für jede Verbindung in der Trunking-Gruppe ein separater Mount-Punkt erforderlich. Mounten Sie die exportierten Volumes mit Befehlen wie den folgenden mit der `max_connect` Option:
+Andernfalls ist für jede Verbindung in der Trunking-Gruppe ein separater Mountpunkt erforderlich. Die exportierten Volumes werden mit Befehlen ähnlich den folgenden gemountet, wobei die Option  `max_connect` verwendet wird:
 
 [source, cli]
 ----
@@ -38,20 +38,20 @@ mount <lif1_ip>:<volume_name> </mount_path1> -o vers=4.1,max_connect=16
 ----
 mount <lif2_ip>:<volume_name> </mount_path2> -o vers=4.1,max_connect=16
 ----
-Der (`vers`Wert Version ) sollte `4.1` oder höher sein.
+Der Versionswert (`vers` sollte  `4.1` oder höher sein.
 
-Der `max_connect` Wert entspricht der Anzahl der Verbindungen in der Trunking-Gruppe.
+Der  `max_connect`Wert entspricht der Anzahl der Verbindungen in der Trunking-Gruppe.
 
 --
-.Anforderungen des VMware-Clients
+.VMware Client-Anforderungen
 --
-Es ist eine Mount-Anweisung erforderlich, die eine IP-Adresse für jede Verbindung in der Trunking-Gruppe enthält.
+Es wird eine Mount-Anweisung benötigt, die für jede Verbindung in der Trunking-Gruppe eine IP-Adresse enthält.
 
-Mounten Sie den exportierten Datastore mit einem Befehl wie folgt:
+Den exportierten Datenspeicher mit einem Befehl ähnlich dem folgenden einbinden:
 
 `#esxcli storage nfs41 -H lif1_ip, lif2_ip -s /mnt/sh are1 -v nfs41share`
 
-Die `-H` Werte sollten den Verbindungen in der Trunking-Gruppe entsprechen.
+Die  `-H` Werte sollten den Verbindungen in der Bündelgruppe entsprechen.
 
 --
 ====

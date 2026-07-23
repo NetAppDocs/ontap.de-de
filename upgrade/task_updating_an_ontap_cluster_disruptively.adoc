@@ -2,53 +2,53 @@
 permalink: upgrade/task_updating_an_ontap_cluster_disruptively.html 
 sidebar: sidebar 
 keywords: ontap, upgrade, disruptively 
-summary: Wenn Sie das Cluster in den Offline-Modus versetzen können, um ein Upgrade auf eine neue ONTAP Version durchzuführen, können Sie die Methode zum unterbrechungsfreien Upgrade verwenden. 
+summary: Wenn Sie Ihren Cluster für ein Upgrade auf eine neue ONTAP Version offline nehmen können, kann die disruptive Upgrade-Methode verwendet werden. 
 ---
-= Manuelles ONTAP Upgrade für einen unterbrechungsfreien Betrieb über die CLI
+= Manuelles, unterbrechendes ONTAP Upgrade über die CLI
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn Sie das Cluster in den Offline-Modus versetzen können, um ein Upgrade auf eine neue ONTAP Version durchzuführen, können Sie die Methode zum unterbrechungsfreien Upgrade verwenden. Diese Methode umfasst mehrere Schritte: Deaktivieren Sie das Storage Failover für jedes HA-Paar, Neustarten jeder Node im Cluster und Reaktivieren Sie dann das Storage-Failover.
+Wenn Sie Ihren Cluster für ein Upgrade auf eine neue ONTAP Version offline nehmen können, kann die disruptive Upgrade-Methode verwendet werden. Diese Methode umfasst mehrere Schritte: Deaktivieren des Storage Failover für jedes HA-Paar, Neustart jedes Knotens im Cluster und anschließendes erneutes Aktivieren des Storage Failover.
 
-* Sie müssen link:download-software-image.html["Download"] und link:install-software-manual-upgrade.html["Installieren"] das Software-Image.
-* Wenn Sie in einer SAN-Umgebung arbeiten, müssen alle SAN-Clients heruntergefahren oder ausgesetzt werden, bis das Upgrade abgeschlossen ist.
+* Sie müssen link:download-software-image.html["herunterladen"] und link:install-software-manual-upgrade.html["installieren"] das Software-Image verwenden.
+* Wenn Sie in einer SAN-Umgebung arbeiten, müssen alle SAN Clients heruntergefahren oder angehalten werden, bis das Upgrade abgeschlossen ist.
 +
-Wenn SAN-Clients vor einem störenden Upgrade nicht heruntergefahren oder ausgesetzt werden, treten für die Client-Filesysteme und -Applikationen Fehler auf, die nach Abschluss des Upgrades möglicherweise eine manuelle Recovery erfordern.
+Wenn SAN-Clients vor einem unterbrechenden Upgrade nicht heruntergefahren oder angehalten werden, treten Fehler in den Client-Dateisystemen und Anwendungen auf, die nach Abschluss des Upgrades eine manuelle Wiederherstellung erfordern können.
 
 
 
-Bei einem unterbrechungsfreien Upgrade ist eine Ausfallzeit erforderlich, da bei jedem HA-Paar der Storage-Failover deaktiviert ist und jeder Node aktualisiert wird. Wenn der Storage Failover deaktiviert ist, verhält sich jeder Node wie ein Single-Node-Cluster. Das heißt, die mit dem Node verbundenen Systemservices werden so lange unterbrochen, wie das System neu gebootet werden muss.
+Bei einem Upgrade mit Unterbrechung ist eine Ausfallzeit erforderlich, da die Speicherausfallsicherung für jedes HA-Paar deaktiviert ist und jeder Node aktualisiert wird. Wenn die Speicherausfallsicherung deaktiviert ist, verhält sich jeder Node wie ein Einzel-Node-Cluster, das heißt, die mit dem Node verbundenen Systemdienste werden für die Dauer des Systemneustarts unterbrochen.
 
 .Schritte
-. Legen Sie die Berechtigungsebene von admin auf Erweitert fest. Geben Sie bei der Aufforderung * y* ein, um fortzufahren:
+. Die Berechtigungsstufe wird von admin auf advanced geändert, wobei bei entsprechender Aufforderung *y* eingegeben wird, um fortzufahren:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
 +
-Die erweiterte Eingabeaufforderung (`*>`) wird angezeigt.
+Die erweiterte Eingabeaufforderung (`*>`) erscheint.
 
-. Legen Sie das neue ONTAP Software-Image als Standard-Image fest:
+. Das neue ONTAP Software-Image als Standard-Image festlegen:
 +
 [source, cli]
 ----
 system image modify {-node * -iscurrent false} -isdefault true
 ----
 +
-Dieser Befehl verwendet eine erweiterte Abfrage, um das ONTAP Ziel-Software-Image (das als alternatives Image installiert wird) als Standard-Image für jeden Node zu ändern.
+Dieser Befehl verwendet eine erweiterte Abfrage, um das Ziel ONTAP Software-Image (das als alternatives Image installiert ist) so zu ändern, dass es für jeden Knoten zum Standard-Image wird.
 
-. Vergewissern Sie sich, dass das neue ONTAP Software-Image als Standard-Image festgelegt ist:
+. Es sollte überprüft werden, ob das neue ONTAP Software-Image als Standard-Image festgelegt ist:
 +
 [source, cli]
 ----
 system image show
 ----
 +
-Im folgenden Beispiel ist Image 2 die neue ONTAP-Version und wird auf beiden Knoten als Standard-Image festgelegt:
+Im folgenden Beispiel ist Bild 2 die neue ONTAP Version und als Standardbild auf beiden Knoten festgelegt:
 
 +
 [listing]
@@ -65,33 +65,33 @@ node1
          image2  true    false   Y.Y.Y     MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Führen Sie einen der folgenden Schritte aus:
+. Einer der folgenden Schritte kann durchgeführt werden:
 +
 [cols="2*"]
 |===
-| Besteht der Cluster aus... | Tun Sie das... 
+| Wenn der Cluster aus ... besteht | Folgendes ist zu tun... 
 
 
  a| 
-Ein Node
+Ein Knoten
  a| 
 Fahren Sie mit dem nächsten Schritt fort.
 
 
 
  a| 
-Zwei Nodes
+Zwei Knoten
  a| 
-.. Deaktivieren Sie Cluster-Hochverfügbarkeit:
+.. Cluster-Hochverfügbarkeit deaktivieren:
 +
 [source, cli]
 ----
 cluster ha modify -configured false
 ----
 +
-Geben Sie ein `y`, um fortzufahren, wenn Sie dazu aufgefordert werden.
+Geben Sie  `y` ein, um fortzufahren, wenn Sie dazu aufgefordert werden.
 
-.. Deaktivieren Sie Storage-Failover für das HA-Paar:
+.. Storage-Failover für das HA-Paar deaktivieren:
 +
 [source, cli]
 ----
@@ -102,16 +102,16 @@ storage failover modify -node * -enabled false
 
 
  a| 
-Mehr als zwei Nodes
+Mehr als zwei Knoten
  a| 
-Deaktivieren Sie Storage-Failover für jedes HA-Paar im Cluster:
+Storage-Failover für jedes HA-Paar im Cluster deaktivieren:
 
 [source, cli]
 ----
 storage failover modify -node * -enabled false
 ----
 |===
-. Starten Sie einen Node im Cluster neu:
+. Einen Node im Cluster neu starten:
 +
 [source, cli]
 ----
@@ -119,28 +119,28 @@ system node reboot -node nodename -ignore-quorum-warnings
 ----
 +
 
-IMPORTANT: Starten Sie nicht mehr als einen Node gleichzeitig neu.
+IMPORTANT: Nicht mehr als ein Node darf gleichzeitig neu gestartet werden.
 
 +
-Der Node bootet das neue ONTAP Image. Die Eingabeaufforderung für die Anmeldung bei ONTAP wird angezeigt und gibt an, dass der Neustart abgeschlossen ist.
+Der Knoten startet das neue ONTAP Image. Die ONTAP Anmeldeaufforderung erscheint und zeigt damit an, dass der Neustartvorgang abgeschlossen ist.
 
-. Nachdem der Node oder Node-Satz mit dem neuen ONTAP-Image neu gebootet wurde, legen Sie die Berechtigungsebene auf erweitert fest:
+. Nachdem der Knoten oder die Knotengruppe mit dem neuen ONTAP Image neu gestartet wurde, ist die Berechtigungsstufe auf „Erweitert“ zu setzen:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
 +
-Geben Sie *y* ein, wenn Sie zum Fortfahren aufgefordert werden
+*y* eingeben, wenn zur Fortsetzung aufgefordert wird
 
-. Vergewissern Sie sich, dass die neue Software ausgeführt wird:
+. Bestätigen Sie, dass die neue Software ausgeführt wird:
 +
 [source, cli]
 ----
 system node image show
 ----
 +
-Im folgenden Beispiel ist image1 die neue ONTAP-Version und wird als aktuelle Version auf node0 gesetzt:
+Im folgenden Beispiel ist image1 die neue ONTAP Version und als aktuelle Version auf node0 festgelegt:
 
 +
 [listing]
@@ -157,27 +157,27 @@ node1
          image2  false   true    Y.Y.Y      MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Vergewissern Sie sich, dass das Upgrade erfolgreich abgeschlossen wurde:
+. Es sollte überprüft werden, ob das Upgrade erfolgreich abgeschlossen wurde:
 +
-.. Legen Sie die Berechtigungsebene auf erweitert fest:
+.. Stellen Sie die Berechtigungsstufe auf „Erweitert“ ein:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
-.. Vergewissern Sie sich, dass der Upgrade-Status für jeden Node abgeschlossen ist:
+.. Es sollte überprüft werden, ob der Upgrade-Status für jeden Node abgeschlossen ist:
 +
 [source, cli]
 ----
 system node upgrade-revert show -node nodename
 ----
 +
-Der Status sollte als „vollständig“ aufgeführt sein.
+Der Status sollte als abgeschlossen angezeigt werden.
 
 +
-Wenn der Status nicht abgeschlossen ist, link:http://mysupport.netapp.com/["Kontaktaufnahme mit dem NetApp Support"^] sofort.
+Wenn der Status nicht vollständig ist, link:http://mysupport.netapp.com/["Den NetApp Support kontaktieren"^] sofort.
 
-.. Zurück zur Administratorberechtigungsebene:
+.. Zurück zur Administrator-Privilegstufe:
 +
 [source, cli]
 ----
@@ -185,14 +185,14 @@ set -privilege admin
 ----
 
 
-. Wiederholen Sie die Schritte 5 bis 8 für jeden weiteren Node.
-. Wenn das Cluster aus zwei oder mehr Nodes besteht, aktivieren Sie Storage Failover für jedes HA-Paar im Cluster:
+. Schritte 5 bis 8 sind für jeden weiteren Node zu wiederholen.
+. Besteht der Cluster aus zwei oder mehr Knoten, wird das Storage-Failover für jedes HA-Paar im Cluster aktiviert:
 +
 [source, cli]
 ----
 storage failover modify -node * -enabled true
 ----
-. Wenn das Cluster nur aus zwei Nodes besteht, ermöglichen Sie Cluster Hochverfügbarkeit:
+. Besteht der Cluster nur aus zwei Knoten, kann die Cluster-High Availability aktiviert werden:
 +
 [source, cli]
 ----
@@ -201,5 +201,5 @@ cluster ha modify -configured true
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-modify.html["Speicherfailover ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-modify.html["storage failover modify"^]
 

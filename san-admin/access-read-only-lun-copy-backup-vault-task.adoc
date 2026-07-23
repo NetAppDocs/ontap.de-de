@@ -2,7 +2,7 @@
 permalink: san-admin/access-read-only-lun-copy-backup-vault-task.html 
 sidebar: sidebar 
 keywords: access, read-only, lun, copy, snapvault, backup 
-summary: Sie können aus dem letzten Snapshot in einem SnapVault-Backup auf eine schreibgeschützte Kopie einer LUN zugreifen. Die LUN-ID, der Pfad und die Seriennummer unterscheiden sich von der Quell-LUN und müssen zuerst zugeordnet werden. Persistente Reservierungen, LUN-Zuordnungen und Initiatorgruppen werden nicht auf das sekundäre SnapVault Volume repliziert. 
+summary: Sie können auf eine schreibgeschützte Kopie einer LUN aus dem letzten Snapshot in einem SnapVault Backup zugreifen. Die LUN-ID, der Pfad und die Seriennummer unterscheiden sich von der Quell-LUN und müssen zunächst zugeordnet werden. Persistente Reservierungen, LUN-Zuordnungen und Initiatorgruppen werden nicht auf das SnapVault sekundäre Volume repliziert. 
 ---
 = Zugriff auf eine schreibgeschützte LUN-Kopie aus einem ONTAP SnapVault Backup
 :allow-uri-read: 
@@ -11,29 +11,29 @@ summary: Sie können aus dem letzten Snapshot in einem SnapVault-Backup auf eine
 
 
 [role="lead"]
-Sie können aus dem letzten Snapshot in einem SnapVault-Backup auf eine schreibgeschützte Kopie einer LUN zugreifen. Die LUN-ID, der Pfad und die Seriennummer unterscheiden sich von der Quell-LUN und müssen zuerst zugeordnet werden. Persistente Reservierungen, LUN-Zuordnungen und Initiatorgruppen werden nicht auf das sekundäre SnapVault Volume repliziert.
+Sie können auf eine schreibgeschützte Kopie einer LUN aus dem letzten Snapshot in einem SnapVault Backup zugreifen. Die LUN-ID, der Pfad und die Seriennummer unterscheiden sich von der Quell-LUN und müssen zunächst zugeordnet werden. Persistente Reservierungen, LUN-Zuordnungen und Initiatorgruppen werden nicht auf das SnapVault sekundäre Volume repliziert.
 
 .Bevor Sie beginnen
-* Die SnapVault-Beziehung muss initialisiert werden, und der neueste Snapshot im sekundären SnapVault-Volume muss die gewünschte LUN enthalten.
-* Die Storage Virtual Machine (SVM), die das SnapVault Backup enthält, muss über einen oder mehrere LIFs verfügen, wobei das gewünschte SAN-Protokoll über den Host zugänglich ist, der für den Zugriff auf die LUN-Kopie verwendet wird.
-* Wenn Sie einen direkten Zugriff auf LUN-Kopien vom sekundären SnapVault Volume planen, müssen Sie vorab Ihre Initiatorgruppen auf der SnapVault SVM erstellen.
+* Die SnapVault Beziehung muss initialisiert werden und der neueste Snapshot im SnapVault sekundären Volume muss die gewünschte LUN enthalten.
+* Die Storage Virtual Machine (SVM), die das SnapVault Backup enthält, muss über eine oder mehrere LIFs mit dem gewünschten SAN-Protokoll verfügen, die von dem Host aus erreichbar sind, der zum Zugriff auf die LUN-Kopie verwendet wird.
+* Wenn Sie planen, direkt vom SnapVault sekundären Volume auf LUN-Kopien zuzugreifen, müssen Sie Ihre Initiatorgruppen im Voraus auf der SnapVault SVM erstellen.
 +
-Sie können direkt vom sekundären SnapVault Volume auf eine LUN zugreifen, ohne dass zuerst das Volume mit der LUN wiederhergestellt oder geklont werden muss.
+Sie können direkt auf eine LUN vom SnapVault sekundäres Volume zugreifen, ohne zuerst das Volume, das die LUN enthält, wiederherstellen oder klonen zu müssen.
 
 
 
 .Über diese Aufgabe
-Wenn dem sekundären SnapVault-Volume ein neuer Snapshot hinzugefügt wird, während eine LUN aus einem vorherigen Snapshot zugeordnet ist, ändert sich der Inhalt der zugeordneten LUN. Die LUN ist weiterhin mit denselben Kennungen zugeordnet, die Daten werden jedoch aus dem neuen Snapshot entnommen. Wenn sich die LUN-Größe ändert, erkennen einige Hosts automatisch die Größenänderung. Windows Hosts müssen nach einem Festplatten-Rescan suchen, um eventuelle Größenänderungen einzuholen.
+Wenn dem SnapVault sekundären Volume ein neuer Snapshot hinzugefügt wird, während Sie eine LUN aus einem vorherigen Snapshot zugeordnet haben, ändert sich der Inhalt der zugeordneten LUN. Die LUN ist weiterhin mit denselben Kennungen zugeordnet, aber die Daten stammen aus dem neuen Snapshot. Wenn sich die LUN-Größe ändert, erkennen einige Hosts die Größenänderung automatisch; Windows-Hosts benötigen einen erneuten Datenträgerscan, um eine Größenänderung zu erkennen.
 
 .Schritte
-. Listen Sie die verfügbaren LUNs im sekundären SnapVault-Volume auf.
+. Die verfügbaren LUNs im SnapVault sekundären Volume auflisten.
 +
 [source, cli]
 ----
 lun show
 ----
 +
-In diesem Beispiel sehen Sie sowohl die ursprünglichen LUNs im primären Volume srcvolA als auch die Kopien im sekundären SnapVault Volume dstvolB:
+In diesem Beispiel sind sowohl die ursprünglichen LUNs im primären Volume srcvolA als auch die Kopien im SnapVault sekundären Volume dstvolB zu sehen:
 
 +
 [listing]
@@ -52,16 +52,16 @@ vserverB  /vol/dstvolB/lun_C  online  unmapped windows  300.0GB
 6 entries were displayed.
 ----
 +
-Erfahren Sie mehr über `lun show` in der link:https://docs.netapp.com/us-en/ontap-cli/lun-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `lun show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/lun-show.html["ONTAP-Befehlsreferenz"^].
 
-. Wenn die Initiatorgruppe für den gewünschten Host auf der SVM, die das sekundäre SnapVault Volume enthält, nicht bereits vorhanden ist, erstellen Sie eine Initiatorgruppe.
+. Falls die Initiatorgruppe für den gewünschten Host auf der SVM, die das SnapVault sekundäre Volume enthält, noch nicht existiert, sollte eine Initiatorgruppe erstellt werden.
 +
 [source, cli]
 ----
 igroup create -vserver <SVM_name> -igroup <igroup_name> -protocol <protocol> -ostype <ostype> -initiator <initiator_name>
 ----
 +
-Mit diesem Befehl wird eine Initiatorgruppe für einen Windows Host erstellt, der das iSCSI-Protokoll verwendet:
+Dieser Befehl erstellt eine Initiatorgruppe für einen Windows Host, der das iSCSI Protokoll verwendet:
 
 +
 [listing]
@@ -70,7 +70,7 @@ cluster::> igroup create -vserver vserverB -igroup temp_igroup
   -protocol iscsi -ostype windows
   -initiator iqn.1991-05.com.microsoft:hostA
 ----
-. Ordnen Sie die gewünschte LUN-Kopie der Initiatorgruppe zu.
+. Die gewünschte LUN-Kopie wird der Initiatorgruppe zugeordnet.
 +
 [source, cli]
 ----
@@ -83,7 +83,7 @@ cluster::> lun mapping create -vserver vserverB -path /vol/dstvolB/lun_A
   -igroup temp_igroup
 ----
 +
-Erfahren Sie mehr über `lun mapping create` in der link:https://docs.netapp.com/us-en/ontap-cli/lun-mapping-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `lun mapping create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/lun-mapping-create.html["ONTAP-Befehlsreferenz"^].
 
-. Verbinden Sie den Host mit der LUN, und greifen Sie nach Bedarf auf die Inhalte der LUN zu.
+. Den Host mit der LUN verbinden und nach Bedarf auf die Inhalte der LUN zugreifen.
 

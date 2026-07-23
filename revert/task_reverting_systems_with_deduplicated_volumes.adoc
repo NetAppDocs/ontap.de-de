@@ -2,48 +2,48 @@
 permalink: revert/task_reverting_systems_with_deduplicated_volumes.html 
 sidebar: sidebar 
 keywords: ontap, revert, reverting, reversion, systems, deduplication, deduplicated, volumes 
-summary: Vor dem Zurücksetzen von einer Version von ONTAP 9 müssen Sie sicherstellen, dass die Volumes ausreichend freien Speicherplatz für den Revert enthalten. 
+summary: Vor dem Zurücksetzen von einer beliebigen Version von ONTAP 9 muss sichergestellt sein, dass die Volumes über ausreichend freien Speicherplatz für den Zurücksetzungsvorgang verfügen. 
 ---
-= Überprüfen Sie den freien Speicherplatz für deduplizierte Volumes, bevor Sie ONTAP zurücksetzen
+= Freier Speicherplatz für deduplizierte Volumes sollte vor dem Zurücksetzen von ONTAP überprüft werden
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Bevor Sie ein ONTAP-Cluster von einer beliebigen Version von ONTAP 9 zurücksetzen, müssen Sie sicherstellen, dass die Volumes ausreichend freien Speicherplatz für die Wiederherstellung enthalten.
+Bevor ein ONTAP Cluster von einer beliebigen Version von ONTAP 9 zurückgesetzt wird, muss sichergestellt sein, dass die Volumes über ausreichend freien Speicherplatz für den Rücksetzungsvorgang verfügen.
 
-Das Volume muss über genügend Speicherplatz verfügen, um die Einsparungen aufzunehmen, die durch die Inline-Erkennung von Nullblöcken erzielt wurden. Siehe dielink:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_to_see_space_savings_from_deduplication%2C_compression%2C_and_compaction_in_ONTAP_9["NetApp Knowledge Base: So erzielen Sie Platzeinsparungen durch Deduplizierung, Komprimierung und Verdichtung in ONTAP 9"^] .
+Das Volumen muss ausreichend Platz bieten, um die durch die Inline-Erkennung von Nullblöcken erzielten Einsparungen aufzunehmen. Siehe link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_to_see_space_savings_from_deduplication%2C_compression%2C_and_compaction_in_ONTAP_9["NetApp Knowledge Base: Wie sich Speicherplatzeinsparungen durch Deduplizierung, Komprimierung und Kompaktierung in ONTAP 9 anzeigen lassen"^].
 
-Wenn Sie sowohl die Deduplizierung als auch die Datenkomprimierung auf einem Volume aktiviert haben, das Sie zurücksetzen möchten, müssen Sie die Datenkomprimierung vor der Zurücksetzen der Deduplizierung zurücksetzen.
+Wenn sowohl Deduplizierung als auch Datenkomprimierung auf einem Volume aktiviert wurden, dessen Zustand zurückgesetzt werden soll, muss die Datenkomprimierung vor der Deduplizierung zurückgesetzt werden.
 
 .Schritte
-. Sehen Sie sich den Fortschritt der Effizienzvorgänge an, die auf den Volumes ausgeführt werden:
+. Den Fortschritt der Effizienzmaßnahmen, die auf den Volumes ausgeführt werden, anzeigen:
 +
 [source, cli]
 ----
 volume efficiency show -fields vserver,volume,progress
 ----
-. Beenden Sie alle aktiven Deduplizierungsprozesse und deren Warteschlange:
+. Alle aktiven und in der Warteschlange befindlichen Deduplizierungsvorgänge anhalten:
 +
 [source, cli]
 ----
 volume efficiency stop -vserver <svm_name> -volume <volume_name> -all
 ----
-. Legen Sie die Berechtigungsebene auf erweitert fest:
+. Stellen Sie die Berechtigungsstufe auf „Erweitert“ ein:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
-. Downgrade der Effizienz-Metadaten eines Volumes auf die Zielversion von ONTAP:
+. Die Effizienzmetadaten eines Volumes auf die Zielversion von ONTAP herabstufen:
 +
 [source, cli]
 ----
 volume efficiency revert-to -vserver <svm_name> -volume <volume_name> -version <version>
 ----
 +
-Im folgenden Beispiel werden die Effizienzmetadaten auf Volume Vola auf ONTAP 9.x zurückgesetzt
+Das folgende Beispiel setzt die Effizienz-Metadaten auf dem Volume VolA auf ONTAP 9.x zurück.
 
 +
 [listing]
@@ -52,21 +52,21 @@ volume efficiency revert-to -vserver vs1 -volume VolA -version 9.x
 ----
 +
 
-NOTE: Mit dem Befehl „revert-to“ für die Volume-Effizienz werden auf dem Node, auf dem dieser Befehl ausgeführt wird, vorhandene Volumes zurückgesetzt. Dieser Befehl bewirkt nicht, dass Volumes über Nodes hinweg zurückgesetzt werden.
+NOTE: Der Befehl „volume efficiency revert-to“ setzt die Volumes zurück, die sich auf dem Knoten befinden, auf dem dieser Befehl ausgeführt wird. Mit diesem Befehl werden keine Volumes über Knoten hinweg zurückgesetzt.
 
-. Überwachen Sie den Fortschritt des Downgrades:
+. Der Fortschritt der Herabstufung kann überwacht werden:
 +
 [source, cli]
 ----
 volume efficiency show -vserver <svm_name> -op-status Downgrading
 ----
-. Wenn die Rücksetzung nicht erfolgreich ist, zeigen Sie die Instanz an, um zu sehen, warum die Rücksetzung fehlgeschlagen ist.
+. Falls die Rücksetzung fehlschlägt, kann die Instanz angezeigt werden, um den Grund für das Scheitern der Rücksetzung zu ermitteln.
 +
 [source, cli]
 ----
 volume efficiency show -vserver <svm_name> -volume <volume_name> - instance
 ----
-. Nach Abschluss des Vorgangs „Zurücksetzen“ kehren Sie zur Administratorberechtigungsebene zurück:
+. Nach Abschluss des Rückgängigmachungsvorgangs wird zur Administratorberechtigungsstufe zurückgekehrt:
 +
 [source, cli]
 ----
@@ -74,4 +74,4 @@ set -privilege admin
 ----
 
 
-Erfahren Sie mehr über link:../volumes/index.html["Logisches Storage-Management"].
+Weitere Informationen zu link:../volumes/index.html["Logische Speicherverwaltung"].

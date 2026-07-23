@@ -2,39 +2,39 @@
 permalink: disks-aggregates/determine-modify-caching-policy-flash-pool-task.html 
 sidebar: sidebar 
 keywords: modify, cache, policy, flash pool, aggregate, local tier 
-summary: Sie können Volumes in lokalen Flash Pool Tiers Richtlinien zur Cache-Aufbewahrung zuweisen, um zu bestimmen, wie lange die Volume-Daten im Flash Pool Cache verbleiben. In einigen Fällen kann sich jedoch die Änderung der Cache-Retention-Richtlinie nicht auf die Zeit auswirken, die die Daten des Volumes im Cache verbleiben. 
+summary: Sie können Volumes in Flash Pool lokalen Tiers Cache-Aufbewahrungsrichtlinien zuweisen, um festzulegen, wie lange die Volume-Daten im Flash Pool Cache verbleiben. In manchen Fällen hat die Änderung der Cache-Aufbewahrungsrichtlinie jedoch keinen Einfluss auf die Verweildauer der Volume-Daten im Cache. 
 ---
-= Ermitteln, ob die ONTAP Caching-Richtlinie für lokale Flash Pool Tiers geändert werden soll
+= Es sollte geprüft werden, ob die ONTAP Caching-Richtlinie der lokalen Flash Pool Tiers angepasst werden muss.
 :allow-uri-read: 
 
 
 [role="lead"]
-Sie können Volumes in lokalen Flash Pool Tiers Richtlinien zur Cache-Aufbewahrung zuweisen, um zu bestimmen, wie lange die Volume-Daten im Flash Pool Cache verbleiben. In einigen Fällen kann es jedoch sein, dass die Richtlinie zur Cache-Aufbewahrung die Zeit, die die Daten des Volumes im Cache verbleiben, nicht beeinträchtigt.
+Sie können Volumes in Flash Pool lokalen Tiers Cache-Aufbewahrungsrichtlinien zuweisen, um festzulegen, wie lange die Volume-Daten im Flash Pool Cache verbleiben. In manchen Fällen hat die Änderung der Cache-Aufbewahrungsrichtlinie jedoch keinen Einfluss darauf, wie lange die Daten des Volumes im Cache verbleiben.
 
 .Über diese Aufgabe
-Wenn Ihre Daten den folgenden Bedingungen entsprechen, hat das Ändern der Cache-Aufbewahrungsrichtlinie möglicherweise keine Auswirkung:
+Wenn Ihre Daten eine der folgenden Bedingungen erfüllen, könnte eine Änderung Ihrer Cache-Retention-Policy keine Auswirkungen haben:
 
-* Ihr Workload ist sequenziell.
-* Ihr Workload wird die zufälligen Blöcke, die in den Solid State-Laufwerken (SSDs) zwischengespeichert werden, nicht erneut gelesen.
+* Ihre Arbeitslast ist sequenziell.
+* Ihre Arbeitslast liest die im Solid State Drive (SSD) zwischengespeicherten zufälligen Blöcke nicht erneut.
 * Die Cache-Größe des Volumes ist zu klein.
 
 
 .Schritte
-Die folgenden Schritte prüfen, ob die Bedingungen von den Daten erfüllt werden müssen. Die Aufgabe muss im erweiterten Berechtigungsebene mit der CLI ausgeführt werden.
+Die folgenden Schritte prüfen, ob die Daten die erforderlichen Bedingungen erfüllen. Die Aufgabe muss über die Befehlszeilenschnittstelle (CLI) im erweiterten Berechtigungsmodus ausgeführt werden.
 
-. Verwenden Sie die CLI, um das Workload-Volume anzuzeigen:
+. Die CLI kann verwendet werden, um das Workload-Volumen anzuzeigen:
 +
 `statistics start -object workload_volume`
 
-. Bestimmen des Workload-Musters des Volume:
+. Das Auslastungsmuster des Volumens bestimmen:
 +
 `statistics show -object workload_volume -instance _volume-workload_ -counter sequential_reads`
 
-. Ermitteln Sie die Trefferrate des Volumens:
+. Die Trefferquote des Volumens bestimmen:
 +
 `statistics show -object wafl_hya_vvol -instance _volume_ -counter read_ops_replaced_percent|wc_write_blks_overwritten_percent`
 
-. Bestimmen Sie den `Cacheable Read` und `Project Cache Alloc` des Volumes:
+. Bestimmen Sie die  `Cacheable Read` und  `Project Cache Alloc` des Volumens:
 +
 `system node run -node node_name wafl awa start _aggr_name_`
 
@@ -42,17 +42,17 @@ Die folgenden Schritte prüfen, ob die Bedingungen von den Daten erfüllt werden
 +
 `system node run -node node_name wafl awa print _aggr_name_`
 
-. Vergleichen Sie die Trefferrate des Volumens mit der `Cacheable Read`.
+. Die Trefferquote des Volumes kann mit der  `Cacheable Read` verglichen werden.
 +
-Wenn die Trefferquote des Volumes höher als der ist `Cacheable Read`, dann liest Ihr Workload keine zufälligen Blöcke, die in den SSDs zwischengespeichert sind.
+Wenn die Trefferquote des Volumes größer als der `Cacheable Read` ist, liest Ihre Arbeitslast keine zufälligen, auf den SSDs zwischengespeicherten Blöcke erneut.
 
-. Vergleichen Sie die aktuelle Cache-Größe des Volumes mit der `Project Cache Alloc`.
+. Die aktuelle Cache-Größe des Volumes im Vergleich zur  `Project Cache Alloc`.
 +
-Wenn die aktuelle Cache-Größe des Volumes größer ist als die `Project Cache Alloc`, dann ist die Größe des Volume-Caches zu klein.
+Wenn die aktuelle Cache-Größe des Volumes größer als die  `Project Cache Alloc` ist, ist die Größe Ihres Volume-Caches zu klein.
 
 
 
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/statistics-show.html["Statistiken zeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/statistics-start.html["Statistikstart"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/statistics-start.html["Statistiken Start"^]
 

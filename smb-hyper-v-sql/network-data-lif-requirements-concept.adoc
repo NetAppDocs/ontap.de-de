@@ -4,53 +4,53 @@ sidebar: sidebar
 keywords: network, data, lif, requirements, hyper, v, sql, server, protocol 
 summary: Bei der Erstellung von SQL Server- oder Hyper-V over SMB-Konfigurationen für unterbrechungsfreie Operationen müssen Sie bestimmte Netzwerk- und Daten-LIF-Anforderungen beachten. 
 ---
-= Anforderungen an Netzwerk und LIF-Daten
+= Netzwerk- und Daten-LIF-Anforderungen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie müssen bestimmte Netzwerk- und Daten-LIF-Anforderungen kennen, wenn Sie SQL Server- oder Hyper-V über SMB-Konfigurationen erstellen, um einen unterbrechungsfreien Betrieb zu gewährleisten.)
+Bei der Erstellung von SQL Server oder Hyper-V over SMB Konfigurationen für unterbrechungsfreie Operationen sind bestimmte Netzwerk- und Daten-LIF-Anforderungen zu berücksichtigen.
 
 
 
 [[network-protocol-requirements]]
-== Anforderungen an Netzwerkprotokolle
+== Anforderungen an das Netzwerkprotokoll
 
 * IPv4- und IPv6-Netzwerke werden unterstützt.
 * SMB 3.0 oder höher ist erforderlich.
 +
-SMB 3.0 bietet die Funktionen, die zum Erstellen kontinuierlich verfügbarer SMB-Verbindungen erforderlich sind, damit ein unterbrechungsfreier Betrieb möglich ist.
+SMB 3.0 bietet die Funktionalität, die zur Herstellung der kontinuierlich verfügbaren SMB-Verbindungen erforderlich ist, um unterbrechungsfreie Betriebsabläufe zu ermöglichen.
 
-* DNS-Server müssen Einträge enthalten, die den CIFS-Servernamen den IP-Adressen zuordnen, die den Daten-LIFs auf der Storage Virtual Machine (SVM) zugewiesen sind.
+* Die DNS-Server müssen Einträge enthalten, die den CIFS-Servernamen den IP-Adressen zuordnen, die den Daten-LIFs auf der Storage Virtual Machine (SVM) zugewiesen sind.
 +
-Die Applikations-Server Hyper-V oder SQL Server führen beim Zugriff auf Virtual Machines- oder Datenbankdateien normalerweise mehrere Verbindungen über mehrere Daten-LIFs durch. Um eine ordnungsgemäße Funktion zu gewährleisten, müssen die Anwendungsserver diese mehrere SMB-Verbindungen herstellen, indem sie den CIFS-Servernamen verwenden, anstatt mehrere Verbindungen zu mehreren eindeutigen IP-Adressen zu machen.
-
-+
-Außerdem erfordert Witness den DNS-Namen des CIFS-Servers anstelle der einzelnen LIF IP-Adressen.
+Die Hyper-V- oder SQL Server-Anwendungsserver stellen typischerweise mehrere Verbindungen über mehrere Daten-LIFs her, wenn sie auf virtuelle Maschinen- oder Datenbankdateien zugreifen. Für die korrekte Funktionalität müssen die Anwendungsserver diese mehreren SMB-Verbindungen unter Verwendung des CIFS-Server-Namens herstellen, anstatt mehrere Verbindungen zu verschiedenen eindeutigen IP-Adressen aufzubauen.
 
 +
-Ab ONTAP 9.4 können Sie den Durchsatz und die Fehlertoleranz für Hyper-V und SQL Server über SMB-Konfigurationen verbessern, indem Sie SMB MultiChannel aktivieren. Dazu müssen Sie mehrere 1G, 10G oder größere NICs auf dem Cluster und den Clients einsetzen.
+Witness erfordert außerdem die Verwendung des DNS-Namens des CIFS-Servers anstelle der einzelnen LIF-IP-Adressen.
+
++
+Ab ONTAP 9.4 können Durchsatz und Fehlertoleranz für Hyper-V und SQL Server over SMB Konfigurationen durch Aktivierung von SMB Multichannel verbessert werden. Dazu müssen mehrere 1G-, 10G- oder größere NICs im Cluster und auf den Clients vorhanden sein.
 
 
 
 
 
 [[data-lif-requirements]]
-== Anforderungen an Daten-LIF
+== Anforderungen an Daten-LIFs
 
-* Die SVM, die die Applikationsserver über SMB-Lösung hostet, muss auf jedem Node im Cluster mindestens eine logische Daten-LIF aufweisen.
+* Die SVM, die den Anwendungsserver über die SMB-Lösung hostet, muss auf jedem Node im Cluster mindestens eine betriebsbereite Daten-LIF haben.
 +
-Ein Failover von SVM-Daten-LIFs auf andere Daten-Ports im Cluster ist möglich, einschließlich Nodes, die aktuell keine Daten hosten, die von den Applikationsservern abgerufen werden. Außerdem ist jeder Node im Cluster immer der SFO-Partner eines Node, mit dem der Applikationsserver verbunden ist, ein potenzieller Witness Node.
+SVM-Daten-LIFs können auf andere Datenports innerhalb des Clusters ausweichen, einschließlich Knoten, die aktuell keine von den Anwendungsservern abgerufenen Daten hosten. Außerdem ist jeder Knoten im Cluster ein potenzieller Witness-Knoten, da der Witness-Knoten immer der SFO-Partner eines Knotens ist, mit dem der Anwendungsserver verbunden ist.
 
-* Daten-LIFs dürfen nicht für die automatische Wiederherstellung konfiguriert werden.
+* Daten-LIFs dürfen nicht so konfiguriert werden, dass sie automatisch zurückkehren.
 +
-Nach einem Takeover- oder Giveback-Ereignis sollten Sie die Daten-LIFs manuell auf ihre Home-Ports zurücksetzen.
+Nach einer Übernahme oder Rückgabe sollten die Daten-LIFs manuell auf ihre Home-Ports zurückgesetzt werden.
 
-* Alle Daten-LIF-IP-Adressen müssen einen Eintrag in DNS haben und alle Einträge müssen zum CIFS-Servernamen auflösen.
+* Alle Daten-LIF-IP-Adressen müssen einen Eintrag im DNS haben, und alle Einträge müssen auf den CIFS-Servernamen aufgelöst werden.
 +
-Die Applikations-Server müssen sich über den CIFS-Servernamen mit SMB-Freigaben verbinden. Konfigurieren Sie die Anwendungsserver nicht, um Verbindungen mithilfe der LIF-IP-Adressen herzustellen.
+Die Anwendungsserver müssen sich mit den SMB-Freigaben über den CIFS-Servernamen verbinden. Die Anwendungsserver dürfen nicht so konfiguriert werden, dass sie Verbindungen über die LIF-IP-Adressen herstellen.
 
-* Wenn sich der CIFS-Servername von dem SVM-Namen unterscheidet, müssen die DNS-Einträge auf den CIFS-Servernamen auflösen.
+* Wenn der CIFS-Servername vom SVM-Namen abweicht, müssen die DNS-Einträge auf den CIFS-Servernamen aufgelöst werden.
 

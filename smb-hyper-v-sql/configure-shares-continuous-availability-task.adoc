@@ -2,81 +2,81 @@
 permalink: smb-hyper-v-sql/configure-shares-continuous-availability-task.html 
 sidebar: sidebar 
 keywords: configure, shares, continuous, availability, hyper, v, sql, server, virutal, machine, database, file 
-summary: Freigaben ändern, um kontinuierlich verfügbare Freigaben zu sein Hyper-V- und SQL Server-Anwendungsserver werden für unterbrechungsfreien Zugriff verwendet 
+summary: Freigaben so ändern, dass sie dauerhaft verfügbar sind und von Hyper-V- und SQL Server-Anwendungsservern für unterbrechungsfreien Zugriff genutzt werden 
 ---
-= Konfigurieren Sie vorhandene Shares für kontinuierliche Verfügbarkeit
+= Vorhandene Freigaben für kontinuierliche Verfügbarkeit konfigurieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können vorhandene Shares so ändern, dass diese kontinuierlich verfügbaren Shares werden, die mit den Hyper-V und SQL Server Applikationsserver für den unterbrechungsfreien Zugriff auf Hyper-V Virtual Machines, Konfigurationsdateien und SQL Server Datenbankdateien verwendet werden.
+Bestehende Freigaben können so geändert werden, dass sie dauerhaft verfügbar sind und von den Hyper-V und SQL Server-Anwendungsservern für den unterbrechungsfreien Zugriff auf Hyper-V-VM- und Konfigurationsdateien sowie SQL Server-Datenbankdateien genutzt werden.
 
 .Über diese Aufgabe
-Vorhandene Freigaben können nicht als kontinuierlich verfügbare Freigabe für unterbrechungsfreien Betrieb bei Applikations-Servern über SMB verwendet werden, wenn der Share folgende Merkmale aufweist:
+Sie können eine bestehende Freigabe nicht als ständig verfügbare Freigabe für unterbrechungsfreie Operationen mit Anwendungsservern über SMB verwenden, wenn die Freigabe die folgenden Eigenschaften aufweist:
 
-* Wenn die `homedirectory` Share-Eigenschaft für diese Freigabe festgelegt ist
-* Wenn die Freigabe aktivierte Symlink oder widelinks enthält
-* Wenn die Freigabe Verbindungen unter dem Stammverzeichnis der Freigabe enthält
+* Wenn die  `homedirectory` Freigabeeigenschaft für diese Freigabe festgelegt ist
+* Wenn die Freigabe aktivierte Symlinks oder Widelinks enthält
+* Wenn die Freigabe verbundene Volumes unterhalb des Stammverzeichnisses der Freigabe enthält
 
 
-Sie müssen überprüfen, ob die beiden folgenden Freigabeparameter richtig eingestellt sind:
+Es ist zu überprüfen, ob die folgenden beiden Freigabeparameter korrekt eingestellt sind:
 
-* Der `-offline-files` Parameter ist entweder auf `manual` (Standard) oder auf eingestellt `none`.
+* Der  `-offline-files` Parameter ist entweder auf  `manual` (Standardwert) oder  `none` gesetzt.
 * Symlinks müssen deaktiviert sein.
 
 
-Die folgenden Freigabeigenschaften müssen konfiguriert werden:
+Folgende Freigabeeigenschaften müssen konfiguriert werden:
 
 * `continuously-available`
 * `oplocks`
 
 
-Die folgenden Freigabeigenschaften dürfen nicht festgelegt werden. Wenn sie in der Liste der aktuellen Share-Eigenschaften vorhanden sind, müssen sie aus der kontinuierlich verfügbaren Freigabe entfernt werden:
+Die folgenden Freigabeeigenschaften dürfen nicht festgelegt werden. Falls sie in der Liste der aktuellen Freigabeeigenschaften vorhanden sind, müssen sie aus der kontinuierlich verfügbaren Freigabe entfernt werden:
 
 * `attributecache`
 * `branchcache`
 
 
 .Schritte
-. Die aktuellen Einstellungen für den Freigabeparameter und die aktuelle Liste der konfigurierten Freigabeneigenschaften anzeigen:
+. Die aktuellen Freigabeparametereinstellungen und die aktuelle Liste der konfigurierten Freigabeeigenschaften werden angezeigt:
 +
 [source, cli]
 ----
 vserver cifs share show -vserver <vserver_name> -share-name <share_name>
 ----
-. Ändern Sie bei Bedarf die Freigabeparameter, um Symlinks zu deaktivieren und Offline-Dateien mit dem Befehl auf manuell zu setzen `vserver cifs share modify` .
+. Gegebenenfalls können die Freigabeparameter angepasst werden, um symbolische Links zu deaktivieren und Offline-Dateien mithilfe des  `vserver cifs share modify` Befehls auf manuell zu setzen.
 +
-** Sie können Symlinks deaktivieren, indem Sie den Wert des `-symlink` Parameters auf setzen `""`.
-** Sie können den `-offline-files` Parameter auf die richtige Einstellung einstellen, indem `manual` Sie angeben.
+** Sie können symbolische Links deaktivieren, indem der Wert des  `-symlink` Parameters auf  `""` gesetzt wird.
+** Der  `-offline-files`Parameter kann auf die richtige Einstellung gesetzt werden, indem  `manual`angegeben wird.
 
 
-. Fügen Sie die Eigenschaft „Share“ und, falls erforderlich, die Eigenschaft „Share“ hinzu `continuously-available` `oplocks` :
+. Die  `continuously-available`Share-Eigenschaft und, falls erforderlich, die  `oplocks`Share-Eigenschaft hinzufügen:
 +
 [source, cli]
 ----
 vserver cifs share properties add -vserver <vserver_name> -share-name <share_name> -share-properties continuously-available[,oplock]
 ----
 +
-Wenn die `oplocks` Eigenschaft `continuously-available` „Share“ noch nicht festgelegt ist, müssen Sie sie zusammen mit der Eigenschaft „Share“ hinzufügen.
+Falls die  `oplocks` share-Eigenschaft noch nicht festgelegt ist, muss sie zusammen mit der  `continuously-available` share-Eigenschaft hinzugefügt werden.
 
-. Entfernen Sie alle Share-Eigenschaften, die nicht auf kontinuierlich verfügbaren Freigaben unterstützt werden:
+. Entfernen Sie alle Freigabeeigenschaften, die für kontinuierlich verfügbare Freigaben nicht unterstützt werden:
 +
 [source, cli]
 ----
 vserver cifs share properties remove -vserver <vserver_name> -share-name <share_name> -share-properties properties[,...]
 ----
 +
-Sie können eine oder mehrere Share-Eigenschaften entfernen, indem Sie die Share-Eigenschaften mit einer kommagetrennten Liste angeben.
+Sie können eine oder mehrere Freigabeeigenschaften entfernen, indem die Freigabeeigenschaften als durch Kommas getrennte Liste angegeben werden.
 
-. Stellen Sie sicher, dass die `-symlink` `-offline-files` Parameter und korrekt eingestellt sind:
+. Es sollte überprüft werden, ob die  `-symlink` und  `-offline-files` Parameter korrekt eingestellt sind:
 +
 [source, cli]
 ----
 vserver cifs share show -vserver <vserver_name> -share-name <share_name> -fields symlink-properties,offline-files
 ----
-. Vergewissern Sie sich, dass die Liste der konfigurierten Freigabeigenschaften korrekt ist:
+. Es sollte überprüft werden, ob die Liste der konfigurierten Freigabeeigenschaften korrekt ist:
 +
 [source, cli]
 ----
@@ -85,14 +85,14 @@ vserver cifs share properties show -vserver <vserver_name> -share-name <share_na
 
 
 .Beispiele
-Im folgenden Beispiel wird gezeigt, wie eine vorhandene Freigabe namens „share1“ auf der Storage Virtual Machine (SVM) „vs1“ für NDOS mit einem Applikations-Server über SMB konfiguriert wird:
+Das folgende Beispiel zeigt, wie eine vorhandene Freigabe mit dem Namen „share1“ auf der Storage Virtual Machine (SVM) „vs1“ für NDOs mit einem Anwendungsserver über SMB konfiguriert wird:
 
-* Symlinks werden für die Freigabe deaktiviert, indem der Parameter auf gesetzt `-symlink` `""`wird.
-* Der `-offline-file` Parameter wird geändert und auf gesetzt `manual`.
-* Die `continuously-available` Freigabeeigenschaft wird der Freigabe hinzugefügt.
-* Die `oplocks` Share-Eigenschaft befindet sich bereits in der Liste der Share-Eigenschaften. Sie muss daher nicht hinzugefügt werden.
-* Die `attributecache` Freigabeeigenschaft wird aus der Freigabe entfernt.
-* Die `browsable` Share-Eigenschaft ist optional für einen kontinuierlich verfügbaren Share, der für NDOS mit Anwendungsservern über SMB verwendet wird, und wird als eine der Share-Eigenschaften beibehalten.
+* Symlinks werden auf der Freigabe deaktiviert, indem der  `-symlink` Parameter auf  `""` gesetzt wird.
+* Der  `-offline-file`Parameter wird geändert und auf  `manual`gesetzt.
+* Die  `continuously-available`Share-Eigenschaft wird dem Share hinzugefügt.
+* Die  `oplocks`Freigabeeigenschaft ist bereits in der Liste der Freigabeeigenschaften enthalten, daher muss sie nicht hinzugefügt werden.
+* Die  `attributecache`Share-Eigenschaft wird vom Share entfernt.
+* Die  `browsable`Freigabeeigenschaft ist optional für eine kontinuierlich verfügbare Freigabe, die für NDOs mit Anwendungsservern über SMB verwendet wird, und bleibt als eine der Freigabeeigenschaften erhalten.
 
 
 [listing]

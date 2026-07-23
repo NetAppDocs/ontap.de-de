@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: snapmirror-active-sync/site-b-mediator-troubleshoot-task.html 
 keywords: SM-BC, SMBC, troubleshooting, link down, Mediator, Cloud Mediator, snapmirror active sync 
-summary: Mediator-Verbindung von Standort B wird als nicht erreichbar angezeigt. 
+summary: Die Mediatorverbindung von Standort B wird als nicht erreichbar angezeigt. 
 ---
-= Verbindung zwischen Site B und ONTAP Mediator ausgefallen und Site A ausgefallen
+= Verbindung zwischen Standort B und ONTAP Mediator unterbrochen und Standort A ausgefallen
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,10 +14,10 @@ summary: Mediator-Verbindung von Standort B wird als nicht erreichbar angezeigt.
 
 
 [role="lead"]
-Um die Verbindung des ONTAP Mediators oder des ONTAP Cloud Mediators zu überprüfen, verwenden Sie die  `snapmirror mediator show` Befehl. Wenn der Verbindungsstatus „Nicht erreichbar“ lautet und Site B Site A nicht erreichen kann, erhalten Sie eine Ausgabe ähnlich der folgenden. Folgen Sie den Schritten in der Lösung, um die Verbindung wiederherzustellen.
+Zur Überprüfung der Verbindung des ONTAP Mediator oder des ONTAP Cloud Mediator kann der  `snapmirror mediator show` Befehl verwendet werden. Wenn der Verbindungsstatus „Nicht erreichbar“ ist und Site B Site A nicht erreichen kann, erscheint eine ähnliche Ausgabe wie unten gezeigt. In der Lösung sind die Schritte zur Wiederherstellung der Verbindung aufgeführt.
 
 .Beispiel:
-Verwenden Sie den ONTAP Cloud Mediator, um den Befehl „snapmirror mediator show“ auszugeben:
+Mit der ONTAP Cloud Mediator-Ausgabe des Befehls `snapmirror mediator show`:
 
 ....
 cluster::> snapmirror mediator show
@@ -25,7 +25,7 @@ Mediator Address Peer Cluster    Connection Status Quorum Status Type
 ---------------- ---------------- ----------------- ------------- -------
 0.0.0.0          C1_cluster       unreachable       true          cloud
 ....
-Verwenden Sie den ONTAP Mediator, um den Befehl „snapmirror mediator show“ auszugeben:
+Verwendung der ONTAP Mediator-Ausgabe mit dem Befehl `snapmirror mediator show`:
 
 ....
 cluster::> snapmirror mediator show
@@ -51,10 +51,10 @@ Peer Cluster Name         Cluster Serial Number Availability   Authentication
 ------------------------- --------------------- -------------- --------------
 C1_cluster 			  1-80-000011           Unavailable    ok
 ....
-.Nutzen
-Erzwingen Sie ein Failover, um I/O von Standort B zu aktivieren, und stellen Sie dann eine RTO-Beziehung von Standort B zu Standort A auf Null ein. Führen Sie die folgenden Schritte aus, um ein erzwungenes Failover an Standort B durchzuführen
+.Lösung
+Ein Failover wird erzwungen, um die E/A von Standort B zu ermöglichen, und anschließend wird eine Zero-RTO-Beziehung von Standort B zu Standort A hergestellt. Die folgenden Schritte beschreiben das Vorgehen für ein erzwungenes Failover an Standort B.
 
-. Alle LUNs, die zur Konsistenzgruppe von Standort B gehören, müssen entfernt werden. Dies wird fehlschlagen, daher müssen Sie zuerst die igroup ändern, um die Replikations-Peer-SVM zu entfernen, und anschließend die LUN-Zuordnung löschen.
+. Alle LUNs, die zur Konsistenzgruppe von Standort B gehören, ausbinden. Dies schlägt fehl, daher muss zunächst die Initiatorgruppe geändert werden, um die Replikations-Peer-SVM zu entfernen, und anschließend die LUN-Zuordnung gelöscht werden.
 
 
 Beispiel:
@@ -85,25 +85,25 @@ Vserver    Path                                      Igroup   LUN ID  Protocol
 vs0        /vol/cg1_lun/lun_2                        igroup1       1  mixed
 1 entries were displayed.
 ----
-. Löschen Sie die SnapMirror Consistency Group-Beziehung mit der Force-Option.
-. Geben Sie den Befehl SnapMirror Break (`snapmirror break -destination_path _svm_:_volume_`) auf den Volumes der Consistency Group ein, um Volumes von DP in RW zu konvertieren, um I/O von Standort B zu aktivieren
+. Die SnapMirror Konsistenzgruppenbeziehung wird mit der Option „Erzwingen“ gelöscht.
+. Den SnapMirror break-Befehl (`snapmirror break -destination_path _svm_:_volume_` auf den Konsistenzgruppe-Teil-Volumes eingeben, um Volumes von DP auf RW umzuwandeln und I/O von Site B zu ermöglichen.
 +
-Sie müssen für jede Beziehung in der Konsistenzgruppe den SnapMirror Break-Befehl ausgeben. Wenn die Konsistenzgruppe beispielsweise drei Volumes enthält, geben Sie den Befehl für jedes Volume aus.
+Sie müssen den SnapMirror break-Befehl für jede Beziehung in der Konsistenzgruppe ausführen. Wenn die Konsistenzgruppe drei Volumes enthält, wird der Befehl für jedes Volume ausgeführt.
 
-. Starten Sie die Knoten Standort A, um eine RTO-Beziehung von Standort B zu Standort A zu erstellen
-. Geben Sie die Konsistenzgruppe mit „Relationship-Info-only“ auf Standort A frei, um den gemeinsamen Snapshot beizubehalten und die Zuordnung der LUNs zur Konsistenzgruppe aufzuheben.
-. Konvertieren Sie Volumes an Standort A von RW nach DP, indem Sie eine Beziehung auf Volume-Ebene mit einer Sync-Richtlinie oder einer asynchronen Richtlinie einrichten.
-. Geben Sie den `snapmirror resync` Befehl ein, um die Beziehungen zu synchronisieren.
-. Löschen Sie die SnapMirror Beziehungen mit der Sync-Richtlinie auf Standort A
-. Lassen Sie die SnapMirror Beziehungen mit Sync-Richtlinie unter Verwendung von Relationship-info-only True auf Site B. frei
-. Erstellen Sie eine Konsistenzgruppenbeziehung zwischen Standort B und Standort A.
-. Synchronisieren Sie die Konsistenzgruppe aus dem Quell-Cluster neu. Überprüfen Sie, ob der Status der Konsistenzgruppe synchron ist.
-. Scannen Sie die Host-LUN-I/O-Pfade erneut, um alle Pfade zu den LUNs wiederherzustellen.
+. Die Knoten von Standort A werden gestartet, um eine Zero-RTO-Beziehung von Standort B zu Standort A zu erstellen.
+. Die Konsistenzgruppe mit der Option "relationship-info-only" auf Site A freigeben, um den gemeinsamen Snapshot beizubehalten und die zugehörigen LUNs der Konsistenzgruppe aufzuheben.
+. Die Volumes am Standort A werden von RW zu DP konvertiert, indem auf Volume-Ebene eine Beziehung mit entweder einer Sync-Policy oder einer Async-Policy eingerichtet wird.
+. Der  `snapmirror resync`Befehl wird verwendet, um die Beziehungen zu synchronisieren.
+. Die SnapMirror-Beziehungen mit Sync-Richtlinie auf Standort A löschen.
+. Die SnapMirror-Beziehungen mit der Sync-Richtlinie auf Site B unter Verwendung von relationship-info-only true aufheben.
+. Eine Konsistenzgruppenbeziehung zwischen Standort B und Standort A erstellen.
+. Von dem Quell-Cluster aus die Konsistenzgruppe erneut synchronisieren. Überprüfen, ob der Status der Konsistenzgruppe synchron ist.
+. Die Host-LUN-I/O-Pfade werden erneut gescannt, sodass alle Pfade zu den LUNs wiederhergestellt werden.
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["Snapmirror-Pause"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-mediator-show.html["Snapmirror Mediator-Show"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror-Neusynchronisierung"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["Snapmirror-Show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-break.html["snapmirror break"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-mediator-show.html["snapmirror mediator show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["SnapMirror Resynchronisierung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-show.html["snapmirror show"^]
 

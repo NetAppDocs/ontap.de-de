@@ -2,56 +2,56 @@
 permalink: tape-backup/ndmp-concept.html 
 sidebar: sidebar 
 keywords: ncmp, considerations, using, service, storage, system 
-summary: Beim Starten des NDMP-Dienstes auf Ihrem Storage-System müssen Sie einige Überlegungen beachten. 
+summary: Beim Starten des NDMP-Service auf Ihrem Speichersystem sind eine Reihe von Aspekten zu berücksichtigen. 
 ---
-= Überlegungen zur Verwendung des ONTAP NDMP-Dienstes
+= Zu beachtende Punkte bei der Nutzung des ONTAP NDMP-Service
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Beim Starten des NDMP-Dienstes auf Ihrem Storage-System müssen Sie einige Überlegungen beachten.
+Beim Starten des NDMP-Service auf Ihrem Speichersystem sind eine Reihe von Aspekten zu berücksichtigen.
 
-* Jeder Node unterstützt bei Nutzung angeschlossener Bandlaufwerke maximal 16 gleichzeitige Backups, Restores oder Kombinationen der beiden Nodes.
-* NDMP Services können Dateiverläufe auf Anfrage von NDMP-Backup-Applikationen generieren.
+* Jeder Knoten unterstützt maximal 16 gleichzeitige Backups, Wiederherstellungen oder eine Kombination aus beidem unter Verwendung angeschlossener Bandlaufwerke.
+* NDMP-Dienste können auf Anfrage von NDMP-Backup-Anwendungen Dateiverlaufsdaten generieren.
 +
-Der Dateiverlauf wird von Backup-Applikationen verwendet, um eine optimierte Recovery ausgewählter Datenuntergruppen aus einem Backup-Image zu ermöglichen. Die Erstellung und Verarbeitung von Dateiverläufe kann für das Storage-System und die Backup-Applikation zeitaufwendig und CPU-intensiv sein.
+Die Dateiversionshistorie wird von Backup-Anwendungen genutzt, um die optimierte Wiederherstellung ausgewählter Datenteilmengen aus einem Backup-Image zu ermöglichen. Die Generierung und Verarbeitung der Dateiversionshistorie kann sowohl für das Speichersystem als auch für die Backup-Anwendung zeitaufwändig und CPU-intensiv sein.
 
 +
 [NOTE]
 ====
-SMTape unterstützt den Dateiverlauf nicht.
+SMTape unterstützt keinen Dateiverlauf.
 
 ====
 +
-Wenn Ihre Datensicherung für Disaster Recovery konfiguriert ist – wo das gesamte Backup-Image wiederhergestellt wird – können Sie die Erzeugung des Dateiverlaufs deaktivieren, um die Backup-Zeiten zu verkürzen. Prüfen Sie in der Dokumentation Ihrer Backup-Applikation, ob die Erzeugung des NDMP-Dateiverlaufs deaktiviert werden kann.
+Wenn Ihre Datensicherung für die Notfallwiederherstellung konfiguriert ist, bei der das gesamte Backup-Image wiederhergestellt wird, kann die Dateiverlaufsgenerierung deaktiviert werden, um die Backup-Zeit zu verkürzen. In der Dokumentation der Backup-Anwendung ist ersichtlich, ob die NDMP-Dateiverlaufsgenerierung deaktiviert werden kann.
 
-* Firewall-Richtlinie für NDMP ist standardmäßig bei allen LIF-Typen aktiviert.
-* Im NDMP-Modus mit Node-Umfang muss die Sicherung eines FlexVol Volume mithilfe der Backup-Applikation ein Backup auf einem Node initiiert werden, der Eigentümer des Volume ist.
+* Die Firewall-Richtlinie für NDMP ist standardmäßig auf allen LIF-Typen aktiviert.
+* Im knotenbezogenen NDMP-Modus ist zum Sichern eines FlexVol volume erforderlich, dass die Sicherungsanwendung verwendet wird, um eine Sicherung auf einem Knoten zu initiieren, dem das Volume gehört.
 +
-Sie können jedoch kein Root-Volume des Nodes sichern.
+Ein Backup des Root-Volumes eines Knotens ist jedoch nicht möglich.
 
-* Sie können gemäß den Firewall-Richtlinien von jeder beliebigen logischen Schnittstelle NDMP-Backups durchführen.
+* NDMP-Backup kann von jedem LIF aus durchgeführt werden, sofern dies durch die Firewall-Richtlinien zulässig ist.
 +
-Wenn Sie eine Daten-LIF verwenden, müssen Sie ein LIF auswählen, das nicht für Failover konfiguriert ist. Wenn eine Daten-LIF während eines NDMP-Vorgangs ausfällt, fällt der NDMP-Vorgang aus und muss erneut ausgeführt werden.
+Wenn ein Daten-LIF verwendet wird, muss ein LIF ausgewählt werden, das nicht für Failover konfiguriert ist. Wenn ein Daten-LIF während eines NDMP-Vorgangs ein Failover durchführt, schlägt der NDMP-Vorgang fehl und muss erneut ausgeführt werden.
 
-* Im NDMP-Modus mit Node-Umfang und der SVM (Storage Virtual Machine) wird der NDMP-Modus ohne Unterstützung von CAB-Erweiterungen bereitgestellt. Die NDMP-Datenverbindung verwendet dieselbe LIF wie die NDMP-Steuerverbindung.
-* Während der LIF-Migration werden laufende Backup- und Restore-Vorgänge unterbrochen.
+* Im node-scoped NDMP-Modus und im Storage Virtual Machine (SVM) scoped NDMP-Modus ohne CAB-Erweiterungsunterstützung verwendet die NDMP-Datenverbindung die gleiche LIF wie die NDMP-Steuerverbindung.
+* Während der LIF-Migration werden laufende Backup- und Wiederherstellungsvorgänge unterbrochen.
 +
-Sie müssen die Backup- und Restore-Vorgänge nach der LIF-Migration initiieren.
+Die Sicherungs- und Wiederherstellungsvorgänge sind nach der LIF-Migration zu initiieren.
 
-* Der NDMP-Backup-Pfad hat das Format `_/vserver_name/volume_name/path_name_`.
+* Der NDMP-Backup-Pfad hat das Format  `_/vserver_name/volume_name/path_name_`.
 +
-`_path_name_` Ist optional und gibt den Pfad des Verzeichnisses, der Datei oder des Snapshot an.
+`_path_name_` ist optional und gibt den Pfad des Verzeichnisses, der Datei oder des Snapshots an.
 
-* Wenn ein SnapMirror Ziel mithilfe der Dump-Engine auf Band gesichert wird, werden nur die Daten des Volume gesichert.
+* Wenn ein SnapMirror Ziel mithilfe der Dump-Engine auf Band gesichert wird, werden nur die Daten im Volume gesichert.
 +
-Wenn jedoch ein SnapMirror Ziel mithilfe von SMTape auf Tape gesichert wird, werden die Metadaten auch gesichert. Die SnapMirror Beziehungen und die zugehörigen Metadaten werden nicht auf Tapes gesichert. Somit werden während der Wiederherstellung nur die Daten auf dem Volume wiederhergestellt, die zugehörigen SnapMirror Beziehungen sind aber nicht wiederhergestellt.
+Wenn jedoch ein SnapMirror Ziel mit SMTape auf Band gesichert wird, werden auch die Metadaten gesichert. Die SnapMirror Beziehungen und die zugehörigen Metadaten werden nicht auf Band gesichert. Daher wird bei der Wiederherstellung nur die Daten auf diesem Volume wiederhergestellt, die zugehörigen SnapMirror Beziehungen werden jedoch nicht wiederhergestellt.
 
 
 
 .Verwandte Informationen
-xref:cluster-aware-backup-extension-concept.adoc[Was ist Cluster-bewusste Backup-Erweiterung]
+xref:cluster-aware-backup-extension-concept.adoc[Was die Cluster Aware Backup Erweiterung leistet]
 
 link:../system-admin/index.html["Systemadministration"]

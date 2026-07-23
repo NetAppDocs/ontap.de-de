@@ -2,40 +2,40 @@
 permalink: san-admin/enable-space-allocation.html 
 sidebar: sidebar 
 keywords: enable, space allocation, space reclamation, unmap, lun, hole punching, namespace, nvme, san 
-summary: Aktivieren Sie die Speicherplatzzuweisung, damit Host und Speichersystem bei der Speicherplatzverwaltung zusammenarbeiten können. 
+summary: Die Speicherplatzzuweisung ermöglicht es Host und Speichersystem, beim Speicherplatzmanagement zusammenzuarbeiten. 
 ---
-= ONTAP-Speicherplatzzuweisung für SAN-Protokolle aktivieren
+= ONTAP Speicherplatzzuweisung für SAN-Protokolle aktivieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Die ONTAP Speicherplatzzuweisung ermöglicht Unternehmen, zu verhindern, dass die LUNs oder NVMe-Namespaces offline geschaltet werden, wenn ihnen der Speicherplatz knapp wird. So können die SAN-Hosts Speicherplatz zurückgewinnen.
+ONTAP Speicherplatzzuweisung hilft dabei, zu verhindern, dass Ihre LUNs oder NVMe-Namespaces offline genommen werden, wenn der Speicherplatz ausgeht, und ermöglicht es Ihren SAN-Hosts, Speicherplatz zurückzugewinnen.
 
-Die ONTAP Unterstützung für die Speicherplatzzuweisung basiert auf Ihrem SAN-Protokoll und Ihrer Version von ONTAP. Ab ONTAP 9.16.1 ist die Speicherplatzzuweisung bei neu erstellten LUNs und allen Namespaces standardmäßig für iSCSI-, FC- und NVMe-Protokolle aktiviert.
+Die ONTAP Unterstützung für die Speicherplatzzuweisung hängt von Ihrem SAN-Protokoll und Ihrer ONTAP Version ab. Ab ONTAP 9.16.1 ist die Speicherplatzzuweisung für iSCSI, FC und NVMe Protokolle bei neu erstellten LUNs und allen Namespaces standardmäßig aktiviert.
 
 [cols="2,2,4a"]
 |===
-| ONTAP-Version | Protokolle | Platzzuweisung ist... 
+| ONTAP Version | Protokolle | Die Speicherplatzzuweisung ist... 
 
 
 | 9.16.1 oder höher  a| 
-* ISCSI
+* iSCSI
 * FC
 * NVMe
 
  a| 
-Standardmäßig aktiviert für neu erstellte LUNs und alle Namespaces
+Standardmäßig für neu erstellte LUNs und alle Namensräume aktiviert
 
 
 
 .2+| 9.15.1  a| 
-* ISCSI
+* iSCSI
 * FC
 
  a| 
-Standardmäßig aktiviert für neu erstellte LUNs
+Standardmäßig für neu erstellte LUNs aktiviert
 
 
 
@@ -43,11 +43,11 @@ Standardmäßig aktiviert für neu erstellte LUNs
 
 
 .2+| 9.14.1 und früher  a| 
-* ISCSI
+* iSCSI
 * FC
 
  a| 
-Standardmäßig deaktiviert für neu erstellte LUNs
+Standardmäßig für neu erstellte LUNs deaktiviert
 
 
 
@@ -55,29 +55,29 @@ Standardmäßig deaktiviert für neu erstellte LUNs
 |===
 Wenn die Speicherplatzzuweisung aktiviert ist:
 
-* Wenn der Speicherplatz einer LUN oder eines Namespace knapp wird, kommuniziert ONTAP mit dem Host, dass kein freier Speicherplatz für Schreibvorgänge verfügbar ist. Infolgedessen bleibt die LUN oder der Namespace online und Lesevorgänge werden weiter ausgeführt. Je nach Host-Konfiguration versucht der Host, Schreibvorgänge erneut durchzuführen, bis sie erfolgreich sind, oder das Host-Dateisystem wird offline geschaltet. Die Schreibvorgänge werden wieder aufgenommen, wenn der LUN oder Namespace zusätzlicher freier Speicherplatz zur Verfügung steht.
+* Wenn auf einer LUN oder in einem Namespace der Speicherplatz ausgeht, teilt ONTAP dem Host mit, dass kein freier Speicherplatz für Schreibvorgänge verfügbar ist. Die LUN oder der Namespace bleiben daher online und Lesevorgänge werden weiterhin ausgeführt. Abhängig von der Hostkonfiguration wiederholt der Host entweder die Schreibvorgänge, bis sie erfolgreich sind, oder das Host-Dateisystem wird offline genommen. Schreibvorgänge werden fortgesetzt, sobald wieder freier Speicherplatz für die LUN oder den Namespace verfügbar ist.
 +
-Wenn die Speicherplatzzuweisung nicht aktiviert ist und bei einer LUN oder einem Namespace der Speicherplatz knapp wird, schlagen alle I/O-Vorgänge fehl und die LUN oder der Namespace wird offline geschaltet. Das Speicherplatzproblem muss gelöst werden, um den normalen Betrieb fortzusetzen. Das erneute Scannen von LUN-Geräten kann auch auf dem Host erforderlich sein, um Pfade und Geräte wieder in den Betriebszustand zu versetzen.
+Wenn die Speicherplatzzuweisung nicht aktiviert ist, schlagen bei Erschöpfung des Speicherplatzes einer LUN oder eines Namespace alle E/A-Operationen fehl und die LUN bzw. der Namespace wird offline genommen; das Speicherplatzproblem muss behoben werden, damit der normale Betrieb fortgesetzt werden kann. Ein erneutes Scannen der LUN-Geräte auf dem Host kann ebenfalls erforderlich sein, um Pfade und Geräte wieder in einen betriebsbereiten Zustand zu versetzen.
 
-* Ein Host kann SCSI- oder NVME-Operationen (manchmal auch als bezeichnet `TRIM`) ausführen `UNMAP`. Durch UNMAP-Vorgänge kann ein Host Datenblöcke identifizieren, die nicht mehr benötigt werden, da sie keine gültigen Daten mehr enthalten. Die Identifizierung erfolgt normalerweise nach dem Löschen der Datei. Das Storage-System kann diese Datenblöcke dann Zuordnung aufheben, sodass der Speicherplatz an anderer Stelle verbraucht werden kann. Dieser Deallocation verbessert die gesamte Speichereffizienz erheblich, insbesondere bei Dateisystemen mit hohem Datenumsatz.
+* Ein Host kann SCSI- oder NVME `UNMAP` (manchmal auch als `TRIM`) Operationen ausführen. UNMAP-Operationen ermöglichen es einem Host, Datenblöcke zu identifizieren, die nicht mehr benötigt werden, weil sie keine gültigen Daten mehr enthalten. Die Identifizierung erfolgt normalerweise nach dem Löschen von Dateien. Das Speichersystem kann diese Datenblöcke dann freigeben, sodass der Speicherplatz anderweitig genutzt werden kann. Diese Freigabe verbessert die Speichereffizienz erheblich, insbesondere bei Dateisystemen mit hohem Datenumsatz.
 
 
 .Bevor Sie beginnen
-Für die Aktivierung der Speicherplatzzuweisung ist eine Host-Konfiguration erforderlich, die Fehler bei der Speicherplatzzuweisung korrekt verarbeiten kann, wenn ein Schreibvorgang nicht abgeschlossen werden kann. Die Nutzung von SCSI oder NVME `UNMAP` erfordert eine Konfiguration, die eine logische Blockbereitstellung gemäß dem SCSI SBC-3-Standard verwenden kann.
+Die Aktivierung der Speicherplatzzuweisung erfordert eine Hostkonfiguration, die Speicherplatzzuweisungsfehler korrekt behandeln kann, wenn ein Schreibvorgang nicht abgeschlossen werden kann. Die Nutzung von SCSI oder NVME `UNMAP` erfordert eine Konfiguration, die die logische Blockbereitstellung gemäß dem SCSI SBC-3 Standard unterstützt.
 
-Die folgenden Hosts unterstützen derzeit Thin Provisioning, wenn Sie die Speicherplatzzuweisung aktivieren:
+Die folgenden Hosts unterstützen derzeit Thin Provisioning, wenn die Speicherplatzzuweisung aktiviert ist:
 
 * Citrix XenServer 6.5 und höher
 * VMware ESXi 5.0 und höher
-* Oracle Linux 6.2 UEK-Kernel und höher
-* Red hat Enterprise Linux 6.2 und höher
+* Oracle Linux 6.2 UEK Kernel und höher
+* Red Hat Enterprise Linux 6.2 und höher
 * SUSE Linux Enterprise Server 11 und höher
-* Solaris 11.1 und höher
+* Solaris 11.1 und später
 * Windows
 
 
 .Über diese Aufgabe
-Wenn Sie das Cluster auf ONTAP 9.15.1 oder höher aktualisieren, bleibt die Einstellung für die Speicherplatzzuweisung für alle LUNs, die vor dem Software-Upgrade erstellt wurden, unabhängig vom Host-Typ nach dem Upgrade unverändert. Wenn beispielsweise eine LUN in ONTAP 9.13.1 für einen VMware Host erstellt wurde und die Speicherplatzzuweisung deaktiviert ist, bleibt die Speicherplatzzuweisung auf dieser LUN nach dem Upgrade auf ONTAP 9.15.1 deaktiviert.
+Wenn der Cluster auf ONTAP 9.15.1 oder höher aktualisiert wird, bleibt die Einstellung für die Speicherplatzzuweisung für alle LUNs, die vor dem Software-Upgrade erstellt wurden, nach dem Upgrade unabhängig vom Hosttyp unverändert. Wenn beispielsweise eine LUN in ONTAP 9.13.1 für einen VMware Host mit deaktivierter Speicherplatzzuweisung erstellt wurde, bleibt die Speicherplatzzuweisung auf dieser LUN nach dem Upgrade auf ONTAP 9.15.1 deaktiviert.
 
 .Schritte
 . Speicherplatzzuweisung aktivieren:
@@ -86,46 +86,46 @@ Wenn Sie das Cluster auf ONTAP 9.15.1 oder höher aktualisieren, bleibt die Eins
 ----
 lun modify -vserver <vserver_name> -volume <volume_name> -lun <lun_name> -space-allocation enabled
 ----
-. Vergewissern Sie sich, dass die Speicherplatzzuweisung aktiviert ist:
+. Überprüfen, ob die Speicherplatzzuweisung aktiviert ist:
 +
 [source, cli]
 ----
 lun show -vserver <vserver_name> -volume <volume_name> -lun <lun_name> -fields space-allocation
 ----
-. Vergewissern Sie sich, dass die Speicherplatzzuweisung auf dem Host-Betriebssystem aktiviert ist.
+. Es sollte überprüft werden, ob die Speicherplatzverwaltung auf dem Host-Betriebssystem aktiviert ist.
 +
 
-NOTE: Einige Hostkonfigurationen, einschließlich einiger Versionen von VMware ESXi, können die Einstellungsänderung automatisch erkennen und erfordern keinen Benutzereingriff. Für andere Konfigurationen ist möglicherweise ein erneuter Gerätescan erforderlich. Einige Dateisysteme und Volume-Manager benötigen möglicherweise zusätzliche spezifische Einstellungen, um die Rückgewinnung von Speicherplatz mit `SCSI UNMAP`zu ermöglichen. Es kann erforderlich sein, Dateisysteme neu zu mounten oder ein vollständiges Betriebssystem neu zu starten. Weitere Informationen finden Sie in der Dokumentation zu Ihrem Host.
+NOTE: Einige Hostkonfigurationen, darunter bestimmte Versionen von VMware ESXi, erkennen die Einstellungsänderung automatisch und erfordern keine Benutzerinteraktion. Andere Konfigurationen erfordern möglicherweise einen erneuten Gerätescan. Manche Dateisysteme und Volume-Manager benötigen möglicherweise zusätzliche spezifische Einstellungen, um die Speicherplatzfreigabe mithilfe von  `SCSI UNMAP` zu ermöglichen. Das erneute Einhängen von Dateisystemen oder ein vollständiger Neustart des Betriebssystems kann erforderlich sein. In der Dokumentation des jeweiligen Hosts finden sich entsprechende Hinweise.
 
 
 
 
 
 [[host-configuration-for-vmware-esxi-8-x-and-later-nvme-hosts]]
-== Hostkonfiguration für VMware ESXi 8.x und höhere NVMe-Hosts
+== Hostkonfiguration für VMware ESXi 8.x und spätere NVMe-Hosts
 
-Wenn auf einem VMware-Host ESXi 8.x oder höher mit dem NVMe-Protokoll ausgeführt wird, sollten Sie nach Aktivierung der Speicherplatzzuweisung in ONTAP die folgenden Schritte auf den Hosts durchführen.
+Wenn Sie einen VMware-Host mit ESXi 8.x oder höher und dem NVMe-Protokoll verwenden, sollten nach der Aktivierung der Speicherplatzzuweisung in ONTAP die folgenden Schritte auf den Hosts durchgeführt werden.
 
 .Schritte
-. Stellen Sie auf Ihrem ESXi-Host sicher, dass DSM deaktiviert ist:
+. Auf dem ESXi-Host überprüfen, ob DSM deaktiviert ist:
 +
 `esxcfg-advcfg -g /SCSi/NVmeUseDsmTp4040`
 
 +
-Der erwartete Wert ist 0.
+Der Erwartungswert ist 0.
 
-. Aktivieren Sie NVMe DSM:
+. NVMe DSM aktivieren:
 +
 `esxcfg-advcfg -s 1 /Scsi/NvmeUseDsmTp4040`
 
-. Stellen Sie sicher, dass DSM aktiviert ist:
+. Es sollte überprüft werden, ob DSM aktiviert ist:
 +
 `esxcfg-advcfg -g /SCSi/NVmeUseDsmTp4040`
 
 +
-Der erwartete Wert ist 1.
+Der Erwartungswert ist 1.
 
 
 
-.Weiterführende Links
-Erfahren Sie mehr über link:https://docs.netapp.com/us-en/ontap-sanhost/nvme_esxi_8.html["NVMe-of Hostkonfiguration für ESXi 8.x mit ONTAP"^].
+.Verwandte Links
+Weitere Informationen zu link:https://docs.netapp.com/us-en/ontap-sanhost/nvme_esxi_8.html["NVMe-oF Hostkonfiguration für ESXi 8.x mit ONTAP"^].

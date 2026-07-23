@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: authentication/oauth2-mutual-tls.html 
 keywords: tls, mutual tls, mtls, sender-constrained access tokens, confirmation claim 
-summary: 'Je nach Ihren Sicherheitsanforderungen können Sie optional Mutual TLS (MTLS) zur Implementierung einer starken Clientauthentifizierung konfigurieren. Bei Verwendung mit ONTAP als Teil einer OAuth 2.0-Bereitstellung garantiert MTLS, dass die Zugriffstoken nur von den Clients verwendet werden, für die sie ursprünglich ausgegeben wurden.' 
+summary: 'Je nach Ihren Sicherheitsanforderungen kann optional Mutual TLS (mTLS) konfiguriert werden, um eine starke Client-Authentifizierung zu implementieren. Bei Verwendung mit ONTAP im Rahmen einer OAuth 2.0-Implementierung garantiert mTLS, dass die Zugriffstoken nur von den Clients verwendet werden, denen sie ursprünglich ausgestellt wurden.' 
 ---
 = ONTAP Client-Authentifizierung mit OAuth 2.0 Mutual TLS
 :hardbreaks:
@@ -14,69 +14,69 @@ summary: 'Je nach Ihren Sicherheitsanforderungen können Sie optional Mutual TLS
 
 
 [role="lead"]
-Je nach Ihren Sicherheitsanforderungen können Sie optional Mutual TLS (MTLS) zur Implementierung einer starken Clientauthentifizierung konfigurieren. Bei Verwendung mit ONTAP als Teil einer OAuth 2.0-Bereitstellung garantiert MTLS, dass die Zugriffstoken nur von den Clients verwendet werden, für die sie ursprünglich ausgegeben wurden.
+Je nach Ihren Sicherheitsanforderungen kann optional Mutual TLS (mTLS) konfiguriert werden, um eine starke Client-Authentifizierung zu implementieren. Bei Verwendung mit ONTAP im Rahmen einer OAuth 2.0-Implementierung garantiert mTLS, dass die Zugriffstoken nur von den Clients verwendet werden, denen sie ursprünglich ausgestellt wurden.
 
 
 
 [[mutual-tls-with-oauth-2-0]]
 == Gegenseitiges TLS mit OAuth 2.0
 
-Transport Layer Security (TLS) wird verwendet, um einen sicheren Kommunikationskanal zwischen zwei Anwendungen herzustellen, in der Regel zwischen einem Client-Browser und einem Webserver. Mutual TLS erweitert dies durch eine starke Identifizierung des Clients über ein Client-Zertifikat. Bei Verwendung in einem ONTAP-Cluster mit OAuth 2.0 wird die Basis-MTLS-Funktionalität durch das Erstellen und Verwenden von Sender-beschränkten Zugriffstoken erweitert.
+Transport Layer Security (TLS) dient dem Aufbau eines sicheren Kommunikationskanals zwischen zwei Anwendungen, typischerweise einem Client-Browser und einem Webserver. Mutual TLS erweitert dies durch die starke Identifizierung des Clients mittels eines Client-Zertifikats. Bei Verwendung in einem ONTAP Cluster mit OAuth 2.0 wird die Basisfunktionalität von mTLS durch die Erstellung und Verwendung von sender-constrained Zugriffstoken erweitert.
 
-Ein vom Absender beschränktem Zugriffstoken kann nur vom Client verwendet werden, an den es ursprünglich ausgegeben wurde. Um diese Funktion (`cnf`zu unterstützen, wird ein neuer Bestätigungsanspruch in das Token eingefügt. Das Feld enthält `x5t#S256` eine Eigenschaft, die einen Digest des Clientzertifikats enthält, das beim anfordern des Zugriffstoken verwendet wird. Dieser Wert wird von ONTAP im Rahmen der Überprüfung des Tokens überprüft. Von Autorisierungsservern ausgegebene Zugriffstoken, die nicht durch den Absender eingeschränkt sind, enthalten keinen zusätzlichen Bestätigungsanspruch.
+Ein absenderbeschränktes Zugriffstoken kann nur von dem Client verwendet werden, dem es ursprünglich ausgestellt wurde. Zur Unterstützung dieser Funktion wird dem Token ein neuer Bestätigungsanspruch (`cnf` eingefügt. Das Feld enthält die Eigenschaft  `x5t#S256`, die einen Digest des Clientzertifikats speichert, das bei der Anforderung des Zugriffstokens verwendet wurde. Dieser Wert wird von ONTAP im Rahmen der Überprüfung des Tokens validiert. Zugriffstoken, die von Autorisierungsservern ausgestellt werden, die nicht absenderbeschränkt sind, enthalten den zusätzlichen Bestätigungsanspruch nicht.
 
-Sie müssen ONTAP so konfigurieren, dass MTLS für jeden Autorisierungsserver separat verwendet wird. Der CLI-Befehl `security oauth2 client` enthält beispielsweise den Parameter `use-mutual-tls` zur Steuerung der MTLS-Verarbeitung anhand von drei Werten, wie in der Tabelle unten dargestellt.
+Sie müssen ONTAP für die Verwendung von mTLS für jeden Autorisierungsserver separat konfigurieren. Der CLI-Befehl `security oauth2 client` enthält beispielsweise den Parameter `use-mutual-tls` zur Steuerung der mTLS-Verarbeitung anhand von drei Werten, wie in der folgenden Tabelle dargestellt.
 
 
-NOTE: In jeder Konfiguration hängen das Ergebnis und die von ONTAP ergriffenen Maßnahmen vom Wert des Konfigurationsparameters sowie vom Inhalt des Zugriffstoken und des Clientzertifikats ab. Die Parameter in der Tabelle sind vom kleinsten bis zum restriktivsten organisiert.
+NOTE: In jeder Konfiguration hängen Ergebnis und Vorgehensweise von ONTAP vom Wert des Konfigurationsparameters sowie vom Inhalt des Zugriffstokens und des Clientzertifikats ab. Die Parameter in der Tabelle sind von den am wenigsten bis zu den am stärksten restriktiven geordnet.
 
 [cols="25,75"]
 |===
 | Parameter | Beschreibung 
 
 
-| Keine | Die gegenseitige TLS-Authentifizierung OAuth 2.0 ist für den Autorisierungsserver vollständig deaktiviert. ONTAP führt keine MTLS-Clientzertifikatauthentifizierung durch, selbst wenn der Bestätigungsanspruch im Token vorhanden ist oder ein Clientzertifikat mit der TLS-Verbindung geliefert wird. 
+| keine | OAuth 2.0 gegenseitige TLS-Authentifizierung ist für den Autorisierungsserver vollständig deaktiviert. ONTAP führt keine mTLS-Client-Authentifizierung durch, selbst wenn der Bestätigungsanspruch im Token vorhanden ist oder ein Clientzertifikat mit der TLS-Verbindung übermittelt wird. 
 
 
-| Anforderung | Die gegenseitige TLS-Authentifizierung von OAuth 2.0 wird erzwungen, wenn ein vom Absender beschränktes Zugriffstoken vom Client angezeigt wird. Das heißt, MTLS wird nur erzwungen, wenn der Bestätigungsanspruch (mit Eigenschaft `x5t#S256`) im Zugriffstoken vorhanden ist. Dies ist die Standardeinstellung. 
+| Anfrage | Die OAuth 2.0 Mutual-TLS-Authentifizierung wird erzwungen, wenn der Client ein senderbeschränktes Zugriffstoken vorlegt. Das heißt, mTLS wird nur dann erzwungen, wenn der Bestätigungsanspruch (mit Eigenschaft `x5t#S256`) im Zugriffstoken vorhanden ist. Dies ist die Standardeinstellung. 
 
 
-| Erforderlich | Die gegenseitige TLS-Authentifizierung OAuth 2.0 wird für alle Zugriffstoken durchgesetzt, die vom Autorisierungsserver ausgegeben werden. Daher müssen alle Zugriffstoken durch den Absender eingeschränkt sein. Die Authentifizierung und die REST-API-Anforderung schlagen fehl, wenn der Bestätigungsanspruch nicht im Zugriffstoken vorhanden ist oder wenn ein ungültiges Clientzertifikat vorliegt. 
+| erforderlich | OAuth 2.0 gegenseitige TLS-Authentifizierung wird für alle vom Autorisierungsserver ausgestellten Zugriffstoken erzwungen. Daher müssen alle Zugriffstoken absenderbeschränkt sein. Authentifizierung und die REST API-Anfrage schlagen fehl, wenn der Bestätigungsanspruch im Zugriffstoken fehlt oder ein ungültiges Client-Zertifikat vorliegt. 
 |===
 
 
 [[high-level-implementation-flow]]
-== Grundlegende Implementierungsablaufs
+== Implementierungsablauf auf hoher Ebene
 
-Die typischen Schritte bei der Verwendung von MTLS mit OAuth 2.0 in einer ONTAP-Umgebung sind nachfolgend dargestellt.  https://www.rfc-editor.org/info/rfc8705["RFC 8705: OAuth 2.0 Mutual-TLS Client Authentication und Certificate-bound Access Tokens"^]Weitere Informationen finden Sie unter.
+Die typischen Schritte bei der Verwendung von mTLS mit OAuth 2.0 in einer ONTAP Umgebung sind nachfolgend dargestellt. Siehe  https://www.rfc-editor.org/info/rfc8705["RFC 8705: OAuth 2.0 Mutual-TLS-Client-Authentifizierung und zertifikatsgebundene Access-Tokens"^] für weitere Details.
 
-.Schritt 1: Erstellen und installieren Sie ein Client-Zertifikat
-Die Ermittlung der Kundenidentität basiert auf dem Nachweis der Kenntnis eines privaten Kundenschlüssels. Der entsprechende öffentliche Schlüssel wird in ein signiertes X.509-Zertifikat gelegt, das vom Client vorgelegt wird. Auf einer übergeordneten Ebene umfassen die Schritte zur Erstellung des Clientzertifikats Folgendes:
+.Schritt 1: Erstellen und Installieren eines Client-Zertifikats
+Die Identifizierung eines Clients basiert auf dem Nachweis der Kenntnis seines privaten Schlüssels. Der zugehörige öffentliche Schlüssel ist in einem signierten X.509-Zertifikat enthalten, das vom Client vorgelegt wird. Auf hoher Ebene umfassen die Schritte zur Erstellung des Client-Zertifikats:
 
-. Erzeugen Sie ein öffentliches und privates Schlüsselpaar
-. Erstellen Sie eine Zertifikatsignierungsanforderung
-. Senden Sie die CSR-Datei an eine bekannte Zertifizierungsstelle
-. CA überprüft die Anforderung und stellt das signierte Zertifikat aus
+. Ein öffentliches und privates Schlüsselpaar generieren
+. Zertifikatsignierungsanforderung erstellen
+. Die CSR-Datei an eine anerkannte Zertifizierungsstelle senden
+. Die Zertifizierungsstelle prüft die Anfrage und stellt das signierte Zertifikat aus
 
 
-Sie können das Clientzertifikat normalerweise in Ihrem lokalen Betriebssystem installieren oder direkt mit einem gängigen Dienstprogramm wie Curl verwenden.
+Normalerweise kann das Client-Zertifikat im lokalen Betriebssystem installiert oder direkt mit einem gängigen Hilfsprogramm wie curl verwendet werden.
 
-.Schritt 2: Konfigurieren Sie ONTAP für die Verwendung von MTLS
-Sie müssen ONTAP für die Verwendung von MTLS konfigurieren. Diese Konfiguration erfolgt für jeden Autorisierungsserver separat. Zum Beispiel `security oauth2 client` wird mit der CLI der Befehl mit dem optionalen Parameter verwendet `use-mutual-tls`. Weitere Informationen finden Sie unter link:../authentication/oauth2-deploy-ontap.html["Implementieren Sie OAuth 2.0 in ONTAP"] .
+.Schritt 2: ONTAP für die Verwendung von mTLS konfigurieren
+ONTAP muss für die Verwendung von mTLS konfiguriert werden. Diese Konfiguration wird für jeden Autorisierungsserver separat durchgeführt. Beispielsweise wird in der CLI der Befehl  `security oauth2 client` mit dem optionalen Parameter  `use-mutual-tls` verwendet. Siehe link:../authentication/oauth2-deploy-ontap.html["OAuth 2.0 in ONTAP bereitstellen"] für weitere Informationen.
 
-.Schritt 3: Client fordert ein Zugriffstoken an
-Der Client muss ein Zugriffstoken vom Autorisierungsserver anfordern, der für ONTAP konfiguriert ist. Die Client-Anwendung muss MTLS mit dem in Schritt 1 erstellten und installierten Zertifikat verwenden.
+.Schritt 3: Der Client fordert ein Zugriffstoken an
+Der Client muss ein Zugriffstoken vom Autorisierungsserver anfordern, der für ONTAP konfiguriert ist. Die Clientanwendung muss mTLS mit dem in Schritt 1 erstellten und installierten Zertifikat verwenden.
 
 .Schritt 4: Der Autorisierungsserver generiert das Zugriffstoken
-Der Autorisierungsserver überprüft die Clientanforderung und erstellt ein Zugriffstoken. Dabei wird ein Nachrichtendigest des Client-Zertifikats erstellt, der als Bestätigungsforderung im Token enthalten ist (Feld `cnf`).
+Der Autorisierungsserver überprüft die Clientanfrage und generiert ein Zugriffstoken. Dabei erstellt er einen Message Digest des Clientzertifikats, der als Bestätigungsanspruch (Feld `cnf`) in das Token aufgenommen wird.
 
-.Schritt 5: Client-Anwendung präsentiert das Zugriffstoken an ONTAP
-Die Client-Anwendung führt einen REST-API-Aufruf zum ONTAP-Cluster durch und schließt das Zugriffstoken in den Header der Autorisierungsanforderung als *Bearer Token* ein. Der Client muss MTLS mit demselben Zertifikat verwenden, das für die Anforderung des Zugriffstoken verwendet wird.
+.Schritt 5: Die Client-Anwendung präsentiert das Zugriffstoken an ONTAP
+Die Clientanwendung sendet einen REST-API-Aufruf an den ONTAP Cluster und fügt das Zugriffstoken als *Bearer-Token* in den Autorisierungsanfrage-Header ein. Der Client muss mTLS mit demselben Zertifikat verwenden, das auch für die Anforderung des Zugriffstokens verwendet wurde.
 
 .Schritt 6: ONTAP überprüft Client und Token.
-ONTAP erhält das Zugriffstoken in einer HTTP-Anfrage sowie das Clientzertifikat, das als Teil der MTLS-Verarbeitung verwendet wird. ONTAP validiert zuerst die Signatur im Zugriffstoken. Basierend auf der Konfiguration generiert ONTAP einen Nachrichtendigest des Client-Zertifikats und vergleicht ihn mit dem Bestätigungsanspruch *cnf* im Token. Wenn die beiden Werte übereinstimmen, hat ONTAP bestätigt, dass der Client, der die API-Anforderung erstellt, derselbe Client ist, für den das Zugriffstoken ursprünglich ausgegeben wurde.
+ONTAP empfängt das Zugriffstoken in einer HTTP-Anfrage sowie das Clientzertifikat, das im Rahmen der mTLS-Verarbeitung verwendet wird. ONTAP validiert zunächst die Signatur im Zugriffstoken. Basierend auf der Konfiguration erzeugt ONTAP einen Message Digest des Clientzertifikats und vergleicht diesen mit dem Bestätigungsanspruch *cnf* im Token. Wenn die beiden Werte übereinstimmen, ist bestätigt, dass der Client, der die API-Anfrage stellt, derselbe Client ist, dem das Zugriffstoken ursprünglich ausgestellt wurde.
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+oauth2+client["Sicherheit OAuth2-Client"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+oauth2+client["Security OAuth2 Client"^]
 * link:../networking/configure-tls-offload.html["TLS-Hardware-Offload konfigurieren"]
 

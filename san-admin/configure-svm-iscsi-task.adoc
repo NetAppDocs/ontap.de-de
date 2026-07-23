@@ -4,40 +4,40 @@ sidebar: sidebar
 keywords: configure, svm, iscsi 
 summary: Um eine Storage Virtual Machine für iSCSI zu konfigurieren, müssen Sie LIFs für die SVM erstellen und diesen LIFs das iSCSI-Protokoll zuweisen. 
 ---
-= Konfigurieren Sie eine SVM für iSCSI
+= Eine SVM für iSCSI konfigurieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Um eine Storage Virtual Machine (SVM) für iSCSI zu konfigurieren, müssen Sie LIFs für die SVM erstellen und diesen LIFs das iSCSI-Protokoll zuweisen.
+Um eine Storage Virtual Machine (SVM) für iSCSI zu konfigurieren, müssen LIFs für die SVM erstellt und diesen LIFs das iSCSI-Protokoll zugewiesen werden.
 
 .Über diese Aufgabe
-* Sie benötigen für jede SVM, die Daten über das iSCSI-Protokoll bereitstellt, mindestens eine iSCSI-LIF pro Node. Um Redundanz zu gewährleisten, sollten Sie mindestens zwei LIFs pro Node erstellen.
+* Sie benötigen mindestens eine iSCSI-LIF pro Knoten für jede SVM, die Daten mit dem iSCSI-Protokoll bereitstellt. Für Redundanz empfiehlt es sich, mindestens zwei LIFs pro Knoten zu erstellen.
 * Ab ONTAP 9.19.1 unterstützen AFF-Systeme Aktiv/Aktiv-Multipathing mit automatischem LIF-Failover auf SVM-Ebene in SAN-Umgebungen. Sie müssen Aktiv/Aktiv-Multipathing auf AFF-Systemen aktivieren, wenn Sie die SVM erstmals erstellen.
 
 
 .Bevor Sie beginnen
-Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+Sie müssen Cluster-Administrator sein, um diese Aufgabe ausführen zu können.
 
 .Schritte
 [role="tabbed-block"]
 ====
 .System Manager
 --
-Konfigurieren Sie eine Storage VM für iSCSI mit ONTAP System Manager (9.7 und höher).
+Eine Storage-VM für iSCSI mit ONTAP System Manager (9.7 und höher) konfigurieren.
 
 [cols="2"]
 |===
-| So konfigurieren Sie iSCSI auf einer neuen Speicher-VM | So konfigurieren Sie iSCSI auf einer vorhandenen Storage-VM 
+| iSCSI auf einer neuen Storage-VM konfigurieren | iSCSI auf einer vorhandenen Storage-VM konfigurieren 
 
 
  a| 
 . Im System Manager wählen Sie *Storage > Storage VMs* und anschließend *Add*.
 . Geben Sie einen Namen für die Storage-VM ein.
-. Wählen Sie *iSCSI* für das *Access Protocol*.
-. Wählen Sie *iSCSI aktivieren* und geben Sie die IP-Adresse und Subnetzmaske für die Netzwerkschnittstelle ein.
+. *iSCSI* für das *Zugriffsprotokoll* auswählen.
+. Wählen Sie *iSCSI aktivieren* und geben Sie die IP-Adresse und Subnetzmaske für die logische Schnittstelle ein.
 +
 Jeder Knoten sollte über mindestens zwei Netzwerkschnittstellen verfügen.
 
@@ -50,54 +50,54 @@ Diese Option ist in ONTAP 9.19.1 und späteren Versionen nur auf AFF- und ASA-Sy
 ** Wählen Sie für ASA-Systeme *Symmetrisches Aktiv/Aktiv-Multipathing* und anschließend *Aktivieren für SCSI- und NVMe-Protokolle*.
 
 
-. Wählen Sie *Speichern*.
+. *Speichern* auswählen.
 
  a| 
-. Wählen Sie in System Manager *Storage > Storage VMs* aus.
+. Im System Manager unter *Storage > Storage-VMs* auswählen.
 . Wählen Sie die Storage-VM aus, die Sie konfigurieren möchten.
 . Wählen Sie auf der Registerkarte *Einstellungen* aus und dann image:icon_gear.gif["Aktionssymbol"] neben dem iSCSI-Protokoll.
 . Wählen Sie *iSCSI aktivieren* und geben Sie die IP-Adresse und Subnetzmaske für die logische Schnittstelle ein. + Jeder Knoten sollte mindestens zwei logische Schnittstellen besitzen.
-. Wählen Sie *Speichern*.
+. *Speichern* auswählen.
 
 
 |===
 --
 .CLI
 --
-Konfigurieren Sie eine Storage VM für iSCSI mit der ONTAP CLI.
+Eine Storage-VM für iSCSI mit der ONTAP CLI konfigurieren.
 
-. Aktivieren Sie die SVMs, um iSCSI-Datenverkehr abzuhören:
+. Die SVMs werden so konfiguriert, dass sie iSCSI-Datenverkehr empfangen:
 +
 `vserver iscsi create -vserver _vserver_name_ -target-alias _vserver_name_`
 
-. Erstellen Sie eine LIF für die SVMs auf jedem Node, die Sie für iSCSI verwenden können:
+. Eine LIF für die SVMs auf jedem Knoten erstellen, die für iSCSI verwendet wird:
 +
 ** Für ONTAP 9.6 und höher:
 +
 `network interface create -vserver _vserver_name_ -lif _lif_name_ -data-protocol iscsi -service-policy default-data-iscsi -home-node _node_name_ -home-port _port_name_ -address _ip_address_ -netmask _netmask_`
 
-** Für ONTAP 9.5 und früher:
+** Für ONTAP 9.5 und frühere Versionen:
 +
 `network interface create -vserver _vserver_name_ -lif _lif_name_ -role data -data-protocol iscsi -home-node _node_name_ -home-port _port_name_ -address _ip_address_ -netmask _netmask_`
 
 
 
-. Überprüfen Sie, ob Sie Ihre LIFs ordnungsgemäß einrichten:
+. Überprüfung, ob die LIFs korrekt eingerichtet wurden:
 +
 `network interface show -vserver _vserver_name_`
 
 +
-Erfahren Sie mehr über `network interface show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network interface show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
 
-. Vergewissern Sie sich, dass iSCSI betriebsbereit ist und die Ziel-IQN für diese SVM:
+. Es sollte sichergestellt werden, dass iSCSI betriebsbereit ist und der Ziel-IQN für diese SVM vorhanden ist:
 +
 `vserver iscsi show –vserver _vserver_name_`
 
-. Erstellen Sie von Ihrem Host aus iSCSI-Sitzungen zu Ihren LIFs.
+. Vom Host aus werden iSCSI-Sitzungen zu den LIFs erstellt.
 
 
 --
 ====
 .Verwandte Informationen
-* https://www.netapp.com/media/10680-tr4080.pdf["Technischer Bericht 4080 zu NetApp: Best Practices für modernes SAN"]
+* https://www.netapp.com/media/10680-tr4080.pdf["NetApp Technischer Bericht 4080: Bewährte Verfahren für moderne SAN"]
 

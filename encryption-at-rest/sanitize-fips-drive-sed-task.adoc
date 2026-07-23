@@ -2,26 +2,26 @@
 permalink: encryption-at-rest/sanitize-fips-drive-sed-task.html 
 sidebar: sidebar 
 keywords: sanitize, fips, drive, sed, inaccessible, psid, physical secure ID, nrd plus, encrypt 
-summary: 'Wenn Sie Daten auf einem FIPS-Laufwerk oder einer SED dauerhaft unzugänglich machen möchten und das Laufwerk für neue Daten verwenden möchten, können Sie `storage encryption disk sanitize` das Laufwerk mit dem Befehl bereinigen.' 
+summary: 'Wenn Daten auf einem FIPS-Laufwerk oder Self-Encrypting Drive dauerhaft unzugänglich gemacht werden sollen und das Laufwerk für neue Daten verwendet werden soll, kann der  `storage encryption disk sanitize` Befehl zum Bereinigen des Laufwerks verwendet werden.' 
 ---
-= Bereinigen eines FIPS-Laufwerks oder SED in ONTAP
+= Ein FIPS-Laufwerk oder SED in ONTAP bereinigen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn Sie Daten auf einem FIPS-Laufwerk oder einer SED dauerhaft unzugänglich machen möchten und das Laufwerk für neue Daten verwenden möchten, können Sie `storage encryption disk sanitize` das Laufwerk mit dem Befehl bereinigen.
+Wenn Daten auf einem FIPS-Laufwerk oder Self-Encrypting Drive dauerhaft unzugänglich gemacht werden sollen und das Laufwerk für neue Daten verwendet werden soll, kann der  `storage encryption disk sanitize` Befehl zum Bereinigen des Laufwerks verwendet werden.
 
 .Über diese Aufgabe
-Wenn Sie ein selbstverschlüsselndes Laufwerk desinfizieren, ändert das System den Verschlüsselungsschlüssel in einen neuen zufälligen Wert, setzt den Einschloß-Status auf false zurück und setzt die Schlüssel-ID auf einen Standardwert, entweder die Herstellersichere ID 0x0 (SAS-Laufwerke) oder einen Null-Schlüssel (NVMe-Laufwerke). Dadurch werden die Daten auf der Festplatte nicht mehr zugänglich und können nicht abgerufen werden. Sie können desinfizierte Festplatten als nicht auf Null bereinigte Ersatzfestplatten wiederverwenden.
+Beim Bereinigen eines Self-Encrypting Drives ändert das System den Verschlüsselungsschlüssel auf einen neuen Zufallswert, setzt den Sperrzustand beim Einschalten auf „false“ und setzt die Schlüssel-ID auf einen Standardwert, entweder die Hersteller Secure ID 0x0 (SAS-Laufwerke) oder einen Null-Schlüssel (NVMe-Laufwerke). Dadurch sind die Daten auf dem Laufwerk unzugänglich und können nicht wiederhergestellt werden. Bereinigte Laufwerke können als nicht mit Nullen überschriebene Ersatzlaufwerke wiederverwendet werden.
 
 .Bevor Sie beginnen
-Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
+Sie müssen Cluster-Administrator sein, um diese Aufgabe ausführen zu können.
 
 .Schritte
-. Migrieren Sie alle Daten, die in einem Aggregat auf einer anderen Festplatte aufbewahrt werden müssen.
-. Löschen Sie das Aggregat auf dem FIPS-Laufwerk oder der SED, das bereinigt werden soll:
+. Alle Daten, die erhalten bleiben müssen, zu einem Aggregat auf einer anderen Festplatte migrieren.
+. Das Aggregat auf dem FIPS-Laufwerk oder dem zu bereinigenden SED löschen:
 +
 `storage aggregate delete -aggregate _aggregate_name_`
 
@@ -31,14 +31,14 @@ Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
 cluster1::> storage aggregate delete -aggregate aggr1
 ----
 +
-Erfahren Sie mehr über `storage aggregate delete` in der link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-delete.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `storage aggregate delete` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-delete.html["ONTAP-Befehlsreferenz"^].
 
-. Festplatten-ID für das zu desinfizierte FIPS-Laufwerk oder SED ermitteln:
+. Die Datenträger-ID für das zu bereinigende FIPS-Laufwerk oder die Self-Encrypting Drives (SED) identifizieren:
 +
 `storage encryption disk show -fields data-key-id,fips-key-id,owner`
 
 +
-Erfahren Sie mehr über `storage encryption disk show` in der link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `storage encryption disk show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-show.html["ONTAP-Befehlsreferenz"^].
 
 +
 [listing]
@@ -51,12 +51,12 @@ Disk    Mode Data Key ID
 1.10.2  data <id_value>
 [...]
 ----
-. Wenn ein FIPS-Laufwerk im FIPS-Compliance-Modus ausgeführt wird, legen Sie die FIPS-Authentifizierungsschlüssel-ID für den Node wieder auf den Standard MSID 0x0:
+. Wenn ein FIPS-Laufwerk im FIPS-Konformitätsmodus betrieben wird, wird die FIPS-Authentifizierungsschlüssel-ID für den Knoten wieder auf den Standardwert MSID 0x0 gesetzt:
 +
 `storage encryption disk modify -disk _disk_id_ -fips-key-id 0x0`
 
 +
-Sie können den `security key-manager query` Befehl verwenden, um Schlüssel-IDs anzuzeigen.
+Mit dem  `security key-manager query` Befehl lassen sich die Schlüssel-IDs anzeigen.
 
 +
 [listing]
@@ -67,16 +67,16 @@ Info: Starting modify on 1 disk.
       View the status of the operation by using the
       storage encryption disk show-status command.
 ----
-. Antrieb desinfizieren:
+. Das Laufwerk bereinigen:
 +
 `storage encryption disk sanitize -disk _disk_id_`
 
 +
-Mit diesem Befehl können Sie nur Hot-Spare- oder defekte Festplatten bereinigen. Um unabhängig vom Typ alle Festplatten bereinigen `-force-all-state` zu können, verwenden Sie die Option. Erfahren Sie mehr über `storage encryption disk sanitize` in der link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-sanitize.html["ONTAP-Befehlsreferenz"^].
+Mit diesem Befehl können nur Hot Spare- oder defekte Festplatten bereinigt werden. Um alle Festplatten unabhängig vom Typ zu bereinigen, ist die Option  `-force-all-state` zu verwenden. Weitere Informationen zu  `storage encryption disk sanitize` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-sanitize.html["ONTAP-Befehlsreferenz"^].
 
 +
 
-NOTE: ONTAP fordert Sie auf, eine Bestätigungsaufforderung einzugeben, bevor Sie fortfahren. Geben Sie den Ausdruck genau so ein, wie er auf dem Bildschirm angezeigt wird.
+NOTE: ONTAP fordert Sie auf, vor dem Fortfahren eine Bestätigungsphrase einzugeben. Die Phrase muss exakt so eingegeben werden, wie sie auf dem Bildschirm angezeigt wird.
 
 +
 [listing]
@@ -90,29 +90,29 @@ Info: Starting sanitize on 1 disk.
       View the status of the operation using the
       storage encryption disk show-status command.
 ----
-. Bereinigte Festplatte aufheben:
+. Die bereinigte Festplatte wiederherstellen:
 `storage disk unfail -spare true -disk _disk_id_`
-. Überprüfen Sie, ob die Festplatte einen Besitzer hat:
-`storage disk show -disk _disk_id_` + Wenn die Platte keinen Besitzer hat, weisen Sie einen zu.
+. Es ist zu prüfen, ob die Festplatte einen Besitzer hat:
+`storage disk show -disk _disk_id_` + Falls die Festplatte keinen Besitzer hat, ist einer zuzuweisen.
 `storage disk assign -owner node -disk _disk_id_`
-. Geben Sie den Knotenpunkt für den Knoten ein, der die Festplatten besitzt, die Sie desinfizieren möchten:
+. Öffnen Sie die Nodeshell für den Node, dem die Festplatten gehören, die Sie bereinigen möchten:
 +
 `system node run -node _node_name_`
 
 +
-Führen Sie den `disk sanitize release` Befehl aus.
+Führe den  `disk sanitize release` Befehl aus.
 
-. Verlassen Sie die Nodeshell. Fehler der Festplatte erneut aufheben:
+. Beenden Sie die Nodeshell. Die Festplatte wird erneut in den betriebsbereiten Zustand versetzt:
 `storage disk unfail -spare true -disk _disk_id_`
-. Überprüfen Sie, ob die Festplatte jetzt als Ersatzlaufwerk verwendet und in einem Aggregat wiederverwendet werden kann:
+. Es sollte überprüft werden, dass die Festplatte nun als Ersatzfestplatte verfügbar ist und zur Wiederverwendung in einem Aggregat bereitsteht:
 `storage disk show -disk _disk_id_`
 
 
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-assign.html["Speicherdatenträger zuweisen"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-show.html["Speicherdatenträger anzeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-unfail.html["Speicherfestplatte nicht fehlgeschlagen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-modify.html["Speicherverschlüsselung Datenträger ändern"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-sanitize.html["Speicherverschlüsselung Datenträgerbereinigung"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-show-status.html["Speicherverschlüsselung Datenträger Status anzeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-unfail.html["Speicherfestplatte wiederherstellen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-modify.html["Speicherverschlüsselung Festplatte ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-sanitize.html["Speicherverschlüsselung Festplattenbereinigung"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-encryption-disk-show-status.html["storage encryption disk show-status"^]
 

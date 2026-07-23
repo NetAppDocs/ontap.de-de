@@ -2,40 +2,40 @@
 permalink: smb-admin/improve-client-response-node-referrals-concept.html 
 sidebar: sidebar 
 keywords: auto, location, smb, automatic, node, referral, increase, client, performance, storage, virtual, machine, svm, request, host, response, improve, improve client response time by providing smb automatic node referrals with auto location 
-summary: Auto Location nutzt automatische Knotenverweise von SMB, um die Leistung von SMB-Clients auf Storage Virtual Machines zu steigern. Automatische Knotenverweise leiten den anfragenden Client automatisch zu einem LIF auf der Knoten-SVM weiter, die das Volume hostet, in dem sich die Daten befinden, was zu verbesserten Client-Antwortzeiten führen kann. 
+summary: Auto Location nutzt automatische Knotenverweise von SMB, um die Leistung von SMB-Clients auf Storage Virtual Machines zu steigern. Automatische Knotenverweise leiten den anfragenden Client automatisch an eine LIF auf der Node-SVM weiter, die das Volume hostet, in dem sich die Daten befinden, was zu verbesserten Client-Antwortzeiten führen kann. 
 ---
-= Erfahren Sie, wie Sie die Client-Antwortzeit verbessern, indem Sie ONTAP SMB automatische Knotenverweise mit Auto Location bereitstellen.
+= Informationen zur Verbesserung der Client-Reaktionszeit durch Bereitstellung von ONTAP SMB automatischen Knotenverweisen mit Auto Location
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Auto Location verwendet automatische SMB-Node-Empfehlungen, um die SMB-Client-Performance auf Storage Virtual Machines (SVMs) zu steigern. Automatische Node-Empfehlungen leiten den anfordernden Client automatisch zu einer logischen Schnittstelle auf der Node-SVM um, die das Volume hostet, in dem sich die Daten befinden. Dadurch werden die Client-Reaktionszeiten verbessert.
+Auto Location nutzt automatische Knotenverweise von SMB, um die Leistung von SMB-Clients auf Storage Virtual Machines (SVMs) zu steigern. Automatische Knotenverweise leiten den anfragenden Client automatisch an eine LIF auf der Node-SVM weiter, die das Volume hostet, in dem sich die Daten befinden, was zu verbesserten Client-Antwortzeiten führen kann.
 
-Wenn ein SMB-Client eine Verbindung zu einer auf der SVM gehosteten SMB-Freigabe herstellt, wird möglicherweise eine Verbindung über ein LIF hergestellt, das sich auf einem Node befindet, dem die angeforderten Daten nicht gehören. Der Node, mit dem der Client verbunden ist, greift über das Cluster-Netzwerk auf Daten eines anderen Node zu, die Eigentum sind. Der Client kann kürzere Reaktionszeiten erleben, wenn die SMB-Verbindung eine LIF auf dem Node verwendet, die die angeforderten Daten enthält:
+Wenn ein SMB-Client eine Verbindung zu einer auf der SVM gehosteten SMB-Freigabe herstellt, kann die Verbindung über eine LIF erfolgen, die sich auf einem Knoten befindet, dem die angeforderten Daten nicht gehören. Der Knoten, mit dem der Client verbunden ist, greift über das Clusternetzwerk auf Daten eines anderen Knotens zu. Der Client kann schnellere Antwortzeiten erzielen, wenn die SMB-Verbindung eine LIF auf dem Knoten verwendet, der die angeforderten Daten enthält.
 
-* ONTAP bietet diese Funktion mithilfe von Microsoft DFS-Empfehlungen, um SMB-Clients darüber zu informieren, dass eine angeforderte Datei oder ein angefragter Ordner im Namespace irgendwo anders gehostet wird.
+* ONTAP stellt diese Funktionalität bereit, indem Microsoft DFS-Verweise verwendet werden, um SMB-Clients darüber zu informieren, dass eine angeforderte Datei oder ein Ordner im Namespace an einem anderen Ort gehostet wird.
 +
-Ein Node empfiehlt, wenn er feststellt, dass eine anSVM LIF auf dem Node vorhanden ist, der die Daten enthält.
+Ein Knoten führt eine Weiterleitung durch, wenn er feststellt, dass sich auf dem Knoten, der die Daten enthält, ein SVM LIF befindet.
 
-* Automatische Node-Empfehlungen werden für IPv4- und IPv6-LIF-IP-Adressen unterstützt.
-* Empfehlungen werden basierend auf dem Speicherort des Stammes der Freigabe gemacht, über die der Client verbunden ist.
-* Die Empfehlung erfolgt während der SMB-Verhandlung.
+* Automatische Knotenweiterleitungen werden für IPv4- und IPv6-LIF-IP-Adressen unterstützt.
+* Weiterleitungen erfolgen auf Grundlage des Speicherorts des Stammverzeichnisses der Freigabe, über die der Client verbunden ist.
+* Die Weiterleitung erfolgt während der SMB-Aushandlung.
 +
-Die Empfehlung erfolgt, bevor die Verbindung hergestellt wird. Nachdem ONTAP den SMB-Client auf den Ziel-Node bezieht, wird die Verbindung hergestellt und der Client greift über den genannten LIF-Pfad von diesem Punkt an auf Daten zu. Dies ermöglicht einen schnelleren Zugriff auf die Daten und vermeidet eine zusätzliche Cluster-Kommunikation.
+Die Weiterleitung erfolgt vor dem Verbindungsaufbau. Nachdem ONTAP den SMB-Client an den Zielknoten weitergeleitet hat, wird die Verbindung hergestellt und der Client greift ab diesem Zeitpunkt über den weitergeleiteten LIF-Pfad auf die Daten zu. Dies ermöglicht den Clients einen schnelleren Zugriff auf die Daten und vermeidet zusätzliche Cluster-Kommunikation.
 
 +
 [NOTE]
 ====
-Wenn ein Share mehrere Verbindungspunkte umfasst und einige Verbindungen zu Volumes auf anderen Nodes bestehen, werden die Daten innerhalb der Freigabe über mehrere Nodes verteilt. Da ONTAP Empfehlungen bereitstellt, die lokal im Stammverzeichnis der Freigabe sind, muss ONTAP das Clusternetzwerk verwenden, um die Daten aus diesen nicht lokalen Volumes abzurufen. In dieser Art der Namespace-Architektur bieten automatische Node-Empfehlungen möglicherweise keine wesentlichen Performance-Vorteile.
+Wenn sich eine Freigabe über mehrere Verbindungspunkte erstreckt und einige der Verbindungen auf Volumes auf anderen Knoten liegen, sind die Daten innerhalb der Freigabe auf mehrere Knoten verteilt. Da ONTAP Verweise bereitstellt, die lokal zum Stamm der Freigabe sind, muss ONTAP das Cluster-Netzwerk verwenden, um die Daten in diesen nicht-lokalen Volumes abzurufen. Bei dieser Art von Namespace-Architektur bieten automatische Knotenverweise möglicherweise keine signifikanten Leistungsvorteile.
 
 ====
 
 
-Wenn der Node, der die Daten hostet, über kein verfügbares LIF verfügt, stellt ONTAP die Verbindung mithilfe der vom Client ausgewählten LIF her. Nachdem eine Datei von einem SMB-Client geöffnet wurde, wird der Zugriff auf die Datei über dieselbe empfohlene Verbindung fortgesetzt.
+Verfügt der Knoten, auf dem die Daten gehostet werden, über keine verfügbare LIF, stellt ONTAP die Verbindung über die vom Client gewählte LIF her. Nachdem eine Datei von einem SMB-Client geöffnet wurde, erfolgt der Zugriff weiterhin über dieselbe verwiesene Verbindung.
 
-Wenn der CIFS-Server aus irgendeinem Grund keine Empfehlung vornehmen kann, wird der SMB-Service nicht unterbrochen. Die SMB-Verbindung wird so aufgebaut, als ob die automatischen Node-Empfehlungen nicht aktiviert wären.
+Kann der CIFS-Server aus irgendeinem Grund keine Weiterleitung vornehmen, kommt es zu keiner Unterbrechung des SMB-Dienstes. Die SMB-Verbindung wird so hergestellt, als wären automatische Knoten-Weiterleitungen nicht aktiviert.
 
 .Verwandte Informationen
-xref:improve-microsoft-remote-copy-performance-concept.adoc[Verbesserung der Performance von Microsoft Remote Kopien]
+xref:improve-microsoft-remote-copy-performance-concept.adoc[Verbesserung der Leistung von Microsoft Remote Copy]

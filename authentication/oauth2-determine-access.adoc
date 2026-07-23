@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: authentication/oauth2-determine-access.html 
 keywords: oauth 2.0, oauth2, scopes, groups, roles, users, determine access 
-summary: Um OAuth 2.0 richtig zu entwickeln und zu implementieren, müssen Sie verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen. 
+summary: Für die korrekte Konzeption und Implementierung von OAuth 2.0 ist es wichtig zu verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen. 
 ---
 = Wie ONTAP den Client-Zugriff bestimmt
 :hardbreaks:
@@ -14,13 +14,13 @@ summary: Um OAuth 2.0 richtig zu entwickeln und zu implementieren, müssen Sie v
 
 
 [role="lead"]
-Um OAuth 2.0 richtig zu entwickeln und zu implementieren, müssen Sie verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen. Die wichtigsten Schritte zur Bestimmung des Zugriffs sind unten auf der Grundlage der ONTAP Version dargestellt.
+Für die korrekte Konzeption und Implementierung von OAuth 2.0 ist es wichtig zu verstehen, wie Ihre Autorisierungskonfiguration von ONTAP verwendet wird, um Zugriffsentscheidungen für die Clients zu treffen. Die wichtigsten Schritte zur Bestimmung des Zugriffs werden im Folgenden basierend auf der ONTAP Version dargestellt.
 
 
-NOTE: Es gab keine signifikanten Updates für OAuth 2.0 mit ONTAP 9.15.1. Wenn Sie Version 9.15.1 verwenden, lesen Sie die Beschreibung für ONTAP 9.14.1.
+NOTE: Mit ONTAP 9.15.1 gab es keine wesentlichen Aktualisierungen für OAuth 2.0. Für die Version 9.15.1 ist die Beschreibung für ONTAP 9.14.1 maßgeblich.
 
 .Verwandte Informationen
-* link:../authentication/oauth2-as-servers.html#oauth-2-0-features-supported-in-ontap["In ONTAP unterstützte Funktionen von OAuth 2.0"]
+* link:../authentication/oauth2-as-servers.html#oauth-2-0-features-supported-in-ontap["In ONTAP unterstützte OAuth 2.0-Funktionen"]
 
 
 
@@ -28,48 +28,48 @@ NOTE: Es gab keine signifikanten Updates für OAuth 2.0 mit ONTAP 9.15.1. Wenn S
 [[ontap-9-16-1]]
 == ONTAP 9.16.1
 
-ONTAP 9.16.1 erweitert die Standard-OAuth 2.0-Unterstützung um Microsoft-Entra-ID-spezifische Erweiterungen für native Entra-ID-Gruppen sowie externe Rollenzuordnung.
+ONTAP 9.16.1 erweitert die standardmäßige OAuth 2.0 Unterstützung um Microsoft Entra ID spezifische Erweiterungen für native Entra ID Gruppen sowie externes Rollenmapping.
 
-.Bestimmen Sie den Client-Zugriff für ONTAP 9.16.1
+.Clientzugriff für ONTAP 9.16.1 bestimmen
 [%collapsible]
 ====
-.Schritt 1: Eigenständige Bereiche
-Wenn das Zugriffstoken eigenständige Bereiche enthält, untersucht ONTAP diese Bereiche zuerst. Wenn keine eigenständigen Bereiche vorhanden sind, mit Schritt 2 fortfahren.
+.Schritt 1: In sich abgeschlossene Bereiche
+Enthält das Zugriffstoken in sich abgeschlossene Bereiche, prüft ONTAP diese zuerst. Sind keine in sich abgeschlossenen Bereiche vorhanden, erfolgt Schritt 2.
 
-Wenn ein oder mehrere eigenständige Bereiche vorhanden sind, wendet ONTAP jeden Bereich an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wird, endet die Verarbeitung.
+Sind ein oder mehrere in sich abgeschlossene Bereiche vorhanden, wendet ONTAP jeden Bereich so lange an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wurde, endet die Verarbeitung.
 
-Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, fahren Sie mit Schritt 2 fort.
+Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, wird mit Schritt 2 fortgefahren.
 
-.Schritt 2: Überprüfen Sie die lokale Rollenmarkierung
-ONTAP überprüft den booleschen Parameter `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der für ONTAP definiert ist, separat festgelegt.
+.Schritt 2: Das Flag für lokale Rollen prüfen
+ONTAP prüft den booleschen Parameter `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der in ONTAP definiert ist, separat festgelegt.
 
-* Wenn der Wert lautet, `true` fahren Sie mit Schritt 3 fort.
-* Wenn der Wert `false` verarbeitet wird, endet und der Zugriff verweigert wird.
+* Wenn der Wert  `true` ist, zu Schritt 3 wechseln.
+* Wenn der Wert  `false` ist, endet die Verarbeitung und der Zugriff wird verweigert.
 
 
 .Schritt 3: Benannte ONTAP REST-Rolle
-Wenn das Zugriffstoken eine benannte REST-Rolle im Feld oder oder `scp` als Antrag enthält `scope`, verwendet ONTAP diese Rolle, um die Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+Enthält das Zugriffstoken eine benannte REST-Rolle im  `scope`- oder  `scp`-Feld oder als Claim, verwendet ONTAP die Rolle für die Zugriffsentscheidung. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet.
 
-Wenn keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wurde, fahren Sie mit Schritt 4 fort.
+Falls keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wird, wird mit Schritt 4 fortgefahren.
 
 .Schritt 4: Benutzer
-Extrahieren Sie den Benutzernamen aus dem Zugriffstoken und versuchen Sie, ihn mit Benutzern zu vergleichen, die Zugriff auf die Anwendung „http“ haben. Die Benutzer werden anhand der Authentifizierungsmethode in der folgenden Reihenfolge untersucht:
+Der Benutzername wird aus dem Zugriffstoken extrahiert und mit Benutzern abgeglichen, die Zugriff auf die Anwendung "http" haben. Die Benutzer werden anhand des Authentifizierungsverfahrens in der folgenden Reihenfolge geprüft:
 
 * Passwort
 * Domäne (Active Directory)
-* Nsswitch (LDAP)
+* nsswitch (LDAP)
 
 
-Wenn ein übereinstimmender Benutzer gefunden wird, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+Wird ein passender Benutzer gefunden, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet.
 
-Wenn ein Benutzer nicht stimmt oder kein Benutzername im Zugriffstoken vorhanden ist, fahren Sie mit Schritt 5 fort.
+Falls kein Benutzer gefunden wird oder im Zugriffstoken kein Benutzername vorhanden ist, wird mit Schritt 5 fortgefahren.
 
 .Schritt 5: Gruppen
-Wenn eine oder mehrere Gruppen enthalten sind, wird das Format überprüft. Wenn die Gruppen als UUIDs dargestellt werden, wird eine interne Gruppenzuordnungstabelle durchsucht. Bei einer Gruppenübereinstimmung und einer zugehörigen Rolle verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung, und die Verarbeitung wird beendet. Weitere Informationen finden Sie unter link:../authentication/authentication-groups.html["Arbeiten mit OAuth 2.0- oder SAML-IdP-Gruppen in ONTAP"] .
+Sind eine oder mehrere Gruppen enthalten, wird das Format geprüft. Werden die Gruppen als UUIDs dargestellt, wird eine interne Gruppenzuordnungstabelle durchsucht. Wenn eine Übereinstimmung zwischen Gruppe und zugehöriger Rolle besteht, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet. Weitere Informationen finden Sie unter link:../authentication/authentication-groups.html["Arbeiten mit OAuth 2.0 oder SAML IdP-Gruppen in ONTAP"].
 
-Wenn Gruppen als Namen dargestellt und mit Domain- oder nsswitch-Autorisierung konfiguriert werden, versucht ONTAP, sie einer Active Directory- bzw. LDAP-Gruppe zuzuordnen. Wenn eine Gruppenübereinstimme vorhanden ist, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+Wenn Gruppen als Namen dargestellt und mit Domänen- oder nsswitch-Autorisierung konfiguriert sind, versucht ONTAP, sie einer Active Directory- bzw. LDAP-Gruppe zuzuordnen. Bei einer Übereinstimmung mit einer Gruppe verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet.
 
-Wenn keine Gruppenübereinstimme vorhanden ist oder keine Gruppe im Zugriffstoken vorhanden ist, wird der Zugriff verweigert und die Verarbeitung wird beendet.
+Wenn keine Gruppenübereinstimmung vorliegt oder wenn im Zugriffstoken keine Gruppe vorhanden ist, wird der Zugriff verweigert und die Verarbeitung endet.
 
 ====
 
@@ -77,47 +77,47 @@ Wenn keine Gruppenübereinstimme vorhanden ist oder keine Gruppe im Zugriffstoke
 [[ontap-9-14-1]]
 == ONTAP 9.14.1
 
-Die Unterstützung von OAuth 2.0 wird mit ONTAP 9.14.1 auf Basis der Standard-OAuth 2.0-Funktionen eingeführt.
+Die anfängliche Unterstützung für OAuth 2.0 ist mit ONTAP 9.14.1 auf Basis der Standardfunktionen von OAuth 2.0 verfügbar.
 
-.Bestimmen Sie den Client-Zugriff für ONTAP 9.14.1
+.Clientzugriff für ONTAP 9.14.1 ermitteln
 [%collapsible]
 ====
-.Schritt 1: Eigenständige Bereiche
-Wenn das Zugriffstoken eigenständige Bereiche enthält, untersucht ONTAP diese Bereiche zuerst. Wenn keine eigenständigen Bereiche vorhanden sind, mit Schritt 2 fortfahren.
+.Schritt 1: In sich abgeschlossene Bereiche
+Enthält das Zugriffstoken in sich abgeschlossene Bereiche, prüft ONTAP diese zuerst. Sind keine in sich abgeschlossenen Bereiche vorhanden, erfolgt Schritt 2.
 
-Wenn ein oder mehrere eigenständige Bereiche vorhanden sind, wendet ONTAP jeden Bereich an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wird, endet die Verarbeitung.
+Sind ein oder mehrere in sich abgeschlossene Bereiche vorhanden, wendet ONTAP jeden Bereich so lange an, bis eine explizite *ALLOW*- oder *DENY*-Entscheidung getroffen werden kann. Wenn eine explizite Entscheidung getroffen wurde, endet die Verarbeitung.
 
-Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, fahren Sie mit Schritt 2 fort.
+Wenn ONTAP keine explizite Zugriffsentscheidung treffen kann, wird mit Schritt 2 fortgefahren.
 
-.Schritt 2: Überprüfen Sie die lokale Rollenmarkierung
-ONTAP überprüft den booleschen Parameter `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der für ONTAP definiert ist, separat festgelegt.
+.Schritt 2: Das Flag für lokale Rollen prüfen
+ONTAP prüft den booleschen Parameter `use-local-roles-if-present`. Der Wert dieses Flags wird für jeden Autorisierungsserver, der in ONTAP definiert ist, separat festgelegt.
 
-* Wenn der Wert lautet, `true` fahren Sie mit Schritt 3 fort.
-* Wenn der Wert `false` verarbeitet wird, endet und der Zugriff verweigert wird.
+* Wenn der Wert  `true` ist, zu Schritt 3 wechseln.
+* Wenn der Wert  `false` ist, endet die Verarbeitung und der Zugriff wird verweigert.
 
 
 .Schritt 3: Benannte ONTAP REST-Rolle
-Wenn das Zugriffstoken eine benannte REST-Rolle im Feld oder `scp` enthält `scope`, verwendet ONTAP die Rolle, um die Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+Enthält das Zugriffstoken eine benannte REST-Rolle im  `scope`- oder  `scp`-Feld, verwendet ONTAP die Rolle für die Zugriffsentscheidung. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet.
 
-Wenn keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wurde, fahren Sie mit Schritt 4 fort.
+Falls keine benannte REST-Rolle vorhanden ist oder die Rolle nicht gefunden wird, wird mit Schritt 4 fortgefahren.
 
 .Schritt 4: Benutzer
-Extrahieren Sie den Benutzernamen aus dem Zugriffstoken und versuchen Sie, ihn mit Benutzern zu vergleichen, die Zugriff auf die Anwendung „http“ haben. Die Benutzer werden anhand der Authentifizierungsmethode in der folgenden Reihenfolge untersucht:
+Der Benutzername wird aus dem Zugriffstoken extrahiert und mit Benutzern abgeglichen, die Zugriff auf die Anwendung "http" haben. Die Benutzer werden anhand des Authentifizierungsverfahrens in der folgenden Reihenfolge geprüft:
 
 * Passwort
 * Domäne (Active Directory)
-* Nsswitch (LDAP)
+* nsswitch (LDAP)
 
 
-Wenn ein übereinstimmender Benutzer gefunden wird, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+Wird ein passender Benutzer gefunden, verwendet ONTAP die für den Benutzer definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet.
 
-Wenn ein Benutzer nicht stimmt oder kein Benutzername im Zugriffstoken vorhanden ist, fahren Sie mit Schritt 5 fort.
+Falls kein Benutzer gefunden wird oder im Zugriffstoken kein Benutzername vorhanden ist, wird mit Schritt 5 fortgefahren.
 
 .Schritt 5: Gruppen
-Wenn eine oder mehrere Gruppen eingeschlossen und mit einer Domain- oder nsswitch-Autorisierung konfiguriert sind, versucht ONTAP, sie einer Active Directory- bzw. LDAP-Gruppe zuzuordnen.
+Wenn eine oder mehrere Gruppen mit Domänen- oder nsswitch-Autorisierung enthalten und konfiguriert sind, versucht ONTAP, diese jeweils einer Active Directory- bzw. LDAP-Gruppe zuzuordnen.
 
-Wenn eine Gruppenübereinstimme vorhanden ist, verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW* oder *DENY* Entscheidung und Verarbeitungsende.
+Bei einer Übereinstimmung mit einer Gruppe verwendet ONTAP die für die Gruppe definierte Rolle, um eine Zugriffsentscheidung zu treffen. Dies führt immer zu einer *ALLOW*- oder *DENY*-Entscheidung und die Verarbeitung endet.
 
-Wenn keine Gruppenübereinstimme vorhanden ist oder keine Gruppe im Zugriffstoken vorhanden ist, wird der Zugriff verweigert und die Verarbeitung wird beendet.
+Wenn keine Gruppenübereinstimmung vorliegt oder wenn im Zugriffstoken keine Gruppe vorhanden ist, wird der Zugriff verweigert und die Verarbeitung endet.
 
 ====

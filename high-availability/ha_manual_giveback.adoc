@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: high-availability/ha_manual_giveback.html 
 keywords: ontap, high, availability, ha, pair, manual, giveback, interrupted, vetoed, veto, commands, performing, perform 
-summary: Sie können ein normales Giveback durchführen, ein Giveback, bei dem Sie Prozesse auf dem Partner-Knoten beenden oder erzwungenes Giveback übernehmen. 
+summary: Es ist möglich, eine normale Rückgabe, eine Rückgabe mit Beendigung von Prozessen auf dem Partnerknoten oder eine erzwungene Rückgabe durchzuführen. 
 ---
-= ONTAP manuelle Giveback-Befehle
+= ONTAP manuelle Rückgabebefehle
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,172 +14,172 @@ summary: Sie können ein normales Giveback durchführen, ein Giveback, bei dem S
 
 
 [role="lead"]
-Sie können ein normales Giveback durchführen, ein Giveback, bei dem Sie Prozesse auf dem Partner-Knoten beenden oder erzwungenes Giveback übernehmen.
+Es ist möglich, eine normale Rückgabe, eine Rückgabe mit Beendigung von Prozessen auf dem Partnerknoten oder eine erzwungene Rückgabe durchzuführen.
 
 
-NOTE: Vor der Durchführung eines Giveback müssen Sie die ausgefallenen Laufwerke im übernommenen System entfernen, wie in beschriebenlink:../disks-aggregates/index.html["Festplatten- und Aggregatmanagement"].
+NOTE: Vor der Durchführung einer Rückgabe müssen die defekten Laufwerke im übernommenen System wie in link:../disks-aggregates/index.html["Festplatten- und Aggregatverwaltung"] beschrieben entfernt werden.
 
 
 
 [[if-giveback-is-interrupted]]
-== Falls das Giveback unterbrochen wird
+== Wenn die Rückgabe unterbrochen wird
 
-Wenn während des Giveback-Prozesses der Takeover-Node ausfällt oder ein Stromausfall auftritt, wird der Prozess angehalten und der Takeover-Node kehrt in den Übernahmemodus zurück, bis der Ausfall behoben ist oder der Strom wiederhergestellt wird.
+Wenn der Übernahmeknoten während des Rückgabeprozesses einen Ausfall oder einen Stromausfall erleidet, stoppt dieser Prozess und der Übernahmeknoten kehrt in den Übernahmemodus zurück, bis der Ausfall behoben oder die Stromversorgung wiederhergestellt ist.
 
-Dies hängt jedoch von der Phase der Rückgabe ab, in der der Fehler aufgetreten ist. Wenn der Knoten während des partiellen Giveback-Status einen Ausfall oder einen Stromausfall auftritt (nachdem er das Root-Aggregat zurückgegeben hat), kehrt er nicht in den Übernahmemodus zurück. Stattdessen kehrt der Node zum Teilrückgabemodus zurück. Falls dies der Fall ist, wiederholen Sie den Giveback-Vorgang.
+Dies hängt jedoch von der Phase der Rückgabe ab, in der der Fehler aufgetreten ist. Wenn beim Knoten während des teilweisen Rückgabestatus (nachdem das Root-Aggregat zurückgegeben wurde) ein Fehler oder ein Stromausfall auftritt, kehrt er nicht in den Übernahmemodus zurück. Stattdessen kehrt der Knoten in den Modus der teilweisen Rückgabe zurück. Tritt dies auf, wird der Vorgang abgeschlossen, indem die Rückgabeoperation wiederholt wird.
 
 
 
 [[if-giveback-is-vetoed]]
-== Falls Rückübertragung ein Vetos ist
+== Wenn das Giveback abgelehnt wird
 
-Wenn ein Rückübertragung ein Vetorecht ist, müssen Sie die EMS-Meldungen überprüfen, um die Ursache festzustellen. Abhängig von den Gründen oder Gründen können Sie entscheiden, ob Sie das Vetos sicher überwiegen können.
+Wird die Rückgabe abgelehnt, müssen die EMS-Meldungen geprüft werden, um die Ursache zu ermitteln. Abhängig vom Grund oder von den Gründen kann entschieden werden, ob die Ablehnungen gefahrlos außer Kraft gesetzt werden können.
 
-Der `storage failover show-giveback` Befehl zeigt den Fortschritt der Rückgabe an und zeigt an, welches Subsystem das Giveback abgelehnt hat, falls vorhanden. Weiche Vetos können außer Kraft gesetzt werden, während harte Vetos nicht sein können, auch wenn sie gezwungen sind. In den folgenden Tabellen sind die weichen Vetoen zusammengefasst, die nicht außer Kraft gesetzt werden sollten, sowie die empfohlenen Umgehungslösungen.
+Der  `storage failover show-giveback` Befehl zeigt den Fortschritt der Rückgabe an und gibt an, welches Subsystem die Rückgabe gegebenenfalls abgelehnt hat. Weiche Vetos können überschrieben werden, harte Vetos hingegen nicht, selbst wenn sie erzwungen werden. Die folgenden Tabellen fassen die weichen Vetos zusammen, die nicht überschrieben werden sollten, sowie empfohlene Alternativen.
 
-Sie können sich die EMS-Details zu einem Giveback-Vetoe ansehen, indem Sie den folgenden Befehl verwenden:
+Die EMS-Details zu etwaigen Giveback-Vetos lassen sich mit dem folgenden Befehl anzeigen:
 
 `event log show -node * -event gb*`
 
-Erfahren Sie mehr über `event log show` in der link:https://docs.netapp.com/us-en/ontap-cli/event-log-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `event log show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/event-log-show.html["ONTAP-Befehlsreferenz"^].
 
 
 
 [[giveback-of-the-root-aggregate]]
-== GiveBack des Root-Aggregats
+== Rückgabe des Root-Aggregats
 
-Diese Vetos gelten nicht für aggregierte Umzugsvorgänge:
+Diese Vetos gelten nicht für Root-Aggregat-Umsiedlungsmaßnahmen:
 
 [cols="35,65"]
 |===
 
 
-| Vetoing-Subsystem-Modul | Behelfslösung 
+| Vetoing-Subsystemmodul | Problemumgehung 
 
 
  a| 
-vfiler_Low_Level
+vfiler_low_level
  a| 
-Beenden Sie die SMB-Sitzungen, die das Veto verursachen, oder schalten Sie die SMB-Anwendung aus, die die offenen Sitzungen eingerichtet hat.
+Die SMB-Sitzungen, die das Veto verursachen, müssen beendet werden, oder die SMB-Anwendung, die die offenen Sitzungen hergestellt hat, muss heruntergefahren werden.
 
-Das Überschreiben dieses Veto kann dazu führen, dass die Anwendung SMB abrupt trennt und Daten verliert.
+Das Übergehen dieses Vetos könnte dazu führen, dass die Anwendung, die SMB verwendet, abrupt die Verbindung trennt und Daten verliert.
 
 
 
  a| 
-Festplattenprüfung
+Datenträgerprüfung
  a| 
-Alle ausgefallenen oder nicht übernommenen Festplatten sollten vor dem Rückgeben entfernt werden. Wenn Festplatten bereinigt werden, sollten Sie bis zum Abschluss des Vorgangs warten.
+Alle ausgefallenen oder umgangenen Datenträger sollten vor dem Rückgabeversuch entfernt werden. Wenn Datenträger bereinigt werden, sollte abgewartet werden, bis der Vorgang abgeschlossen ist.
 
-Das Überschreiben dieses Veto kann zu einem Ausfall führen, der durch Aggregate oder Volumes verursacht wird, die aufgrund von Reservierungskonflikten oder nicht zugänglichen Festplatten offline geschaltet werden.
+Das Aufheben dieses Vetos kann zu einem Ausfall führen, wenn Aggregate oder Volumes aufgrund von Reservierungskonflikten oder nicht zugänglichen Festplatten offline gehen.
 
 |===
 
 
 [[giveback-of-the-sfo-aggregates]]
-== GiveBack der SFO-Aggregate
+== Rückgabe der SFO Aggregate
 
-Diese Vetos gelten nicht für aggregierte Umzugsvorgänge:
+Diese Vetos gelten nicht für Root-Aggregat-Umsiedlungsmaßnahmen:
 
 [cols="35,65"]
 |===
 
 
-| Vetoing-Subsystem-Modul | Behelfslösung 
+| Vetoing-Subsystemmodul | Problemumgehung 
 
 
  a| 
 Lock Manager
  a| 
-SMB-Applikationen mit offenen Dateien werden ordnungsgemäß heruntergefahren oder diese Volumes in ein anderes Aggregat verschoben.
+Die SMB-Anwendungen, die geöffnete Dateien haben, sollten ordnungsgemäß heruntergefahren werden, oder diese Volumes in ein anderes Aggregat verschoben werden.
 
-Wenn dieses veto außer Kraft setzt, geht es zu einem Verlust des SMB-Sperrstatus, was zu Unterbrechungen und Datenverlusten führt.
+Das Außerkraftsetzen dieses Vetos führt zum Verlust des SMB-Sperrstatus, was zu Unterbrechungen und Datenverlust führt.
 
 
 
  a| 
-NDO-Manager
+Lock Manager NDO
  a| 
 Warten Sie, bis die Sperren gespiegelt sind.
 
-Das Überschreiben dieses Veto verursacht eine Unterbrechung auf virtuellen Microsoft Hyper-V-Maschinen.
+Das Übergehen dieses Vetos führt zu Unterbrechungen bei Microsoft Hyper-V-virtuellen Maschinen.
 
 
 
 | RAID  a| 
-Überprüfen Sie die EMS-Meldungen, um die Ursache des Veto zu ermitteln:
+Die EMS-Meldungen geben Aufschluss über die Ursache des Vetos:
 
-Wenn das Veto auf nvfile beruht, bringen Sie die Offline-Volumes und Aggregate online.
+Falls das Veto auf nvfile zurückzuführen ist, sollten die offline befindlichen Volumes und Aggregate online geschaltet werden.
 
-Wenn beim Hinzufügen von Festplatten oder bei der Umverteilung auf die Festplatteneigentümer gerade Verfahren werden, warten Sie, bis diese abgeschlossen sind.
+Wenn Datenträger-Hinzufügen- oder Datenträgereigentumsübertragungs-Operationen im Gange sind, abwarten, bis diese abgeschlossen sind.
 
-Wenn das Veto auf einen Aggregatnamen oder einen UUID-Konflikt zurückzuführen ist, beheben Sie das Problem.
+Falls das Veto auf einen Konflikt mit einem Aggregatnamen oder einer UUID zurückzuführen ist, sollte das Problem behoben werden.
 
-Wenn das Veto auf Spiegelresynchronisierung, Spiegelverifikation oder Offline-Festplatten zurückzuführen ist, kann das Veto überschrieben werden und der Vorgang wird nach der Rückgabe neu gestartet.
-
-
-
-| Festplattenbestand  a| 
-Beheben Sie die Problemursache, indem Sie Fehler erkennen und beheben.
-
-Auf dem Ziel-Node werden möglicherweise keine Festplatten angezeigt, die zu einem zu migrierenden Aggregat gehören.
-
-Nicht zugängliche Festplatten können zu Aggregaten oder Volumes führen, auf die nicht zugegriffen werden kann.
+Wenn das Veto auf eine Spiegelsynchronisierung, eine Spiegelverifizierung oder Offline-Festplatten zurückzuführen ist, kann das Veto überschrieben werden und der Vorgang startet nach der Rückgabe erneut.
 
 
 
-| Volume-Verschiebung  a| 
-Beheben Sie die Problemursache, indem Sie Fehler erkennen und beheben.
+| Datenträgerinventar  a| 
+Fehlerbehebung zur Identifizierung und Behebung der Problemursache.
 
-Dieses Veto verhindert, dass die Verschiebung eines Volumes während der wichtigen Umstellungsphase abgebrochen wird. Wenn der Job während der Umstellung abgebrochen wird, kann das Volume unzugänglich machen.
+Der Zielknoten kann möglicherweise die zu einem migrierten Aggregat gehörenden Datenträger nicht sehen.
+
+Nicht zugängliche Datenträger können zu nicht zugänglichen Aggregaten oder Volumes führen.
+
+
+
+| Volume-Move-Vorgang  a| 
+Fehlerbehebung zur Identifizierung und Behebung der Problemursache.
+
+Dieses Veto verhindert, dass der Vorgang zum Verschieben des Volumes während der wichtigen Umstellungsphase abgebrochen wird. Wenn der Vorgang während der Umstellungsphase abgebrochen wird, könnte das Volume nicht mehr erreichbar sein.
 
 |===
 
 
 [[commands-for-performing-a-manual-giveback]]
-=== Befehle zur Durchführung eines manuellen Giveback
+=== Befehle zur Durchführung einer manuellen Rückgabe
 
-Sie können ein Giveback an einem Node, der sich in einem HA-Paar aufsetzt, manuell initiieren, um Storage an den ursprünglichen Eigentümer zurückzusenden, nachdem die Wartung abgeschlossen wurde oder Probleme gelöst wurden, die durch das Takeover verursacht wurden.
+Sie können auf einem Node in einem HA-Paar manuell eine Rückgabe initiieren, um den Speicher nach Abschluss der Wartung oder der Behebung von Problemen, die die Übernahme verursacht haben, an den ursprünglichen Eigentümer zurückzugeben.
 
 |===
 
 
-| Ihr Ziel ist | Befehl 
+| Wenn Sie möchten... | Verwenden Sie diesen Befehl... 
 
 
  a| 
-Geben Sie Storage einem Partner-Node zurück
+Speicher an einen Partnerknoten zurückgeben
 | `storage failover giveback ‑ofnode _nodename_` 
 
 
  a| 
-Geben Sie Storage zurück, auch wenn der Partner nicht im Warten auf den Giveback-Modus ist
+Speicherplatz kann auch dann zurückgegeben werden, wenn sich der Partner nicht im Modus „Warten auf Rückgabe“ befindet.
  a| 
 `storage failover giveback ‑ofnode _nodename_`
 `‑require‑partner‑waiting false`
 
-Verwenden Sie diese Option nur, wenn ein längerer Clientausfall akzeptabel ist.
+Diese Option sollte nur verwendet werden, wenn ein längerer Clientausfall akzeptabel ist.
 
 
 
-| Storage-Rückgabe ermöglichen, selbst wenn Prozesse gegen das Giveback laufen (Giveback erzwingen)  a| 
+| Speicher auch dann zurückgeben, wenn Prozesse den Giveback-Vorgang verhindern (Giveback erzwingen)  a| 
 `storage failover giveback ‑ofnode _nodename_`
 `‑override‑vetoes true`
 
-Die Verwendung dieser Option kann potenziell zu einem längeren Client-Ausfall führen oder dass Aggregate und Volumes nach dem Giveback nicht online geschaltet werden.
+Die Nutzung dieser Option kann unter Umständen zu längeren Client-Ausfällen führen oder dazu, dass Aggregate und Volumes nach der Rückmeldung nicht online gehen.
 
 
 
-| Nur die CFO-Aggregate zurückgeben (das Root-Aggregat)  a| 
+| Nur die CFO-Aggregate (das Root-Aggregat) zurückgeben  a| 
 `storage failover giveback ‑ofnode _nodename_`
 
 `‑only‑cfo‑aggregates true`
 
 
 
-| Überwachen Sie den Status der Rückgabe, nachdem Sie den Befehl zur Rückgabe eingegeben haben | `storage failover show‑giveback` 
+| Der Fortschritt der Rückgabe kann nach Ausführung des Befehls „giveback“ überwacht werden. | `storage failover show‑giveback` 
 |===
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-giveback.html["Speicher-Failover-Rückgabe"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-show-giveback.html["Speicher-Failover-Show-Giveback"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-giveback.html["Storage-Failover-Giveback"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-failover-show-giveback.html["storage failover show-giveback"^]
 

@@ -2,7 +2,7 @@
 permalink: volumes/rehost-smb-task.html 
 sidebar: sidebar 
 keywords: rehost, cifs volumes, smb 
-summary: Rehosting eines Volumes, das Daten über das SMB-Protokoll bereitstellt 
+summary: Ein Volume, das Daten über das SMB-Protokoll bereitstellt, kann neu gehostet werden. 
 ---
 = Rehost eines ONTAP SMB-Volumes
 :allow-uri-read: 
@@ -11,31 +11,31 @@ summary: Rehosting eines Volumes, das Daten über das SMB-Protokoll bereitstellt
 
 
 [role="lead"]
-Sie können ein Volume, das Daten bereitstellt, über das SMB-Protokoll hosten. Damit Clients nach dem Rehosting weiterhin auf die Daten zugreifen können, müssen Sie Richtlinien und die zugehörigen Regeln manuell konfigurieren.
+Sie können ein Volume, das Daten über das SMB-Protokoll bereitstellt, neu hosten. Damit Clients nach dem Rehosting weiterhin auf die Daten zugreifen können, müssen Richtlinien und die zugehörigen Regeln manuell konfiguriert werden.
 
 .Über diese Aufgabe
-* Das Rehosting ist ein störender Betrieb.
-* Wenn der Rehosting-Vorgang fehlschlägt, müssen Sie möglicherweise die Volume-Richtlinien und die zugehörigen Regeln für das Quell-Volume neu konfigurieren.
-* Wenn sich die Quell-SVM und die Ziel-SVM Active Directory-Domänen unterscheiden, können Sie unter Umständen auf die Objekte auf dem Volume zugreifen.
-* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Wenn Sie einen integrierten Schlüsselmanager verwenden, werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht geändert.
+* Rehosting ist ein störender Vorgang.
+* Falls der Rehosting-Vorgang fehlschlägt, ist es möglicherweise erforderlich, die Volume-Richtlinien und die zugehörigen Regeln auf dem Quellvolume neu zu konfigurieren.
+* Wenn sich die Active Directory-Domänen der Quell-SVM und der Ziel-SVM unterscheiden, könnte der Zugriff auf die Objekte auf dem Volume verloren gehen.
+* Ab ONTAP 9.8 wird das Rehosting eines Volumes mit NetApp Volume Encryption (NVE) unterstützt. Bei Verwendung eines integrierten Schlüsselmanagers werden die verschlüsselten Metadaten während des Rehosting-Vorgangs geändert. Benutzerdaten werden nicht verändert.
 +
-Bei Verwendung von ONTAP 9.8 oder früher müssen Sie die Verschlüsselung des Volumes aufheben, bevor Sie den Host-Vorgang wiederholen.
+Wenn Sie ONTAP 9.8 oder eine frühere Version verwenden, muss das Volume vor der Durchführung des Rehost-Vorgangs entschlüsselt werden.
 
 
 
-* Wenn die Quell-SVM lokale Benutzer und Gruppen hat, sind die festgelegten Berechtigungen für die Dateien und Verzeichnisse (ACLs) nicht mehr effektiv nach dem Rehosting des Volumes.
+* Wenn die Quell-SVM lokale Benutzer und Gruppen besitzt, sind die festgelegten Berechtigungen für die Dateien und Verzeichnisse (ACLs) nach der Volume-Rehost-Operation nicht mehr wirksam.
 +
-Das gleiche gilt für Audit ACLs (SACLs)
+Das Gleiche gilt für Audit-ACLs (SACLs)
 
-* Nach dem Rehosting gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen vom Quell-Volume verloren und müssen manuell auf dem neu gehosteten Volume neu konfiguriert werden:
+* Nach dem Rehosting-Vorgang gehen die folgenden Volume-Richtlinien, Richtlinienregeln und Konfigurationen des Quellvolumes verloren und müssen auf dem rehosteten Volume manuell neu konfiguriert werden:
 +
-** Exportrichtlinien für Volumes und qtree
-** Virenschutz-Richtlinien
-** Volume-Effizienzrichtlinie
-** Quality of Service-Richtlinien (QoS
-** Snapshot-Richtlinien
-** Kontingentregeln
-** ns-Switch und Name Services Konfiguration Export-Richtlinien und Regeln
+** Exportrichtlinien für Volumes und Qtrees
+** Antivirus-Richtlinien
+** Effizienzrichtlinie
+** Richtlinien zur Dienstqualität (QoS)
+** Snapshot Richtlinien
+** Quotenregeln
+** ns-switch und Name-Services-Konfiguration Exportrichtlinie und -regeln
 ** Benutzer- und Gruppen-IDs
 
 
@@ -43,46 +43,46 @@ Das gleiche gilt für Audit ACLs (SACLs)
 
 .Bevor Sie beginnen
 * Das Volume muss online sein.
-* Volume-Managementvorgänge wie Volume-Verschiebung oder LUN-Verschiebung dürfen nicht ausgeführt werden.
-* Der Datenzugriff auf das neu gehostete Volume muss gestoppt werden.
-* Die ns-Switch- und Name-Services-Konfiguration der Ziel-SVM muss konfiguriert werden, um den Datenzugriff des Rehosting Volume zu unterstützen.
-* Die Quell-SVM und die Ziel-SVM müssen dieselbe Active Directory und RealmDNS-Domäne aufweisen.
-* Die Benutzer-ID und Gruppen-ID des Volumes muss in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
+* Volume-Management-Operationen wie Volume-Verschiebung oder LUN-Verschiebung dürfen nicht ausgeführt werden.
+* Der Datenzugriff auf das Volume, das neu gehostet wird, muss gestoppt werden.
+* Die ns-switch- und Name-Services-Konfiguration der Ziel-SVM muss so konfiguriert sein, dass der Datenzugriff auf das Rehosting-Volume unterstützt wird.
+* Die Quell-SVM und die Ziel-SVM müssen dieselbe Active Directory und RealmDNS-Domäne haben.
+* Die Benutzer-ID und die Gruppen-ID des Volumes müssen entweder in der Ziel-SVM verfügbar sein oder auf dem Hosting-Volume geändert werden.
 +
 
-NOTE: Wenn lokale Benutzer und Gruppen konfiguriert sind und sich Dateien und Verzeichnisse auf diesem Volume befinden, deren Berechtigungen für diese Benutzer oder Gruppen festgelegt sind, sind diese Berechtigungen nicht mehr wirksam.
+NOTE: Wenn lokale Benutzer und Gruppen konfiguriert sind und sich auf diesem Volume Dateien und Verzeichnisse mit Berechtigungen für diese Benutzer oder Gruppen befinden, sind diese Berechtigungen nicht mehr wirksam.
 
 
 
 .Schritte
-. Notieren Sie Informationen über die CIFS-Freigaben, um zu vermeiden, dass Informationen auf CIFS-Freigaben verloren gehen, falls der Rehosting des Volumes fehlschlägt.
-. Heben Sie die Bereitstellung des Volumes vom übergeordneten Volume ab:
+. Informationen über die CIFS-Freigaben werden erfasst, damit bei einem Fehler beim Volume-Rehosting keine Informationen über die CIFS-Freigaben verloren gehen.
+. Das Volume vom übergeordneten Volume trennen:
 +
 `volume unmount`
 
-. Wechseln zur erweiterten Berechtigungsebene:
+. Zur erweiterten Berechtigungsstufe wechseln:
 +
 `set -privilege advanced`
 
-. Erneutes Hosten des Volumes auf der Ziel-SVM:
+. Das Volume auf der Ziel-SVM neu hosten:
 +
 `volume rehost -vserver _source_svm_ -volume _vol_name_ -destination-vserver _destination_svm_`
 
-. Mounten Sie das Volume unter dem entsprechenden Verbindungspfad in der Ziel-SVM:
+. Das Volume wird unter dem entsprechenden Verbindungspfad in der Ziel-SVM eingebunden:
 +
 `volume mount`
 
-. Erstellen von CIFS-Freigaben für das neu gehostete Volume:
+. CIFS-Freigaben für das neu gehostete Volume erstellen:
 +
 `vserver cifs share create`
 
-. Wenn sich die DNS-Domänen zwischen der Quell-SVM und der Ziel-SVM unterscheiden, erstellen Sie neue Benutzer und Gruppen.
-. Aktualisieren Sie den CIFS-Client mit den neuen Ziel-SVM LIFs und dem Verbindungspfad zum neu gehosteten Volume.
+. Wenn sich die DNS-Domänen zwischen Quell-SVM und Ziel-SVM unterscheiden, sollten neue Benutzer und Gruppen erstellt werden.
+. Der CIFS-Client wird mit den neuen Ziel-SVM-LIFs und dem Verbindungspfad zum neu gehosteten Volume aktualisiert.
 
 
 .Nachdem Sie fertig sind
-Sie müssen die Richtlinien und die zugehörigen Regeln für das neu gehostete Volume manuell neu konfigurieren.
+Die Richtlinien und die zugehörigen Regeln auf dem neu gehosteten Volume müssen manuell neu konfiguriert werden.
 
 https://docs.netapp.com/us-en/ontap-system-manager-classic/smb-config/index.html["SMB-Konfiguration"]
 
-https://docs.netapp.com/us-en/ontap-system-manager-classic/nas-multiprotocol-config/index.html["Multiprotokoll-Konfiguration von SMB und NFS"]
+https://docs.netapp.com/us-en/ontap-system-manager-classic/nas-multiprotocol-config/index.html["SMB und NFS Multiprotokollkonfiguration"]

@@ -2,142 +2,142 @@
 permalink: flexgroup/quota-reporting-task.html 
 sidebar: sidebar 
 keywords: quota, flexgroup, volume, flex group, limit, snap mirror, snapmirror, qtree, user, group 
-summary: In ONTAP 9.4 und älteren Versionen können Sie Regeln für Kontingente auf FlexGroup Volumes nur für Reporting-Zwecke anwenden, aber nicht zur Durchsetzung von Kontingentbeschränkungen. Ab ONTAP 9.5 sind Grenzen für Kontingentregeln möglich, die auf FlexGroup Volumes angewendet werden. 
+summary: In ONTAP 9.4 und früher können Quotenregeln auf FlexGroup Volumes nur zu Berichtszwecken angewendet werden, jedoch nicht zur Durchsetzung von Kontingentlimits. Ab ONTAP 9.5 können Limits für Quotenregeln, die auf FlexGroup Volumes angewendet werden, durchgesetzt werden. 
 ---
-= Verwendung von Kontingenten für ONTAP FlexGroup Volumes
+= Quoten für ONTAP FlexGroup Volumes verwenden
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-In ONTAP 9.4 und älteren Versionen können Sie Regeln für Kontingente auf FlexGroup Volumes nur für Reporting-Zwecke anwenden, aber nicht zur Durchsetzung von Kontingentbeschränkungen. Ab ONTAP 9.5 sind Grenzen für Kontingentregeln möglich, die auf FlexGroup Volumes angewendet werden.
+In ONTAP 9.4 und früher können Quotenregeln auf FlexGroup Volumes nur zu Berichtszwecken angewendet werden, jedoch nicht zur Durchsetzung von Kontingentlimits. Ab ONTAP 9.5 können Limits für Quotenregeln, die auf FlexGroup Volumes angewendet werden, durchgesetzt werden.
 
 .Über diese Aufgabe
-* Ab ONTAP 9.5 können Sie fixe, weiche und Schwellenwertlimits für FlexGroup Volumes festlegen.
+* Ab ONTAP 9.5 können harte, weiche und Schwellenwert-Kontingente für FlexGroup Volumes festgelegt werden.
 +
-Sie können diese Einschränkungen angeben, um die Menge des Speicherplatzes, die Anzahl der Dateien einzuschränken, die ein bestimmter Benutzer, eine bestimmte Gruppe oder ein qtree erstellen kann. Quota Limits erzeugen Warnmeldungen in den folgenden Szenarien:
+Sie können diese Grenzwerte festlegen, um den Speicherplatz oder die Anzahl der Dateien, die ein bestimmter Benutzer, eine Gruppe oder ein bestimmter Qtree erstellen kann, oder beides zu beschränken. Warnmeldungen zum Kontingentlimit werden in den folgenden Szenarien generiert:
 
 +
-** Wenn die Auslastung einen konfigurierten Soft-Limit überschreitet, gibt ONTAP eine Warnmeldung aus, weiterer Traffic ist jedoch weiterhin zulässig.
+** Wenn die Nutzung ein konfiguriertes Softlimit überschreitet, gibt ONTAP eine Warnmeldung aus, aber weiterer Datenverkehr ist weiterhin erlaubt.
 +
-Wenn die Nutzung später wieder unter das konfigurierte Softlimit fällt, wird eine klare Meldung ausgegeben.
+Wenn die Nutzung später wieder unter das konfigurierte Soft Limit fällt, wird eine Entwarnungsmeldung ausgegeben.
 
-** Wenn die Verwendung einen konfigurierten Schwellenwert überschreitet, gibt ONTAP eine zweite Warnmeldung aus.
+** Wenn die Nutzung einen konfigurierten Schwellenwert überschreitet, gibt ONTAP eine zweite Warnmeldung aus.
 +
-Wenn die Nutzung später unter eine konfigurierte Grenze fällt, wird keine klare administrative Meldung ausgegeben.
+Es wird keine Entwarnungsmeldung ausgegeben, wenn die Nutzung später unter einen konfigurierten Schwellenwert fällt.
 
-** Wenn die Nutzung ein konfiguriertes hartes Limit erreicht, verhindert ONTAP den weiteren Ressourcenverbrauch durch die Ablehnung des Datenverkehrs.
+** Wenn die Nutzung ein konfiguriertes endgültiges Limit erreicht, verhindert ONTAP den weiteren Ressourcenverbrauch durch Abweisung des Datenverkehrs.
 
 
-* In ONTAP 9.5 können Kontingentregeln nicht erstellt oder aktiviert werden für den Ziel-FlexGroup Volume einer SnapMirror Beziehung.
-* Während der Kontingentinitialisierung werden Kontingente nicht durchgesetzt, und es gibt keine Benachrichtigungen über nicht verletzungen nach Kontingentinitialisierung.
+* In ONTAP 9.5 können Quotenregeln auf dem Ziel-FlexGroup Volume einer SnapMirror Beziehung weder erstellt noch aktiviert werden.
+* Während der Quoteninitialisierung werden die Quoten nicht durchgesetzt und es erfolgen keine Benachrichtigungen über Quotenüberschreitungen nach der Quoteninitialisierung.
 +
-Mit dem `volume quota report` Befehl können Sie überprüfen, ob Quotas während der Quoteinitialisierung verletzt wurden.
+Um zu überprüfen, ob bei der Quoteninitialisierung Quoten überschritten wurden, kann der  `volume quota report` Befehl verwendet werden.
 
 
 
 
 
 [[quota-targets-and-types]]
-== Kontingenttypen und -Typen
+== Quotenziele und -arten
 
-Quoten haben einen Typ: Sie können entweder Benutzer, Gruppe oder Baum sein. Die Kontingentziele geben den Benutzer, die Gruppe oder den qtree an, für den die Kontingentgrenzen angewendet werden.
+Kontingente haben einen Typ: Sie können entweder Benutzer-, Gruppen- oder Qtree-bezogen sein. Kontingentziele geben den Benutzer, die Gruppe oder den Qtree an, für die die Kontingentlimits gelten.
 
-In der folgenden Tabelle sind die verschiedenen Kontingenttypen, mit welchen Quotenarten jedes Kontingents verknüpft ist und wie die einzelnen Kontingentnutzer dargestellt werden:
+Die folgende Tabelle listet die Arten von Quotenzielen auf, welche Arten von Quoten jedem Quotenziel zugeordnet sind und wie jedes Quotenziel dargestellt wird:
 
 |===
 
 
-| Kontingentnutzer | Kontingenttyp | Wie das Ziel dargestellt wird | Hinweise 
+| Quotenziel | Quotentyp | Wie das Ziel dargestellt wird | Hinweise 
 
 
  a| 
 Benutzer
  a| 
-Benutzerkontingente
+Benutzerkontingent
  a| 
-UNIX-Benutzername UNIX-UID
+UNIX-Benutzername UNIX UID
 
 Windows-Benutzername im Format vor Windows 2000
 
-Windows-SID
+Windows SID
  a| 
-Es können Benutzerkontingente für ein bestimmtes Volume oder einen bestimmten qtree angewendet werden.
+Benutzerkontingente können für ein bestimmtes Volume oder einen bestimmten qtree angewendet werden.
 
 
 
  a| 
-Gruppieren
+Gruppe
  a| 
-Gruppenkontingente
+Gruppenkontingent
  a| 
-UNIX-Gruppenname UNIX GID
+UNIX Gruppenname UNIX GID
  a| 
-Gruppenkontingente können für ein bestimmtes Volume oder einen bestimmten qtree angewendet werden.
+Gruppenkontingente können für ein bestimmtes Volume oder einen bestimmten Qtree angewendet werden.
 
 
-NOTE: ONTAP wendet keine Gruppenkontingente auf Basis von Windows-IDs an.
+NOTE: ONTAP wendet keine Gruppenkontingente basierend auf Windows-IDs an.
 
 
 
  a| 
-Qtree
+qtree
  a| 
-Baumquote
+Baumkontingent
  a| 
-Qtree-Name
+qtree-Name
  a| 
-Tree Quotas werden auf ein bestimmtes Volumen angewendet und haben keine Auswirkung auf qtrees in anderen Laufwerken.
+Die Baumquoten gelten für ein bestimmtes Volume und haben keinen Einfluss auf Qtrees in anderen Volumes.
 
 
 
  a| 
 `""`
  a| 
-Benutzer quotagroup Quote
+Benutzerkontingent/Gruppenkontingent
 
-Baumquote
+Baumkontingent
  a| 
-Doppelte Anführungszeichen (“)
+Doppelte Anführungszeichen ("")
  a| 
-Ein Quota-Ziel von "" bezeichnet ein _default Quota_. Bei Standardkontingenten wird der Quotentyp durch den Wert des Typenfelds bestimmt.
+Ein Quotenziel von "" kennzeichnet ein _Standardkontingent_. Für Standardkontingente wird der Kontingenttyp durch den Wert des Feldes type bestimmt.
 
 |===
 
 
 [[behavior-of-flexgroup-volumes-when-quota-limits-are-exceeded]]
-== Verhalten von FlexGroup-Volumes, wenn Quota-Limits überschritten werden
+== Verhalten der FlexGroup Volumes bei Überschreitung der Kontingentlimits
 
-Ab ONTAP 9.5 werden Kontingent auch auf FlexGroup-Volumes unterstützt. Es gibt einige Unterschiede in der Art und Weise, wie Quotengrenzen auf einem FlexGroup Volume durchgesetzt werden, im Vergleich zu einem FlexVol Volume.
+Ab ONTAP 9.5 werden Kontingentlimits auf FlexGroup volumes unterstützt. Es bestehen einige Unterschiede bei der Durchsetzung von Kontingentlimits auf einem FlexGroup volume im Vergleich zu einem FlexVol volume.
 
-FlexGroup Volumes zeigen möglicherweise folgende Verhaltensweisen, wenn die Kontingentgrenzen überschritten werden:
+FlexGroup Volumes können die folgenden Verhaltensweisen aufweisen, wenn die Kontingentgrenzen überschritten werden:
 
-* Die Speicherplatz- und Dateiverwendung in einem FlexGroup-Volume kann bis zu 5 % höher sein als das konfigurierte harte Limit, bevor das Kontingentlimit durchgesetzt wird, indem weiterer Datenverkehr abgelehnt wird.
+* Die Speicher- und Dateinutzung in einem FlexGroup Volume kann bis zu 5 Prozent höher als das konfigurierte endgültige Limit sein, bevor das Kontingentlimit durch die Ablehnung weiteren Datenverkehrs durchgesetzt wird.
 +
-Um eine optimale Performance zu erzielen, kann der Speicherverbrauch durch ONTAP den konfigurierten harten Grenzwert um einen geringen Abstand überschreiten, bevor die Kontingentzwang ausgeschöpft wird. Dieser zusätzliche Speicherverbrauch überschreitet nicht 5 Prozent der konfigurierten Hardlimits, 1 GB oder 65536 Dateien, je nachdem, welcher Wert niedriger ist.
+Um die beste Leistung zu bieten, kann ONTAP zulassen, dass der Speicherplatzverbrauch das konfigurierte endgültige Limit um eine kleine Marge überschreitet, bevor die Kontingentdurchsetzung beginnt. Dieser zusätzliche Speicherplatzverbrauch überschreitet nicht 5 Prozent der konfigurierten endgültigen Limits, 1 GB oder 65536 Dateien, je nachdem, welcher Wert niedriger ist.
 
-* Wenn ein Benutzer oder Administrator nach Erreichen der Kontingentgrenze einige Dateien oder Verzeichnisse löscht, so dass die Kontingentnutzung nun unter der Grenze liegt, kann der nachfolgende quota-aufwendige Dateivorgang mit Verzögerung fortgesetzt werden (dauert bis zu 5 Sekunden).
-* Wenn die gesamte Speicherplatz- und Dateiennutzung eines FlexGroup Volume die konfigurierten Kontingentgrenzen überschreitet, kann es zu einer leichten Verzögerung bei der Protokollierung einer Event-Protokollmeldung kommen.
-* Sie erhalten möglicherweise Fehler „`no space`“, wenn einige Komponenten des FlexGroup-Volume voll sind, die Kontingentgrenzen werden jedoch nicht erreicht.
-* Vorgänge wie das Umbenennen einer Datei oder eines Verzeichnisses oder das Verschieben von Dateien zwischen qtrees, auf Quotenzielen, für die harte Kontingentbeschränkungen konfiguriert werden, können im Vergleich zu ähnlichen Vorgängen auf FlexVol Volumes länger dauern.
+* Nachdem das Kontingentlimit erreicht wurde, und ein Benutzer oder Administrator einige Dateien oder Verzeichnisse löscht, sodass die Kontingentnutzung nun unter dem Limit liegt, kann die nachfolgende kontingentverbrauchende Dateioperation mit einer Verzögerung fortgesetzt werden (die Fortsetzung kann bis zu 5 Sekunden dauern).
+* Wenn der gesamte Speicherplatz und die Dateinutzung eines FlexGroup volume die konfigurierten Kontingentlimits überschreiten, kann es zu einer leichten Verzögerung bei der Protokollierung einer Ereignisprotokollmeldung kommen.
+* Es kann zu Fehlermeldungen der Art „`no space`“ kommen, wenn einige Bestandteile des FlexGroup volume voll sind, die Kontingentgrenzen aber noch nicht erreicht sind.
+* Operationen wie das Umbenennen einer Datei oder eines Verzeichnisses oder das Verschieben von Dateien zwischen Qtrees auf Kontingentzielen, für die endgültige Kontingentlimits konfiguriert sind, können im Vergleich zu ähnlichen Operationen auf FlexVol volumes länger dauern.
 
 
 
 
 [[examples-of-quota-enforcement-for-flexgroup-volumes]]
-== Beispiele für die Durchsetzung von Kontingenten für FlexGroup Volumes
+== Beispiele für die Durchsetzung von Kontingenten bei FlexGroup Volumes
 
-Anhand der Beispiele können Sie erfahren, wie Quoten mit Grenzen in ONTAP 9.5 und höher konfiguriert werden.
+Anhand der Beispiele lässt sich nachvollziehen, wie Quoten mit Limits in ONTAP 9.5 und später konfiguriert werden.
 
-.Beispiel 1: Durchsetzung einer Quota-Regel mit Festplatten-Limits
-. Sie sollten eine Quota Policy-Regel des Typs `user` mit einem erreichbaren SoftDisk-Limit und einem Festplattenlimit erstellen.
+.Beispiel 1: Durchsetzung einer Quotenregel mit Festplattenlimits
+. Es empfiehlt sich, eine Quotenrichtlinienregel vom Typ  `user` mit sowohl einem erreichbaren Soft-Disk-Limit als auch einem Festplattenlimit zu erstellen.
 +
 [listing]
 ----
 cluster1::> volume quota policy rule create -vserver vs0 -policy-name default -volume FG -type user -target "" -qtree "" -disk-limit 1T -soft-disk-limit 800G
 ----
-. Sie können die Kontingentrichtlinie anzeigen:
+. Die Quotenrichtlinienregel kann angezeigt werden:
 +
 [listing]
 ----
@@ -151,14 +151,14 @@ Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
 -----  --------  ------- -------  --------  -------  ------  -------  ---------
 user   ""        ""      off           1TB    800GB       -        -          -
 ----
-. Um die neue Kontingentregel zu aktivieren, initialisieren Sie Quoten auf dem Volumen:
+. Zur Aktivierung der neuen Quotenregel werden Quoten auf dem Volume initialisiert:
 +
 [listing]
 ----
 cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
 [Job 49] Job succeeded: Successful
 ----
-. Sie können die Festplatten- und Dateinutzungsdaten des FlexGroup Volume mithilfe des Kontingentberichts anzeigen.
+. Sie können die Festplattennutzung und die Dateinutzungsinformationen des FlexGroup volume mithilfe des Quotenberichts einsehen.
 +
 [listing]
 ----
@@ -174,16 +174,16 @@ FG                 user    *         800GB    1TB      0       -   *
 ----
 
 
-Nach Erreichen des Festplattenlimits wird das Quota Policy Rule Target (User, in diesem Fall) vom Schreiben von mehr Daten auf die Dateien blockiert.
+Nachdem das Festplattenlimit erreicht ist, wird das Ziel der Quotenrichtlinienregel (in diesem Fall der Benutzer) daran gehindert, weitere Daten in die Dateien zu schreiben.
 
-.Beispiel 2: Durchsetzung einer Quota-Regel für mehrere Benutzer
-. Sie sollten eine Quota-Policy-Regel vom Typ erstellen `user`, bei der mehrere Benutzer im Quota-Ziel angegeben werden (UNIX-Benutzer, SMB-Benutzer oder eine Kombination aus beiden) und die Regel sowohl eine erreichbare Soft-Disk-Grenze als auch eine Festplattengrenze hat.
+.Beispiel 2: Durchsetzung einer Kontingentregel für mehrere Benutzer
+. Es empfiehlt sich, eine Quotenrichtlinienregel vom Typ  `user` zu erstellen, bei der mehrere Benutzer im Kontingentziel angegeben werden (UNIX-Benutzer, SMB-Benutzer oder eine Kombination aus beiden) und bei der die Regel sowohl ein erreichbares Soft-Disk-Limit als auch ein Festplattenlimit aufweist.
 +
 [listing]
 ----
 cluster1::> quota policy rule create -vserver vs0 -policy-name default -volume FG -type user -target "rdavis,ABCCORP\RobertDavis" -qtree "" -disk-limit 1TB -soft-disk-limit  800GB
 ----
-. Sie können die Kontingentrichtlinie anzeigen:
+. Die Quotenrichtlinienregel kann angezeigt werden:
 +
 [listing]
 ----
@@ -197,14 +197,14 @@ Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
 -----  --------  ------- -------  --------  -------  ------  -------  ---------
 user   "rdavis,ABCCORP\RobertDavis"  "" off  1TB  800GB  -  -
 ----
-. Um die neue Kontingentregel zu aktivieren, initialisieren Sie Quoten auf dem Volumen:
+. Zur Aktivierung der neuen Quotenregel werden Quoten auf dem Volume initialisiert:
 +
 [listing]
 ----
 cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
 [Job 49] Job succeeded: Successful
 ----
-. Sie können überprüfen, ob der Kontingentstatus aktiv ist:
+. Es kann überprüft werden, ob der Quotenstatus aktiv ist:
 +
 [listing]
 ----
@@ -219,7 +219,7 @@ cluster1::> volume quota show -vserver vs0 -volume FG
   Last Quota Error Message: -
 Collection of Quota Errors: -
 ----
-. Sie können die Festplatten- und Dateinutzungsdaten des FlexGroup Volume mithilfe des Kontingentberichts anzeigen.
+. Sie können die Festplattennutzung und die Dateinutzungsinformationen des FlexGroup volume mithilfe des Quotenberichts einsehen.
 +
 [listing]
 ----
@@ -232,23 +232,23 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 FG                 user    rdavis,ABCCORP\RobertDavis  0B  1TB  0  -   rdavis,ABCCORP\RobertDavis
 ----
 +
-Das Kontingentlimit wird von allen Benutzern geteilt, die im Kontingentnutzer aufgelistet sind.
+Das Kontingentlimit wird unter allen im Kontingentziel aufgeführten Benutzern aufgeteilt.
 
 
 
-Nachdem das Limit für die Festplatte erreicht wurde, werden die im Quota-Target aufgeführten Benutzer daran gehindert, mehr Daten auf die Dateien zu schreiben.
+Sobald das Festplattenlimit erreicht ist, sind die im Kontingentziel aufgeführten Benutzer daran gehindert, weitere Daten in die Dateien zu schreiben.
 
-.Beispiel 3: Durchsetzung von Quoten bei aktivierter Benutzerzuordnung
-. Sie sollten eine Quota Policy-Regel vom Typ erstellen `user`, einen UNIX-Benutzer oder einen Windows-Benutzer als Quota-Ziel mit `user-mapping` set to angeben `on` und die Regel sowohl mit einem erreichbaren Soft Disk Limit als auch mit einem Festplattenlimit erstellen.
+.Beispiel 3: Erzwingen des Kontingents mit aktivierter Benutzerzuordnung
+. Es empfiehlt sich, eine Quotenrichtlinienregel vom Typ  `user` zu erstellen, einen UNIX-Benutzer oder einen Windows-Benutzer als Quotenziel mit  `user-mapping` auf  `on` festzulegen und die Regel sowohl mit einem erreichbaren Soft-Disk-Limit als auch mit Festplattenlimit zu erstellen.
 +
-Die Zuordnung zwischen UNIX- und Windows-Benutzern muss zuvor mit dem `vserver name-mapping create` Befehl konfiguriert werden.
+Die Zuordnung zwischen UNIX- und Windows-Benutzern muss zuvor mit dem  `vserver name-mapping create` Befehl konfiguriert werden.
 
 +
 [listing]
 ----
 cluster1::> quota policy rule create -vserver vs0 -policy-name default -volume FG -type user -target rdavis -qtree "" -disk-limit 1TB -soft-disk-limit  800GB -user-mapping on
 ----
-. Sie können die Kontingentrichtlinie anzeigen:
+. Die Quotenrichtlinienregel kann angezeigt werden:
 +
 [listing]
 ----
@@ -262,14 +262,14 @@ Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
 -----  --------  ------- -------  --------  -------  ------  -------  ---------
 user   rdavis    ""      on           1TB    800GB       -        -          -
 ----
-. Um die neue Kontingentregel zu aktivieren, initialisieren Sie Quoten auf dem Volumen:
+. Zur Aktivierung der neuen Quotenregel werden Quoten auf dem Volume initialisiert:
 +
 [listing]
 ----
 cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
 [Job 49] Job succeeded: Successful
 ----
-. Sie können überprüfen, ob der Kontingentstatus aktiv ist:
+. Es kann überprüft werden, ob der Quotenstatus aktiv ist:
 +
 [listing]
 ----
@@ -284,7 +284,7 @@ cluster1::> volume quota show -vserver vs0 -volume FG
   Last Quota Error Message: -
 Collection of Quota Errors: -
 ----
-. Sie können die Festplatten- und Dateinutzungsdaten des FlexGroup Volume mithilfe des Kontingentberichts anzeigen.
+. Sie können die Festplattennutzung und die Dateinutzungsinformationen des FlexGroup volume mithilfe des Quotenberichts einsehen.
 +
 [listing]
 ----
@@ -297,20 +297,20 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 FG                 user    rdavis,ABCCORP\RobertDavis  0B  1TB  0  -   rdavis
 ----
 +
-Das Kontingentlimit wird gemeinsam genutzt zwischen dem Benutzer, der im Kontingentnutzer aufgeführt ist, und dem entsprechenden Windows- oder UNIX-Benutzer.
+Das Kontingentlimit wird zwischen dem im Kontingentziel aufgeführten Benutzer und dem entsprechenden Windows oder UNIX-Benutzer gemeinsam genutzt.
 
 
 
-Nachdem die Festplattengrenze erreicht ist, wird sowohl der im Quota Target aufgeführte Benutzer als auch der entsprechende Windows- oder UNIX-Benutzer davon blockiert, mehr Daten in die Dateien zu schreiben.
+Sobald das Festplattenlimit erreicht ist, wird sowohl dem im Kontingentziel aufgeführten Benutzer als auch dem entsprechenden Windows- oder UNIX-Benutzer das Schreiben weiterer Daten in die Dateien untersagt.
 
-.Beispiel 4: Überprüfung der qtree-Größe bei aktiviertem Kontingent
-. Sie sollten eine Quota-Policy-Regel vom Typ erstellen `tree`, und die Regel hat sowohl eine erreichbare Soft-Disk-Grenze als auch eine Festplattengrenze.
+.Beispiel 4: Überprüfen der Qtree-Größe bei aktiviertem Kontingent
+. Es empfiehlt sich, eine Quotenrichtlinienregel vom Typ  `tree` zu erstellen, bei der die Regel sowohl ein erreichbares Soft-Disk-Limit als auch ein Festplattenlimit hat.
 +
 [listing]
 ----
 cluster1::> quota policy rule create -vserver vs0 -policy-name default -volume FG -type tree -target tree_4118314302 -qtree "" -disk-limit 48GB -soft-disk-limit 30GB
 ----
-. Sie können die Kontingentrichtlinie anzeigen:
+. Die Quotenrichtlinienregel kann angezeigt werden:
 +
 [listing]
 ----
@@ -324,7 +324,7 @@ Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
 -----  --------  ------- -------  --------  -------  ------  -------  ---------
 tree   tree_4118314302  "" -          48GB        -      20        -
 ----
-. Um die neue Kontingentregel zu aktivieren, initialisieren Sie Quoten auf dem Volumen:
+. Zur Aktivierung der neuen Quotenregel werden Quoten auf dem Volume initialisiert:
 +
 [listing]
 ----
@@ -332,7 +332,7 @@ cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
 [Job 49] Job succeeded: Successful
 ----
 +
-.. Sie können die Festplatten- und Dateinutzungsdaten des FlexGroup Volume mithilfe des Kontingentberichts anzeigen.
+.. Sie können die Festplattennutzung und die Dateinutzungsinformationen des FlexGroup volume mithilfe des Quotenberichts einsehen.
 +
 ....
 cluster1::> quota report -vserver vs0
@@ -343,11 +343,11 @@ Volume Tree Type ID Used Limit Used Limit Specifier
 FG tree_4118314302 tree 1 30.35GB 48GB 14 20 tree_4118314302
 ....
 +
-Das Kontingentlimit wird gemeinsam genutzt zwischen dem Benutzer, der im Kontingentnutzer aufgeführt ist, und dem entsprechenden Windows- oder UNIX-Benutzer.
+Das Kontingentlimit wird zwischen dem im Kontingentziel aufgeführten Benutzer und dem entsprechenden Windows oder UNIX-Benutzer gemeinsam genutzt.
 
 
 
-. Verwenden Sie in einem NFS-Client den `df` Befehl, um die Gesamtauslastung, den verfügbaren Speicherplatz und den belegten Speicherplatz anzuzeigen.
+. Von einem NFS-Client aus kann mit dem  `df` Befehl die gesamte Speicherplatznutzung, der verfügbare Speicherplatz und der belegte Speicherplatz angezeigt werden.
 +
 [listing]
 ----
@@ -356,23 +356,23 @@ Filesystem 1M-blocks Used Available Use% Mounted on
 10.53.2.189/FG-3 49152 31078 18074 63% /t/10.53.2.189/FG-3
 ----
 +
-Bei der harten Begrenzung wird die Speicherplatznutzung aus einem NFS-Client wie folgt berechnet:
+Mit endgültigem Limit wird die Speicherplatznutzung von einem NFS-Client wie folgt berechnet:
 
 +
-** Gesamtspeichernutzung = hartes Limit für Baum
-** Freier Speicherplatz = harte Grenze minus qtree Platzverbrauch ohne harte Grenze, die Speicherplatznutzung wird von einem NFS-Client wie folgt berechnet:
+** Gesamter Platzbedarf = endgültiges Limit für Baum
+** Freier Speicherplatz = endgültiges Limit minus Qtree-Speicherbelegung. Ohne endgültiges Limit wird die Speicherbelegung von einem NFS-Client wie folgt berechnet:
 ** Speicherplatznutzung = Kontingentnutzung
-** Gesamter Speicherplatz = Summe der Kontingentnutzung und des physischen freien Speicherplatzes im Volume
+** Gesamtspeicherplatz = Summe aus Kontingentnutzung und physischem freien Speicherplatz im Volume
 
 
-. Verwenden Sie in der SMB-Freigabe Windows Explorer, um die Gesamtspeichernutzung, den verfügbaren Speicherplatz und den belegten Speicherplatz anzuzeigen.
+. Im SMB-Share kann im Windows Explorer der gesamte Speicherplatzverbrauch, der verfügbare Speicherplatz und der belegte Speicherplatz angezeigt werden.
 +
-Bei einer SMB-Freigabe sollten Sie die folgenden Überlegungen bei der Berechnung der Speicherplatznutzung beachten:
+Bei der Berechnung des Speicherplatzbedarfs einer SMB-Freigabe sind folgende Punkte zu berücksichtigen:
 
 +
-** Die harte Grenze für Benutzer und Gruppe wird bei der Berechnung des verfügbaren Gesamtspeicherplatz berücksichtigt.
-** Der Mindestwert zwischen dem freien Speicherplatz der Baumquote-Regel, der Regel für Benutzerkontingente und der Regel für Gruppenkontingente wird als freier Speicherplatz für die SMB-Freigabe betrachtet.
-** Die Gesamtspeichernutzung ist für SMB variabel und hängt vom harten Limit ab, das dem minimalen freien Speicherplatz zwischen Baum, Benutzer und Gruppe entspricht.
+** Das Benutzerkontingent endgültiges Limit für den Benutzer und die Gruppe wird bei der Berechnung des insgesamt verfügbaren Speicherplatzes berücksichtigt.
+** Der niedrigste Wert aus dem freien Speicherplatz der Baumkontingentregel, der Benutzerkontingentregel und der Gruppenkontingentregel wird als freier Speicherplatz für die SMB-Freigabe betrachtet.
+** Der gesamte Speicherplatzbedarf ist für SMB variabel und hängt vom endgültigen Limit ab, das dem minimalen freien Speicherplatz innerhalb des Baums, des Benutzers und der Gruppe entspricht.
 
 
 
@@ -380,44 +380,44 @@ Bei einer SMB-Freigabe sollten Sie die folgenden Überlegungen bei der Berechnun
 
 
 [[apply-rules-and-limits-on-the-flexgroup-volume]]
-== Wenden Sie Regeln und Einschränkungen für das FlexGroup Volume an
+== Regeln und Beschränkungen auf dem FlexGroup Volume anwenden
 
 .Schritte
 . Quotenregeln für Ziele erstellen: `volume quota policy rule create -vserver vs0 -policy-name quota_policy_of_the_rule -volume flexgroup_vol -type {tree|user|group} -target target_for_rule -qtree qtree_name [-disk-limit hard_disk_limit_size] [-file-limit hard_limit_number_of_files] [-threshold threshold_disk_limit_size] [-soft-disk-limit soft_disk_limit_size] [-soft-file-limit soft_limit_number_of_files]`
 +
-** Der Zieltyp für das Kontingent kann , `group` oder `tree` für FlexGroup-Volumes sein `user`.
-** Ein Pfad wird beim Erstellen von Quotenregeln für FlexGroup-Volumes nicht als Ziel unterstützt.
-** Ab ONTAP 9.5 können Sie Festplatten-Limits, hard-File-Limits, Soft Disk-Limits, Soft-File-Limits und Schwellwerte für FlexGroup-Volumes festlegen.
+** Der Quotenzieltyp kann  `user`,  `group` oder  `tree` für FlexGroup Volumes sein.
+** Bei der Erstellung von Kontingentregeln für FlexGroup Volumes wird die Angabe eines Pfades als Ziel nicht unterstützt.
+** Ab ONTAP 9.5 ist es möglich, Festplattenlimit, hartes Dateilimit, weiches Festplattenlimit, weiches Dateilimit und Schwellenwertlimit-Kontingente für FlexGroup Volumes anzugeben.
 +
-In ONTAP 9.4 und älteren Versionen können Sie durch die Erstellung von Kontingentregeln für FlexGroup Volumes nicht die Plattengrenze, Dateigrenzen, Schwellwerte für Plattengrenzen, weiche Plattengrenzen oder weiche Dateigrenzen angeben.
+In ONTAP 9.4 und früher können beim Erstellen von Quota-Regeln für FlexGroup Volumes das Festplattenlimit, das Dateilimit, der Schwellenwert für das Festplattenlimit, das weiche Festplattenlimit oder das weiche Dateilimit nicht angegeben werden.
 
 
 
 
 
-Das folgende Beispiel zeigt eine standardmäßige Kontingentregel, die für den Zieltyp des Benutzers erstellt wird:
+Das folgende Beispiel zeigt eine Standardquotenregel, die für den Benutzerzieltyp erstellt wird:
 
 [listing]
 ----
 cluster1::> volume quota policy rule create -vserver vs0 -policy-name quota_policy_vs0_1 -volume fg1 -type user -target "" -qtree ""
 ----
-Im folgenden Beispiel wird eine Baum-Quote-Regel angezeigt, die für den qtree namens qtree1 erstellt wird:
+Das folgende Beispiel zeigt die Erstellung einer Baumquotenregel für den Qtree mit dem Namen qtree1:
 
 [listing]
 ----
 cluster1::> volume quota policy rule create -policy-name default -vserver vs0 -volume fg1 -type tree -target "qtree1"
 ----
-. Aktivieren Sie die Kontingente für das angegebene FlexGroup-Volume: `volume quota on -vserver svm_name -volume flexgroup_vol -foreground true`
+. Die Quoten für das angegebene FlexGroup Volume werden aktiviert: `volume quota on -vserver svm_name -volume flexgroup_vol -foreground true`
 
 
 [listing]
 ----
 cluster1::> volume quota on -vserver vs0 -volume fg1 -foreground true
 ----
-. Überwachen Sie den Status der Kontingentinitialisierung: `volume quota show -vserver svm_name`
+. Der Status der Quoteninitialisierung kann überwacht werden: `volume quota show -vserver svm_name`
 
 
-FlexGroup Volumes zeigen möglicherweise den `mixed` Status an, der angibt, dass alle zusammengehörigen Volumes noch nicht denselben Status aufweisen.
+FlexGroup Volumes könnten den  `mixed` Zustand anzeigen, was darauf hindeutet, dass sich alle zugehörigen Volumes noch nicht im gleichen Zustand befinden.
 
 [listing]
 ----
@@ -429,12 +429,12 @@ vs0        fg1           initializing         95%
 vs0        vol1          off                   -
 2 entries were displayed.
 ----
-. Zeigen Sie den Kontingentbericht für das FlexGroup-Volume mit aktiven Kontingenten an: `volume quota report -vserver svm_name -volume flexgroup_vol`
+. Der Quotenbericht für das FlexGroup Volume mit aktiven Quoten: `volume quota report -vserver svm_name -volume flexgroup_vol`
 +
-Sie können mit dem `volume quota report` Befehl für FlexGroup Volumes keinen Pfad angeben.
+Mit dem  `volume quota report` Befehl kann kein Pfad für FlexGroup Volumes angegeben werden.
 
 +
-Das folgende Beispiel zeigt das Benutzerkontingent für das FlexGroup-Volume  `fg1` :
+Das folgende Beispiel zeigt das Benutzerkontingent für das FlexGroup Volume `fg1`:
 
 +
 ....
@@ -448,7 +448,7 @@ cluster1::> volume quota report -vserver vs0 -volume fg1
   2 entries were displayed.
 ....
 +
-Das folgende Beispiel zeigt das Baumkontingent für das FlexGroup-Volume  `fg1` :
+Das folgende Beispiel zeigt das Baumkontingent für das FlexGroup Volume `fg1`:
 
 +
 [listing]
@@ -466,9 +466,9 @@ fg1              tree      *           0B      -       0       -   *
 
 
 .Ergebnisse
-Die Kontingentregeln und -Grenzwerte werden auf das FlexGroup Volume angewendet.
+Die Quotenregeln und -grenzen gelten für das FlexGroup Volume.
 
-Die Nutzung kann bis zu 5 Prozent höher als ein konfiguriertes hartes Limit erreichen, bevor ONTAP die Quote durch Zurückweisung weiterer Traffic erzwingt.
+Die Nutzung kann bis zu 5 Prozent höher als das konfigurierte endgültige Limit sein, bevor ONTAP das Kontingent durchsetzt, indem weiterer Datenverkehr abgelehnt wird.
 
 .Verwandte Informationen
 * https://docs.netapp.com/us-en/ontap-cli["ONTAP-Befehlsreferenz"^]

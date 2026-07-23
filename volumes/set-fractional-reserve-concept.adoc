@@ -2,7 +2,7 @@
 permalink: volumes/set-fractional-reserve-concept.html 
 sidebar: sidebar 
 keywords: considerations, setting, fractional, reserve, lun overwrite reserve 
-summary: Die fraktionale Reserve ermöglicht es Ihnen, die Überschreibungsreserve für platzreservierte LUNs und Dateien in einer FlexVol volume auszuschalten, um eine maximale Storage-Auslastung zu erzielen. 
+summary: Mit der fraktionellen Reserve kann die Überschreibungsreserve für speicherplatzreservierte LUNs und Dateien in einem FlexVol volume deaktiviert werden, um die Ressourcenauslastung zu maximieren. 
 ---
 = Einstellungen für die fraktionelle Reserve für ONTAP Volumes
 :allow-uri-read: 
@@ -11,50 +11,50 @@ summary: Die fraktionale Reserve ermöglicht es Ihnen, die Überschreibungsreser
 
 
 [role="lead"]
-Die fraktionale Reserve, auch _LUN Overwrite Reserve_ genannt, ermöglicht Ihnen die Abschaltung der Überschreibungsreserve für platzsparende LUNs und Dateien in einem FlexVol Volume. Dies kann Ihnen dabei helfen, Ihre Storage-Auslastung zu maximieren.
+Die fraktionale Reserve, auch _LUN-Überschreibungsreserve_ genannt, ermöglicht das Deaktivieren der Überschreibungsreserve für speicherplatzreservierte LUNs und Dateien in einem FlexVol volume. Dies kann dazu beitragen, die Ressourcenauslastung zu maximieren.
 
 
-CAUTION: Wenn Ihre Umgebung durch Schreibvorgänge beeinträchtigt wird, die aufgrund von Speicherplatzmangel fehlschlagen, müssen Sie die Anforderungen dieser Konfiguration kennen.
+CAUTION: Wenn Ihre Umgebung durch fehlgeschlagene Schreibvorgänge aufgrund von Speicherplatzmangel negativ beeinflusst wird, ist es wichtig, die Anforderungen zu kennen, die diese Konfiguration mit sich bringen kann.
 
-Die Einstellung für die fraktionale Reserve wird als Prozentsatz angegeben; die einzigen gültigen Werte sind `0` und `100` Prozent. Die Einstellung der fraktionalen Reserve ist ein Attribut des Volume. Wenn Sie die fraktionale Reserve einstellen, um `0` Ihre Storage-Auslastung zu erhöhen. Bei einer Applikation, die auf Daten im Volume zugreift, kann es jedoch zu einem Datenausfall kommen, wenn der Speicherplatz auf `volume`dem Volume nicht mehr voll ist, selbst wenn die Volume-Garantie auf festgelegt ist. Durch ordnungsgemäße Volume-Konfiguration und Nutzung können Sie jedoch die Wahrscheinlichkeit eines Schreibversagens minimieren. ONTAP bietet eine „Best Effort“-Schreibgarantie für Volumes mit fraktionaler Reserve, die auf „ alle “ `0` der folgenden Anforderungen erfüllt sind:
+Die Einstellung der Mindestreserve wird als Prozentsatz ausgedrückt; die einzigen gültigen Werte sind  `0` und  `100` Prozent. Die Einstellung der Mindestreserve ist eine Eigenschaft des Volumens. Das Setzen der fraktionalen Reserve auf  `0` erhöht Ihre Speicherauslastung. Allerdings kann eine Anwendung, die auf im Volume gespeicherte Daten zugreift, einen Datenverlust erfahren, wenn das Volume keinen freien Speicherplatz mehr hat, selbst wenn die Volume-Garantie auf  `volume` gesetzt ist. Mit einer geeigneten Volume-Konfiguration und -Nutzung lässt sich jedoch die Wahrscheinlichkeit fehlgeschlagener Schreibvorgänge minimieren. ONTAP bietet eine „Best-Effort“-Schreibgarantie für Volumes mit einer fraktionellen Reserve von  `0`, wenn alle folgenden Anforderungen erfüllt sind:
 
-* Die Deduplizierung wird nicht verwendet
-* Die Komprimierung wird nicht verwendet
-* Die Unterdateien von FlexClone werden nicht verwendet
-* Alle FlexClone Dateien und FlexClone LUNs sind zum automatischen Löschen aktiviert
+* Die Deduplizierung ist nicht in Verwendung
+* Kompression ist nicht in Verwendung
+* FlexClone Unterdateien werden nicht verwendet
+* Alle FlexClone Dateien und FlexClone LUNs sind für die automatische Löschung aktiviert.
 +
-Dies ist nicht die Standardeinstellung. Sie müssen das automatische Löschen entweder während der Erstellung oder durch Ändern der FlexClone Datei oder der FlexClone LUN nach der Erstellung aktivieren.
+Dies ist nicht die Standardeinstellung. Die automatische Löschung muss explizit aktiviert werden, entweder bei der Erstellung oder durch Ändern der FlexClone Datei oder FlexClone LUN nach deren Erstellung.
 
-* ODX und FlexClone Copy Offload werden derzeit nicht genutzt
-* Volume-Garantie wird auf festgelegt `volume`
-* Die Speicherplatzreservierung für Datei oder LUN ist `enabled`
-* Volume Snapshot Reserve ist auf eingestellt `0`
-* Volume Snapshot automatische Löschung ist `enabled` mit einem Commitment-Level von `destroy`, eine Destroy-Liste von `lun_clone,vol_clone,cifs_share,file_clone,sfsr`, und ein Trigger von `volume`
+* ODX und FlexClone Copy Offload werden nicht verwendet
+* Die Mengengarantie ist auf  `volume` eingestellt
+* Datei- oder LUN-Speicherplatzreservierung ist `enabled`
+* Die Volume Snapshot-Reserve ist auf `0` eingestellt
+* Die automatische Löschung von Volume-Snapshots ist  `enabled` mit einem Commitment-Level von  `destroy`, einer Destroy-Liste von  `lun_clone,vol_clone,cifs_share,file_clone,sfsr` und einem Trigger von  `volume`
 +
-Diese Einstellung stellt zudem sicher, dass FlexClone Dateien und FlexClone LUNs im Bedarfsfall gelöscht werden.
+Diese Einstellung stellt außerdem sicher, dass FlexClone Dateien und FlexClone LUNs bei Bedarf gelöscht werden.
 
 
 
 [NOTE]
 ====
-* Wenn alle oben genannten Anforderungen erfüllt sind, aber Ihre Änderungsrate hoch ist, kann das automatische Löschen von Snapshots in seltenen Fällen zurückfallen, wodurch der Speicherplatz des Volumes knapp wird.
-* Wenn alle oben genannten Anforderungen erfüllt sind und Snapshots nicht verwendet werden, wird der Speicherplatz für Volume-Schreibvorgänge garantiert nicht knapp.
+* Wenn alle oben genannten Voraussetzungen erfüllt sind, Ihre Änderungsrate aber hoch ist, kann es in seltenen Fällen vorkommen, dass die automatische Snapshot-Löschung nicht mehr nachkommt, sodass der Speicherplatz auf dem Volume ausgeht.
+* Wenn alle oben genannten Voraussetzungen erfüllt sind und keine Snapshots verwendet werden, ist garantiert, dass beim Schreiben auf das Volume der Speicherplatz nicht ausgeht.
 
 
 ====
-Optional können Sie auch die Volume Autogrow Funktion verwenden, um die Wahrscheinlichkeit zu verringern, dass Volume Snapshots automatisch gelöscht werden müssen. Wenn Sie die Autogrow-Funktion aktivieren, müssen Sie den freien Speicherplatz im zugehörigen Aggregat überwachen. Wenn das Aggregat voll genug wird, dass das Volumen daran gehindert wird zu wachsen, werden wahrscheinlich mehr Snapshots gelöscht werden, da der freie Platz im Volumen erschöpft ist.
+Zusätzlich kann optional die Volume-Autogrow-Funktion verwendet werden, um die Wahrscheinlichkeit zu verringern, dass Volume-Snapshots automatisch gelöscht werden müssen. Wenn die Autogrow-Funktion aktiviert ist, muss der freie Speicherplatz im zugehörigen Aggregat überwacht werden. Wenn das Aggregat so voll wird, dass das Volume nicht mehr wachsen kann, werden wahrscheinlich mehr Snapshots gelöscht, da der freie Speicherplatz im Volume erschöpft ist.
 
-Wenn Sie nicht alle oben genannten Konfigurationsanforderungen erfüllen können und Sie sicherstellen müssen, dass dem Volume nicht der Platz knapp wird, müssen Sie die fraktionale Reserve des Volume auf einstellen `100`. Dies erfordert vorab mehr freien Speicherplatz, garantiert jedoch, dass Datenänderungen auch dann erfolgreich ausgeführt werden, wenn die oben aufgeführten Technologien eingesetzt werden.
+Falls Sie nicht alle oben genannten Konfigurationsanforderungen erfüllen können und sicherstellen müssen, dass der Speicherplatz des Volumes nicht ausgeht, muss die Einstellung für die fraktionelle Reserve des Volumes auf  `100` gesetzt werden. Dies erfordert zwar zunächst mehr freien Speicherplatz, garantiert aber, dass Datenänderungsvorgänge auch dann erfolgreich sind, wenn die oben genannten Technologien verwendet werden.
 
-Der Standardwert und die zulässigen Werte für die Einstellung der fraktionalen Reserve hängen von der Garantie des Volume ab:
+Der Standardwert und die zulässigen Werte für die Einstellung der Teilreserve hängen von der Garantie des Volumes ab:
 
 [cols="3*"]
 |===
-| Volume-Garantie | Standardmäßige fraktionale Reserve | Zulässige Werte 
+| Volumengarantie | Standardmäßige Teilreserve | Zulässige Werte 
 
 
  a| 
-Datenmenge
+Volumen
  a| 
 100
  a| 

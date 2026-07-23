@@ -2,9 +2,9 @@
 permalink: concepts/mcc-config-concept.html 
 sidebar: sidebar 
 keywords: metrocluster continuous availability 
-summary: MetroCluster Konfigurationen sichern Daten, indem sie zwei physisch getrennte, gespiegelte Cluster implementieren. Jedes Cluster repliziert die Daten synchron zur SVM-Konfiguration des anderen. Bei einem Ausfall an einem Standort kann ein Administrator die gespiegelte SVM aktivieren und vom verbleibenden Standort aus Daten bereitstellen. 
+summary: MetroCluster Konfigurationen schützen Daten durch die Implementierung zweier physisch getrennter, gespiegelter Cluster. Jeder Cluster repliziert synchron die Daten und die SVM-Konfiguration des anderen. Im Katastrophenfall an einem Standort kann ein Administrator die gespiegelte SVM aktivieren und Daten vom verbleibenden Standort bereitstellen. 
 ---
-= Kontinuierliche Verfügbarkeit mit MetroCluster
+= MetroCluster kontinuierliche Verfügbarkeit
 :hardbreaks:
 :allow-uri-read: 
 :icons: font
@@ -12,28 +12,28 @@ summary: MetroCluster Konfigurationen sichern Daten, indem sie zwei physisch get
 
 
 [role="lead"]
-MetroCluster Konfigurationen sichern Daten, indem sie zwei physisch getrennte, gespiegelte Cluster implementieren. Jedes Cluster repliziert die Daten synchron zur SVM-Konfiguration des anderen. Bei einem Ausfall an einem Standort kann ein Administrator die gespiegelte SVM aktivieren und vom verbleibenden Standort aus Daten bereitstellen.
+MetroCluster Konfigurationen schützen Daten durch die Implementierung zweier physisch getrennter, gespiegelter Cluster. Jeder Cluster repliziert synchron die Daten und die SVM-Konfiguration des anderen. Im Katastrophenfall an einem Standort kann ein Administrator die gespiegelte SVM aktivieren und Daten vom verbleibenden Standort bereitstellen.
 
-* Fabric-Attached MetroCluster_- und MetroCluster IP_-Konfigurationen unterstützen Cluster auf Großraumebene.
-* _Stretch MetroCluster_ Konfigurationen unterstützen Cluster auf dem gesamten Campus.
+* _Fabric-attached MetroCluster_ und _MetroCluster IP_ Konfigurationen unterstützen stadtweite Cluster.
+* _Stretch MetroCluster_ Konfigurationen unterstützen campusweite Cluster.
 
 
-In beiden Fällen müssen Cluster Peering durchgeführt werden.
+Die Cluster müssen in jedem Fall miteinander verbunden sein.
 
-MetroCluster verwendet eine ONTAP Funktion namens _SyncMirror_, um Aggregatdaten für jeden Cluster in Kopien bzw. _plexes_, im Storage des anderen Clusters synchron zu spiegeln. Tritt eine Umschaltung auf, wird der Remote-Plex auf dem verbleibenden Cluster online geschaltet, und die sekundäre SVM stellt Daten bereit.
+MetroCluster verwendet eine ONTAP-Funktion namens _SyncMirror_, um Aggregatdaten für jeden Cluster synchron in Kopien, oder _Plexen_, im Speicher des anderen Clusters zu spiegeln. Wenn ein Switchover erfolgt, wird der Remote-Plex auf dem verbleibenden Cluster online geschaltet und die sekundäre SVM beginnt mit der Datenbereitstellung.
 
-image:metrocluster.gif["Abbildung: MetroCluster stellt Daten von Standort B bereit"]
+image:metrocluster.gif["Diagramm, das zeigt, wie MetroCluster Daten von Standort B bereitstellt."]
 
 |===
 
 
  a| 
-*_Verwendung von SyncMirror in nicht-MetroCluster Implementierungen_* optional können Sie SyncMirror in einer nicht-MetroCluster-Implementierung zum Schutz vor Datenverlust einsetzen, wenn mehr Festplatten ausfallen als der RAID-Typ schützt oder wenn die Verbindung zu den Festplatten der RAID-Gruppe unterbrochen wird. Die Funktion ist nur für HA-Paare verfügbar.
+*_Verwendung von SyncMirror in Nicht-MetroCluster-Implementierungen_* SyncMirror kann optional in einer Nicht-MetroCluster-Implementierung eingesetzt werden, um vor Datenverlust zu schützen, falls mehr Festplatten ausfallen, als der RAID-Typ abdeckt, oder wenn die Verbindung zu den Festplatten der RAID-Gruppe verloren geht. Die Funktion ist nur für HA-Paare verfügbar.
 
-Zusammengefasste Daten werden in Plexen gespiegelt, die auf unterschiedlichen Festplatten-Shelfs gespeichert sind. Wenn eines der Shelfs nicht mehr verfügbar ist, wird der nicht betroffene Plex weiterhin Daten bereitstellen, während Sie die Ursache des Fehlers korrigieren.
+Die aggregierten Daten werden in Plexen gespiegelt, die auf verschiedenen Festplattengehäusen gespeichert sind. Wenn eines der Gehäuse nicht verfügbar ist, stellt der nicht betroffene Plex weiterhin Daten bereit, während die Ursache des Ausfalls behoben wird.
 
-Beachten Sie, dass ein mit SyncMirror gespiegeltes Aggregat doppelt so viel Storage erfordert wie ein nicht gespiegeltes Aggregat. Jeder Plex benötigt so viele Festplatten wie der Plex er spiegelt. Sie würden 2,880 GB Festplattenspeicher benötigen, zum Beispiel, um ein 1,440 GB Aggregat zu spiegeln, 1,440 GB für jeden Plex.
+Es ist zu beachten, dass ein mit SyncMirror gespiegeltes Aggregat doppelt so viel Speicherplatz benötigt wie ein nicht gespiegeltes Aggregat. Jeder Plex benötigt genauso viele Festplatten wie der Plex, den er spiegelt. Zum Spiegeln eines 1.440 GB Aggregats wären beispielsweise 2.880 GB Speicherplatz erforderlich, also 1.440 GB für jeden Plex.
 
-Mit SyncMirror wird empfohlen, mindestens 20 % freien Speicherplatz für gespiegelte Aggregate freizuhalten, um so eine optimale Storage Performance und Verfügbarkeit zu erzielen. Obwohl die Empfehlung 10 % für nicht gespiegelte Aggregate ist, können die zusätzlichen 10 % des Speicherplatzes vom Dateisystem verwendet werden, um inkrementelle Änderungen aufzunehmen. Inkrementelle Änderungen erhöhen die Speicherplatzauslastung für gespiegelte Aggregate aufgrund der Snapshot-basierten Copy-on-Write-Architektur von ONTAP. Die Nichteinhaltung dieser Best Practices kann sich negativ auf die Performance der SyncMirror-Resynchronisierung auswirken, die sich indirekt auf betriebliche Workflows wie NDU bei nicht-Shared Cloud-Implementierungen und auf den Wechsel zu MetroCluster-Implementierungen auswirkt.
+Mit SyncMirror wird empfohlen, mindestens 20 % freien Speicherplatz für gespiegelte Aggregate vorzuhalten, um eine optimale Speicherleistung und Verfügbarkeit zu gewährleisten. Obwohl für nicht gespiegelte Aggregate 10 % empfohlen werden, kann das Dateisystem die zusätzlichen 10 % des Speicherplatzes nutzen, um inkrementelle Änderungen aufzufangen. Inkrementelle Änderungen erhöhen die Speicherauslastung gespiegelter Aggregate aufgrund der Copy-on-Write-Snapshot-basierten Architektur von ONTAP. Die Nichteinhaltung dieser Best Practices kann die Resynchronisierungsleistung von SyncMirror negativ beeinflussen, was sich indirekt auf operative Workflows wie NDU für nicht gemeinsam genutzte Cloud-Bereitstellungen und Switchback für MetroCluster Bereitstellungen auswirkt.
 
 |===

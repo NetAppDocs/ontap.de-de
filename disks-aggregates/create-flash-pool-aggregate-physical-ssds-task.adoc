@@ -2,76 +2,76 @@
 permalink: disks-aggregates/create-flash-pool-aggregate-physical-ssds-task.html 
 sidebar: sidebar 
 keywords: create, flash, pool, aggregate, local tier, physical, ssds 
-summary: Sie erstellen eine lokale Flash-Pool-Ebene, indem Sie die Funktion auf einer bestehenden lokalen Ebene aktivieren, die aus HDD-RAID-Gruppen besteht, und anschließend eine oder mehrere SSD-RAID-Gruppen zu dieser lokalen Ebene hinzufügen. Dadurch entstehen zwei Sätze von RAID-Gruppen für diese lokale Ebene, nämlich die SSD-RAID-Gruppen bzw. der SSD-Cache und die HDD-RAID-Gruppen. 
+summary: Eine lokale Flash Pool-Ebene wird erstellt, indem die Funktion auf einer bestehenden lokalen Ebene aktiviert wird, die aus HDD RAID-Gruppen besteht, und anschließend eine oder mehrere SSD RAID-Gruppen zu dieser lokalen Ebene hinzugefügt werden. Dadurch entstehen zwei Sätze von RAID-Gruppen für diese lokale Ebene, nämlich die SSD-RAID-Gruppen bzw. der SSD-Cache und die HDD-RAID-Gruppen. 
 ---
-= Erstellen Sie eine lokale ONTAP Flash Pool Tier mit physischen SSDs
+= Eine ONTAP Flash Pool lokale Ebene mit physischen SSDs erstellen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie erstellen eine lokale Flash Pool-Tier, indem Sie die Funktion auf einer vorhandenen lokalen Tier aus HDD-RAID-Gruppen aktivieren und dann dieser lokalen Tier eine oder mehrere SSD-RAID-Gruppen hinzufügen. Das führt zu zwei Gruppen von RAID-Gruppen für diese lokale Tier: SSD RAID-Gruppen (der SSD-Cache) und HDD RAID-Gruppen.
+Eine lokale Flash Pool-Ebene wird erstellt, indem die Funktion auf einer bestehenden lokalen Ebene aktiviert wird, die aus HDD RAID-Gruppen besteht, und anschließend eine oder mehrere SSD RAID-Gruppen zu dieser lokalen Ebene hinzugefügt werden. Dadurch entstehen zwei Sätze von RAID-Gruppen für diese lokale Ebene: SSD RAID-Gruppen (der SSD-Cache) und HDD RAID-Gruppen.
 
 
-NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff „_Aggregate_“, um eine „_Local Tier_“ zu beschreiben. Unabhängig von Ihrer ONTAP-Version verwendet die ONTAP CLI den Begriff _Aggregate_. Weitere Informationen zu lokalen Ebenen finden Sie unter link:../disks-aggregates/index.html["Festplatten und lokale Tiers"].
+NOTE: Vor ONTAP 9.7 verwendet System Manager den Begriff _aggregate_, um eine _lokale Ebene_ zu beschreiben. Unabhängig von der ONTAP Version verwendet die ONTAP CLI den Begriff _aggregate_. Weitere Informationen zu lokalen Ebenen finden sich unter link:../disks-aggregates/index.html["Festplatten und lokale Ebenen"].
 
 .Über diese Aufgabe
-Nachdem Sie einer lokalen Tier einen SSD-Cache hinzugefügt haben, um eine lokale Flash Pool-Ebene zu erstellen, können Sie den SSD-Cache nicht entfernen, um die lokale Tier zurück in ihre ursprüngliche Konfiguration zu konvertieren.
+Nachdem Sie einem lokalen Tier einen SSD-Cache hinzugefügt haben, um ein Flash Pool lokales Tier zu erstellen, kann der SSD-Cache nicht mehr entfernt werden, um das lokale Tier wieder in seine ursprüngliche Konfiguration zurückzuversetzen.
 
-Standardmäßig ist das RAID-Level des SSD-Caches mit dem RAID-Level der HDD-RAID-Gruppen identisch. Sie können diese Standardauswahl überschreiben, indem Sie die Option angeben `raidtype`, wenn Sie die ersten SSD-RAID-Gruppen hinzufügen.
+Standardmäßig entspricht der RAID-Level des SSD-Cache dem RAID-Level der HDD-RAID-Gruppen. Diese Standardeinstellung kann durch Angabe der  `raidtype` Option beim Hinzufügen der ersten SSD-RAID-Gruppen überschrieben werden.
 
 .Bevor Sie beginnen
-* Sie müssen eine gültige lokale Tier mit HDDs identifiziert haben, um in eine lokale Flash Pool-Ebene umgewandelt werden zu können.
-* Sie müssen die Berechtigung zum Schreib-Caching für die Volumes festgelegt haben, die der lokalen Tier zugeordnet sind, und alle erforderlichen Schritte ausführen, um die Teilnahmevoraussetzungen zu lösen.
-* Sie müssen festgelegt haben, welche SSDs Sie hinzufügen möchten. Diese SSDs müssen Eigentum des Node sein, auf dem Sie die lokale Flash Pool-Tier erstellen.
-* Sie müssen die Prüfsummentypen der beiden zufügeden SSDs und der HDDs bereits in der lokalen Tier festgelegt haben.
-* Sie müssen die Anzahl der hinzufügeenden SSDs und die optimale RAID-Gruppengröße für die SSD RAID-Gruppen bestimmt haben.
+* Es muss eine gültige lokale Ebene identifiziert sein, die aus HDDs besteht, um sie in eine Flash Pool lokale Ebene umzuwandeln.
+* Die Schreibcache-Berechtigung der mit der lokalen Ebene verbundenen Volumes muss ermittelt und alle erforderlichen Schritte zur Behebung von Berechtigungsproblemen abgeschlossen sein.
+* Sie müssen die SSDs, die Sie hinzufügen werden, bestimmt haben, und diese SSDs müssen dem Knoten gehören, auf dem Sie die Flash Pool lokale Ebene erstellen.
+* Sie müssen die Prüfsummentypen sowohl der hinzuzufügenden SSDs als auch der bereits im lokalen Tier befindlichen HDDs ermittelt haben.
+* Sie müssen die Anzahl der hinzuzufügenden SSDs und die optimale RAID-Gruppengröße für die SSD RAID-Gruppen ermittelt haben.
 +
-Durch die geringere Anzahl von RAID-Gruppen im SSD Cache wird die Anzahl der erforderlichen Parity Disks verringert, aber größere RAID-Gruppen erfordern RAID-DP.
+Die Verwendung von weniger RAID-Gruppen im SSD-Cache verringert die Anzahl der benötigten Paritätsfestplatten, aber größere RAID-Gruppen erfordern RAID-DP.
 
-* Sie müssen das RAID-Level bestimmt haben, das Sie für den SSD-Cache verwenden möchten.
-* Sie müssen die maximale Cache-Größe für Ihr System festgelegt haben und festgestellt haben, dass das Hinzufügen von SSD-Cache zu Ihrer lokalen Ebene nicht dazu führt, dass Sie sie überschreiten.
-* Sie müssen sich mit den Konfigurationsanforderungen für lokale Flash Pool Tiers vertraut machen.
+* Der gewünschte RAID-Level für den SSD-Cache muss festgelegt sein.
+* Sie müssen die maximale Cache-Größe für Ihr System ermittelt und festgestellt haben, dass das Hinzufügen eines SSD-Cache zu Ihrer lokalen Speicherebene nicht dazu führt, dass diese überschritten wird.
+* Sie müssen sich mit den Konfigurationsanforderungen für lokale Flash Pool Ebenen vertraut gemacht haben.
 
 
 .Schritte
-Sie können eine lokale Flash Pool Tier mit System Manager oder der ONTAP CLI erstellen.
+Sie können eine Flash Pool lokale Ebene mithilfe von System Manager oder der ONTAP CLI erstellen.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-Ab ONTAP 9.12.1 können Sie mit System Manager eine lokale Flash Pool Tier unter Verwendung von physischen SSDs erstellen.
+Ab ONTAP 9.12.1 kann mit System Manager eine Flash Pool lokale Tier mit physischen SSDs erstellt werden.
 
 .Schritte
-. Wählen Sie *Storage > Tiers* und wählen Sie dann eine vorhandene lokale HDD-Speicherebene aus.
-. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] dann *Flash Pool Cache hinzufügen*.
-. Wählen Sie **Dedicated SSDs als Cache verwenden**.
-. Wählen Sie einen Festplattentyp und die Anzahl der Festplatten aus.
-. Wählen Sie einen RAID-Typ aus.
-. Wählen Sie *Speichern*.
-. Suchen Sie die Speicherebene und wählen Sieimage:icon_kabob.gif["Symbol für Menüoptionen"]
-. Wählen Sie *Weitere Details*. Stellen Sie sicher, dass Flash Pool als *aktiviert* angezeigt wird.
+. *Speicher > Ebenen* auswählen und dann eine vorhandene lokale HDD-Speicherebene auswählen.
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] dann *Add Flash Pool Cache*.
+. **Dedizierte SSDs als Cache verwenden** auswählen.
+. Wählen Sie einen Datenträgertyp und die Anzahl der Datenträger.
+. Einen RAID-Typ auswählen.
+. *Speichern* auswählen.
+. Suchen Sie die Speicherebene und wählen Sie dann image:icon_kabob.gif["Symbol für Menüoptionen"] aus
+. *Weitere Details* auswählen. Es wird überprüft, ob Flash Pool als *Aktiviert* angezeigt wird.
 
 
 --
 .CLI
 --
 .Schritte
-. Markieren Sie den lokalen Tier als berechtigt, ein lokales Flash Pool-Tier zu werden:
+. Die lokale Tier wird als berechtigt markiert, eine Flash Pool lokale Tier zu werden:
 +
 `storage aggregate modify -aggregate _aggr_name_ -hybrid-enabled true`
 
 +
-Wenn dieser Schritt nicht erfolgreich ist, bestimmen Sie die Schreibberechtigung für den lokalen Zieltier.
+Falls dieser Schritt nicht erfolgreich ist, die Schreibcache-Berechtigung für die Zielebene bestimmen.
 
-. Fügen Sie die SSDs mithilfe des Befehls zum lokalen Tier hinzu `storage aggregate add`.
+. Die SSDs werden mithilfe des  `storage aggregate add` Befehls zur lokalen Ebene hinzugefügt.
 +
-** Sie können die SSDs anhand der ID oder mithilfe der `diskcount` `disktype` Parameter und angeben.
-** Wenn die HDDs und die SSDs nicht den gleichen Prüfsummentyp aufweisen oder wenn der lokale Tier eine lokale Tier mit gemischten Prüfsummen ist, müssen Sie den Parameter verwenden, `checksumstyle` um den Prüfsummentyp der Festplatten anzugeben, die Sie der lokalen Tier hinzufügen.
-** Sie können mit dem `raidtype` Parameter einen anderen RAID-Typ für den SSD-Cache angeben.
-** Wenn die Größe der Cache-RAID-Gruppe von der Standardgröße für den verwendeten RAID-Typ abweichen soll, sollten Sie sie jetzt mithilfe des `-cache-raid-group-size` Parameters ändern.
+** Sie können die SSDs anhand ihrer ID oder mithilfe der  `diskcount` und  `disktype` Parameter angeben.
+** Wenn die HDDs und die SSDs nicht den gleichen Prüfsummentyp haben oder wenn die lokale Ebene eine lokale Ebene mit gemischtem Prüfsummentyp ist, muss der  `checksumstyle` Parameter verwendet werden, um den Prüfsummentyp der Datenträger anzugeben, die der lokalen Ebene hinzugefügt werden.
+** Sie können einen anderen RAID-Typ für den SSD-Cache mithilfe des  `raidtype` Parameters angeben.
+** Wenn die Größe der Cache-RAID-Gruppe von der Standardgröße für den verwendeten RAID-Typ abweichen soll, sollte sie jetzt mit dem  `-cache-raid-group-size` Parameter geändert werden.
 
 
 
@@ -79,6 +79,6 @@ Wenn dieser Schritt nicht erfolgreich ist, bestimmen Sie die Schreibberechtigung
 --
 ====
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+add["Speicheraggregat hinzufügen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-modify.html["Speicheraggregat ändern"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+aggregate+add["Speicheraggregate hinzufügen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-modify.html["storage aggregate ändern"^]
 

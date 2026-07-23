@@ -2,90 +2,90 @@
 permalink: s3-config/create-data-lifs-task.html 
 sidebar: sidebar 
 keywords: tr-4814, create, data, lifs 
-summary: Wenn Sie eine neue SVM erstellt haben, sollten die dedizierten LIFs, die Sie für S3-Zugriff erstellen, Daten-LIFs sein. 
+summary: Wenn Sie eine neue SVM erstellt haben, sollten die dedizierten LIFs, die Sie für den S3-Zugriff erstellen, Daten-LIFs sein. 
 ---
-= Erstellen Sie Daten-LIFs für ONTAP S3
+= Daten-LIFs für ONTAP S3 erstellen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Wenn Sie eine neue SVM erstellt haben, sollten die dedizierten LIFs, die Sie für S3-Zugriff erstellen, Daten-LIFs sein.
+Wenn Sie eine neue SVM erstellt haben, sollten die dedizierten LIFs, die Sie für den S3-Zugriff erstellen, Daten-LIFs sein.
 
 .Bevor Sie beginnen
-* Der zugrunde liegende physische oder logische Netzwerkport muss im Administratorstatus konfiguriert worden `up` sein. Erfahren Sie mehr über `up` in der link:https://docs.netapp.com/us-en/ontap-cli/up.html["ONTAP-Befehlsreferenz"^].
-* Wenn Sie planen, einen Subnetznamen zu verwenden, um die IP-Adresse und den Netzwerkmaskenwert für eine LIF zuzuweisen, muss das Subnetz bereits vorhanden sein.
+* Der zugrunde liegende physische oder logische Netzwerkport muss auf den administrativen `up` Status konfiguriert sein. Weitere Informationen zu  `up` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/up.html["ONTAP-Befehlsreferenz"^].
+* Wenn geplant ist, einen Subnetznamen zu verwenden, um die IP-Adresse und den Netzwerkmaskenwert für ein LIF zuzuweisen, muss das Subnetz bereits existieren.
 +
-Subnetze enthalten einen Pool mit IP-Adressen, die zum selben Layer-3-Subnetz gehören. Sie werden mit dem `network subnet create` Befehl erstellt.
+Subnetze enthalten einen Pool von IP-Adressen, die zum selben Layer-3-Subnetz gehören. Sie werden mit dem  `network subnet create` Befehl erstellt.
 
 +
-Erfahren Sie mehr über `network subnet create` in der link:https://docs.netapp.com/us-en/ontap-cli/network-subnet-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network subnet create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-subnet-create.html["ONTAP-Befehlsreferenz"^].
 
-* Die Richtlinie für den LIF-Dienst muss bereits vorhanden sein.
-* Als Best Practice sollten LIFs, die für den Datenzugriff verwendet werden (Daten-s3-Server), und für Managementaufgaben verwendete LIFs (Management-https) getrennt sein. Beide Services sollten nicht auf derselben logischen Schnittstelle aktiviert werden.
-* DNS-Einträge sollten nur IP-Adressen der LIFs haben, denen der Daten-s3-Server zugeordnet ist. Wenn IP-Adressen anderer LIFs im DNS-Datensatz angegeben werden, können ONTAP S3-Anfragen von anderen Servern bedient werden, was zu unerwarteten Antworten oder Datenverlusten führt.
+* Die LIF-Servicerichtlinie muss bereits existieren.
+* Als Best Practice sollten LIFs, die für den Datenzugriff (data-s3-server) verwendet werden, und LIFs, die für Verwaltungsoperationen (management-https) verwendet werden, getrennt sein. Beide Dienste sollten nicht auf demselben LIF aktiviert sein.
+* DNS-Einträge sollten nur die IP-Adressen der LIFs enthalten, denen ein data-s3-server zugeordnet ist. Wenn im DNS-Eintrag IP-Adressen anderer LIFs angegeben sind, können ONTAP S3-Anfragen von anderen Servern bearbeitet werden, was zu unerwarteten Antworten oder Datenverlust führen kann.
 
 
 .Über diese Aufgabe
-* Sie können am gleichen Netzwerkport IPv4- und IPv6-LIFs erstellen.
-* Wenn Sie im Cluster eine große Anzahl von LIFs enthalten sind, können Sie die auf dem Cluster unterstützte LIF- `network interface capacity show`Kapazität überprüfen. Verwenden Sie dazu den Befehl und die auf jedem Node unterstützte LIF-Kapazität. Hierzu können Sie mit dem `network interface capacity details show` Befehl (auf der erweiterten Berechtigungsebene) nachprüfen.
+* Sowohl IPv4- als auch IPv6-LIFs können auf demselben Netzwerkport erstellt werden.
+* Wenn Sie eine große Anzahl von LIFs in Ihrem Cluster haben, kann die vom Cluster unterstützte LIF-Kapazität mit dem  `network interface capacity show` Befehl und die von jedem Knoten unterstützte LIF-Kapazität mit dem  `network interface capacity details show` Befehl (auf der erweiterten Berechtigungsstufe) überprüft werden.
 +
-Erfahren Sie mehr über `network interface capacity show` und `network interface capacity details show` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+interface+capacity+show["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network interface capacity show` und  `network interface capacity details show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+interface+capacity+show["ONTAP-Befehlsreferenz"^].
 
-* Wenn Sie das Cloud-Tiering (Remote FabricPool Capacity) aktivieren, müssen Sie auch LIFs für Intercluster konfigurieren.
+* Wenn Sie Remote-FabricPool-Kapazitäts-(Cloud)-Tiering aktivieren, müssen Sie auch Intercluster-LIFs konfigurieren.
 
 
 .Schritte
-. LIF erstellen:
+. Eine LIF erstellen:
 +
 `network interface create -vserver _svm_name_ -lif _lif_name_ -service-policy _service_policy_names_ -home-node _node_name_ -home-port _port_name_ {-address _IP_address_ -netmask _IP_address_ | -subnet-name _subnet_name_} -firewall-policy data -auto-revert {true|false}`
 
 +
-** `-home-node` Ist der Node, zu dem das LIF zurückgibt, wenn der `network interface revert` Befehl auf der LIF ausgeführt wird.
+** `-home-node` ist der Knoten, zu dem die LIF zurückkehrt, wenn der  `network interface revert` Befehl auf der LIF ausgeführt wird.
 +
-Erfahren Sie mehr über `network interface revert` in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-revert.html["ONTAP-Befehlsreferenz"^].
-
-+
-Sie können außerdem angeben, ob die LIF mithilfe der `-auto-revert` Option automatisch zum Home Node und Home Port zurückgesetzt werden soll.
-
-** `-home-port` Ist der physische oder logische Port, zu dem die LIF zurückgibt, wenn der `network interface revert` Befehl auf der LIF ausgeführt wird.
-** Sie können eine IP-Adresse mit den `-address` `-netmask` Optionen und angeben oder die Zuweisung aus einem Subnetz mit der `-subnet_name` Option aktivieren.
-** Wenn Sie zur Versorgung der IP-Adresse und Netzwerkmaske ein Subnetz verwenden, wird bei einem Gateway automatisch eine Standardroute zu diesem Gateway zur SVM hinzugefügt, wenn mithilfe dieses Subnetzes eine LIF erstellt wird.
-** Wenn Sie IP-Adressen manuell zuweisen (ohne ein Subnetz zu verwenden), müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, wenn Clients oder Domänen-Controller in einem anderen IP-Subnetz vorhanden sind. Weitere Informationen zum `network route create` Erstellen einer statischen Route innerhalb einer SVM finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/network-route-create.html["ONTAP-Befehlsreferenz"^].
-**  `-firewall-policy`Verwenden Sie für die Option denselben Standard `data` wie die LIF-Rolle.
-+
-Sie können bei Bedarf später eine benutzerdefinierte Firewallrichtlinie erstellen und hinzufügen.
+Weitere Informationen zu  `network interface revert` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-interface-revert.html["ONTAP-Befehlsreferenz"^].
 
 +
+Sie können auch angeben, ob die LIF mit der  `-auto-revert` Option automatisch auf den Home-Node und Home-Port zurückkehren soll.
 
-NOTE: Ab ONTAP 9.10.1 sind Firewall-Richtlinien veraltet und werden vollständig durch LIF-Servicerichtlinien ersetzt. Weitere Informationen finden Sie unter link:../networking/configure_firewall_policies_for_lifs.html["Konfigurieren Sie Firewallrichtlinien für LIFs"].
-
-** `-auto-revert` Ermöglicht Ihnen die Angabe, ob eine Daten-LIF automatisch auf ihren Home Node zurückgesetzt wird, wenn beispielsweise ein Start erfolgt, Änderungen am Status der Managementdatenbank oder die Netzwerkverbindung hergestellt wird. Die Standardeinstellung ist `false`, Sie können sie jedoch `false` abhängig von den Netzwerkverwaltungsrichtlinien in Ihrer Umgebung auf festlegen.
-** Die `-service-policy` Option gibt die Richtlinie für Daten- und Managementservices an, die Sie erstellt haben, sowie weitere Richtlinien, die Sie benötigen.
-
-
-. Wenn Sie in der `-address` Option eine IPv6-Adresse zuweisen möchten:
+** `-home-port` ist der physische oder logische Port, zu dem die LIF zurückkehrt, wenn der  `network interface revert` Befehl auf der LIF ausgeführt wird.
+** Sie können eine IP-Adresse mit den  `-address` und  `-netmask` Optionen angeben oder die Zuweisung aus einem Subnetz mit der  `-subnet_name` Option ermöglichen.
+** Wird ein Subnetz zur Bereitstellung der IP-Adresse und der Netzwerkmaske verwendet, wird, falls das Subnetz mit einem Gateway definiert wurde, beim Erstellen eines LIF mit diesem Subnetz automatisch eine Standardroute zu diesem Gateway zur SVM hinzugefügt.
+** Wenn Sie IP-Adressen manuell zuweisen (ohne Verwendung eines Subnetzes), müssen Sie möglicherweise eine Standardroute zu einem Gateway konfigurieren, falls sich Clients oder Domänencontroller in einem anderen IP-Subnetz befinden. Weitere Informationen zu  `network route create` und zum Erstellen einer statischen Route innerhalb einer SVM finden sich im link:https://docs.netapp.com/us-en/ontap-cli/network-route-create.html["ONTAP-Befehlsreferenz"^].
+** Für die `-firewall-policy` Option sollte derselbe Standardwert `data` wie für die LIF-Rolle verwendet werden.
 +
-.. Verwenden Sie den `network ndp prefix show` Befehl, um die Liste der RA-Präfixe anzuzeigen, die an verschiedenen Schnittstellen gelernt wurden.
-+
-Der `network ndp prefix show` Befehl ist auf der erweiterten Berechtigungsebene verfügbar.
-
-.. Verwenden Sie das Format `prefix:id`, um die IPv6-Adresse manuell zu erstellen.
-+
-`prefix` Wird das Präfix an verschiedenen Schnittstellen gelernt.
+Bei Bedarf kann später eine benutzerdefinierte Firewall-Richtlinie erstellt und hinzugefügt werden.
 
 +
- `id`Wählen Sie zum Ableiten der eine zufällige 64-Bit-Hexadezimalzahl aus.
+
+NOTE: Ab ONTAP 9.10.1 sind Firewall-Richtlinien veraltet und vollständig durch LIF-Dienstrichtlinien ersetzt. Weitere Informationen finden sich unter link:../networking/configure_firewall_policies_for_lifs.html["Firewall-Richtlinien für LIFs konfigurieren"].
+
+** `-auto-revert`Hiermit kann festgelegt werden, ob ein Daten-LIF unter Umständen wie Systemstart, Änderungen am Status der Management-Datenbank oder beim Herstellen einer Netzwerkverbindung automatisch auf seinen Heimatknoten zurückkehrt. Die Standardeinstellung ist  `false`, sie kann jedoch je nach Netzwerkverwaltungsrichtlinien in Ihrer Umgebung auf  `false` gesetzt werden.
+** Die  `-service-policy` Option legt die von Ihnen erstellte Daten- und Verwaltungsdienstrichtlinie sowie alle weiteren benötigten Richtlinien fest.
+
+
+. Wenn Sie eine IPv6-Adresse in der  `-address` Option zuweisen möchten:
++
+.. Mit dem  `network ndp prefix show` Befehl lässt sich die Liste der auf verschiedenen Schnittstellen gelernten RA-Präfixe anzeigen.
++
+Der  `network ndp prefix show` Befehl ist auf der Stufe „Erweiterte Berechtigungen“ verfügbar.
+
+.. Verwenden Sie das Format  `prefix:id`, um die IPv6-Adresse manuell zu erstellen.
++
+`prefix` ist das Präfix, das auf verschiedenen Schnittstellen gelernt wird.
+
++
+Zur Ableitung des `id`wird eine zufällige 64-Bit-Hexadezimalzahl gewählt.
 
 
 
-. Überprüfen Sie mit dem `network interface show` Befehl, ob das LIF erfolgreich erstellt wurde.
-. Vergewissern Sie sich, dass die konfigurierte IP-Adresse erreichbar ist:
+. Es kann mit dem  `network interface show` Befehl überprüft werden, ob die LIF erfolgreich erstellt wurde.
+. Es sollte überprüft werden, ob die konfigurierte IP-Adresse erreichbar ist:
 +
 [cols="2*"]
 |===
-| Überprüfen einer... | Verwenden... 
+| Zur Überprüfung einer... | Verwenden... 
 
 
  a| 
@@ -104,13 +104,13 @@ IPv6-Adresse
 
 
 .Beispiele
-Im folgenden Befehl wird gezeigt, wie eine S3-Daten-LIF erstellt wird, die mit der `my-S3-policy` Service-Richtlinie zugewiesen ist:
+Der folgende Befehl zeigt, wie ein S3-Daten-LIF erstellt wird, dem die  `my-S3-policy` Dienstrichtlinie zugewiesen ist:
 
 [listing]
 ----
 network interface create -vserver svm1.example.com -lif lif2 -home-node node2 -homeport e0d -service-policy my-S3-policy -subnet-name ipspace1
 ----
-Mit dem folgenden Befehl werden alle LIFs in Cluster-1 angezeigt. Datenschnittstellen Datenschnittstellen Datenverbund Daten3 werden mit IPv4-Adressen konfiguriert und Daten3 wird mit einer IPv6-Adresse konfiguriert:
+Der folgende Befehl zeigt alle LIFs in cluster-1 an. Die Data LIFs datalif1 und datalif3 sind mit IPv4-Adressen konfiguriert, und datalif4 ist mit einer IPv6-Adresse konfiguriert:
 
 [listing]
 ----
@@ -139,5 +139,5 @@ vs3.example.com
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/network-ping.html["Netzwerk-Ping"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+interface["Netzwerkschnittstelle"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/network-ndp-prefix-show.html["Netzwerk-ndp-Präfix anzeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/network-ndp-prefix-show.html["network ndp prefix show"^]
 

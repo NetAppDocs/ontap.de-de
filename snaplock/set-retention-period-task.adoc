@@ -2,73 +2,73 @@
 permalink: snaplock/set-retention-period-task.html 
 sidebar: sidebar 
 keywords: snaplock, set, retention, time, default, explicit, file, modify, volume, period, ebr, event, based 
-summary: Sie können die Aufbewahrungszeit für eine Datei explizit festlegen oder den Standardaufbewahrungszeitraum für das Volume verwenden, um die Aufbewahrungszeit abzuleiten. Wenn Sie die Aufbewahrungszeit nicht explizit festlegen, verwendet SnapLock den Standardaufbewahrungszeitraum zur Berechnung der Aufbewahrungszeit. Sie können auch die Dateiaufbewahrung nach einem Ereignis festlegen. 
+summary: Sie können die Aufbewahrungsdauer für eine Datei explizit festlegen oder die Standardaufbewahrungsdauer für das Volume verwenden, um die Aufbewahrungsdauer abzuleiten. Sofern Sie die Aufbewahrungsdauer nicht explizit festlegen, verwendet SnapLock die Standardaufbewahrungsdauer zur Berechnung der Aufbewahrungsdauer. Die Dateiaufbewahrung kann auch nach einem Ereignis festgelegt werden. 
 ---
-= Legen Sie die ONTAP SnapLock Aufbewahrungszeit fest
+= Die ONTAP SnapLock Aufbewahrungszeit festlegen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können die Aufbewahrungszeit für eine Datei explizit festlegen oder den Standardaufbewahrungszeitraum für das Volume verwenden, um die Aufbewahrungszeit abzuleiten. Wenn Sie die Aufbewahrungszeit nicht explizit festlegen, verwendet SnapLock den Standardaufbewahrungszeitraum zur Berechnung der Aufbewahrungszeit. Sie können auch die Dateiaufbewahrung nach einem Ereignis festlegen.
+Sie können die Aufbewahrungsdauer für eine Datei explizit festlegen oder die Standardaufbewahrungsdauer für das Volume verwenden, um die Aufbewahrungsdauer abzuleiten. Sofern Sie die Aufbewahrungsdauer nicht explizit festlegen, verwendet SnapLock die Standardaufbewahrungsdauer zur Berechnung der Aufbewahrungsdauer. Die Dateiaufbewahrung kann auch nach einem Ereignis festgelegt werden.
 
-.Allgemeines zu Aufbewahrungszeitraum und Aufbewahrungszeit
-Der_Aufbewahrungszeitraum_ für EINE WORM-Datei gibt die Zeitspanne an, die die Datei nach dem Festlegen des WORM-Status aufbewahrt werden muss. Die _Aufbewahrungszeit_ für EINE WORM-Datei ist die Zeit, nach der die Datei nicht mehr aufbewahrt werden muss. Eine Aufbewahrungsfrist von 20 Jahren für eine Datei, die am 10. November 2020 6:00 Uhr im WORM-Zustand aufbewahrt wird, würde beispielsweise eine Aufbewahrungszeit vom 10. November 2040 6:00 Uhr erreichen
+.Informationen zu Aufbewahrungsfrist und Aufbewahrungszeit
+Die Aufbewahrungsfrist für eine WORM-Datei gibt an, wie lange die Datei nach dem Übergang in den WORM-Zustand aufbewahrt werden muss. Die Aufbewahrungsdauer einer WORM-Datei ist der Zeitpunkt, nach dem die Datei nicht mehr aufbewahrt werden muss. Eine Aufbewahrungsfrist von 20 Jahren für eine Datei, die am 10. November 2020 um 6:00 Uhr in den WORM-Zustand versetzt wurde, ergibt eine Aufbewahrungsdauer bis zum 10. November 2040 um 6:00 Uhr.
 
-image:retention.gif["Beispiel für den Aufbewahrungszeitraum"]
+image:retention.gif["Beispiel für eine Aufbewahrungsfrist"]
 
 [NOTE]
 ====
-Ab ONTAP 9.10.1 können Sie eine Aufbewahrungszeit bis zum 26. Oktober 3058 und eine Aufbewahrungsfrist von bis zu 100 Jahren festlegen. Wenn Sie die Aufbewahrungszeiträume verlängern, werden ältere Richtlinien automatisch konvertiert. In ONTAP 9.9.1 und früheren Versionen, sofern Sie den Standard-Aufbewahrungszeitraum nicht auf unendlich eingestellt, ist die maximale unterstützte Aufbewahrungszeit Januar 19 2071 (GMT).
+Ab ONTAP 9.10.1 kann eine Aufbewahrungsfrist bis zum 26. Oktober 3058 und eine Aufbewahrungsdauer von bis zu 100 Jahren festgelegt werden. Bei einer Verlängerung der Aufbewahrungsfristen werden ältere Richtlinien automatisch konvertiert. In ONTAP 9.9.1 und früheren Versionen beträgt die maximal unterstützte Aufbewahrungsfrist, sofern die Standardaufbewahrungsdauer nicht auf unbegrenzt gesetzt ist, den 19. Januar 2071 (GMT).
 
 ====
-.Wichtige Überlegungen zur Replizierung
-Wenn Sie eine SnapMirror Beziehung mit einem SnapLock Quell-Volume unter Verwendung eines Aufbewahrungsdatums später als dem 19. Januar 2071 (GMT) aufbauen, muss das Ziel-Cluster ONTAP 9.10.1 oder höher ausführen. Sonst schlägt der SnapMirror Transfer fehl.
+.Wichtige Überlegungen zur Replikation
+Wenn eine SnapMirror Beziehung mit einem SnapLock Quellvolume unter Verwendung eines Aufbewahrungsdatums nach dem 19. Januar 2071 (GMT) hergestellt wird, muss das Ziel-Cluster ONTAP 9.10.1 oder höher ausführen, andernfalls schlägt die SnapMirror Übertragung fehl.
 
-.Wichtige Überlegungen zum Wechsel
-ONTAP verhindert, dass Sie einen Cluster von ONTAP 9.10.1 auf eine frühere ONTAP -Version zurücksetzen, wenn Dateien mit einer Aufbewahrungsdauer nach „19. Januar 2071, 8:44:07 Uhr“ vorhanden sind.
+.Wichtige Überlegungen zur Rückführung
+ONTAP verhindert, dass ein Cluster von ONTAP 9.10.1 auf eine frühere ONTAP Version zurückgesetzt werden kann, wenn Dateien mit einer Aufbewahrungsfrist nach „19. Januar 2071 8:44:07 Uhr“ vorhanden sind.
 
-.Die Aufbewahrungsfristen verstehen
-Ein SnapLock-Compliance- oder Enterprise-Volume hat vier Aufbewahrungszeiträume:
+.Aufbewahrungsfristen im Überblick
+Ein SnapLock Compliance oder Enterprise Volume hat vier Aufbewahrungsfristen:
 
 * Mindestaufbewahrungsdauer (`min`), mit einem Standardwert von 0
-* Maximale Aufbewahrungsfrist (`max`), mit einem Verzug von 30 Jahren
-* Standardaufbewahrungszeitraum, wobei der Standard `min` sowohl für den Compliance-Modus als auch für den Enterprise-Modus mit ONTAP 9.10.1 gleich ist. In älteren Versionen als ONTAP 9.10.1 von ONTAP hängt die standardmäßige Aufbewahrungsdauer von dem Modus ab:
+* Maximale Aufbewahrungsdauer (`max`), mit einem Standardwert von 30 Jahren
+* Standardmäßige Aufbewahrungsfrist, mit einem Standardwert von  `min` für sowohl den Compliance-Modus als auch den Enterprise-Modus ab ONTAP 9.10.1. In ONTAP Versionen vor ONTAP 9.10.1 hängt die standardmäßige Aufbewahrungsfrist vom Modus ab:
 +
-** Für den Compliance-Modus ist der Standardwert gleich `max` .
-** Für den Enterprise-Modus ist der Standardwert gleich `min` .
+** Im Compliance-Modus ist der Standardwert gleich  `max`.
+** Im Enterprise-Modus ist der Standardwert gleich  `min`.
 
 
-* Nicht festgelegte Aufbewahrungsdauer.
+* Nicht spezifizierte Aufbewahrungsfrist.
 +
 
-IMPORTANT: In Versionen vor ONTAP 9.10.1 wird eine Datei im Compliance-Modus standardmäßig 30 Jahre lang aufbewahrt, wenn die Aufbewahrungszeit nicht explizit festgelegt wird, bevor sie in den WORM-Zustand versetzt wird, und wenn die Standardeinstellungen nicht geändert werden. Diese Änderung kann nicht rückgängig gemacht werden. In ähnlicher Weise wird in ONTAP 9.10.1 und späteren Versionen die Datei, wenn Sie die Aufbewahrungszeit nicht explizit festlegen, bevor Sie sie in den WORM-Zustand versetzen, und wenn Sie die Standardeinstellungen nicht ändern, 0 Jahre lang aufbewahrt, also effektiv gar nicht.
-
-+
-Ab ONTAP 9.8 können Sie die Aufbewahrungsfrist für Dateien in einem Volume auf `unspecified`, einstellen, damit die Datei beibehalten werden kann, bis Sie eine absolute Aufbewahrungszeit festlegen. Sie können eine Datei mit absoluter Aufbewahrungszeit auf unbestimmte Aufbewahrung und zurück zur absoluten Aufbewahrung setzen, solange die neue absolute Aufbewahrungszeit später ist als die zuvor festgelegte absolute Zeit.
+IMPORTANT: In ONTAP-Versionen vor ONTAP 9.10.1, wenn die Aufbewahrungsdauer nicht explizit festgelegt wurde, bevor eine Datei im Compliance-Modus in den WORM-Status überführt wird, und die Standardeinstellungen nicht geändert wurden, wird die Datei 30 Jahre lang aufbewahrt. Diese Änderung _kann_ nicht rückgängig gemacht werden. Ebenso wird in ONTAP 9.10.1 und später, wenn die Aufbewahrungsdauer nicht explizit festgelegt wurde, bevor eine Datei im Enterprise-Modus in den WORM-Status überführt wird, und die Standardeinstellungen nicht geändert wurden, die Datei 0 Jahre lang aufbewahrt, also de facto gar nicht.
 
 +
-Ab ONTAP 9.12.1 verfügen WORM-Dateien mit festgesetzten Aufbewahrungsfristen `unspecified` garantiert über einen Aufbewahrungszeitraum auf den für das SnapLock Volume konfigurierten Mindestaufbewahrungszeitraum. Wenn Sie die Aufbewahrungsdauer der Datei von `unspecified` in eine absolute Aufbewahrungszeit ändern, muss die neue angegebene Aufbewahrungszeit größer sein als die für die Datei bereits festgelegte Mindestaufbewahrungszeit.
+Ab ONTAP 9.8 kann die Aufbewahrungsdauer von Dateien in einem Volume auf  `unspecified`unspezifiziert gesetzt werden, sodass die Datei bis zur Festlegung einer absoluten Aufbewahrungszeit aufbewahrt bleibt. Eine Datei mit absoluter Aufbewahrungszeit kann auf unspezifizierte Aufbewahrungsdauer und wieder zurück auf absolute Aufbewahrungszeit gesetzt werden, solange die neue absolute Aufbewahrungszeit später liegt als die zuvor festgelegte absolute Zeit.
+
++
+Ab ONTAP 9.12.1 wird für WORM-Dateien mit der Aufbewahrungsdauer, die auf  `unspecified` festgelegt ist, garantiert, dass die Aufbewahrungsdauer mindestens der für das SnapLock Volume konfigurierten Mindestaufbewahrungsdauer entspricht. Wenn die Aufbewahrungsdauer einer Datei von  `unspecified` auf eine absolute Aufbewahrungszeit geändert wird, muss die neu angegebene Aufbewahrungszeit größer sein als die bereits für die Datei festgelegte Mindestaufbewahrungsdauer.
 
 
 
 
 
 [[set-the-default-retention-period]]
-== Legen Sie den Standardaufbewahrungszeitraum fest
+== Standardaufbewahrungsdauer festlegen
 
-Sie können den `volume snaplock modify` Befehl verwenden, um den Standardaufbewahrungszeitraum für Dateien auf einem SnapLock Volume festzulegen.
+Sie können den  `volume snaplock modify`Befehl verwenden, um die Standardaufbewahrungsdauer für Dateien auf einem SnapLock Volume festzulegen.
 
 .Bevor Sie beginnen
 Das SnapLock Volume muss online sein.
 
 .Über diese Aufgabe
-In der folgenden Tabelle sind die möglichen Werte für die Option Standardaufbewahrungszeitraum aufgeführt:
+Die folgende Tabelle zeigt die möglichen Werte für die Option „Standardaufbewahrungsdauer“:
 
 [NOTE]
 ====
-Der Standardaufbewahrungszeitraum muss größer oder gleich (>=) dem Mindestaufbewahrungszeitraum und kleiner als oder gleich (\<=) dem maximalen Aufbewahrungszeitraum sein.
+Die Standardaufbewahrungsfrist muss größer oder gleich (>=) der minimalen Aufbewahrungsfrist und kleiner oder gleich (\<=) der maximalen Aufbewahrungsfrist sein.
 
 ====
 |===
@@ -76,7 +76,7 @@ Der Standardaufbewahrungszeitraum muss größer oder gleich (>=) dem Mindestaufb
 
 
  a| 
-0–65535
+0 - 65535
  a| 
 Sekunden
  a| 
@@ -84,7 +84,7 @@ Sekunden
 
 
  a| 
-0–24
+0 - 24
  a| 
 Stunden
  a| 
@@ -92,7 +92,7 @@ Stunden
 
 
  a| 
-0–365
+0 - 365
  a| 
 Tage
  a| 
@@ -100,82 +100,82 @@ Tage
 
 
  a| 
-0–12
+0 - 12
  a| 
-Monaten
+Monate
  a| 
 
 
 
  a| 
-0–100
+0 - 100
  a| 
-Jahren
+Jahre
  a| 
-Ab ONTAP 9.10.1 Bei früheren Versionen von ONTAP beträgt der Wert 0 - 70.
+Ab ONTAP 9.10.1. Bei früheren ONTAP Versionen liegt der Wert zwischen 0 und 70.
 
 
 
  a| 
-maximale
+max
  a| 
 -
  a| 
-Verwenden Sie den maximalen Aufbewahrungszeitraum.
+Die maximale Aufbewahrungsfrist verwenden.
 
 
 
  a| 
-Mindestens
- a| 
--
- a| 
-Verwenden Sie den Mindestaufbewahrungszeitraum.
-
-
-
- a| 
-Skalierbar
+min
  a| 
 -
  a| 
-Bewahren Sie die Dateien für immer auf.
+Die Mindestaufbewahrungsfrist verwenden.
 
 
 
  a| 
-Nicht angegeben
+unendlich
  a| 
 -
  a| 
-Bewahren Sie die Dateien so lange auf, bis ein absoluter Aufbewahrungszeitraum festgelegt ist.
+Die Dateien werden dauerhaft aufbewahrt.
+
+
+
+ a| 
+nicht spezifiziert
+ a| 
+-
+ a| 
+Die Dateien bleiben erhalten, bis eine absolute Aufbewahrungsfrist festgelegt ist.
 
 |===
-Die Werte und Bereiche für die maximalen und minimalen Aufbewahrungsfristen sind identisch, mit Ausnahme von `max` und `min`, die nicht anwendbar sind. Weitere Informationen zu dieser Aufgabe finden Sie unter link:set-retention-period-task.html["Stellen Sie die Übersicht über die Aufbewahrungszeit ein"].
+Die Werte und Bereiche für die maximale und minimale Aufbewahrungsfrist sind identisch, mit Ausnahme von `max` und `min`, die nicht anwendbar sind. Weitere Informationen zu dieser Aufgabe finden sich unter link:set-retention-period-task.html["Übersicht zur Aufbewahrungszeit"].
 
-Sie können mit dem `volume snaplock show` Befehl die Einstellungen für den Aufbewahrungszeitraum für das Volume anzeigen. Erfahren Sie mehr über `volume snaplock show` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-snaplock-show.html["ONTAP-Befehlsreferenz"^].
+Sie können den  `volume snaplock show` Befehl verwenden, um die Einstellungen für die Aufbewahrungsfrist des Volumes anzuzeigen. Weitere Informationen zu  `volume snaplock show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-snaplock-show.html["ONTAP-Befehlsreferenz"^].
 
 [NOTE]
 ====
-Nachdem eine Datei im WORM-Status übergeben wurde, können Sie den Aufbewahrungszeitraum verlängern, jedoch nicht verkürzen.
+Sobald eine Datei in den WORM-Status übertragen wurde, kann die Aufbewahrungsfrist verlängert, aber nicht verkürzt werden.
 
 ====
 .Schritte
-. Legen Sie den Standardaufbewahrungszeitraum für Dateien auf einem SnapLock-Volume fest:
+. Die Standardaufbewahrungsdauer für Dateien auf einem SnapLock Volume festlegen:
 +
 `*volume snaplock modify -vserver _SVM_name_ -volume _volume_name_ -default-retention-period _default_retention_period_ -minimum-retention-period _min_retention_period_ -maximum-retention-period _max_retention_period_*`
 
 +
-Erfahren Sie mehr über `volume snaplock modify` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-snaplock-modify.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `volume snaplock modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-snaplock-modify.html["ONTAP-Befehlsreferenz"^].
 
 +
 [NOTE]
 ====
-In den folgenden Beispielen wird davon ausgegangen, dass die minimalen und maximalen Aufbewahrungszeiträume zuvor nicht geändert wurden.
+Die folgenden Beispiele setzen voraus, dass die Mindest- und Höchstaufbewahrungsfristen zuvor nicht geändert wurden.
 
 ====
 +
-Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für Compliance- oder Enterprise-Volumes auf 20 Tage festgelegt:
+Der folgende Befehl legt die Standardaufbewahrungsfrist für ein Compliance oder Enterprise Volume auf 20 Tage fest:
 
 +
 [listing]
@@ -183,7 +183,7 @@ Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für Compliance- od
 cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period 20days
 ----
 +
-Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Compliance-Volume auf 70 Jahre festgelegt:
+Der folgende Befehl legt die Standardaufbewahrungsfrist für ein Compliance Volume auf 70 Jahre fest:
 
 +
 [listing]
@@ -191,7 +191,7 @@ Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Compliance
 cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -maximum-retention-period 70years
 ----
 +
-Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Enterprise-Volume auf 10 Jahre festgelegt:
+Der folgende Befehl legt die Standardaufbewahrungsfrist für ein Enterprise Volume auf 10 Jahre fest:
 
 +
 [listing]
@@ -199,7 +199,7 @@ Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Enterprise
 cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period max -maximum-retention-period 10years
 ----
 +
-Mit den folgenden Befehlen wird die Standardaufbewahrungsdauer für Enterprise-Volumes auf 10 Tage festgelegt:
+Die folgenden Befehle legen die Standardaufbewahrungsfrist für ein Enterprise-Volume auf 10 Tage fest:
 
 +
 [listing]
@@ -208,7 +208,7 @@ cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -minimum-retention-
 cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period min
 ----
 +
-Mit dem folgenden Befehl wird die Standardaufbewahrungsdauer für ein Compliance-Volume auf „skalierbar“ gesetzt:
+Der folgende Befehl legt die Standardaufbewahrungsfrist für ein Compliance Volume auf unendlich fest:
 
 +
 [listing]
@@ -220,22 +220,22 @@ cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-
 
 
 [[set-the-retention-time-for-a-file-explicitly]]
-== Legen Sie die Aufbewahrungszeit für eine Datei explizit fest
+== Die Aufbewahrungszeit für eine Datei explizit festlegen
 
-Sie können die Aufbewahrungszeit für eine Datei explizit festlegen, indem Sie die letzte Zugriffszeit ändern. Sie können jeden entsprechenden Befehl oder jedes Programm über NFS oder CIFS verwenden, um die Uhrzeit des letzten Zugriffs zu ändern.
+Sie können die Aufbewahrungsdauer einer Datei explizit festlegen, indem Sie deren letzten Zugriffszeitpunkt ändern. Sie können jeden geeigneten Befehl oder jedes geeignete Programm über NFS oder CIFS verwenden, um den letzten Zugriffszeitpunkt zu ändern.
 
 .Über diese Aufgabe
-Nachdem eine Datei an WORM übergeben wurde, können Sie die Aufbewahrungszeit verlängern, aber nicht verkürzen. Die Aufbewahrungszeit wird im `atime` Feld für die Datei gespeichert.
+Nachdem eine Datei in WORM übertragen wurde, kann die Aufbewahrungszeit verlängert, aber nicht verkürzt werden. Die Aufbewahrungszeit wird im  `atime` Feld für die Datei gespeichert.
 
 [NOTE]
 ====
-Sie können die Aufbewahrungszeit einer Datei nicht explizit auf einstellen `infinite`. Dieser Wert ist nur verfügbar, wenn Sie den Standardaufbewahrungszeitraum zur Berechnung der Aufbewahrungszeit verwenden.
+Die Aufbewahrungszeit einer Datei kann nicht explizit auf  `infinite` gesetzt werden. Dieser Wert ist nur verfügbar, wenn die Aufbewahrungszeit anhand der Standardaufbewahrungsdauer berechnet wird.
 
 ====
 .Schritte
-. Verwenden Sie einen geeigneten Befehl oder ein geeignetes Programm, um die letzte Zugriffszeit für die Datei zu ändern, deren Aufbewahrungszeit Sie einstellen möchten.
+. Verwenden Sie einen geeigneten Befehl oder ein geeignetes Programm, um die letzte Zugriffszeit für die Datei zu ändern, deren Aufbewahrungszeit Sie festlegen möchten.
 +
-Verwenden Sie in einer UNIX-Shell den folgenden Befehl, um eine Aufbewahrungszeit von 21. November 2020 6:00 Uhr für eine Datei mit dem Namen festzulegen `document.txt`:
+In einer UNIX-Shell kann mit dem folgenden Befehl eine Aufbewahrungszeit von 21. November 2020, 6:00 Uhr, für eine Datei mit dem Namen  `document.txt` festgelegt werden:
 
 +
 [listing]
@@ -245,7 +245,7 @@ touch -a -t 202011210600 document.txt
 +
 [NOTE]
 ====
-Sie können alle geeigneten Befehle oder Programme verwenden, um die letzte Zugriffszeit in Windows zu ändern.
+Es kann jeder geeignete Befehl oder jedes geeignete Programm verwendet werden, um die letzte Zugriffszeit in Windows zu ändern.
 
 ====
 
@@ -253,44 +253,44 @@ Sie können alle geeigneten Befehle oder Programme verwenden, um die letzte Zugr
 
 
 [[set-the-file-retention-period-after-an-event]]
-== Legen Sie den Aufbewahrungszeitraum für die Datei nach einem Ereignis fest
+== Die Aufbewahrungsfrist für Dateien nach einem Ereignis festlegen
 
-Ab ONTAP 9.3 können Sie definieren, wie lange eine Datei nach einem Ereignis aufbewahrt wird, indem Sie die Funktion SnapLock _Event Based Retention (EBR)_ verwenden.
+Ab ONTAP 9.3 kann mit der Funktion SnapLock _Event Based Retention (EBR)_ festgelegt werden, wie lange eine Datei nach dem Eintreten eines Ereignisses aufbewahrt wird.
 
 .Bevor Sie beginnen
-* Sie müssen ein SnapLock-Administrator sein, um diese Aufgabe auszuführen.
+* Um diese Aufgabe auszuführen, sind SnapLock Administratorrechte erforderlich.
 +
-link:create-compliance-administrator-account-task.html["Erstellen Sie ein SnapLock-Administratorkonto"]
+link:create-compliance-administrator-account-task.html["Ein SnapLock Administratorkonto erstellen"]
 
-* Sie müssen sich mit einer sicheren Verbindung (SSH, Konsole oder ZAPI) angemeldet haben.
+* Eine Anmeldung über eine sichere Verbindung (SSH, Konsole oder ZAPI) muss erfolgt sein.
 
 
 .Über diese Aufgabe
-Die Richtlinie_Event Retention_ definiert den Aufbewahrungszeitraum für die Datei nach dem Ereignis. Die Richtlinie kann auf eine einzelne Datei oder alle Dateien in einem Verzeichnis angewendet werden.
+Die _Ereignisaufbewahrungsrichtlinie_ definiert die Aufbewahrungsdauer der Datei nach dem Eintreten des Ereignisses. Die Richtlinie kann auf eine einzelne Datei oder alle Dateien in einem Verzeichnis angewendet werden.
 
-* Handelt es sich bei einer Datei nicht um EINE WORM-Datei, wird sie im IN der Richtlinie definierten Aufbewahrungszeitraum im WORM-Status versetzt.
-* Wenn es sich bei einer Datei um EINE WORM-Datei oder EINE WORM-Dateien handelt, verlängert sich deren Aufbewahrungszeitraum um den in der Richtlinie definierten Aufbewahrungszeitraum.
+* Wenn es sich bei einer Datei nicht um eine WORM-Datei handelt, wird sie für die in der Richtlinie festgelegte Aufbewahrungsdauer in den WORM-Status übernommen.
+* Wenn es sich bei einer Datei um eine WORM-Datei oder eine WORM-anhängbare Datei handelt, wird ihre Aufbewahrungsfrist um die in der Richtlinie festgelegte Aufbewahrungsfrist verlängert.
 
 
-Es können ein Compliance-Modus oder ein Enterprise-Mode Volume verwendet werden.
+Es kann ein Volume im Compliance-Modus oder im Enterprise-Modus verwendet werden.
 
 [NOTE]
 ====
-EBR-Richtlinien können nicht auf Dateien angewendet werden, die sich in einer Legal Hold befinden.
+EBR-Richtlinien können nicht auf Dateien angewendet werden, die unter einer Legal Hold stehen.
 
 ====
-Für fortgeschrittene Anwendungen siehe link:https://www.netapp.com/pdf.html?item=/media/6158-tr4526.pdf["Worm-Speicherung gemäß NetApp SnapLock"^].
+Für fortgeschrittene Anwendungen siehe link:https://www.netapp.com/pdf.html?item=/media/6158-tr4526.pdf["Konforme WORM-Speicherung mit NetApp SnapLock"^].
 
 |===
 
 
-| *_Verwendung von EBR, um den Aufbewahrungszeitraum bereits vorhandener WORM-Dateien zu verlängern_* 
+| *_Verwendung von EBR zur Verlängerung der Aufbewahrungsfrist bereits vorhandener WORM-Dateien_* 
 
 
  a| 
-EBR ist praktisch, wenn Sie den Aufbewahrungszeitraum bereits vorhandener WORM-Dateien verlängern möchten. So könnte es z. B. sein, dass Ihr Unternehmen die Richtlinie hat, W-4-Datensätze von Mitarbeitern in unveränderter Form für drei Jahre zu speichern, nachdem der Mitarbeiter eine Quellwahl geändert hat. Eine andere Unternehmensrichtlinie kann verlangen, dass W-4-Datensätze fünf Jahre nach Beendigung des Mitarbeiters aufbewahrt werden.
+EBR ist praktisch, wenn die Aufbewahrungsfrist bereits vorhandener WORM-Dateien verlängert werden soll. Beispielsweise kann es eine Unternehmensrichtlinie sein, die W-4-Formulare von Mitarbeitern drei Jahre lang in unveränderter Form aufzubewahren, nachdem der Mitarbeiter eine Lohnsteuerabzugsoption geändert hat. Eine andere Unternehmensrichtlinie kann verlangen, dass die W-4-Formulare fünf Jahre nach Beendigung des Arbeitsverhältnisses aufbewahrt werden.
 
-In diesem Fall könnten Sie eine EBR-Richtlinie mit einer Aufbewahrungsfrist von fünf Jahren erstellen. Nach Beendigung des Mitarbeiters (das „`Event`“) wenden Sie die EBR-Richtlinie auf den W-4-Datensatz des Mitarbeiters an, wodurch die Aufbewahrungsfrist verlängert wird. Das ist in der Regel einfacher als die manuelle Verlängerung des Aufbewahrungszeitraums, insbesondere dann, wenn eine große Anzahl von Dateien beteiligt ist.
+In diesem Fall könnte eine EBR-Richtlinie mit einer Aufbewahrungsfrist von fünf Jahren erstellt werden. Nach Beendigung des Arbeitsverhältnisses (dem „`event`“) wird die EBR-Richtlinie auf den W-4-Datensatz des Mitarbeiters angewendet, wodurch sich dessen Aufbewahrungsfrist verlängert. Das ist in der Regel einfacher als die manuelle Verlängerung der Aufbewahrungsfrist, insbesondere wenn eine große Anzahl von Dateien betroffen ist.
 
 |===
 .Schritte
@@ -299,19 +299,19 @@ In diesem Fall könnten Sie eine EBR-Richtlinie mit einer Aufbewahrungsfrist von
 `snaplock event-retention policy create -vserver _SVM_name_ -name _policy_name_ -retention-period _retention_period_`
 
 +
-Mit dem folgenden Befehl wird die EBR-Richtlinie `employee_exit` für `vs1` mit einer Aufbewahrungsfrist von zehn Jahren erstellt:
+Der folgende Befehl erstellt die EBR-Richtlinie `employee_exit` auf `vs1` mit einer Aufbewahrungsfrist von zehn Jahren:
 
 +
 [listing]
 ----
 cluster1::>snaplock event-retention policy create -vserver vs1 -name employee_exit -retention-period 10years
 ----
-. Anwenden einer EBR-Richtlinie:
+. Eine EBR-Richtlinie anwenden:
 +
 `snaplock event-retention apply -vserver _SVM_name_ -name _policy_name_ -volume _volume_name_ -path _path_name_`
 
 +
-Der folgende Befehl wendet die EBR-Richtlinie `employee_exit` auf `vs1` alle Dateien im Verzeichnis an `d1`:
+Der folgende Befehl wendet die EBR-Richtlinie  `employee_exit` auf  `vs1` alle Dateien im Verzeichnis  `d1` an:
 
 +
 [listing]
@@ -321,6 +321,6 @@ cluster1::>snaplock event-retention apply -vserver vs1 -name employee_exit -volu
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/snaplock-event-retention-policy-create.html["Snaplock-Ereignisaufbewahrungsrichtlinie erstellen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/snaplock-event-retention-apply.html["Snaplock-Ereignisaufbewahrung anwenden"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snaplock-event-retention-policy-create.html["snaplock event-retention policy create"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/snaplock-event-retention-apply.html["snaplock event-retention apply"^]
 

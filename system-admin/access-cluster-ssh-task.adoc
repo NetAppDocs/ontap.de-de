@@ -2,60 +2,61 @@
 permalink: system-admin/access-cluster-ssh-task.html 
 sidebar: sidebar 
 keywords: access, ssh, cluster, administrative, task 
-summary: Sie können SSH-Anforderungen an das Cluster ausgeben, um administrative Aufgaben durchzuführen. SSH ist standardmäßig aktiviert. 
+summary: Sie können SSH-Anfragen an den Cluster senden, um administrative Aufgaben auszuführen. SSH ist standardmäßig aktiviert. 
 ---
-= Zugriff auf einen ONTAP-Cluster mithilfe von SSH-Anforderungen
+= Auf einen ONTAP Cluster mit SSH-Anfragen zugreifen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können SSH-Anforderungen an ein ONTAP-Cluster ausgeben, um administrative Aufgaben auszuführen. SSH ist standardmäßig aktiviert.
+Sie können SSH-Anfragen an einen ONTAP Cluster senden, um administrative Aufgaben auszuführen. SSH ist standardmäßig aktiviert.
 
 .Bevor Sie beginnen
-* Sie müssen über ein Benutzerkonto verfügen, das für die Verwendung `ssh` als Zugriffsmethode konfiguriert ist.
+* Sie benötigen ein Benutzerkonto, das für die Verwendung von  `ssh` als Zugriffsmethode konfiguriert ist.
 +
-Der `-application` Parameter der `security login` Befehle gibt die Zugriffsmethode für ein Benutzerkonto an. Erfahren Sie mehr über `security login` in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-create.html#description["ONTAP-Befehlsreferenz"^].
+Der  `-application`Parameter der  `security login`Befehle gibt das Zugriffsverfahren für ein Benutzerkonto an. Weitere Informationen zu  `security login` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-login-create.html#description["ONTAP-Befehlsreferenz"^].
 
-* Wenn Sie ein Active Directory (AD)-Domänenbenutzerkonto für den Zugriff auf das Cluster verwenden, muss ein Authentifizierungstunnel für das Cluster über eine CIFS-fähige Storage-VM eingerichtet worden sein `ssh` `domain`, und Ihr AD-Domänenbenutzerkonto muss ebenfalls mit als Zugriffsmethode und als Authentifizierungsmethode zum Cluster hinzugefügt worden sein.
+* Wenn Sie ein Active Directory (AD) Domänenbenutzerkonto für den Zugriff auf den Cluster verwenden, muss ein Authentifizierungstunnel für den Cluster über eine CIFS-fähige Storage-VM eingerichtet worden sein, und Ihr AD Domänenbenutzerkonto muss dem Cluster auch mit  `ssh` als Zugriffsmethode und  `domain` als Authentifizierungsverfahren hinzugefügt worden sein.
 
 
 .Über diese Aufgabe
-* Sie müssen einen OpenSSH 5.7 oder höher -Client verwenden.
-* Nur das SSH v2-Protokoll wird unterstützt; SSH v1 wird nicht unterstützt.
-* ONTAP unterstützt maximal 64 gleichzeitige SSH-Sitzungen pro Node.
+* Ein OpenSSH-Client ab Version 5.7 muss verwendet werden.
+* Es wird ausschließlich das SSH v2 Protokoll unterstützt; SSH v1 wird nicht unterstützt.
+* ONTAP unterstützt maximal 64 gleichzeitige SSH-Sitzungen pro Knoten.
 +
-Wenn sich die Cluster-Management-LIF auf dem Node befindet, wird dieses Limit zusammen mit der Node-Management-LIF verwendet.
+Befindet sich die Cluster-Management-LIF auf dem Node, teilt sie sich dieses Limit mit der Node-Management-LIF.
 
 +
-Falls die Rate der eingehenden Verbindungen mehr als 10 pro Sekunde ist, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
+Wenn die Anzahl der eingehenden Verbindungen mehr als 10 pro Sekunde beträgt, wird der Dienst vorübergehend für 60 Sekunden deaktiviert.
 
-* ONTAP unterstützt nur die Verschlüsselungsalgorithmen AES und 3DES für SSH (auch bekannt als _Chiffers_).
+* ONTAP unterstützt nur die Verschlüsselungsalgorithmen AES und 3DES (auch bekannt als _ciphers_) für SSH.
 +
-AES wird mit 128, 192 und 256 Bit in Schlüssellänge unterstützt. 3DES ist 56 Bit in Schlüssellänge wie im Original DES, wird aber dreimal wiederholt.
+AES unterstützt Schlüssellängen von 128, 192 und 256 Bit. 3DES verwendet wie das ursprüngliche DES eine Schlüssellänge von 56 Bit, die jedoch dreimal wiederholt wird.
 
-* Wenn der FIPS-Modus aktiviert ist, sollten SSH-Clients mit den öffentlichen Schlüssel-Algorithmen des Elliptic Curve Digital Signature Algorithm (ECDSA) verhandeln, damit die Verbindung erfolgreich hergestellt werden kann.
-* Wenn Sie von einem Windows-Host aus auf die ONTAP-CLI zugreifen möchten, können Sie ein Dienstprogramm eines Drittanbieters wie z. B. PuTTY verwenden.
-* Wenn Sie einen Windows AD-Benutzernamen verwenden, um sich bei ONTAP anzumelden, sollten Sie dieselben Groß- oder Kleinbuchstaben verwenden, die beim Erstellen des AD-Benutzernamens und des Domänennamens in ONTAP verwendet wurden.
+* Wenn der FIPS-Modus aktiviert ist, sollten SSH-Clients mit den öffentlichen Schlüsselalgorithmen des Elliptic Curve Digital Signature Algorithm (ECDSA) verhandeln, damit die Verbindung erfolgreich ist.
+* Wenn von einem Windows-Host aus auf die ONTAP-CLI zugegriffen werden soll, kann ein Drittanbieter-Tool wie PuTTY verwendet werden.
+* Wenn Sie sich mit einem Windows AD-Benutzernamen bei ONTAP anmelden, sollten Sie die gleichen Groß- und Kleinbuchstaben verwenden, die bei der Erstellung des AD-Benutzernamens und des Domänennamens in ONTAP verwendet wurden.
 +
-BEI AD-Benutzernamen und -Domain-Namen wird die Groß-/Kleinschreibung nicht beachtet. Bei ONTAP-Benutzernamen muss die Groß-/Kleinschreibung beachtet werden. Eine Diskrepanz zwischen dem in ONTAP erstellten Benutzernamen und dem in AD erstellten Benutzernamen führt zu einem Anmeldefehler.
+AD-Benutzernamen und Domänennamen sind nicht case-sensitiv. ONTAP-Benutzernamen sind jedoch case-sensitiv. Eine Abweichung in der Groß- und Kleinschreibung zwischen dem in ONTAP erstellten Benutzernamen und dem in AD erstellten Benutzernamen führt zu einem Anmeldefehler.
 
 
 
-.SSH-Authentifizierungsoptionen
-* Ab ONTAP 9.3 können Sie link:../authentication/setup-ssh-multifactor-authentication-task.html["Aktivieren Sie SSH-Multi-Faktor-Authentifizierung"^]lokale Administratorkonten einrichten.
+.SSH Authentifizierungsoptionen
+* Ab ONTAP 9.3 ist es möglich, link:../authentication/setup-ssh-multifactor-authentication-task.html["SSH-Multifaktor-Authentifizierung aktivieren"^] für lokale Administratorkonten zu verwenden.
 +
-Wenn die Multi-Faktor-Authentifizierung mittels SSH aktiviert ist, werden Benutzer mit einem öffentlichen Schlüssel und einem Passwort authentifiziert.
+Wenn die SSH-Multifaktor Authentifizierung aktiviert ist, erfolgt die Authentifizierung der Benutzer mithilfe eines öffentlichen Schlüssels und eines Passworts.
 
-* Ab ONTAP 9.4 können Sie link:../authentication/grant-access-nis-ldap-user-accounts-task.html["Aktivieren Sie SSH-Multi-Faktor-Authentifizierung"^]LDAP- und NIS-Remote-Benutzer verwenden.
-* Ab ONTAP 9.13.1 können Sie optional die Zertifikatsvalidierung zum SSH-Authentifizierungsprozess hinzufügen, um die Anmeldesicherheit zu erhöhen. Dazu link:../authentication/manage-ssh-public-keys-and-certificates.html["Verknüpfen Sie ein X.509-Zertifikat mit dem öffentlichen Schlüssel"] das ein Konto verwendet, überprüfen. Wenn Sie sich per SSH mit sowohl einem öffentlichen SSH-Schlüssel als auch einem X.509-Zertifikat anmelden, prüft ONTAP die Gültigkeit des X.509-Zertifikats, bevor mit dem öffentlichen SSH-Schlüssel authentifiziert wird. Die SSH-Anmeldung wird verweigert, wenn dieses Zertifikat abgelaufen oder widerrufen ist, und der öffentliche SSH-Schlüssel wird automatisch deaktiviert.
-* Ab ONTAP 9.14.1 können ONTAP-Administratoren link:../authentication/configure-cisco-duo-mfa-task.html["Fügen Sie der SSH-Authentifizierung die zwei-Faktor-Authentifizierung des Cisco Duo hinzu"] die Anmeldesicherheit erhöhen. Nach der Aktivierung der Cisco Duo Authentifizierung müssen Benutzer beim ersten Anmelden ein Gerät als Authentifikator für SSH-Sitzungen registrieren.
+* Ab ONTAP 9.4 kann link:../authentication/grant-access-nis-ldap-user-accounts-task.html["SSH-Multifaktor-Authentifizierung aktivieren"^] für LDAP- und NIS-Remote-Benutzer verwendet werden.
+* Ab ONTAP 9.13.1 können Sie optional die Zertifikatsvalidierung zum SSH-Authentifizierungsprozess hinzufügen, um die Anmeldesicherheit zu erhöhen. Dazu link:../authentication/manage-ssh-public-keys-and-certificates.html["Ein X.509-Zertifikat mit dem öffentlichen Schlüssel verknüpfen"] das ein Konto verwendet, überprüfen. Wenn Sie sich per SSH mit sowohl einem öffentlichen SSH-Schlüssel als auch einem X.509-Zertifikat anmelden, prüft ONTAP die Gültigkeit des X.509-Zertifikats, bevor mit dem öffentlichen SSH-Schlüssel authentifiziert wird. Die SSH-Anmeldung wird verweigert, wenn dieses Zertifikat abgelaufen oder widerrufen ist, und der öffentliche SSH-Schlüssel wird automatisch deaktiviert.
+* Ab ONTAP 9.14.1 können ONTAP-Administratoren link:../authentication/configure-cisco-duo-mfa-task.html["Cisco Duo Zwei-Faktor-Authentifizierung zum SSH-Authentifizierungsprozess hinzufügen"] die Anmeldesicherheit erhöhen. Nach der Aktivierung der Cisco Duo Authentifizierung müssen Benutzer beim ersten Anmelden ein Gerät als Authentifikator für SSH-Sitzungen registrieren.
 * Ab ONTAP 9.15.1 können Administratoren link:../authentication/dynamic-authorization-overview.html["Dynamische Autorisierung konfigurieren"] zusätzliche adaptive Authentifizierung für SSH-Benutzer basierend auf dem Vertrauenswert des Benutzers bereitstellen.
+* Ab ONTAP 9.19.1 können Administratoren den link:https://docs.netapp.com/us-en/ontap-cli/security-ssh-publickey-show.html["security ssh publickey show -vserver  -host-key-algorithm  command"^] verwenden, um den Fingerabdruck des ONTAP-Hostschlüssels anzuzeigen. Dies ermöglicht Administratoren zu überprüfen, ob dieser Fingerabdruck mit dem in ONTAP gespeicherten übereinstimmt.
 
 
 .Schritte
-. Geben Sie den `ssh` Befehl von einem Host mit Zugriff auf das Netzwerk des ONTAP Clusters in eines der folgenden Formate ein:
+. Von einem Host mit Zugriff auf das Netzwerk des ONTAP-Clusters den  `ssh` Befehl in einem der folgenden Formate eingeben:
 +
 ** `*ssh _username@hostname_or_IP_ [_command_]*`
 ** `*ssh -l _username hostname_or_IP_ [_command_]*`
@@ -63,14 +64,14 @@ Wenn die Multi-Faktor-Authentifizierung mittels SSH aktiviert ist, werden Benutz
 
 
 
-Wenn Sie ein AD-Domain-Benutzerkonto verwenden, müssen Sie `_username_` das Format `_domainname\\AD_accountname_` (mit doppelten Backslashes nach dem Domänennamen) oder `"_domainname\AD_accountname_"` (in doppelte Anführungszeichen und mit einem einzigen Backslash nach dem Domänennamen) angeben.
+Wenn Sie ein AD-Domänenbenutzerkonto verwenden, muss  `_username_` im Format  `_domainname\\AD_accountname_` (mit doppelten Backslashes nach dem Domänennamen) oder  `"_domainname\AD_accountname_"` (in doppelten Anführungszeichen und mit einem einfachen Backslash nach dem Domänennamen) angegeben werden.
 
-`_hostname_or_IP_` Ist der Host-Name oder die IP-Adresse der Cluster-Management-LIF oder eine Node-Management-LIF. Es wird empfohlen, die Cluster-Management-LIF zu verwenden. Sie können eine IPv4- oder IPv6-Adresse verwenden.
+`_hostname_or_IP_` ist der Hostname oder die IP-Adresse des Cluster-Management-LIF oder eines Node-Management-LIF. Die Verwendung des Cluster-Management-LIF wird empfohlen. Es kann eine IPv4- oder IPv6-Adresse verwendet werden.
 
-`_command_` Ist für SSH-interaktive Sitzungen nicht erforderlich.
+`_command_` ist für SSH-interaktive Sitzungen nicht erforderlich.
 
-.Beispiele für SSH-Anforderungen
-Die folgenden Beispiele zeigen, wie das Benutzerkonto mit dem Namen „`joe`“ eine SSH-Anforderung für den Zugriff auf ein Cluster ausgeben kann, dessen Cluster-Management-LIF 10.72.137.28 ist:
+.Beispiele für SSH-Anfragen
+Die folgenden Beispiele zeigen, wie das Benutzerkonto mit dem Namen "`joe`" eine SSH-Anfrage an einen Cluster stellen kann, dessen Cluster-Management-LIF 10.72.137.28 ist:
 
 [listing]
 ----
@@ -93,7 +94,7 @@ node1                 true    true
 node2                 true    true
 2 entries were displayed.
 ----
-Die folgenden Beispiele zeigen, wie das Benutzerkonto „`john`“ aus der Domäne „`DOMAIN1`“ eine SSH-Anforderung für den Zugriff auf einen Cluster ausgeben kann, dessen Cluster-Management-LIF 10.72.137.28 ist:
+Die folgenden Beispiele zeigen, wie das Benutzerkonto mit dem Namen "`john`" aus der Domäne mit dem Namen "`DOMAIN1`" eine SSH-Anfrage an einen Cluster stellen kann, dessen Cluster-Management-LIF 10.72.137.28 ist:
 
 [listing]
 ----
@@ -116,7 +117,7 @@ node1                 true    true
 node2                 true    true
 2 entries were displayed.
 ----
-Das folgende Beispiel zeigt, wie das Benutzerkonto mit dem Namen „`joe`“ eine SSH MFA-Anforderung für den Zugriff auf ein Cluster ausgeben kann, dessen Cluster-Management-LIF 10.72.137.32 ist:
+Das folgende Beispiel zeigt, wie das Benutzerkonto mit dem Namen "`joe`" eine SSH-MFA-Anfrage stellen kann, um auf einen Cluster zuzugreifen, dessen Cluster-Management-LIF 10.72.137.32 ist:
 
 [listing]
 ----

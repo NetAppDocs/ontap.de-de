@@ -2,68 +2,68 @@
 permalink: encryption-at-rest/configure-netapp-volume-encryption-concept.html 
 sidebar: sidebar 
 keywords: volume encryption, nve, aggregate-level, support details, data encryption, encrypt data at rest, storage encryption, key 
-summary: 'NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie, mit der Daten im Ruhezustand um ein Volume gleichzeitig verschlüsselt werden. Ein Verschlüsselungsschlüssel, auf den nur das Storage-System zugegriffen werden kann, stellt sicher, dass Volume-Daten nicht gelesen werden können, wenn das zugrunde liegende Gerät neu verwendet, zurückgegeben, verlegt oder gestohlen wird.' 
+summary: 'NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie zur Verschlüsselung von Daten im Ruhezustand, jeweils eines Volumes. Ein nur dem Speichersystem zugänglicher Verschlüsselungsschlüssel gewährleistet, dass die Volume-Daten nicht gelesen werden können, falls das zugrunde liegende Gerät anderweitig verwendet, zurückgegeben, verlegt oder gestohlen wird.' 
 ---
-= Erfahren Sie mehr über ONTAP NetApp Volume- und Aggregatverschlüsselung
+= Informationen zu ONTAP NetApp Volume- und Aggregatverschlüsselung
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie, mit der Daten im Ruhezustand um ein Volume gleichzeitig verschlüsselt werden. Ein Verschlüsselungsschlüssel, auf den nur das Storage-System zugegriffen werden kann, stellt sicher, dass Volume-Daten nicht gelesen werden können, wenn das zugrunde liegende Gerät neu verwendet, zurückgegeben, verlegt oder gestohlen wird.
+NetApp Volume Encryption (NVE) ist eine softwarebasierte Technologie zur Verschlüsselung von Daten im Ruhezustand, jeweils eines Volumes. Ein nur dem Speichersystem zugänglicher Verschlüsselungsschlüssel gewährleistet, dass die Volume-Daten nicht gelesen werden können, falls das zugrunde liegende Gerät anderweitig verwendet, zurückgegeben, verlegt oder gestohlen wird.
 
 
 
 [[understanding-nve]]
-== Allgemeines zu NVE
+== Überblick über NVE
 
-Mit NVE werden Metadaten und Daten (einschließlich Snapshots) verschlüsselt. Der Zugriff auf die Daten erfolgt über einen eindeutigen XTS-AES-256-Schlüssel, einen pro Volume. Ein externer Schlüsselmanagementserver oder Onboard Key Manager (OKM) bedient Schlüssel zu Knoten:
+Bei NVE werden sowohl Metadaten als auch Daten (einschließlich Snapshots) verschlüsselt. Der Zugriff auf die Daten erfolgt über einen eindeutigen XTS-AES-256-Schlüssel, einen pro Volume. Ein externer Schlüsselverwaltungsserver oder Onboard Key Manager (OKM) stellt den Knoten die Schlüssel bereit:
 
-* Der externe Verschlüsselungsmanagement-Server ist ein Drittanbietersystem in der Storage-Umgebung, das mithilfe des Key Management Interoperability Protocol (KMIP) Schlüssel zu Nodes bereitstellt. Als Best Practice wird empfohlen, externe Verschlüsselungsmanagementserver auf einem anderen Storage-System zu Ihren Daten zu konfigurieren.
-* Der Onboard Key Manager ist ein integriertes Tool, das Schlüssel zu Nodes aus demselben Storage-System wie Ihre Daten bereitstellt.
-
-
-Ab ONTAP 9.7 ist die Aggregat- und Volume-Verschlüsselung standardmäßig aktiviert, wenn Sie über eine VE-Lizenz (Volume Encryption) verfügen und einen integrierten oder externen Schlüsselmanager verwenden. Die VE-Lizenz ist im Lieferumfang enthaltenlink:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"]. Bei der Konfiguration eines externen oder integrierten Schlüsselmanagers ändert sich die Konfiguration der Verschlüsselung von Daten im Ruhezustand für brandneue Aggregate und brandneue Volumes. Bei neuen Aggregaten ist die NetApp Aggregate Encryption (NAE) standardmäßig aktiviert. Für brandneue Volumes, die nicht Teil eines NAE-Aggregats sind, ist NetApp Volume Encryption (NVE) standardmäßig aktiviert. Wenn eine Storage Virtual Machine (SVM) mit einem eigenen Schlüsselmanager über mandantenfähiges Verschlüsselungsmanagement konfiguriert wird, wird das für diese SVM erstellte Volume automatisch mit NVE konfiguriert.
-
-Sie können die Verschlüsselung auf einem neuen oder vorhandenen Volume aktivieren. NVE unterstützt eine breite Palette an Storage-Effizienzfunktionen, einschließlich Deduplizierung und Komprimierung. Beginnend mit ONTAP 9.14.1, können Sie xref:configure-nve-svm-root-task.html[Aktivieren Sie NVE bei vorhandenen SVM-Root-Volumes].
+* Der externe Schlüsselverwaltungsserver ist ein Drittanbietersystem in Ihrer Speicherumgebung, das Schlüssel für Knoten mithilfe des Key Management Interoperability Protocol (KMIP) bereitstellt. Es gilt als Best Practice, externe Schlüsselverwaltungsserver auf einem anderen Speichersystem als Ihren Daten zu konfigurieren.
+* Der Onboard Key Manager ist ein integriertes Tool, das Schlüssel für Knoten aus demselben Speichersystem bereitstellt, in dem sich auch Ihre Daten befinden.
 
 
-NOTE: Wenn Sie SnapLock verwenden, können Sie nur die Verschlüsselung auf neuen, leeren SnapLock Volumes aktivieren. Sie können die Verschlüsselung auf einem vorhandenen SnapLock-Volume nicht aktivieren.
+Ab ONTAP 9.7 ist die Aggregat- und Volumenverschlüsselung standardmäßig aktiviert, sofern Sie über eine Volumenverschlüsselungslizenz (VE) verfügen und einen integrierten oder externen Schlüsselmanager verwenden. Die VE-Lizenz ist mit link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One"] enthalten. Sobald ein externer oder interner Schlüsselmanager konfiguriert ist, ändert sich die Art und Weise, wie die Verschlüsselung von Daten im Ruhezustand für neue Aggregate und neue Volumes konfiguriert wird. Neue Aggregate haben NetApp Aggregate Encryption (NAE) standardmäßig aktiviert. Neue Volumes, die nicht Teil eines NAE-Aggregats sind, haben NetApp Volume Encryption (NVE) standardmäßig aktiviert. Wenn eine Storage Virtual Machine (SVM) mit einem eigenen Schlüsselmanager unter Verwendung von mandantenfähigem Schlüsselmanagement konfiguriert ist, wird das für diese SVM erstellte Volume automatisch mit NVE konfiguriert.
 
-NVE kann für jeden Aggregattyp (HDD, SSD, Hybrid, Array LUN), mit jedem RAID-Typ und in jeder unterstützten ONTAP Implementierung, einschließlich ONTAP Select, eingesetzt werden. NVE kann auch mit hardwarebasierter Verschlüsselung verwendet werden, um Daten auf Self-Encrypting Drives `double Encryption` zu verschlüsseln.
+Sie können die Verschlüsselung für ein neues oder bestehendes Volume aktivieren. NVE unterstützt alle Funktionen zur Speichereffizienz, einschließlich Deduplizierung und Komprimierung. Ab ONTAP 9.14.1 ist es möglich, xref:configure-nve-svm-root-task.html[NVE auf vorhandenen SVM Root-Volumes aktivieren].
 
-Wenn NVE aktiviert ist, wird der Core Dump ebenfalls verschlüsselt.
+
+NOTE: Wenn Sie SnapLock verwenden, kann die Verschlüsselung nur auf neuen, leeren SnapLock Volumes aktiviert werden. Die Verschlüsselung kann auf einem bestehenden SnapLock-Volume nicht aktiviert werden.
+
+NVE kann auf jedem Aggregattyp (HDD, SSD, Hybrid, Array-LUN), mit jedem RAID-Typ und in jeder unterstützten ONTAP Implementierung, einschließlich ONTAP Select, verwendet werden. NVE kann außerdem mit hardwarebasierter Verschlüsselung genutzt werden, um Daten auf selbstverschlüsselnden Laufwerken „doppelt zu verschlüsseln“.
+
+Wenn NVE aktiviert ist, wird auch der Core Dump verschlüsselt.
 
 
 
 [[aggregate-level-encryption]]
 == Verschlüsselung auf Aggregatebene
 
-Normalerweise wird jedem verschlüsselten Volume ein eindeutiger Schlüssel zugewiesen. Wenn das Volume gelöscht wird, wird der Schlüssel mit ihm gelöscht.
+Normalerweise wird jedem verschlüsselten Datenträger ein eindeutiger Schlüssel zugewiesen. Wenn der Datenträger gelöscht wird, wird auch der Schlüssel gelöscht.
 
-Ab ONTAP 9.6 können Sie _NetApp Aggregate Encryption (NAE)_ verwenden, um dem zugehörigen Aggregat Schlüssel zuzuweisen, damit die Volumes verschlüsselt werden. Beim Löschen eines verschlüsselten Volumes bleiben die Schlüssel für das Aggregat erhalten. Die Schlüssel werden gelöscht, wenn das gesamte Aggregat gelöscht wird.
+Ab ONTAP 9.6 kann die NetApp Aggregate Encryption (NAE) verwendet werden, um Schlüssel dem Aggregat zuzuweisen, das die zu verschlüsselnden Volumes enthält. Wenn ein verschlüsseltes Volume gelöscht wird, bleiben die Schlüssel für das Aggregat erhalten. Die Schlüssel werden gelöscht, wenn das gesamte Aggregat gelöscht wird.
 
-Wenn Sie eine Inline- oder eine Hintergrund-Deduplizierung auf Aggregatebene durchführen möchten, muss die Verschlüsselung auf Aggregatebene verwendet werden. Deduplizierung auf Aggregatebene wird ansonsten von NVE nicht unterstützt.
+Eine Verschlüsselung auf Aggregatebene ist erforderlich, wenn eine Inline- oder Hintergrunddeduplizierung auf Aggregatebene vorgesehen ist. Die Deduplizierung auf Aggregatebene wird ansonsten von NVE nicht unterstützt.
 
-Ab ONTAP 9.7 ist die Aggregat- und Volume-Verschlüsselung standardmäßig aktiviert, wenn Sie über eine VE-Lizenz (Volume Encryption) verfügen und einen integrierten oder externen Schlüsselmanager verwenden.
+Ab ONTAP 9.7 ist die Aggregat- und Volumenverschlüsselung standardmäßig aktiviert, sofern Sie über eine Volumenverschlüsselungslizenz (VE) verfügen und einen integrierten oder externen Schlüsselmanager verwenden.
 
-NVE und NAE-Volumes können gleichzeitig im selben Aggregat bestehen. Bei der Verschlüsselung von Volumes auf Aggregatebene sind standardmäßig NAE-Volumes enthalten. Sie können den Standardwert überschreiben, wenn Sie das Volume verschlüsseln.
+NVE- und NAE-Volumes können auf demselben Aggregat koexistieren. Volumes, die unter Aggregat-Verschlüsselung verschlüsselt werden, sind standardmäßig NAE-Volumes. Die Standardeinstellung kann bei der Verschlüsselung des Volumes außer Kraft gesetzt werden.
 
-Mit dem `volume move` Befehl können Sie ein NVE-Volume in ein NAE Volume konvertieren und umgekehrt. Sie können ein NAE-Volume auf ein NVE Volume replizieren.
+Sie können den  `volume move`Befehl verwenden, um ein NVE-Volume in ein NAE-Volume zu konvertieren und umgekehrt. Ein NAE-Volume kann auf ein NVE-Volume repliziert werden.
 
-Sie können keine `secure purge` Befehle für ein NAE-Volume verwenden.
+Sie können  `secure purge`-Befehle nicht auf einem NAE-Volume verwenden.
 
 
 
 [[when-to-use-external-key-management-servers]]
-== Wann sollten Sie externe Verschlüsselungsmanagementserver verwenden
+== Wann externe Schlüsselverwaltungsserver verwendet werden
 
-Die Verwendung des Onboard-Schlüsselmanagers ist kostengünstiger und in der Regel bequemer, doch Sie sollten KMIP-Server einrichten, wenn eine der folgenden Angaben zutrifft:
+Auch wenn die Verwendung des integrierten Schlüsselmanagers kostengünstiger und in der Regel bequemer ist, empfiehlt sich die Einrichtung von KMIP-Servern, wenn eine der folgenden Bedingungen zutrifft:
 
-* Ihre Lösung für das Verschlüsselungsmanagement muss den Federal Information Processing Standards (FIPS) 140-2 oder DEM OASIS KMIP Standard entsprechen.
-* Sie benötigen eine Multi-Cluster-Lösung mit zentralem Management von Verschlüsselungen.
-* Ihr Unternehmen erfordert die zusätzliche Sicherheit beim Speichern von Authentifizierungsschlüsseln auf einem System oder an einem anderen Speicherort als den Daten.
+* Ihre Lösung zur Verwaltung von Verschlüsselungsschlüsseln muss den Federal Information Processing Standards (FIPS) 140-2 oder dem OASIS KMIP Standard entsprechen.
+* Sie benötigen eine Multi-Cluster-Lösung mit zentralisierter Verwaltung der Verschlüsselungsschlüssel.
+* Ihr Unternehmen benötigt die zusätzliche Sicherheit, Authentifizierungsschlüssel auf einem System oder an einem anderen Ort als die Daten zu speichern.
 
 
 
@@ -71,61 +71,61 @@ Die Verwendung des Onboard-Schlüsselmanagers ist kostengünstiger und in der Re
 [[scope-of-external-key-management]]
 == Umfang des externen Schlüsselmanagements
 
-Der Umfang des externen Verschlüsselungsmanagement bestimmt, ob wichtige Managementserver alle SVMs im Cluster oder nur ausgewählte SVMs sichern:
+Der Umfang der externen Schlüsselverwaltung bestimmt, ob Schlüsselverwaltungsserver alle SVMs im Cluster oder nur ausgewählte SVMs sichern:
 
-* Sie können ein_Cluster Scope_ verwenden, um das externe Verschlüsselungsmanagement für alle SVMs im Cluster zu konfigurieren. Der Clusteradministrator hat Zugriff auf jeden auf den Servern gespeicherten Schlüssel.
-* Ab ONTAP 9.6 können Sie mithilfe eines Umfangs _SVM_ externes Verschlüsselungsmanagement für eine im Cluster genannte SVM konfigurieren. Dies eignet sich am besten für mandantenfähige Umgebungen, in denen jeder Mandant eine andere SVM (oder einen Satz SVMs) zur Bereitstellung von Daten verwendet. Nur der SVM-Administrator für einen bestimmten Mandanten hat Zugriff auf die Schlüssel für den jeweiligen Mandanten.
+* Sie können einen Clusterbereich verwenden, um die externe Schlüsselverwaltung für alle SVMs im Cluster zu konfigurieren. Der Clusteradministrator hat Zugriff auf alle auf den Servern gespeicherten Schlüssel.
+* Ab ONTAP 9.6 kann mithilfe eines SVM-Bereichs die externe Schlüsselverwaltung für eine benannte SVM im Cluster konfiguriert werden. Das ist optimal für mandantenfähige Umgebungen, in denen jeder Mandant eine andere SVM (oder eine Gruppe von SVMs) zur Datenbereitstellung verwendet. Nur der SVM-Administrator eines bestimmten Mandanten hat Zugriff auf die Schlüssel dieses Mandanten.
 +
-** Ab ONTAP 9.17.1 können Sie xref:manage-keys-barbican-task.html[Barbican KMS] um NVE-Schlüssel nur für Daten-SVMs zu schützen.
-** Ab ONTAP 9.10.1 können xref:manage-keys-azure-google-task.html[Azure Key Vault und Google Cloud KMS]NVE-Schlüssel nur für Daten-SVMs geschützt werden. Dies ist für KMS von AWS ab 9.12.0 verfügbar.
+** Ab ONTAP 9.17.1 kann xref:manage-keys-barbican-task.html[Barbican KMS] verwendet werden, um NVE-Schlüssel nur für Daten-SVMs zu schützen.
+** Ab ONTAP 9.10.1 kann xref:manage-keys-azure-google-task.html[Azure Key Vault und Google Cloud KMS] verwendet werden, um NVE-Schlüssel nur für Daten-SVMs zu schützen. Dies ist für AWS KMS ab 9.12.0 verfügbar.
 
 
 
 
-Sie können beide Bereiche im selben Cluster verwenden. Wenn Verschlüsselungsmanagement-Server für eine SVM konfiguriert wurden, verwendet ONTAP nur diese Server zur Sicherung der Schlüssel. Andernfalls sichert ONTAP Schlüssel mit den für den Cluster konfigurierten Verschlüsselungsmanagement-Servern.
+Beide Bereiche können im selben Cluster verwendet werden. Wenn Schlüsselverwaltungsserver für eine SVM konfiguriert wurden, verwendet ONTAP ausschließlich diese Server zur Sicherung der Schlüssel. Andernfalls sichert ONTAP die Schlüssel mit den für den Cluster konfigurierten Schlüsselverwaltungsservern.
 
-Eine Liste der validierten externen Schlüsselmanager finden Sie im link:http://mysupport.netapp.com/matrix/["NetApp Interoperabilitäts-Matrix-Tool (IMT)"^]. Sie können diese Liste finden, indem Sie in die Suchfunktion des IMT den Begriff „wichtige Manager“ eingeben.
+Eine Liste validierter externer Schlüsselmanager ist verfügbar im link:http://mysupport.netapp.com/matrix/["NetApp Interoperabilitätsmatrix Tool (IMT)"^]. Diese Liste lässt sich finden, indem der Begriff „key managers“ in die Suchfunktion des IMT eingegeben wird.
 
 
-NOTE: Cloud-KMS-Provider wie Azure Key Vault und AWS KMS unterstützen KMIP nicht. Aus diesem Grund sind sie nicht auf IMT aufgeführt.
+NOTE: Cloud KMS-Anbieter wie Azure Key Vault und AWS KMS unterstützen KMIP nicht. Daher sind sie nicht im IMT aufgeführt.
 
 
 
 [[support-details]]
-== Support-Details
+== Supportdetails
 
-In der folgenden Tabelle sind die Support-Details von NVE aufgeführt:
+Die folgende Tabelle enthält Details zur NVE-Unterstützung:
 
 [cols="25,75"]
 |===
 
 
-| Ressource oder Funktion | Support-Details 
+| Ressource oder Funktion | Supportdetails 
 
 
  a| 
 Plattformen
  a| 
-Eine AES-NI-Offload-Funktion ist erforderlich. Überprüfen Sie im Hardware Universe (HWU), ob NVE und NAE für Ihre Plattform unterstützt werden.
+AES-NI Offload-Funktionalität erforderlich. Im Hardware Universe (HWU) kann überprüft werden, ob NVE und NAE für Ihre Plattform unterstützt werden.
 
 
 
  a| 
 Verschlüsselung
  a| 
-Ab ONTAP 9.7 werden neu erstellte Aggregate und Volumes standardmäßig verschlüsselt, wenn Sie eine VE-Lizenz (Volume Encryption) hinzufügen und einen integrierten oder externen Schlüsselmanager konfigurieren. Wenn Sie ein unverschlüsseltes Aggregat erstellen müssen, verwenden Sie den folgenden Befehl:
+Ab ONTAP 9.7 werden neu erstellte Aggregate und Volumes standardmäßig verschlüsselt, wenn eine Volume-Verschlüsselungslizenz (VE) hinzugefügt und ein interner oder externer Schlüsselmanager konfiguriert ist. Falls ein unverschlüsseltes Aggregat erstellt werden soll, kann folgender Befehl verwendet werden:
 
 `storage aggregate create -encrypt-with-aggr-key false`
 
-Wenn Sie ein Klartextvolume erstellen müssen, verwenden Sie den folgenden Befehl:
+Wenn Sie ein Klartext-Volume erstellen müssen, kann folgender Befehl verwendet werden:
 
 `volume create -encrypt false`
 
-Die Verschlüsselung ist standardmäßig nicht aktiviert, wenn:
+Die Verschlüsselung ist nicht standardmäßig aktiviert, wenn:
 
 * Die VE-Lizenz ist nicht installiert.
-* Schlüsselmanager ist nicht konfiguriert.
-* Plattform oder Software unterstützt keine Verschlüsselung.
+* Der Schlüsselmanager ist nicht konfiguriert.
+* Die Plattform oder Software unterstützt keine Verschlüsselung.
 * Die Hardwareverschlüsselung ist aktiviert.
 
 
@@ -134,14 +134,14 @@ Die Verschlüsselung ist standardmäßig nicht aktiviert, wenn:
  a| 
 ONTAP
  a| 
-Alle ONTAP -Implementierungen. Unterstützung für Cloud Volumes ONTAP ist in ONTAP 9.5 und höher verfügbar.
+Alle ONTAP Implementierungen. Unterstützung für Cloud Volumes ONTAP ist ab ONTAP 9.5 verfügbar.
 
 
 
  a| 
 Geräte
  a| 
-HDD, SSD, Hybrid, Array-LUN.
+HDD, SSD, Hybrid, Array LUN.
 
 
 
@@ -155,7 +155,7 @@ RAID0, RAID4, RAID-DP, RAID-TEC.
  a| 
 Volumes
  a| 
-Daten-Volumes und vorhandene SVM-Root-Volumes. Daten auf MetroCluster Metadaten-Volumes können nicht verschlüsselt werden. Bei älteren Versionen als ONTAP 9.14.1 können Daten auf dem SVM-Root-Volume nicht mit NVE verschlüsselt werden. Ab ONTAP 9.14.1 unterstützt ONTAP xref:configure-nve-svm-root-task.html[NVE auf SVM Root-Volumes].
+Datenvolumes und vorhandene SVM-Root-Volumes. Daten auf MetroCluster-Metadaten-Volumes können nicht verschlüsselt werden. In Versionen von ONTAP vor 9.14.1 können Daten auf dem SVM-Root-Volume mit NVE nicht verschlüsselt werden. Ab ONTAP 9.14.1 wird ONTAP xref:configure-nve-svm-root-task.html[NVE auf SVM Root-Volumes] unterstützt.
 
 
 
@@ -164,16 +164,16 @@ Verschlüsselung auf Aggregatebene
  a| 
 Ab ONTAP 9.6 unterstützt NVE die Verschlüsselung auf Aggregatebene (NAE):
 
-* Wenn Sie eine Inline- oder eine Hintergrund-Deduplizierung auf Aggregatebene durchführen möchten, muss die Verschlüsselung auf Aggregatebene verwendet werden.
-* Sie können ein Verschlüsselungsvolume auf Aggregatebene nicht rekeykey.
-* Sichere Löschung wird auf Verschlüsselungs-Volumes auf Aggregatebene nicht unterstützt.
-* Neben Daten-Volumes unterstützt NAE auch die Verschlüsselung von SVM Root-Volumes und dem MetroCluster Metadaten-Volume. NAE unterstützt keine Verschlüsselung des Root-Volumes.
+* Eine Verschlüsselung auf Aggregatebene ist erforderlich, wenn eine Inline- oder Hintergrunddeduplizierung auf Aggregatebene vorgesehen ist.
+* Ein Volume mit Verschlüsselung auf Aggregatebene kann nicht neu verschlüsselt werden.
+* Secure-purge wird auf Verschlüsselungs-Volumes auf Aggregatebene nicht unterstützt.
+* Zusätzlich zu den Datenvolumes unterstützt NAE die Verschlüsselung von SVM-Root-Volumes und des MetroCluster Metadaten-Volumes. NAE unterstützt die Verschlüsselung des Root-Volumes nicht.
 
 
 
 
  a| 
-SVM-Umfang
+SVM-Bereich
  a| 
 MetroCluster wird ab ONTAP 9.8 unterstützt.
 
@@ -182,45 +182,45 @@ Ab ONTAP 9.6 unterstützt NVE den SVM-Bereich nur für die externe Schlüsselver
 
 
  a| 
-Storage-Effizienz
+Speichereffizienz
  a| 
-Deduplizierung, Komprimierung, Data-Compaction, FlexClone:
+Deduplizierung, Komprimierung, Verdichtung, FlexClone.
 
-Klone verwenden denselben Schlüssel wie das übergeordnete Objekt, auch nachdem der Klon vom übergeordneten Objekt geteilt wurde. Sie sollten einen `volume move` für einen geteilten Klon durchführen, nach dem der geteilte Klon einen anderen Schlüssel hat.
-
-
-
- a| 
-Replizierung
- a| 
-* Für die Volume-Replikation können die Quell- und Ziel-Volumes über unterschiedliche Verschlüsselungseinstellungen verfügen. Die Verschlüsselung kann für die Quelle konfiguriert und für das Ziel nicht konfiguriert und umgekehrt werden. Die konfigurierte Verschlüsselung auf der Quelle wird nicht auf das Ziel repliziert. Die Verschlüsselung muss auf Quelle und Ziel manuell konfiguriert werden. Siehe xref:cluster-version-support-nve-task.html[NVE konfigurieren] und xref:encrypt-volumes-concept.html[Verschlüsseln von Volume-Daten mit NVE].
-* Bei der SVM-Replikation wird das Ziel-Volume automatisch verschlüsselt, es sei denn, das Ziel enthält keinen Node, der Volume Encryption unterstützt. In diesem Fall ist die Replikation erfolgreich, das Ziel-Volume ist jedoch nicht verschlüsselt.
-* Bei MetroCluster-Konfigurationen zieht jedes Cluster externe Verschlüsselungsmanagementschlüssel von den konfigurierten Schlüsselservern ab. OKM-Schlüssel werden vom Konfigurations-Replikationsservice auf den Partnerstandort repliziert.
-
+Klone verwenden denselben Schlüssel wie das Elternobjekt, selbst nachdem sie vom Elternobjekt getrennt wurden. Ein  `volume move` sollte auf einem geteilten Klon durchgeführt werden, danach verfügt der geteilte Klon über einen anderen Schlüssel.
 
 
 
  a| 
-Compliance
+Replication
  a| 
-SnapLock wird sowohl im Compliance- als auch im Enterprise-Modus nur für neue Volumes unterstützt. Sie können die Verschlüsselung auf einem vorhandenen SnapLock-Volume nicht aktivieren.
+* Bei der Volume-Replikation können Quell- und Zielvolume unterschiedliche Verschlüsselungseinstellungen aufweisen. Die Verschlüsselung kann für die Quelle konfiguriert und für das Ziel nicht konfiguriert werden, und umgekehrt. Die auf der Quelle konfigurierte Verschlüsselung wird nicht auf das Ziel repliziert. Die Verschlüsselung muss sowohl auf der Quelle als auch auf dem Ziel manuell konfiguriert werden. Siehe xref:cluster-version-support-nve-task.html[NVE konfigurieren] und xref:encrypt-volumes-concept.html[Volumendaten mit NVE verschlüsseln].
+* Bei der SVM-Replikation wird das Zielvolume automatisch verschlüsselt, es sei denn, das Ziel enthält keinen Knoten, der die Volume-Verschlüsselung unterstützt, in welchem Fall die Replikation erfolgreich ist, das Zielvolume jedoch nicht verschlüsselt wird.
+* Für MetroCluster Konfigurationen ruft jeder Cluster externe Schlüsselverwaltungsschlüssel von seinen konfigurierten Schlüsselservern ab. OKM-Schlüssel werden vom Konfigurationsreplikationsdienst an den Partnerstandort repliziert.
+
+
+
+
+ a| 
+Einhaltung
+ a| 
+SnapLock wird sowohl im Compliance- als auch im Enterprise-Modus unterstützt, jedoch nur für neue Volumes. Die Verschlüsselung kann auf einem bestehenden SnapLock-Volume nicht aktiviert werden.
 
 
 
  a| 
 FlexGroup Volumes
  a| 
-FlexGroup -Volumes werden unterstützt. Zielaggregate müssen vom gleichen Typ sein wie Quellaggregate, entweder auf Volume-Ebene oder auf Aggregatebene. Ab ONTAP 9.5 wird auch der in-Place-Rekey von FlexGroup Volumes unterstützt.
+FlexGroup Volumes werden unterstützt. Zielaggregate müssen vom gleichen Typ wie Quellaggregate sein, entweder auf Volume- oder Aggregateebene. Ab ONTAP 9.5 wird die direkte Neuverschlüsselung von FlexGroup Volumes unterstützt.
 
 
 
  a| 
-Umstieg von 7-Mode
+7-Mode Transition
  a| 
-Ab dem 7-Mode Transition Tool 3.3 können Sie mithilfe der CLI des 7-Mode Transition Tool eine Copy-basierte Transition zu NVE-fähigen Ziel-Volumes auf dem geclusterten System durchführen.
+Ab Version 3.3 des 7-Mode Transition Tool kann die CLI des 7-Mode Transition Tool verwendet werden, um einen kopierbasierten Übergang zu NVE-fähigen Ziel-Volumes auf dem geclusterten System durchzuführen.
 
 |===
 .Verwandte Informationen
-* link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/FAQ%3A_NetApp_Volume_Encryption_and_NetApp_Aggregate_Encryption["FAQ – NetApp Volume Encryption und NetApp Aggregate Encryption"^]
+* link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/FAQ%3A_NetApp_Volume_Encryption_and_NetApp_Aggregate_Encryption["Häufig gestellte Fragen – NetApp Volume Encryption und NetApp Aggregate Encryption"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-create.html["Speicheraggregat erstellen"^]
 

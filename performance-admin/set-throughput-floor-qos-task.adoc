@@ -16,24 +16,24 @@ Ein QoS-Mindestwert oder eine Durchsatzuntergrenze garantiert, dass der Durchsat
 Sie können das  `min-throughput` Feld für eine Richtliniengruppe verwenden, um einen Durchsatzboden für Speicherobjekt-Workloads (QoS Min) zu definieren. Sie können die Richtliniengruppe anwenden, wenn Sie das Speicherobjekt erstellen oder ändern.
 
 .Bevor Sie beginnen
-* Zum Erstellen einer Richtliniengruppe müssen Sie ein Cluster-Administrator sein.
+* Um eine Richtliniengruppe zu erstellen, ist die Rolle als Cluster-Administrator erforderlich.
 
 
 .Über diese Aufgabe
-* Ab ONTAP 9.13.1 lassen sich Durchsatzwerte auf SVM-Ebene mithilfe eines erzwingenxref:adaptive-policy-template-task.html[Vorlage für adaptive Richtliniengruppen]. Sie können keine Vorlage für adaptive Richtliniengruppen auf einer SVM mit einer QoS-Richtliniengruppe festlegen.
+* Ab ONTAP 9.13.1 kann eine Durchsatzuntergrenze auf SVM-Ebene mithilfe einer xref:adaptive-policy-template-task.html[Vorlage für eine adaptive Richtliniengruppe] adaptiven Richtliniengruppenvorlage durchgesetzt werden. Eine adaptive Richtliniengruppenvorlage kann auf einer SVM mit einer QoS-Richtliniengruppe nicht festgelegt werden.
 * Ab ONTAP 9.8 können Sie den Durchsatzminimumwert in IOPS oder MBps oder in IOPS und MBps angeben.
-* Ab ONTAP 9.4 können Sie mithilfe einer Richtliniengruppe ohne Shared_ QoS festlegen, dass die definierte Durchsatzfläche auf jeden Workload der Mitglieder einzeln angewendet wird. Dies ist die einzige Bedingung, bei der eine Richtliniengruppe für eine Durchsatzboden auf mehrere Workloads angewendet werden kann.
+* Ab ONTAP 9.4 kann mit einer _nicht gemeinsam genutzten_ QoS-Richtliniengruppe festgelegt werden, dass das definierte Durchsatzminimum auf jede einzelne Workload angewendet wird. Dies ist die einzige Bedingung, unter der eine Richtliniengruppe für ein Durchsatzminimum auf mehrere Workloads angewendet werden kann.
 +
-Legen Sie `-is-shared=false` für den `qos policy-group create` Befehl fest, um eine nicht freigegebene Richtliniengruppe anzugeben.
+Setzen Sie  `-is-shared=false` für den  `qos policy-group create` Befehl, um eine nicht gemeinsam genutzte Richtliniengruppe anzugeben.
 
-* Der Durchsatz für einen Workload könnte unter die angegebene Etage fallen, wenn auf dem Node oder Aggregat keine Performance-Kapazität (Reserve) vorhanden ist.
-* Ein Storage-Objekt, das einem QoS-Limit unterliegt, muss von der SVM, der die Richtliniengruppe angehört, enthalten sein. Mehrere Richtliniengruppen können derselben SVM angehören.
-* Es handelt sich um eine Best Practice bei QoS, eine Richtliniengruppe auf denselben Storage-Typ anzuwenden.
-* Eine Richtliniengruppe mit Durchsatzboden kann nicht auf eine SVM angewendet werden.
+* Der Durchsatz einer Arbeitslast kann unter den festgelegten Mindestwert fallen, wenn auf dem Knoten oder im Aggregat nicht genügend Leistungskapazität (Spielraum) vorhanden ist.
+* Ein Speicherobjekt, das einer QoS-Beschränkung unterliegt, muss in der SVM enthalten sein, zu der die Richtliniengruppe gehört. Mehrere Richtliniengruppen können derselben SVM angehören.
+* Es ist eine QoS-Best Practice, eine Richtliniengruppe auf Speicherobjekte desselben Typs anzuwenden.
+* Eine Richtliniengruppe, die ein Durchsatzminimum definiert, kann nicht auf eine SVM angewendet werden.
 
 
 .Schritte
-. Prüfen Sie, ob auf dem Node oder Aggregat eine ausreichende Performance-Kapazität zur link:identify-remaining-performance-capacity-task.html["Identifizierung der verbleibenden Performance-Kapazität"]Verfügung steht, wie in beschrieben.
+. Es sollte überprüft werden, ob die Leistungskapazität des Knotens oder Aggregats ausreichend ist, wie in link:identify-remaining-performance-capacity-task.html["Ermittlung der verbleibenden Leistungskapazität"] beschrieben.
 . Erstellen einer Richtliniengruppe:
 +
 [source, cli]
@@ -41,7 +41,7 @@ Legen Sie `-is-shared=false` für den `qos policy-group create` Befehl fest, um 
 qos policy-group create -policy-group <policy_group> -vserver <SVM> -min-throughput <qos_target> -is-shared <true|false>
 ----
 +
-Erfahren Sie mehr über `qos policy-group create` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `qos policy-group create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-create.html["ONTAP-Befehlsreferenz"^].
 
 +
 Das folgende Beispiel erstellt die gemeinsam genutzte Richtliniengruppe `pg-vs2` mit einem minimalen Durchsatz von 1.000 IOPS:
@@ -60,9 +60,9 @@ Das folgende Beispiel erstellt die nicht gemeinsam genutzte Richtliniengruppe `p
 cluster1::> qos policy-group create -policy group pg-vs4 -vserver vs4 -is-shared false
 ----
 +
-Sie können den  `qos policy-group modify` Befehl verwenden, um Durchsatzgrenzen anzupassen. Erfahren Sie mehr über  `qos policy-group modify` im link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-modify.html["ONTAP-Befehlsreferenz"^].
+Sie können den  `qos policy-group modify` Befehl verwenden, um Durchsatzgrenzen anzupassen. Weitere Informationen zu  `qos policy-group modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/qos-policy-group-modify.html["ONTAP-Befehlsreferenz"^].
 
-. Anwenden einer Richtliniengruppe auf ein Volume oder eine LUN:
+. Eine Richtliniengruppe auf ein Volume oder eine LUN anwenden:
 +
 [source, cli]
 ----
@@ -88,7 +88,7 @@ qos statistics performance show
 +
 [NOTE]
 ====
-Monitoring der Performance über das Cluster Verwenden Sie kein Tool auf dem Host, um die Leistung zu überwachen.
+Die Leistung wird vom Cluster aus überwacht. Ein Tool auf dem Host sollte nicht zur Leistungsüberwachung verwendet werden.
 
 ====
 +
@@ -106,9 +106,9 @@ _System-Best-Effort        62       13.36KB/s     4.13ms
 _System-Background         30           0KB/s        0ms
 ----
 +
-Erfahren Sie mehr über `qos statistics performance show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-performance-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `qos statistics performance show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-performance-show.html["ONTAP-Befehlsreferenz"^].
 
-. Monitoring der Workload-Performance:
+. Überwachung der Arbeitslastleistung:
 +
 [source, cli]
 ----
@@ -117,7 +117,7 @@ qos statistics workload performance show
 +
 [NOTE]
 ====
-Monitoring der Performance über das Cluster Verwenden Sie kein Tool auf dem Host, um die Leistung zu überwachen.
+Die Leistung wird vom Cluster aus überwacht. Ein Tool auf dem Host sollte nicht zur Leistungsüberwachung verwendet werden.
 
 ====
 +
@@ -136,8 +136,8 @@ _USERSPACE_APPS     14       55        10.92KB/s   236.00us
 _Scan_Backgro..   5688       20            0KB/s        0ms
 ----
 +
-Erfahren Sie mehr über `qos statistics workload performance show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-performance-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `qos statistics workload performance show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-performance-show.html["ONTAP-Befehlsreferenz"^].
 
 
 
-Sie können mit dem `qos statistics workload latency show` Befehl detaillierte Latenzstatistiken für QoS-Workloads anzeigen. Erfahren Sie mehr über `qos statistics workload latency show` in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["ONTAP-Befehlsreferenz"^].
+Mit dem  `qos statistics workload latency show`Befehl können Sie detaillierte Latenzstatistiken für QoS-Workloads anzeigen. Weitere Informationen zu  `qos statistics workload latency show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["ONTAP-Befehlsreferenz"^].

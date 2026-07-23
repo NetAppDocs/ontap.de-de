@@ -2,87 +2,87 @@
 permalink: networking/convert-uta2-port-cna-fc.html 
 sidebar: sidebar 
 keywords: change, uta2, port, cna mode, fc mode 
-summary: Ändern Sie die UTA2-Persönlichkeit vom CNA-Modus in den FC-Modus, wenn Sie das physische Medium ändern müssen, das den Port mit seinem Netzwerk verbindet oder um die FC-Initiatoren und das Ziel zu unterstützen. 
+summary: Die UTA2-Persönlichkeit wird vom CNA-Modus in den FC-Modus geändert, wenn das physische Medium geändert werden muss, das den Port mit seinem Netzwerk verbindet, oder um die FC-Initiatoren und Zieladapter zu unterstützen. 
 ---
-= Konvertieren Sie den UTA2-Port zur Verwendung im ONTAP-Netzwerk
+= Den UTA2-Port für die Verwendung im ONTAP Netzwerk konvertieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie können den UTA2-Port vom CNA-Modus (Converged Network Adapter) in den FC-Modus (Fibre Channel) oder umgekehrt konvertieren.
+Sie können Ihren UTA2-Port vom Converged Network Adapter (CNA) Modus in den Fibre Channel (FC) Modus umwandeln oder umgekehrt.
 
-Sie sollten die UTA2-Persönlichkeit vom CNA-Modus in den FC-Modus ändern, wenn Sie das physische Medium ändern müssen, das den Port mit seinem Netzwerk verbindet oder um die FC-Initiatoren und das Ziel zu unterstützen.
+Die UTA2-Persönlichkeit ist vom CNA-Modus in den FC-Modus zu ändern, wenn das physische Medium geändert werden muss, das den Port mit seinem Netzwerk verbindet, oder um die Unterstützung von FC-Initiatoren und Zieladaptern zu ermöglichen.
 
 [role="tabbed-block"]
 ====
-.Vom CNA-Modus zum FC-Modus
+.Vom CNA-Modus in den FC-Modus
 --
 .Schritte
-. Versetzen Sie den Adapter in den Offline-Modus:
+. Den Adapter offline schalten:
 +
 [source, cli]
 ----
 network fcp adapter modify -node <node_name> -adapter <adapter_name> -status-admin down
 ----
-. Ändern des Portmodus:
+. Portmodus ändern:
 +
 [source, cli]
 ----
 ucadmin modify -node <node_name> -adapter <adapter_name> -mode fcp
 ----
-. Booten Sie den Node neu, und versetzen Sie den Adapter dann in den Online-Modus:
+. Den Knoten neu starten und anschließend den Adapter online schalten:
 +
 [source, cli]
 ----
 network fcp adapter modify -node <node_name> -adapter <adapter_name> -status-admin up
 ----
-. Benachrichtigen Sie den Administrator oder VIF-Manager, dass er den Port löschen oder entfernen soll, falls zutreffend:
+. Benachrichtigen Sie Ihren Administrator oder VIF-Manager, damit der Port je nach Bedarf gelöscht oder entfernt wird:
 +
-** Wenn der Port als Home Port einer logischen Schnittstelle verwendet wird, ist ein Mitglied einer Interface Group (ifgrp), oder Hosts VLANs, dann sollte ein Administrator Folgendes tun:
+** Wenn der Port als Home-Port eines LIF verwendet wird, Mitglied einer Schnittstellengruppe (ifgrp) ist oder VLANs hostet, sollte ein Administrator Folgendes tun:
 +
-*** Verschieben Sie die LIFs, entfernen Sie den Port aus dem ifgrp oder löschen Sie die VLANs.
-*** Löschen Sie den Port manuell, indem Sie den `network port delete` Befehl ausführen. Wenn der `network port delete` Befehl fehlschlägt, sollte der Admin die Fehler beheben und dann den Befehl erneut ausführen.
+*** Die LIFs verschieben, den Port aus der ifgrp entfernen oder die VLANs löschen.
+*** Der Port kann manuell gelöscht werden, indem der  `network port delete` Befehl ausgeführt wird. Falls der  `network port delete` Befehl fehlschlägt, sollte der Administrator die Fehler beheben und dann den Befehl erneut ausführen.
 
 
-** Wenn der Port nicht als Home-Port einer LIF verwendet wird, kein Mitglied eines ifgrp ist und keine VLANs hostet, dann sollte der VIF-Manager den Port zum Zeitpunkt des Neustarts aus seinen Datensätzen entfernen. Wenn der VIF-Manager den Port nicht entfernt, muss der Administrator ihn nach dem Neubooten mit dem `network port delete` Befehl manuell entfernen.
+** Wenn der Port nicht als Home-Port eines LIF verwendet wird, kein Mitglied einer ifgrp ist und keine VLANs hostet, sollte der VIF Manager den Port beim Neustart aus seinen Datensätzen entfernen. Falls der VIF-Manager den Port nicht entfernt, muss der Administrator ihn nach dem Neustart manuell mit dem  `network port delete` Befehl entfernen.
 +
-Erfahren Sie mehr über `network port delete` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-delete.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port delete` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-delete.html["ONTAP-Befehlsreferenz"^].
 
 
 
-. Vergewissern Sie sich, dass das richtige SFP+ installiert ist:
+. Es sollte überprüft werden, ob das richtige SFP+ installiert ist:
 +
 [source, cli]
 ----
 network fcp adapter show -instance -node -adapter
 ----
 +
-Für CNA sollten Sie einen 10-GB-Ethernet SFP verwenden. Vor dem Ändern der Konfiguration auf dem Node sollten Sie für FC entweder einen 8-Gbit-SFP oder einen 16-Gbit-SFP verwenden.
+Für CNA sollte ein 10Gb Ethernet SFP verwendet werden. Für FC sollte entweder ein 8 Gb SFP oder ein 16 Gb SFP verwendet werden, bevor die Konfiguration am Node geändert wird.
 
 
 
 --
-.Vom FC-Modus zum CNA-Modus
+.Vom FC-Modus in den CNA-Modus
 --
 .Schritte
-. Versetzen Sie den Adapter in den Offline-Modus:
+. Den Adapter offline schalten:
 +
 [source, cli]
 ----
 network fcp adapter modify -node <node_name> -adapter <adapter_name> -status-admin down
 ----
-. Ändern des Portmodus:
+. Portmodus ändern:
 +
 [source, cli]
 ----
 ucadmin modify -node <node_name> -adapter <adapter_name> -mode cna
 ----
-. Booten Sie den Node neu
-. Stellen Sie sicher, dass das richtige SFP+ installiert ist.
+. Den Knoten neu starten
+. Es sollte überprüft werden, ob das richtige SFP+ installiert ist.
 +
-Für CNA sollten Sie einen 10-GB-Ethernet SFP verwenden.
+Für CNA sollte ein 10Gb Ethernet SFP verwendet werden.
 
 
 

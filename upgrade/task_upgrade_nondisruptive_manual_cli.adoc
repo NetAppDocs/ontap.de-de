@@ -2,76 +2,76 @@
 sidebar: sidebar 
 permalink: upgrade/task_upgrade_nondisruptive_manual_cli.html 
 keywords: upgrade, nondisruptive, , non-disruptive update, nondisruptive upgrade, shift workload between clusters, hardware platform, configuration, software image, update, update ONTAP, update software, ndu 
-summary: Die bevorzugte Upgrade-Methode ist automatisiertes Upgrade mithilfe von System Manager. Wenn System Manager Ihre Konfiguration nicht unterstützt, können Sie mithilfe der CLI ein manuelles, unterbrechungsfreies Upgrade durchführen. 
+summary: 'Die automatisierte Aktualisierung mit System Manager ist die bevorzugte Upgrade-Methode. Wenn System Manager Ihre Konfiguration nicht unterstützt, kann das Upgrade manuell und unterbrechungsfrei über die Befehlszeile (CLI) durchgeführt werden.' 
 ---
-= Manuelles, unterbrechungsfreies ONTAP Upgrade mithilfe der CLI (Standardkonfigurationen)
+= Manuelles unterbrechungsfreies ONTAP Upgrade mit der CLI (Standardkonfigurationen)
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Die bevorzugte Upgrade-Methode ist automatisiertes Upgrade mithilfe von System Manager. Wenn System Manager Ihre Konfiguration nicht unterstützt, können Sie über die ONTAP Befehlszeilenschnittstelle (CLI) ein manuelles, unterbrechungsfreies Upgrade durchführen. Um ein Cluster von zwei oder mehr Nodes mithilfe der manuellen unterbrechungsfreien Methode zu aktualisieren, müssen Sie bei jedem Node in einem HA-Paar einen Failover-Vorgang initiieren, den Node „`failed`“ aktualisieren, die Rückgabe initiieren und den Prozess für jedes HA-Paar im Cluster wiederholen.
+Die automatisierte Aktualisierung mit System Manager ist die bevorzugte Upgrade-Methode. Wenn System Manager Ihre Konfiguration nicht unterstützt, kann die ONTAP Befehlszeilenschnittstelle (CLI) für ein manuelles unterbrechungsfreies Upgrade verwendet werden. Für das Upgrade eines Clusters mit zwei oder mehr Nodes mittels der manuellen unterbrechungsfreien Methode ist es erforderlich, auf jedem Node eines HA-Paars einen Failover-Vorgang zu initiieren, den „failed“-Node zu aktualisieren, die Rückgabe zu starten und diesen Prozess für jedes HA-Paar im Cluster zu wiederholen.
 
 .Bevor Sie beginnen
-Sie müssen die Upgrade-link:prepare.html["Vorbereitung"]Anforderungen erfüllen.
+Die Upgrade-link:prepare.html["Vorbereitung"]Anforderungen müssen erfüllt sein.
 
 
 
 [[updating-the-first-node-in-an-ha-pair]]
-== Aktualisieren des ersten Node in einem HA-Paar
+== Aktualisierung des ersten Knotens in einem HA-Paar
 
-Sie können den ersten Node in einem HA-Paar aktualisieren, indem Sie ein Takeover durch den Partner des Node initiieren. Der Partner stellt die Daten des Node bereit, während ein Upgrade des ersten Node durchgeführt wird.
+Sie können den ersten Knoten eines HA-Paares aktualisieren, indem eine Übernahme durch den Partnerknoten eingeleitet wird. Der Partnerknoten stellt die Daten des ersten Knotens bereit, während dieser aktualisiert wird.
 
-Bei einem umfassenden Upgrade muss der erste zu aktualisierende Node derselbe Node sein, auf dem Sie die Daten-LIFs für externe Konnektivität konfiguriert und das erste ONTAP Image installiert haben.
+Wenn Sie ein größeres Upgrade durchführen, muss der erste zu aktualisierende Knoten derselbe Knoten sein, auf dem Sie die Daten-LIFs für die externe Konnektivität konfiguriert und das erste ONTAP Image installiert haben.
 
-Nach dem Upgrade des ersten Node sollten Sie so schnell wie möglich ein Upgrade des Partner-Nodes durchführen. Lassen Sie nicht link:concept_mixed_version_requirements.html["Gemischte Version"]zu, dass die beiden Nodes länger als erforderlich in einem  Status bleiben.
+Nach dem Upgrade des ersten Knotens sollte der Partnerknoten so schnell wie möglich aktualisiert werden. Die beiden Knoten sollten sich nicht länger als nötig in einem link:concept_mixed_version_requirements.html["gemischte Version"] Zustand befinden.
 
 .Schritte
-. Aktualisieren Sie den ersten Node im Cluster, indem Sie eine AutoSupport Meldung aufrufen:
+. Der erste Node im Cluster wird aktualisiert, indem eine AutoSupport-Nachricht ausgelöst wird:
 +
 [source, cli]
 ----
 autosupport invoke -node * -type all -message "Starting_NDU"
 ----
 +
-Diese AutoSupport-Benachrichtigung enthält eine Aufzeichnung des Systemstatus direkt vor dem Update. Es speichert nützliche Informationen zur Fehlerbehebung, falls ein Problem mit dem Aktualisierungsprozess auftritt.
+Diese AutoSupport Benachrichtigung enthält einen Datensatz des Systemstatus unmittelbar vor dem Update. Es werden nützliche Informationen zur Fehlerbehebung gespeichert, falls ein Problem mit dem Update-Prozess auftritt.
 
 +
-Wenn das Cluster nicht zum Senden von AutoSupport Meldungen konfiguriert ist, wird eine Kopie der Benachrichtigung lokal gespeichert.
+Wenn der Cluster nicht für den Versand von AutoSupport-Nachrichten konfiguriert ist, wird eine Kopie der Benachrichtigung lokal gespeichert.
 
-. Stellen Sie die Berechtigungsebene auf Erweitert ein, und geben Sie bei Aufforderung * y* ein, um fortzufahren:
+. Die Berechtigungsstufe wird auf „Erweitert“ gesetzt, wobei bei entsprechender Aufforderung *y* einzugeben ist, um fortzufahren:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
 +
-Die erweiterte Eingabeaufforderung (`*>`) wird angezeigt.
+Die erweiterte Eingabeaufforderung (`*>`) erscheint.
 
-. Legen Sie das neue ONTAP Software-Image als Standard-Image fest:
+. Das neue ONTAP Software-Image als Standard-Image festlegen:
 +
 [source, cli]
 ----
 system image modify {-node nodenameA -iscurrent false} -isdefault true
 ----
 +
-Der Befehl zum Ändern des System-Images wird mithilfe einer erweiterten Abfrage das neue ONTAP Software-Image (das als alternatives Image installiert wird) auf das Standard-Image des Node geändert.
+Der Befehl „system image modify“ verwendet eine erweiterte Abfrage, um das neue ONTAP Software-Image (das als alternatives Image installiert wird) in das Standard-Image für den Node zu ändern.
 
-. Überwachen Sie den Fortschritt des Updates:
+. Der Fortschritt des Updates kann überwacht werden:
 +
 [source, cli]
 ----
 system node upgrade-revert show
 ----
-. Vergewissern Sie sich, dass das neue ONTAP Software-Image als Standard-Image festgelegt ist:
+. Es sollte überprüft werden, ob das neue ONTAP Software-Image als Standard-Image festgelegt ist:
 +
 [source, cli]
 ----
 system image show
 ----
 +
-Im folgenden Beispiel ist image2 die neue ONTAP-Version und wird als Standard-Image auf node0 festgelegt:
+Im folgenden Beispiel ist image2 die neue ONTAP Version und wird als Standardimage auf node0 festgelegt:
 
 +
 [listing]
@@ -88,16 +88,16 @@ node1
          image2  false   false   Y.Y.Y     MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Deaktivieren Sie das automatische Giveback auf dem Partner-Knoten, wenn er aktiviert ist:
+. Die automatische Rückgabe auf dem Partner-Node ist zu deaktivieren, falls sie aktiviert ist:
 +
 [source, cli]
 ----
 storage failover modify -node nodenameB -auto-giveback false
 ----
 +
-Wenn es sich um ein Cluster mit zwei Knoten handelt, wird eine Meldung angezeigt, die Sie darauf hingewiesen, dass durch die Deaktivierung des automatischen Giveback verhindert wird, dass die Management-Cluster-Services im Falle eines doppelten Ausfalls online geschaltet werden. Geben Sie ein, `y` um fortzufahren.
+Wenn es sich bei dem Cluster um ein Zwei-Node-Cluster handelt, wird eine Meldung angezeigt, die darauf hinweist, dass das Deaktivieren der automatischen Rückgabe verhindert, dass die Management-Cluster-Services im Falle eines alternierenden Ausfallszenarios online gehen. Geben Sie  `y` ein, um fortzufahren.
 
-. Überprüfen Sie, ob das automatische Giveback für den Partner von Nodes deaktiviert ist:
+. Es sollte überprüft werden, ob das automatische Giveback für den Partner des Knotens deaktiviert ist:
 +
 [source, cli]
 ----
@@ -112,21 +112,21 @@ node     auto-giveback
 node1    false
 1 entry was displayed.
 ----
-. Führen Sie den folgenden Befehl zweimal aus, um zu ermitteln, ob der zu aktualisiere Node derzeit alle Clients bereitstellt
+. Führen Sie den folgenden Befehl zweimal aus, um festzustellen, ob der zu aktualisierende Node derzeit Clients bedient
 +
 [source, cli]
 ----
 system node run -node nodenameA -command uptime
 ----
 +
-Der Befehl Uptime zeigt die Gesamtzahl der Vorgänge an, die der Node seit dem letzten Booten des Node für NFS-, SMB-, FC- und iSCSI-Clients durchgeführt hat. Für jedes Protokoll müssen Sie den Befehl zweimal ausführen, um festzustellen, ob die Anzahl der Vorgänge steigt. Wenn der Node hinzugefügt wird, bietet er derzeit Clients für dieses Protokoll. Wenn sie nicht erhöht werden, stellt der Node derzeit keine Clients für dieses Protokoll bereit.
+Der Befehl `uptime` zeigt die Gesamtzahl der Operationen an, die der Knoten seit dem letzten Start für NFS, SMB, FC und iSCSI Clients ausgeführt hat. Für jedes Protokoll muss der Befehl zweimal ausgeführt werden, um festzustellen, ob die Anzahl der Operationen steigt. Wenn sie steigt, bedient der Knoten derzeit Clients für dieses Protokoll. Wenn sie nicht steigt, bedient der Knoten derzeit keine Clients für dieses Protokoll.
 
 +
 
-NOTE: Notieren Sie sich jedes Protokoll, bei dem der Client-Betrieb zunimmt, damit Sie nach der Aktualisierung des Node überprüfen können, ob der Client-Datenverkehr wieder aufgenommen wurde.
+NOTE: Es empfiehlt sich, jedes Protokoll zu notieren, bei dem die Client-Operationen zunehmen, sodass nach der Aktualisierung des Knotens überprüft werden kann, ob der Client-Datenverkehr wieder aufgenommen wurde.
 
 +
-Im folgenden Beispiel wird ein Node mit NFS-, SMB-, FC- und iSCSI-Vorgängen angezeigt. Der Node bietet jedoch derzeit nur NFS- und iSCSI-Clients.
+Das folgende Beispiel zeigt einen Knoten mit NFS-, SMB-, FC- und iSCSI-Operationen. Allerdings bedient der Knoten derzeit nur NFS- und iSCSI-Clients.
 
 +
 [listing]
@@ -137,23 +137,23 @@ cluster1::> system node run -node node0 -command uptime
 cluster1::> system node run -node node0 -command uptime
   2:58pm up  7 days, 19:17 800001573 NFS ops, 1017333 CIFS ops, 0 HTTP ops, 40395 FCP ops, 32815 iSCSI ops
 ----
-. Migrieren Sie alle Daten-LIFs vom Node weg:
+. Alle Daten-LIFs vom Knoten migrieren:
 +
 [source, cli]
 ----
 network interface migrate-all -node nodenameA
 ----
-. Überprüfen Sie alle migrierten LIFs:
+. Alle migrierten LIFs überprüfen:
 +
 [source, cli]
 ----
 network interface show
 ----
 +
-Weitere Informationen zu `network interface show` und Parametern, mit denen Sie den LIF-Status überprüfen können, finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network interface show` und zu Parametern, mit denen der LIF-Status überprüft werden kann, finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
 
 +
-Das folgende Beispiel zeigt, dass die Daten-LIFs von Node0 erfolgreich migriert wurden. In den in diesem Beispiel enthaltenen Feldern können Sie für jede LIF die Home-Node und -Port des LIF, den aktuellen Node und Port, zu dem die LIF migriert wurde, sowie den Betriebs- und Administrationsstatus der logischen Schnittstelle überprüfen.
+Das folgende Beispiel zeigt, dass die Data-LIFs von node0 erfolgreich migriert wurden. Für jede LIF ermöglichen die in diesem Beispiel enthaltenen Felder die Überprüfung des Home-Nodes und Ports der LIF, des aktuellen Nodes und Ports, zu dem die LIF migriert wurde, sowie des Betriebs- und Verwaltungsstatus der LIF.
 
 +
 [listing]
@@ -167,33 +167,33 @@ vs0     data003 node0     e0b       node1     e0b       up          up
 vs0     data004 node0     e0a       node1     e0a       up          up
 4 entries were displayed.
 ----
-. Übernahme initiieren:
+. Eine Übernahme initiieren:
 +
 [source, cli]
 ----
 storage failover takeover -ofnode nodenameA
 ----
 +
-Geben Sie nicht den Parameter -Option sofortige an, da für den Node, der übernommen wird, um auf das neue Software-Image zu booten, eine normale Übernahme erforderlich ist. Wenn Sie die LIFs nicht manuell vom Node weg migrieren haben, werden sie automatisch zum HA-Partner des Node migriert, um sicherzustellen, dass keine Service-Unterbrechungen auftreten.
+Geben Sie den Parameter „-option immediate“ nicht an, da für den zu übernehmenden Knoten ein normaler Übernahmevorgang erforderlich ist, damit der Knoten mit dem neuen Software-Image startet. Wenn die LIFs nicht manuell vom Knoten migriert wurden, migrieren sie automatisch zum HA-Partner des Knotens, sodass keine Serviceunterbrechungen auftreten.
 
 +
-Der erste Node bootet bis zum Status „Warten auf Giveback“.
+Der erste Knoten startet im Zustand „Warten auf Rückgabe“.
 
 +
 
-NOTE: Wenn AutoSupport aktiviert ist, wird eine AutoSupport Meldung gesendet, die angibt, dass der Node nicht über das Cluster-Quorum verfügt. Sie können diese Benachrichtigung ignorieren und mit der Aktualisierung fortfahren.
+NOTE: Wenn AutoSupport aktiviert ist, wird eine AutoSupport-Meldung gesendet, die darauf hinweist, dass der Knoten das Cluster-Quorum verlassen hat. Diese Benachrichtigung kann ignoriert und das Update fortgesetzt werden.
 
-. Vergewissern Sie sich, dass die Übernahme erfolgreich ist:
+. Es sollte überprüft werden, ob die Übernahme erfolgreich war:
 +
 [source, cli]
 ----
 storage failover show
 ----
 +
-Möglicherweise werden Fehlermeldungen bezüglich Versionsfehler und Problemen im Postfachformat angezeigt. Dieses Verhalten wird erwartet und stellt in einem größeren unterbrechungsfreien Upgrade einen temporären Zustand dar und ist nicht schädlich.
+Möglicherweise werden Fehlermeldungen angezeigt, die auf Versionskonflikte und Probleme mit dem Postfachformat hinweisen. Dies ist ein erwartetes Verhalten und stellt einen vorübergehenden Zustand während eines größeren unterbrechungsfreien Upgrades dar und ist unbedenklich.
 
 +
-Das folgende Beispiel zeigt, dass die Übernahme erfolgreich war. Knoten node0 befindet sich im Status Warten auf Rückgabe, und sein Partner befindet sich im Übernahmestatus.
+Das folgende Beispiel zeigt, dass die Übernahme erfolgreich war. Knoten node0 befindet sich im Zustand „Warten auf Rückgabe“, und sein Partner befindet sich im Zustand „In Übernahme“.
 
 +
 [listing]
@@ -206,73 +206,73 @@ node0          node1          -        Waiting for giveback (HA mailboxes)
 node1          node0          false    In takeover
 2 entries were displayed.
 ----
-. Warten Sie mindestens acht Minuten, bis die folgenden Bedingungen erfüllt sind:
+. Mindestens acht Minuten abwarten, bis die folgenden Bedingungen wirksam werden:
 +
-** Das Client-Multipathing (falls bereitgestellt) wird stabilisiert.
-** Clients werden nach der Pause bei einem I/O-Vorgang während der Übernahme wiederhergestellt.
+** Client Multipathing (sofern implementiert) ist stabilisiert.
+** Die Clients werden nach einer Unterbrechung einer E/A-Operation, die während einer Übernahme auftritt, wiederhergestellt.
 +
-Die Recovery-Zeit ist Client-spezifisch und kann je nach Eigenschaften der Client-Applikationen länger als acht Minuten dauern.
+Die Wiederherstellungszeit ist client-spezifisch und kann abhängig von den Eigenschaften der Client-Anwendungen länger als acht Minuten dauern.
 
 
 
-. Rückgabe der Aggregate an den ersten Node:
+. Die Aggregate an den ersten Knoten zurückgeben:
 +
 [source, cli]
 ----
 storage failover giveback -ofnode nodenameA
 ----
 +
-Das Giveback gibt zuerst das Root-Aggregat an den Partner-Node zurück und liefert anschließend, nachdem der Knoten vollständig gebootet wurde, die nicht-Root-Aggregate und alle LIFs zurück, die auf die automatische Wiederherstellung festgelegt wurden. Der neu gestartete Node beginnt, Clients von jedem Aggregat Daten bereitzustellen, sobald das Aggregat zurückgegeben wird.
+Der Giveback-Vorgang gibt zunächst das Root-Aggregat an den Partnerknoten zurück und anschließend, nachdem dieser den Startvorgang abgeschlossen hat, die Nicht-Root-Aggregate sowie alle LIFs, die für die automatische Rücksetzung konfiguriert wurden, zurück. Der neu gestartete Knoten beginnt, Daten für Clients aus jedem Aggregat bereitzustellen, sobald das Aggregat zurückgegeben wurde.
 
-. Überprüfen Sie, ob alle Aggregate zurückgegeben wurden:
+. Es sollte sichergestellt sein, dass alle Aggregate zurückgegeben wurden:
 +
 [source, cli]
 ----
 storage failover show-giveback
 ----
 +
-Wenn das Feld „GiveBack Status“ angibt, dass keine Aggregate zurückgegeben werden müssen, wurden alle Aggregate zurückgegeben. Wenn ein Giveback vetoed ist, zeigt der Befehl den Status des Giveback an und welches Subsystem das Giveback vetoed hat.
+Wenn das Feld „Rückgabestatus“ anzeigt, dass keine Aggregate zurückzugeben sind, wurden alle Aggregate zurückgegeben. Wenn die Rückgabe abgelehnt wird, zeigt der Befehl den Fortschritt der Rückgabe und das Subsystem an, das die Rückgabe abgelehnt hat.
 
-. Wenn keine Aggregate zurückgegeben wurden, führen Sie die folgenden Schritte aus:
+. Wenn einige Aggregate nicht zurückgegeben wurden, sind die folgenden Schritte auszuführen:
 +
-.. Überprüfen Sie die Veto-Problemumgehung, um festzustellen, ob Sie die Bedingung „`vebis`“ beheben oder das Veto außer Kraft setzen möchten.
-.. Falls erforderlich, beheben Sie die in der Fehlermeldung beschriebene Bedingung „`veto`“, um sicherzustellen, dass alle identifizierten Operationen ordnungsgemäß beendet werden.
-.. Führen Sie den `storage failover giveback` Befehl.
+.. Die Vorgehensweise zur Umgehung des Veto-Problems kann herangezogen werden, um zu bestimmen, ob die "`veto`"-Bedingung behoben oder das Veto außer Kraft gesetzt werden soll.
+.. Falls erforderlich sollte die in der Fehlermeldung beschriebene "`veto`"-Bedingung behoben werden, wobei sichergestellt wird, dass alle identifizierten Operationen ordnungsgemäß beendet werden.
+.. Den  `storage failover giveback`Befehl erneut ausführen.
 +
-Wenn Sie sich entschieden haben, die Bedingung „`vebis`“ zu überschreiben, setzen Sie den Parameter -override-Vetoes auf „true“.
+Wenn die "`veto`"-Bedingung außer Kraft gesetzt werden soll, ist der Parameter -override-vetoes auf true zu setzen.
 
 
 
-. Warten Sie mindestens acht Minuten, bis die folgenden Bedingungen erfüllt sind:
+. Mindestens acht Minuten abwarten, bis die folgenden Bedingungen wirksam werden:
 +
-** Das Client-Multipathing (falls bereitgestellt) wird stabilisiert.
-** Clients werden im Rahmen eines I/O-Vorgangs während der Rückgabe aus der Pause wiederhergestellt.
+** Client Multipathing (sofern implementiert) ist stabilisiert.
+** Clients werden aus der Pause einer E/A-Operation wiederhergestellt, die während der Rückgabe auftritt.
 +
-Die Recovery-Zeit ist Client-spezifisch und kann je nach Eigenschaften der Client-Applikationen länger als acht Minuten dauern.
+Die Wiederherstellungszeit ist client-spezifisch und kann abhängig von den Eigenschaften der Client-Anwendungen länger als acht Minuten dauern.
 
 
 
-. Vergewissern Sie sich, dass das Update für den Node erfolgreich abgeschlossen wurde:
+. Überprüfen, ob die Aktualisierung für den Node erfolgreich abgeschlossen wurde:
 +
-.. Gehen Sie zur erweiterten Berechtigungsebene :
+.. Zur erweiterten Berechtigungsstufe wechseln:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
-.. Vergewissern Sie sich, dass der Aktualisierungsstatus für den Node abgeschlossen ist:
+.. Es wird geprüft, ob der Aktualisierungsstatus für den Knoten abgeschlossen ist:
 +
 [source, cli]
 ----
 system node upgrade-revert show -node nodenameA
 ----
 +
-Der Status sollte als „vollständig“ aufgeführt sein.
+Der Status sollte als abgeschlossen angezeigt werden.
 
 +
-Wenn der Status nicht abgeschlossen ist, wenden Sie sich an den technischen Support.
+Wenn der Status nicht vollständig ist, den technischen Support kontaktieren.
 
-.. Zurück zur Administratorberechtigungsebene:
+.. Zurück zur Administrator-Privilegstufe:
 +
 [source, cli]
 ----
@@ -280,17 +280,17 @@ set -privilege admin
 ----
 
 
-. Vergewissern Sie sich, dass die Ports des Node aktiv sind:
+. Es wird geprüft, ob die Ports des Knotens aktiv sind:
 +
 [source, cli]
 ----
 network port show -node nodenameA
 ----
 +
-Sie müssen diesen Befehl auf einem Node ausführen, der auf die höhere Version von ONTAP 9 aktualisiert wird.
+Dieser Befehl muss auf einem Knoten ausgeführt werden, der auf die höhere Version von ONTAP 9 aktualisiert wurde.
 
 +
-Im folgenden Beispiel werden alle Ports des Node aktiv sein:
+Das folgende Beispiel zeigt, dass alle Ports des Knotens aktiv sind:
 
 +
 [listing]
@@ -307,14 +307,14 @@ node0
        e1b       Cluster      Cluster          up       9000  auto/10000
 5 entries were displayed.
 ----
-. Zurücksetzen der LIFs zurück auf den Node:
+. Die LIFs werden wieder auf den Knoten zurückgesetzt:
 +
 [source, cli]
 ----
 network interface revert *
 ----
 +
-Dieser Befehl gibt die LIFs zurück, die vom Node migriert wurden.
+Dieser Befehl gibt die LIFs zurück, die vom Knoten migriert wurden.
 
 +
 [listing]
@@ -322,14 +322,14 @@ Dieser Befehl gibt die LIFs zurück, die vom Node migriert wurden.
 cluster1::> network interface revert *
 8 entries were acted on.
 ----
-. Vergewissern Sie sich, dass die Daten-LIFs des Node erfolgreich wieder auf den Node zurückgesetzt wurden und dass sie den folgenden Zustand aufweisen:
+. Es sollte überprüft werden, ob die Data-LIFs des Knotens erfolgreich auf den Knoten zurückgekehrt sind und ob sie aktiv sind:
 +
 [source, cli]
 ----
 network interface show
 ----
 +
-Im folgenden Beispiel wird gezeigt, dass alle von dem Node gehosteten Daten-LIFs erfolgreich wieder auf den Node zurückgesetzt wurden und dass ihr Betriebsstatus aktiv ist:
+Das folgende Beispiel zeigt, dass alle vom Knoten gehosteten Daten-LIFs erfolgreich zum Knoten zurückgeführt wurden und ihr Betriebsstatus aktiv ist:
 
 +
 [listing]
@@ -345,17 +345,17 @@ vs0
             data004      up/up    192.0.2.123/24     node0         e0a     true
 4 entries were displayed.
 ----
-. Wenn Sie zuvor festgestellt haben, dass dieser Node Clients bereitstellt, überprüfen Sie, ob der Node für jedes Protokoll, das er zuvor bereitstellt, Service bereitstellt:
+. Wenn Sie zuvor festgestellt haben, dass dieser Knoten Clients bedient, überprüfen Sie, ob der Knoten für jedes Protokoll, das er zuvor bedient hat, weiterhin Dienste bereitstellt:
 +
 [source, cli]
 ----
 system node run -node nodenameA -command uptime
 ----
 +
-Während der Aktualisierung wird die Funktion auf Null zurückgesetzt.
+Die Vorgangszähler werden während des Updates auf Null zurückgesetzt.
 
 +
-Das folgende Beispiel zeigt, dass der aktualisierte Node seine NFS- und iSCSI-Clients wieder bedient:
+Das folgende Beispiel zeigt, dass der aktualisierte Knoten seine NFS- und iSCSI-Clients wieder bedient:
 
 +
 [listing]
@@ -363,7 +363,7 @@ Das folgende Beispiel zeigt, dass der aktualisierte Node seine NFS- und iSCSI-Cl
 cluster1::> system node run -node node0 -command uptime
   3:15pm up  0 days, 0:16 129 NFS ops, 0 CIFS ops, 0 HTTP ops, 0 FCP ops, 2 iSCSI ops
 ----
-. Automatisches Giveback auf dem Partner-Knoten wieder aktivieren, wenn er zuvor deaktiviert war:
+. Die automatische Rückgabe auf dem Partnerknoten wird wieder aktiviert, falls sie zuvor deaktiviert war:
 +
 [source, cli]
 ----
@@ -371,47 +371,47 @@ storage failover modify -node nodenameB -auto-giveback true
 ----
 
 
-Sie sollten fortfahren, so schnell wie möglich den HA-Partner des Node zu aktualisieren. Wenn Sie den Aktualisierungsprozess aus irgendeinem Grund unterbrechen müssen, sollten beide Nodes im HA-Paar auf derselben ONTAP-Version ausgeführt werden.
+Das Update des HA-Partners des Knotens sollte so schnell wie möglich durchgeführt werden. Falls der Aktualisierungsprozess aus irgendeinem Grund unterbrochen werden muss, sollten beide Knoten des HA-Paars dieselbe ONTAP Version ausführen.
 
 
 
 [[updating-the-partner-node-in-an-ha-pair]]
-== Aktualisieren des Partner-Node in einem HA-Paar
+== Aktualisierung des Partnerknotens in einem HA-Paar
 
-Nach der Aktualisierung des ersten Node in einem HA-Paar aktualisieren Sie seinen Partner, indem Sie ein Takeover darauf initiieren. Der erste Node stellt die Daten des Partners bereit, während ein Upgrade des Partner-Node durchgeführt wird.
+Nach der Aktualisierung des ersten Knotens in einem HA-Paar wird der Partner aktualisiert, indem eine Übernahme auf ihm initiiert wird. Der erste Knoten stellt die Daten des Partners bereit, während der Partnerknoten aktualisiert wird.
 
-. Stellen Sie die Berechtigungsebene auf Erweitert ein, und geben Sie bei Aufforderung * y* ein, um fortzufahren:
+. Die Berechtigungsstufe wird auf „Erweitert“ gesetzt, wobei bei entsprechender Aufforderung *y* einzugeben ist, um fortzufahren:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
 +
-Die erweiterte Eingabeaufforderung (`*>`) wird angezeigt.
+Die erweiterte Eingabeaufforderung (`*>`) erscheint.
 
-. Legen Sie das neue ONTAP Software-Image als Standard-Image fest:
+. Das neue ONTAP Software-Image als Standard-Image festlegen:
 +
 [source, cli]
 ----
 system image modify {-node nodenameB -iscurrent false} -isdefault true
 ----
 +
-Der Befehl zum Ändern des System-Images wird mithilfe einer erweiterten Abfrage das neue ONTAP Software-Image (das als alternatives Image installiert wird) als Standard-Image des Node geändert.
+Der Befehl „system image modify“ verwendet eine erweiterte Abfrage, um das neue ONTAP Software-Image (das als alternatives Image installiert wird) als Standard-Image für den Knoten festzulegen.
 
-. Überwachen Sie den Fortschritt des Updates:
+. Der Fortschritt des Updates kann überwacht werden:
 +
 [source, cli]
 ----
 system node upgrade-revert show
 ----
-. Vergewissern Sie sich, dass das neue ONTAP Software-Image als Standard-Image festgelegt ist:
+. Es sollte überprüft werden, ob das neue ONTAP Software-Image als Standard-Image festgelegt ist:
 +
 [source, cli]
 ----
 system image show
 ----
 +
-Im folgenden Beispiel `image2` ist die neue Version von ONTAP und als Standardabbild auf dem Node festgelegt:
+Im folgenden Beispiel ist  `image2` die neue Version von ONTAP und als Standardimage auf dem Knoten festgelegt:
 
 +
 [listing]
@@ -428,16 +428,16 @@ node1
          image2  true    false   Y.Y.Y     MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Deaktivieren Sie das automatische Giveback auf dem Partner-Knoten, wenn er aktiviert ist:
+. Die automatische Rückgabe auf dem Partner-Node ist zu deaktivieren, falls sie aktiviert ist:
 +
 [source, cli]
 ----
 storage failover modify -node nodenameA -auto-giveback false
 ----
 +
-Wenn es sich um ein Cluster mit zwei Knoten handelt, wird eine Meldung angezeigt, die Sie darauf hingewiesen, dass durch die Deaktivierung des automatischen Giveback verhindert wird, dass die Management-Cluster-Services im Falle eines doppelten Ausfalls online geschaltet werden. Geben Sie ein, `y` um fortzufahren.
+Wenn es sich bei dem Cluster um ein Zwei-Node-Cluster handelt, wird eine Meldung angezeigt, die darauf hinweist, dass das Deaktivieren der automatischen Rückgabe verhindert, dass die Management-Cluster-Services im Falle eines alternierenden Ausfallszenarios online gehen. Geben Sie  `y` ein, um fortzufahren.
 
-. Überprüfen Sie, ob das automatische Giveback für den Partner-Knoten deaktiviert ist:
+. Es sollte überprüft werden, ob die automatische Rückgabe für den Partnerknoten deaktiviert ist:
 +
 [source, cli]
 ----
@@ -452,21 +452,21 @@ node     auto-giveback
 node0    false
 1 entry was displayed.
 ----
-. Führen Sie zweimal den folgenden Befehl aus, um zu ermitteln, ob der zu aktualisiere Node derzeit alle Clients bereitstellt:
+. Führen Sie den folgenden Befehl zweimal aus, um zu ermitteln, ob der zu aktualisierende Knoten derzeit Clients bedient:
 +
 [source, cli]
 ----
 system node run -node nodenameB -command uptime
 ----
 +
-Der Befehl Uptime zeigt die Gesamtzahl der Vorgänge an, die der Node seit dem letzten Booten des Node für NFS-, SMB-, FC- und iSCSI-Clients durchgeführt hat. Für jedes Protokoll müssen Sie den Befehl zweimal ausführen, um festzustellen, ob die Anzahl der Vorgänge steigt. Wenn der Node hinzugefügt wird, bietet er derzeit Clients für dieses Protokoll. Wenn sie nicht erhöht werden, stellt der Node derzeit keine Clients für dieses Protokoll bereit.
+Der Befehl `uptime` zeigt die Gesamtzahl der Operationen an, die der Knoten seit dem letzten Start für NFS, SMB, FC und iSCSI Clients ausgeführt hat. Für jedes Protokoll muss der Befehl zweimal ausgeführt werden, um festzustellen, ob die Anzahl der Operationen steigt. Wenn sie steigt, bedient der Knoten derzeit Clients für dieses Protokoll. Wenn sie nicht steigt, bedient der Knoten derzeit keine Clients für dieses Protokoll.
 
 +
 
-NOTE: Notieren Sie sich jedes Protokoll, bei dem der Client-Betrieb zunimmt, damit Sie nach der Aktualisierung des Node überprüfen können, ob der Client-Datenverkehr wieder aufgenommen wurde.
+NOTE: Es empfiehlt sich, jedes Protokoll zu notieren, bei dem die Client-Operationen zunehmen, sodass nach der Aktualisierung des Knotens überprüft werden kann, ob der Client-Datenverkehr wieder aufgenommen wurde.
 
 +
-Im folgenden Beispiel wird ein Node mit NFS-, SMB-, FC- und iSCSI-Vorgängen angezeigt. Der Node bietet jedoch derzeit nur NFS- und iSCSI-Clients.
+Das folgende Beispiel zeigt einen Knoten mit NFS-, SMB-, FC- und iSCSI-Operationen. Allerdings bedient der Knoten derzeit nur NFS- und iSCSI-Clients.
 
 +
 [listing]
@@ -477,23 +477,23 @@ cluster1::> system node run -node node1 -command uptime
 cluster1::> system node run -node node1 -command uptime
   2:58pm up  7 days, 19:17 800001573 NFS ops, 1017333 CIFS ops, 0 HTTP ops, 40395 FCP ops, 32815 iSCSI ops
 ----
-. Migrieren Sie alle Daten-LIFs vom Node weg:
+. Alle Daten-LIFs vom Knoten migrieren:
 +
 [source, cli]
 ----
 network interface migrate-all -node nodenameB
 ----
-. Überprüfen Sie den Status aller zu migrierenden LIFs:
+. Status aller migrierten LIFs überprüfen:
 +
 [source, cli]
 ----
 network interface show
 ----
 +
-Weitere Informationen zu `network interface show` und Parametern, mit denen Sie den LIF-Status überprüfen können, finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network interface show` und zu Parametern, mit denen der LIF-Status überprüft werden kann, finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["ONTAP-Befehlsreferenz"^].
 
 +
-Das folgende Beispiel zeigt, dass die Daten-LIFs von Node1 erfolgreich migriert wurden. In den in diesem Beispiel enthaltenen Feldern können Sie für jede LIF die Home-Node und -Port des LIF, den aktuellen Node und Port, zu dem die LIF migriert wurde, sowie den Betriebs- und Administrationsstatus der logischen Schnittstelle überprüfen.
+Das folgende Beispiel zeigt, dass die Data-LIFs von node1 erfolgreich migriert wurden. Für jede LIF ermöglichen die in diesem Beispiel enthaltenen Felder die Überprüfung des Home-Nodes und Ports der LIF, des aktuellen Nodes und Ports, zu dem die LIF migriert wurde, sowie des Betriebs- und Verwaltungsstatus der LIF.
 
 +
 [listing]
@@ -507,33 +507,33 @@ vs0     data003 node1     e0b       node0     e0b       up          up
 vs0     data004 node1     e0a       node0     e0a       up          up
 4 entries were displayed.
 ----
-. Übernahme initiieren:
+. Eine Übernahme initiieren:
 +
 [source, cli]
 ----
 storage failover takeover -ofnode nodenameB -option allow-version-mismatch
 ----
 +
-Geben Sie nicht den Parameter -Option sofortige an, da für den Node, der übernommen wird, um auf das neue Software-Image zu booten, eine normale Übernahme erforderlich ist. Wenn Sie die LIFs nicht manuell vom Node weg migriert haben, werden sie automatisch zum HA-Partner des Node migriert, damit keine Service-Unterbrechungen auftreten.
+Geben Sie den Parameter „-option immediate“ nicht an, da für den zu übernehmenden Knoten ein normaler Übernahmevorgang erforderlich ist, damit der Knoten mit dem neuen Software-Image startet. Wenn die LIFs nicht manuell vom Knoten migriert wurden, migrieren sie automatisch zum HA-Partner des Knotens, sodass keine Serviceunterbrechungen auftreten.
 
 +
-Eine Warnung wird angezeigt. Sie müssen eingeben `y`, um fortzufahren.
+Es wird eine Warnung angezeigt. Sie müssen  `y` eingeben, um fortzufahren.
 
 +
-Der Knoten, der über wird gestartet bis zum Status „Warten auf Giveback“.
+Der übernommene Knoten startet im Zustand „Warten auf Rückgabe“.
 
 +
 
-NOTE: Wenn AutoSupport aktiviert ist, wird eine AutoSupport Meldung gesendet, die angibt, dass der Node nicht über das Cluster-Quorum verfügt. Sie können diese Benachrichtigung ignorieren und mit der Aktualisierung fortfahren.
+NOTE: Wenn AutoSupport aktiviert ist, wird eine AutoSupport-Meldung gesendet, die darauf hinweist, dass der Knoten das Cluster-Quorum verlassen hat. Diese Benachrichtigung kann ignoriert und das Update fortgesetzt werden.
 
-. Vergewissern Sie sich, dass die Übernahme erfolgreich war:
+. Es sollte überprüft werden, ob die Übernahme erfolgreich war:
 +
 [source, cli]
 ----
 storage failover show
 ----
 +
-Das folgende Beispiel zeigt, dass die Übernahme erfolgreich war. Node Node1 befindet sich im Status „Warten auf Giveback“, und sein Partner befindet sich im Übernahmemodus.
+Das folgende Beispiel zeigt, dass die Übernahme erfolgreich war. Knoten node1 befindet sich im Zustand „Warten auf Rückgabe“, und sein Partner befindet sich im Zustand „In Übernahme“.
 
 +
 [listing]
@@ -546,73 +546,73 @@ node0          node1          -        In takeover
 node1          node0          false    Waiting for giveback (HA mailboxes)
 2 entries were displayed.
 ----
-. Warten Sie mindestens acht Minuten, bis die folgenden Bedingungen wirksam werden: +
+. Mindestens acht Minuten abwarten, damit die folgenden Bedingungen wirksam werden: +
 +
-** Das Client-Multipathing (falls bereitgestellt) wird stabilisiert.
-** Clients werden nach der Pause des I/O, die während der Übernahme stattfindet, wiederhergestellt.
+** Client Multipathing (sofern implementiert) ist stabilisiert.
+** Clients werden nach der Unterbrechung der E/A, die während der Übernahme auftritt, wiederhergestellt.
 +
-Die Recovery-Zeit ist Client-spezifisch und kann je nach Eigenschaften der Client-Applikationen länger als acht Minuten dauern.
+Die Wiederherstellungszeit ist client-spezifisch und kann abhängig von den Eigenschaften der Client-Anwendungen länger als acht Minuten dauern.
 
 
 
-. Rückgabe der Aggregate an den Partner-Node:
+. Die Aggregate an den Partnerknoten zurückgeben:
 +
 [source, cli]
 ----
 storage failover giveback -ofnode nodenameB
 ----
 +
-Der Giveback-Vorgang gibt zuerst das Root-Aggregat an den Partner-Node zurück und liefert dann, nachdem der Knoten vollständig gebootet wurde, die nicht-Root-Aggregate und alle LIFs zurück, die auf die automatische Wiederherstellung festgelegt wurden. Der neu gestartete Node beginnt, Clients von jedem Aggregat Daten bereitzustellen, sobald das Aggregat zurückgegeben wird.
+Der Rückgabevorgang gibt zunächst das Root-Aggregat an den Partnerknoten zurück und anschließend, nachdem dieser den Startvorgang abgeschlossen hat, die Nicht-Root-Aggregate sowie alle LIFs, die für die automatische Rücksetzung konfiguriert wurden. Der neu gestartete Knoten beginnt, Daten für Clients aus jedem Aggregat bereitzustellen, sobald das Aggregat zurückgegeben wurde.
 
-. Überprüfen Sie, ob alle Aggregate zurückgegeben werden:
+. Es wird überprüft, ob alle Aggregate zurückgegeben werden:
 +
 [source, cli]
 ----
 storage failover show-giveback
 ----
 +
-Wenn das Feld „GiveBack Status“ angibt, dass keine Aggregate zurückgegeben werden müssen, werden alle Aggregate zurückgegeben. Wenn ein Giveback vetoed ist, zeigt der Befehl den Status der Rückgabe an und welches Subsystem den Giveback-Vorgang gebietet hat.
+Wenn das Feld „Rückgabestatus“ anzeigt, dass keine Aggregate zurückzugeben sind, werden alle Aggregate zurückgegeben. Wenn die Rückgabe abgelehnt wird, zeigt der Befehl den Fortschritt der Rückgabe und das Subsystem an, das die Rückgabe abgelehnt hat.
 
-. Wenn keine Aggregate zurückgegeben werden, führen Sie die folgenden Schritte aus:
+. Wenn keine Aggregate zurückgegeben werden, sind die folgenden Schritte auszuführen:
 +
-.. Überprüfen Sie die Veto-Problemumgehung, um festzustellen, ob Sie die Bedingung „`vebis`“ beheben oder das Veto außer Kraft setzen möchten.
-.. Falls erforderlich, beheben Sie die in der Fehlermeldung beschriebene Bedingung „`veto`“, um sicherzustellen, dass alle identifizierten Operationen ordnungsgemäß beendet werden.
-.. Führen Sie den `storage failover giveback` Befehl.
+.. Die Vorgehensweise zur Umgehung des Veto-Problems kann herangezogen werden, um zu bestimmen, ob die "`veto`"-Bedingung behoben oder das Veto außer Kraft gesetzt werden soll.
+.. Falls erforderlich sollte die in der Fehlermeldung beschriebene "`veto`"-Bedingung behoben werden, wobei sichergestellt wird, dass alle identifizierten Operationen ordnungsgemäß beendet werden.
+.. Den  `storage failover giveback`Befehl erneut ausführen.
 +
-Wenn Sie sich entschieden haben, die Bedingung „`vebis`“ zu überschreiben, setzen Sie den Parameter -override-Vetoes auf „true“.
+Wenn die "`veto`"-Bedingung außer Kraft gesetzt werden soll, ist der Parameter -override-vetoes auf true zu setzen.
 
 
 
-. Warten Sie mindestens acht Minuten, bis die folgenden Bedingungen erfüllt sind:
+. Mindestens acht Minuten abwarten, bis die folgenden Bedingungen wirksam werden:
 +
-** Das Client-Multipathing (falls bereitgestellt) wird stabilisiert.
-** Clients werden im Rahmen eines I/O-Vorgangs während der Rückgabe aus der Pause wiederhergestellt.
+** Client Multipathing (sofern implementiert) ist stabilisiert.
+** Clients werden aus der Pause einer E/A-Operation wiederhergestellt, die während der Rückgabe auftritt.
 +
-Die Recovery-Zeit ist Client-spezifisch und kann je nach Eigenschaften der Client-Applikationen länger als acht Minuten dauern.
+Die Wiederherstellungszeit ist client-spezifisch und kann abhängig von den Eigenschaften der Client-Anwendungen länger als acht Minuten dauern.
 
 
 
-. Vergewissern Sie sich, dass das Update für den Node erfolgreich abgeschlossen wurde:
+. Überprüfen, ob die Aktualisierung für den Node erfolgreich abgeschlossen wurde:
 +
-.. Gehen Sie zur erweiterten Berechtigungsebene :
+.. Zur erweiterten Berechtigungsstufe wechseln:
 +
 [source, cli]
 ----
 set -privilege advanced
 ----
-.. Vergewissern Sie sich, dass der Aktualisierungsstatus für den Node abgeschlossen ist:
+.. Es wird geprüft, ob der Aktualisierungsstatus für den Knoten abgeschlossen ist:
 +
 [source, cli]
 ----
 system node upgrade-revert show -node nodenameB
 ----
 +
-Der Status sollte als „vollständig“ aufgeführt sein.
+Der Status sollte als abgeschlossen angezeigt werden.
 
 +
-Wenn der Status nicht vollständig lautet, führen Sie den `system node upgrade-revert upgrade` Befehl vom Node aus. Wenn das Update mit dem Befehl nicht abgeschlossen wird, wenden Sie sich an den technischen Support.
+Wenn der Status nicht „Abgeschlossen“ ist, auf dem Knoten den  `system node upgrade-revert upgrade` Befehl ausführen. Wenn der Befehl die Aktualisierung nicht abschließt, den technischen Support kontaktieren.
 
-.. Zurück zur Administratorberechtigungsebene:
+.. Zurück zur Administrator-Privilegstufe:
 +
 [source, cli]
 ----
@@ -620,17 +620,17 @@ set -privilege admin
 ----
 
 
-. Vergewissern Sie sich, dass die Ports des Node aktiv sind:
+. Es wird geprüft, ob die Ports des Knotens aktiv sind:
 +
 [source, cli]
 ----
 network port show -node nodenameB
 ----
 +
-Sie müssen diesen Befehl auf einem Node ausführen, der auf ONTAP 9.4 aktualisiert wurde.
+Dieser Befehl muss auf einem Knoten ausgeführt werden, der auf ONTAP 9.4 aktualisiert wurde.
 
 +
-Im folgenden Beispiel werden alle Daten-Ports des Node aktiv sein:
+Das folgende Beispiel zeigt, dass alle Daten-Ports des Knotens aktiv sind:
 
 +
 [listing]
@@ -648,16 +648,16 @@ node1
 5 entries were displayed.
 ----
 +
-Erfahren Sie mehr über `network port show` in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-show.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network port show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-port-show.html["ONTAP-Befehlsreferenz"^].
 
-. Zurücksetzen der LIFs zurück auf den Node:
+. Die LIFs werden wieder auf den Knoten zurückgesetzt:
 +
 [source, cli]
 ----
 network interface revert *
 ----
 +
-Dieser Befehl gibt die LIFs zurück, die vom Node migriert wurden.
+Dieser Befehl gibt die LIFs zurück, die vom Knoten migriert wurden.
 
 +
 [listing]
@@ -665,14 +665,14 @@ Dieser Befehl gibt die LIFs zurück, die vom Node migriert wurden.
 cluster1::> network interface revert *
 8 entries were acted on.
 ----
-. Vergewissern Sie sich, dass die Daten-LIFs des Node erfolgreich wieder auf den Node zurückgesetzt wurden und dass sie den folgenden Zustand aufweisen:
+. Es sollte überprüft werden, ob die Data-LIFs des Knotens erfolgreich auf den Knoten zurückgekehrt sind und ob sie aktiv sind:
 +
 [source, cli]
 ----
 network interface show
 ----
 +
-Im folgenden Beispiel wird gezeigt, dass alle von dem Node gehosteten Daten-LIFs erfolgreich wieder auf den Node zurückgesetzt werden und dass ihr Betriebsstatus aktiv ist:
+Das folgende Beispiel zeigt, dass alle vom Knoten gehosteten Daten-LIFs erfolgreich auf den Knoten zurückgesetzt wurden und dass ihr Betriebsstatus aktiv ist:
 
 +
 [listing]
@@ -688,17 +688,17 @@ vs0
             data004      up/up    192.0.2.123/24     node1         e0a     true
 4 entries were displayed.
 ----
-. Wenn Sie zuvor festgestellt haben, dass dieser Node Clients bereitstellt, überprüfen Sie, ob der Node für jedes Protokoll, das er zuvor bereitstellt, Service bereitstellt:
+. Wenn Sie zuvor festgestellt haben, dass dieser Knoten Clients bedient, überprüfen Sie, ob der Knoten für jedes Protokoll, das er zuvor bedient hat, weiterhin Dienste bereitstellt:
 +
 [source, cli]
 ----
 system node run -node nodenameB -command uptime
 ----
 +
-Während der Aktualisierung wird die Funktion auf Null zurückgesetzt.
+Die Vorgangszähler werden während des Updates auf Null zurückgesetzt.
 
 +
-Das folgende Beispiel zeigt, dass der aktualisierte Node seine NFS- und iSCSI-Clients wieder bedient:
+Das folgende Beispiel zeigt, dass der aktualisierte Knoten seine NFS- und iSCSI-Clients wieder bedient:
 
 +
 [listing]
@@ -706,19 +706,19 @@ Das folgende Beispiel zeigt, dass der aktualisierte Node seine NFS- und iSCSI-Cl
 cluster1::> system node run -node node1 -command uptime
   3:15pm up  0 days, 0:16 129 NFS ops, 0 CIFS ops, 0 HTTP ops, 0 FCP ops, 2 iSCSI ops
 ----
-. Wenn dies der letzte Node im Cluster war, der aktualisiert werden soll, lösen Sie eine AutoSupport-Benachrichtigung aus:
+. Wenn dies der letzte Knoten im Cluster war, der aktualisiert wurde, eine AutoSupport-Benachrichtigung auslösen:
 +
 [source, cli]
 ----
 autosupport invoke -node * -type all -message "Finishing_NDU"
 ----
 +
-Diese AutoSupport-Benachrichtigung enthält eine Aufzeichnung des Systemstatus direkt vor dem Update. Es speichert nützliche Informationen zur Fehlerbehebung, falls ein Problem mit dem Aktualisierungsprozess auftritt.
+Diese AutoSupport Benachrichtigung enthält einen Datensatz des Systemstatus unmittelbar vor dem Update. Es werden nützliche Informationen zur Fehlerbehebung gespeichert, falls ein Problem mit dem Update-Prozess auftritt.
 
 +
-Wenn das Cluster nicht zum Senden von AutoSupport Meldungen konfiguriert ist, wird eine Kopie der Benachrichtigung lokal gespeichert.
+Wenn der Cluster nicht für den Versand von AutoSupport-Nachrichten konfiguriert ist, wird eine Kopie der Benachrichtigung lokal gespeichert.
 
-. Vergewissern Sie sich, dass die neue ONTAP Software auf beiden Nodes des HA-Paars ausgeführt wird:
+. Bestätigen Sie, dass die neue ONTAP Software auf beiden Knoten des HA-Paars ausgeführt wird:
 +
 [source, cli]
 ----
@@ -747,34 +747,34 @@ node1
          image2  true    true    Y.Y.Y     MM/DD/YYYY TIME
 4 entries were displayed.
 ----
-. Automatisches Giveback auf dem Partner-Knoten wieder aktivieren, wenn er zuvor deaktiviert war:
+. Die automatische Rückgabe auf dem Partnerknoten wird wieder aktiviert, falls sie zuvor deaktiviert war:
 +
 [source, cli]
 ----
 storage failover modify -node nodenameA -auto-giveback true
 ----
-. Überprüfen Sie mithilfe der `cluster show` `cluster ring show` Befehle und (Erweiterte Berechtigungsebene), ob das Cluster im Quorum ist und ob Services ausgeführt werden.
+. Es kann überprüft werden, ob sich der Cluster im Quorum befindet und die Dienste ausgeführt werden, indem die Befehle  `cluster show` und  `cluster ring show` (erweiterte Berechtigungsstufe) verwendet werden.
 +
-Sie müssen diesen Schritt durchführen, bevor Sie weitere HA-Paare aktualisieren.
+Dieser Schritt ist vor dem Upgrade weiterer HA-Paare erforderlich.
 
 +
-Erfahren Sie mehr über `cluster show` und `cluster ring show` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=cluster+show["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `cluster show` und  `cluster ring show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=cluster+show["ONTAP-Befehlsreferenz"^].
 
-. Zurück zur Administratorberechtigungsebene:
+. Zurück zur Administrator-Privilegstufe:
 +
 [source, cli]
 ----
 set -privilege admin
 ----
-. Aktualisieren Sie alle zusätzlichen HA-Paare.
+. Alle zusätzlichen HA-Paare aktualisieren.
 
 
 .Verwandte Informationen
-* link:https://docs.netapp.com/us-en/ontap-cli/system-node-autosupport-invoke.html["AutoSupport aufrufen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/system-node-autosupport-invoke.html["autosupport invoke"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=system+image["Systemabbild"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=system+node["System-Node"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+failover["Storage Failover"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=system+node["Systemknoten"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+failover["Storage-Failover"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+interface["Netzwerkschnittstelle"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+port+show["Netzwerkport zeigen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=set["Set -Privilege erweitert"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=network+port+show["Netzwerkport anzeigen"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=set["set -privilege advanced"^]
 

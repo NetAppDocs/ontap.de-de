@@ -2,63 +2,63 @@
 permalink: data-protection/create-load-sharing-mirror-task.html 
 sidebar: sidebar 
 keywords: create, initialize, load-sharing, mirror, relationship 
-summary: 'Sie sollten eine Load-Sharing-Spiegelung (LSM) für jedes Root-Volume im Cluster erstellen. Sie können das LSM auf einem anderen Knoten als dem erstellen, der das Root-Volume enthält, z. B. den Partner-Node in einem HA-Paar oder vorzugsweise in einem anderen HA-Paar. Für ein Cluster mit zwei Knoten sollten Sie das LSM auf dem Partner des Knotens mit dem Root-Volume erstellen.' 
+summary: 'Sie sollten für jedes Root-Volume im Cluster ein Load-Sharing Mirror (LSM) erstellen. Das LSM kann auf jedem Knoten außer demjenigen, der das Root-Volume enthält, erstellt werden, beispielsweise auf dem Partnerknoten in einem HA-Paar oder vorzugsweise in einem anderen HA-Paar. Für ein Zwei-Node-Cluster sollte das LSM auf dem Partner des Knotens mit dem Root-Volume erstellt werden.' 
 ---
-= Erstellen und Initialisieren von ONTAP-Spiegelbeziehungen zur Lastverteilung
+= ONTAP Load-Sharing Mirror-Beziehungen erstellen und initialisieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Sie sollten für jedes SVM-Root-Volume, das NAS-Daten im Cluster bereitstellt, einen Load-Sharing-Spiegel (LSM) erstellen. Für Cluster mit zwei oder mehr HA-Paaren sollten Sie Load-Sharing-Spiegel der SVM-Root-Volumes in Betracht ziehen, um sicherzustellen, dass der Namespace für Clients zugänglich bleibt, falls beide Knoten eines HA-Paares ausfallen. Load-Sharing-Spiegel sind nicht für Cluster mit einem einzigen HA-Paar geeignet.
+Für jedes SVM Root Volume, das NAS-Daten im Cluster bereitstellt, sollte ein Load-Sharing Mirror (LSM) erstellt werden. Bei Clustern, die aus zwei oder mehr HA-Paaren bestehen, empfiehlt sich die Verwendung von Load-Sharing Mirrors der SVM Root Volumes, damit der Namespace für Clients auch dann zugänglich bleibt, wenn beide Nodes eines HA-Paares ausfallen. Load-Sharing Mirrors sind für Cluster, die nur aus einem HA-Paar bestehen, nicht geeignet.
 
 .Bevor Sie beginnen
-Ab ONTAP 9.16.1 kann beim Erstellen einer Lastverteilungsspiegelbeziehung für die Ziel-SVM kein Speicherlimit aktiviert werden.
+Ab ONTAP 9.16.1 kann beim Erstellen einer Load-Sharing-Mirror-Beziehung für die Ziel-SVM kein Speicherlimit aktiviert sein.
 
 .Über diese Aufgabe
-Wenn Sie auf demselben Node ein LSM erstellen und der Node nicht verfügbar ist, liegt ein Single Point of Failure bei und Sie verfügen nicht über eine zweite Kopie, um sicherzustellen, dass die Daten für Clients verfügbar bleiben. Wenn Sie aber das LSM auf einem anderen Node als dem mit dem Root-Volume oder auf einem anderen HA-Paar erstellen, sind die Daten im Falle eines Ausfalls weiterhin verfügbar.
+Wenn Sie ein LSM auf demselben Knoten erstellen und dieser Knoten nicht verfügbar ist, entsteht ein Single Point of Failure, und es gibt keine zweite Kopie, um die Daten für Clients weiterhin zugänglich zu halten. Wenn das LSM jedoch auf einem anderen Knoten als dem mit dem Root Volume oder auf einem anderen HA-Paar erstellt wird, sind die Daten auch im Falle eines Ausfalls weiterhin zugänglich.
 
-Beispiel: In einem Cluster mit vier Nodes mit einem Root-Volume auf drei Nodes:
+Beispielsweise in einem Vier-Node-Cluster mit einem Root-Volume auf drei Knoten:
 
-* Erstellen Sie für das Root-Volume in HA 1 Node 1 das LSM auf HA 2 Node 1 oder HA 2 Node 2.
-* Erstellen Sie für das Root-Volume in HA 1 Node 2 das LSM auf HA 2 Node 1 oder HA 2 Node 2.
-* Erstellen Sie für das Root-Volume in HA 2 Node 1 das LSM auf HA 1 Node 1 oder HA 1 Node 2.
+* Für das Root-Volume auf HA 1 Knoten 1 das LSM auf HA 2 Knoten 1 oder HA 2 Knoten 2 erstellen.
+* Für das Root-Volume auf HA 1 Knoten 2 ist das LSM auf HA 2 Knoten 1 oder HA 2 Knoten 2 zu erstellen.
+* Für das Root-Volume auf HA 2 Knoten 1 ist das LSM auf HA 1 Knoten 1 oder HA 1 Knoten 2 zu erstellen.
 
 
 .Schritte
-. Zielvolume für das LSM erstellen:
+. Ein Ziel-Volume für den LSM erstellen:
 +
 [source, cli]
 ----
 volume create -vserver <SVM> -volume <volume> -aggregate <aggregate> -type DP -size <size>
 ----
 +
-Das Zielvolumen sollte gleich oder größer sein als das Root-Volume.
+Das Zielvolume sollte mindestens so groß sein wie das Stammvolume.
 
 +
-Es empfiehlt sich, das Root- und Ziel-Volume mit Suffixen wie `_root` und `_m1`zu benennen.
+Es ist eine Best Practice, das Root- und das Ziel-Volume mit Suffixen wie  `_root` und  `_m1` zu benennen.
 
 +
-Erfahren Sie mehr über `volume create` in der link:https://docs.netapp.com/us-en/ontap-cli/volume-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `volume create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-create.html["ONTAP-Befehlsreferenz"^].
 
 +
-Das folgende Beispiel erstellt ein Load-Sharing-Spiegelvolume für das Root-Volume `svm1_root` in `cluster_src`:
+Das folgende Beispiel erstellt ein Load-Sharing Mirror Volume für das Root-Volume `svm1_root` in `cluster_src`:
 
 +
 [listing]
 ----
 cluster_src:> volume create -vserver svm1 -volume svm1_m1 -aggregate aggr_1 -size 1gb -state online -type DP
 ----
-. link:create-replication-job-schedule-task.html["Erstellen Sie einen Zeitplan für Replikations-Jobs"].
-. Erzeugung einer Load-Sharing-Mirror-Beziehung zwischen dem SVM Root-Volume und dem Ziel-Volume für das LSM:
+. link:create-replication-job-schedule-task.html["Einen Replikationsauftragszeitplan erstellen"].
+. Eine Load-Sharing-Mirror-Beziehung zwischen dem SVM-Root-Volume und dem Ziel-Volume für das LSM erstellen:
 +
 [source, cli]
 ----
 snapmirror create -source-path <SVM:volume> -destination-path <SVM:volume> -type LS -schedule <schedule>
 ----
 +
-Das folgende Beispiel erstellt eine Load-Sharing-Spiegelbeziehung zwischen dem Root-Volume `svm1_root` und dem Load-Sharing-Spiegelvolume `svm1_m1`:
+Das folgende Beispiel erstellt eine Load-Sharing-Mirror-Beziehung zwischen dem Root-Volume `svm1_root` und dem Load-Sharing-Mirror-Volume `svm1_m1`:
 
 +
 [listing]
@@ -66,19 +66,19 @@ Das folgende Beispiel erstellt eine Load-Sharing-Spiegelbeziehung zwischen dem R
 cluster_src::> snapmirror create -source-path svm1:svm1_root -destination-path svm1:svm1_m1 -type LS -schedule hourly
 ----
 +
-Das Typattribut der Load-Sharing-Spiegelung ändert sich von `DP` zu `LS`.
+Das Attribut „type“ des Load-Sharing-Mirrors ändert sich von  `DP` zu  `LS`.
 
 +
-Erfahren Sie mehr über `snapmirror create` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-create.html["ONTAP-Befehlsreferenz"^].
 
-. Initialisieren Sie die Load-Sharing-Spiegelung:
+. Den Load-Sharing-Spiegel initialisieren:
 +
 [source, cli]
 ----
 snapmirror initialize-ls-set -source-path <SVM:volume>
 ----
 +
-Im folgenden Beispiel wird die Load-Sharing-Spiegelung für das Root-Volume initialisiert `svm1_root`:
+Das folgende Beispiel initialisiert den Load-Sharing Mirror für das Root-Volume `svm1_root`:
 
 +
 [listing]
@@ -86,6 +86,6 @@ Im folgenden Beispiel wird die Load-Sharing-Spiegelung für das Root-Volume init
 cluster_src::> snapmirror initialize-ls-set -source-path svm1:svm1_root
 ----
 +
-Erfahren Sie mehr über `snapmirror initialize` in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `snapmirror initialize` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-initialize.html["ONTAP-Befehlsreferenz"^].
 
 

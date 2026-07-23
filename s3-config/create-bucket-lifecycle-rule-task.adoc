@@ -2,62 +2,62 @@
 permalink: s3-config/create-bucket-lifecycle-rule-task.html 
 sidebar: sidebar 
 keywords: s3, bucket, cli, lifecycle, rule 
-summary: Ab ONTAP 9.13.1 können Sie S3-Objektablauf implementieren. 
+summary: Ab ONTAP 9.13.1 ist die Implementierung der S3-Objektablaufzeit möglich. 
 ---
-= ONTAP S3-Bucket-Lifecycle-Management-Regel erstellen
+= Erstellen einer ONTAP S3 Bucket-Lebenszyklusverwaltungsregel
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Ab ONTAP 9.13.1 können Sie Lifecycle-Managementregeln erstellen, um Objekt-Lebenszyklen in Ihren S3 Buckets zu managen. Sie können Löschregeln für bestimmte Objekte in einem Bucket definieren und diese Bucket-Objekte durch diese Regeln ablaufen lassen. So können Sie Datenhaltungsanforderungen erfüllen und den gesamten S3 Objekt-Storage effizient managen.
+Ab ONTAP 9.13.1 können Lebenszyklusmanagementregeln erstellt werden, um die Lebenszyklen von Objekten in Ihren S3-Buckets zu verwalten. Löschregeln für bestimmte Objekte in einem Bucket lassen sich definieren, und durch diese Regeln können diese Bucket-Objekte ablaufen. So werden Aufbewahrungsanforderungen erfüllt und der gesamte S3-Objektspeicher effizient verwaltet.
 
 
-NOTE: Wenn die Objektsperrung für Ihre Bucket-Objekte aktiviert ist, werden die Lifecycle-Management-Regeln für die Objektablauffrist nicht auf gesperrte Objekte angewendet. Informationen zum Sperren von Objekten finden Sie unter link:../s3-config/create-bucket-task.html["Erstellen eines Buckets"].
+NOTE: Wenn die Objektsperrung für Ihre Bucket-Objekte aktiviert ist, werden die Lebenszyklusverwaltungsregeln für den Objektablauf nicht auf gesperrte Objekte angewendet. Informationen zur Objektsperrung finden sich unter link:../s3-config/create-bucket-task.html["Einen Bucket erstellen"].
 
 .Bevor Sie beginnen
-* Eine S3-fähige SVM mit einem S3-Server und einem Bucket muss bereits vorhanden sein. Weitere Informationen finden Sie unter link:create-svm-s3-task.html["Erstellung einer SVM für S3"] .
-* Die Regeln für das Bucket-Lifecycle-Management werden nicht unterstützt, wenn S3 in Multiprotokoll-NAS-Volumes oder S3 in MetroCluster-Konfigurationen verwendet werden.
+* Eine S3-fähige SVM mit einem S3-Server und einem Bucket muss bereits existieren. Siehe link:create-svm-s3-task.html["Eine SVM für S3 erstellen"] für weitere Informationen.
+* Bucket-Lifecycle-Management-Regeln werden nicht unterstützt, wenn S3 in Multiprotokoll-NAS-Volumes oder wenn S3 in MetroCluster Konfigurationen verwendet wird.
 
 
 .Über diese Aufgabe
-Beim Erstellen von Lifecycle-Management-Regeln können Sie die folgenden Löschaktionen auf Ihre Bucket-Objekte anwenden:
+Beim Erstellen Ihrer Lebenszyklusverwaltungsregeln können Sie die folgenden Löschaktionen auf Ihre Bucket-Objekte anwenden:
 
-* Löschen aktueller Versionen – Diese Aktion läuft Objekte ab, die durch die Regel identifiziert werden. Wenn die Versionierung auf dem Bucket aktiviert ist, sind alle abgelaufenen Objekte in S3 nicht verfügbar. Wenn die Versionierung nicht aktiviert ist, werden die Objekte durch diese Regel dauerhaft gelöscht. Die CLI-Aktion lautet `Expiration`.
-* Löschen nicht aktueller Versionen – Diese Aktion gibt an, wann S3 nicht aktuelle Objekte dauerhaft entfernen kann. Die CLI-Aktion lautet `NoncurrentVersionExpiration`.
+* Löschen aktueller Versionen, diese Aktion führt zum Ablauf von Objekten, die durch die Regel identifiziert werden. Wenn die Versionierung für den Bucket aktiviert ist, macht S3 alle abgelaufenen Objekte nicht mehr verfügbar. Wenn die Versionierung nicht aktiviert ist, löscht diese Regel die Objekte dauerhaft. Die CLI-Aktion ist  `Expiration`.
+* Löschung nicht aktueller Versionen – Diese Aktion legt fest, wann S3 nicht aktuelle Objekte endgültig entfernen kann. Die CLI-Aktion ist  `NoncurrentVersionExpiration`.
 +
 
-NOTE: Eine nicht aktuelle Version basiert auf der Erstellungszeit oder Änderungszeit der aktuellen Version. Das verzögerte Entfernen nicht aktueller Objekte kann hilfreich sein, wenn Sie versehentlich ein Objekt löschen oder überschreiben. Sie können beispielsweise eine Ablaufregel konfigurieren, um nicht aktuelle Versionen fünf Tage nach ihrer Nichtaktueller zu löschen. Nehmen wir beispielsweise an, dass Sie am 1/2014 um 10:30 UHR UTC ein Objekt mit dem Namen (Versions-ID `111111`) erstellen `photo.gif`. Am 2/2014 um 11:30 Uhr UTC löschen Sie versehentlich `photo.gif` (Versions-ID `111111`), wodurch eine Löschmarkierung mit einer neuen Versions-ID (z.B. Versions-ID) erstellt `4857693` wird. Sie haben nun fünf Tage Zeit, um die ursprüngliche Version von (Versions-ID `111111`) wiederherzustellen `photo.gif`, bevor die Löschung dauerhaft ist. Am 8/2014 um 00:00 UTC wird die Lebenszyklusregel für den Ablauf ausgeführt und dauerhaft gelöscht `photo.gif` (Versions-ID `111111`), fünf Tage nachdem sie zu einer nicht aktuellen Version wurde.
+NOTE: Eine nicht aktuelle Version basiert auf dem Erstellungs- oder Änderungszeitpunkt der aktuellen Version. Die verzögerte Entfernung nicht aktueller Objekte kann hilfreich sein, wenn ein Objekt versehentlich gelöscht oder überschrieben wird. Beispielsweise kann eine Ablaufregel so konfiguriert werden, dass nicht aktuelle Versionen fünf Tage nach dem Wechsel in den nicht aktuellen Status gelöscht werden. Angenommen, am 1.1.2014 um 10:30 Uhr UTC wird ein Objekt namens `photo.gif` (Versions-ID `111111`) erstellt. Am 2.1.2014 um 11:30 Uhr UTC wird `photo.gif` (Versions-ID `111111`) versehentlich gelöscht, wodurch eine Löschmarkierung mit einer neuen Versions-ID (wie Versions-ID `4857693`) erstellt wird. Nun stehen fünf Tage zur Verfügung, um die ursprüngliche Version von `photo.gif` (Versions-ID `111111`) wiederherzustellen, bevor die Löschung endgültig ist. Am 8.1.2014 um 00:00 Uhr UTC wird die Ablaufregel für die Löschung ausgeführt und löscht `photo.gif` (Versions-ID `111111`) endgültig, fünf Tage nachdem sie zu einer nicht aktuellen Version wurde.
 
-* Löschen abgelaufener Löschmarkierungen - Diese Aktion löscht abgelaufene Löschmarkierungen von Objekten. In versionierungsfähigen Buckets werden Objekte mit Löschmarkierungen zu den aktuellen Versionen der Objekte. Die Objekte werden nicht gelöscht, und es kann keine Aktion für sie ausgeführt werden. Diese Objekte sind abgelaufen, wenn ihnen keine aktuellen Versionen zugeordnet sind. Die CLI-Aktion lautet `Expiration`.
-* Löschen von unvollständigen mehrteiligen Uploads: Mit dieser Aktion wird die maximale Zeit (in Tagen) festgelegt, die Sie zulassen möchten, dass mehrteilige Uploads noch ausgeführt werden. Danach werden sie gelöscht. Die CLI-Aktion lautet `AbortIncompleteMultipartUpload`.
+* Löschen abgelaufener Löschmarkierungen - Diese Aktion löscht abgelaufene Löschmarkierungen von Objekten. In Buckets mit aktivierter Versionierung werden Objekte mit einer Löschmarkierung zu den aktuellen Versionen der Objekte. Die Objekte werden nicht gelöscht, und es kann keine Aktion an ihnen durchgeführt werden. Diese Objekte sind abgelaufen, wenn keine aktuellen Versionen mehr mit ihnen verknüpft sind. Die CLI-Aktion ist  `Expiration`.
+* Löschen unvollständiger Multipart-Uploads – Diese Aktion legt eine maximale Zeit (in Tagen) fest, die Multipart-Uploads im Status „laufend“ verbleiben dürfen. Danach werden sie gelöscht. Die CLI-Aktion ist  `AbortIncompleteMultipartUpload`.
 
 
-Die Vorgehensweise, die Sie befolgen, hängt von der verwendeten Schnittstelle ab. Bei ONTAP 9.13,1 müssen Sie die CLI verwenden. Ab ONTAP 9.14.1 können Sie auch System Manager verwenden.
+Die Vorgehensweise hängt von der verwendeten Schnittstelle ab. Mit ONTAP 9.13.1 ist die Nutzung der CLI erforderlich. Ab ONTAP 9.14.1 ist auch die Verwendung von System Manager möglich.
 
 
 
 [[manage-lifecycle-management-rules-with-the-cli]]
-== Verwalten Sie Lifecycle Management-Regeln mit der CLI
+== Lebenszyklusmanagementregeln mit der CLI verwalten
 
-Ab ONTAP 9.13.1 können Sie über die ONTAP CLI Lifecycle-Managementregeln erstellen, um Objekte in Ihren S3 Buckets ablaufen zu lassen.
+Ab ONTAP 9.13.1 kann die ONTAP CLI verwendet werden, um Lebenszyklusverwaltungsregeln zu erstellen, mit denen Objekte in S3-Buckets ablaufen.
 
 .Bevor Sie beginnen
-Für die CLI müssen Sie die erforderlichen Felder für jeden Ablaufaktionstyp definieren, wenn Sie eine Bucket-Lebenszyklusverwaltungsregel erstellen. Diese Felder können nach der ersten Erstellung geändert werden. In der folgenden Tabelle werden die eindeutigen Felder für jeden Aktionstyp angezeigt.
+Für die CLI sind beim Erstellen einer Bucket-Lebenszyklusverwaltungsregel die erforderlichen Felder für jeden Ablaufaktionstyp zu definieren. Diese Felder können nach der erstmaligen Erstellung geändert werden. Die folgende Tabelle zeigt die eindeutigen Felder für jeden Aktionstyp.
 
 [cols="30,70"]
 |===
 
 
-| Aktionstyp | Eindeutige Felder 
+| Aktionstyp | Einzigartige Felder 
 
 
  a| 
-NichtCurrentVersionAblauf
+NonCurrentVersionExpiration
  a| 
-* `-non-curr-days` - Anzahl der Tage, nach denen nicht aktuelle Versionen gelöscht werden
-* `-new-non-curr-versions` - Anzahl der neuesten nicht-aktuellen Versionen, die beibehalten werden sollen
+* `-non-curr-days` - Anzahl der Tage, nach denen nicht mehr aktuelle Versionen gelöscht werden
+* `-new-non-curr-versions` - Anzahl der zuletzt beibehaltenen nicht aktuellen Versionen
 
 
 
@@ -66,22 +66,22 @@ NichtCurrentVersionAblauf
 Ablauf
  a| 
 * `-obj-age-days` - Anzahl der Tage seit der Erstellung, nach denen die aktuelle Version der Objekte gelöscht werden kann
-* `-obj-exp-date` - Bestimmtes Datum, wann die Objekte ablaufen sollen
-* `-expired-obj-del-markers` - Löschen von Objektmarkierungen
+* `-obj-exp-date` - Genaues Datum, an dem die Objekte ablaufen sollen
+* `-expired-obj-del-markers` - Objektlöschmarkierungen bereinigen
 
 
 
 
  a| 
-AbortInsetteMultipartUpload
+AbortIncompleteMultipartUpload
  a| 
-* `-after-initiation-days` - Anzahl der Tage der Initiierung, nach denen der Upload abgebrochen werden kann
+* `-after-initiation-days` - Anzahl der Tage nach der Initiierung, nach denen der Upload abgebrochen werden kann
 
 
 |===
-Damit die Bucket-Lifecycle-Management-Regel nur auf eine bestimmte Untergruppe von Objekten angewendet werden kann, müssen Administratoren beim Erstellen der Regel jeden Filter festlegen. Wenn diese Filter beim Erstellen der Regel nicht festgelegt werden, wird die Regel auf alle Objekte innerhalb des Buckets angewendet.
+Damit die Bucket-Lebenszyklusverwaltungsregel nur auf eine bestimmte Teilmenge von Objekten angewendet wird, müssen Administratoren beim Erstellen der Regel jeden Filter festlegen. Wenn diese Filter beim Erstellen der Regel nicht festgelegt werden, wird die Regel auf alle Objekte im Bucket angewendet.
 
-Alle Filter können nach der ersten Erstellung geändert werden _außer_ für Folgendes: +
+Alle Filter können nach ihrer Erstellung geändert werden, _mit Ausnahme_ der folgenden: +
 
 * `-prefix`
 * `-tags`
@@ -90,25 +90,25 @@ Alle Filter können nach der ersten Erstellung geändert werden _außer_ für Fo
 
 
 .Schritte
-. Verwenden Sie den `vserver object-store-server bucket lifecycle-management-rule create` Befehl mit den erforderlichen Feldern für Ihren Ablaufaktionstyp, um Ihre Bucket Lifecycle Management-Regel zu erstellen.
+. Verwenden Sie den  `vserver object-store-server bucket lifecycle-management-rule create` Befehl mit den erforderlichen Feldern für Ihren Ablaufaktionstyp, um Ihre Bucket-Lebenszyklusverwaltungsregel zu erstellen.
 
 
 .Beispiel
-Mit dem folgenden Befehl wird eine Lebenszyklusverwaltungsregel für den Bucket „NonCurrentVersionExpiration“ erstellt:
+Der folgende Befehl erstellt eine NonCurrentVersionExpiration Bucket-Lebenszyklusverwaltungsregel:
 
 [listing]
 ----
 vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action NonCurrentVersionExpiration -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -new-non-curr-versions <integer> -non-curr-days <integer>
 ----
 .Beispiel
-Mit dem folgenden Befehl wird eine Management-Regel für AblaufBucket-Lebenszyklus erstellt:
+Der folgende Befehl erstellt eine Lebenszyklusverwaltungsregel für den Expiration-Bucket:
 
 [listing]
 ----
 vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action Expiration -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -obj-age-days <integer> -obj-exp-date <"MM/DD/YYYY HH:MM:SS"> -expired-obj-del-marker {true|false}
 ----
 .Beispiel
-Mit dem folgenden Befehl wird eine AbortIncompleMultipartUpload Bucket Lifecycle Management-Regel erstellt:
+Der folgende Befehl erstellt eine AbortIncompleteMultipartUpload Bucket-Lebenszyklusverwaltungsregel:
 
 [listing]
 ----
@@ -117,38 +117,38 @@ vserver object-store-server bucket lifecycle-management-rule create -vserver <sv
 
 
 [[manage-lifecycle-management-rules-with-system-manager]]
-== Managen Sie Lifecycle Management-Regeln mit System Manager
+== Lebenszyklusmanagementregeln mit System Manager verwalten
 
-Ab ONTAP 9.14.1 können Sie S3 Objekte mit System Manager ablaufen lassen. Sie können Lifecycle-Management-Regeln für Ihre S3-Objekte hinzufügen, bearbeiten und löschen. Darüber hinaus können Sie eine für einen Bucket erstellte Lebenszyklusregel importieren und für Objekte in einem anderen Bucket verwenden. Sie können eine aktive Regel deaktivieren und später aktivieren.
+Ab ONTAP 9.14.1 ist es möglich, S3-Objekte mithilfe von System Manager ablaufen zu lassen. Es besteht die Möglichkeit, Lebenszyklusverwaltungsregeln für S3-Objekte hinzuzufügen, zu bearbeiten und zu löschen. Zusätzlich kann eine für einen Bucket erstellte Lebenszyklusregel importiert und für die Objekte in einem anderen Bucket verwendet werden. Eine aktive Regel kann deaktiviert und später wieder aktiviert werden.
 
 
 
 [[add-a-lifecycle-management-rule]]
-=== Fügen Sie eine Lebenszyklusverwaltungsregel hinzu
+=== Eine Lebenszyklusverwaltungsregel hinzufügen
 
-. Klicken Sie Auf *Speicher > Buckets*.
+. *Speicher > Buckets* auswählen.
 . Wählen Sie den Bucket aus, für den Sie die Ablaufregel festlegen möchten.
 . Klicken Sie auf das image:icon_kabob.gif["Symbol für Menüoptionen"] Symbol und wählen Sie *Lebenszyklusregeln verwalten*.
-. Klicken Sie auf *Hinzufügen > Lebenszyklusregel*.
-. Fügen Sie auf der Seite Lebenszyklusregel hinzufügen den Namen der Regel hinzu.
-. Definieren Sie den Geltungsbereich der Regel, unabhängig davon, ob sie auf alle Objekte im Bucket oder auf bestimmte Objekte angewendet werden soll. Wenn Sie Objekte angeben möchten, fügen Sie mindestens eines der folgenden Filterkriterien hinzu:
+. *Hinzufügen > Lebenszyklusregel* auswählen.
+. Auf der Seite „Lebenszyklusregel hinzufügen“ den Namen der Regel hinzufügen.
+. Definieren Sie den Geltungsbereich der Regel, ob sie für alle Objekte im Bucket oder nur für bestimmte Objekte gelten soll. Wenn Sie Objekte angeben möchten, fügen Sie mindestens eines der folgenden Filterkriterien hinzu:
 +
-.. Präfix: Geben Sie ein Präfix der Objektschlüsselnamen an, auf die die Regel angewendet werden soll. Normalerweise handelt es sich um den Pfad oder Ordner des Objekts. Sie können pro Regel ein Präfix eingeben. Sofern kein gültiges Präfix angegeben wird, gilt die Regel für alle Objekte in einem Bucket.
-.. Tags: Geben Sie bis zu drei Schlüssel- und Wertpaare (Tags) für die Objekte an, auf die die Regel angewendet werden soll. Zum Filtern werden nur gültige Schlüssel verwendet. Der Wert ist optional. Wenn Sie jedoch Werte hinzufügen, stellen Sie sicher, dass Sie nur gültige Werte für die entsprechenden Schlüssel hinzufügen.
-.. Größe: Sie können den Umfang zwischen der minimalen und maximalen Größe der Objekte begrenzen. Sie können einen oder beide Werte eingeben. Die Standardeinheit ist MiB.
+.. Präfix: Geben Sie ein Präfix für die Objektschlüsselnamen an, auf die die Regel angewendet werden soll. In der Regel ist dies der Pfad oder Ordner des Objekts. Pro Regel kann ein Präfix eingegeben werden. Sofern kein gültiges Präfix angegeben wird, gilt die Regel für alle Objekte in einem Bucket.
+.. Tags: Es können bis zu drei Schlüssel-Wert-Paare (Tags) für die Objekte angegeben werden, auf die die Regel angewendet werden soll. Nur gültige Schlüssel werden zum Filtern verwendet. Der Wert ist optional. Falls Werte hinzugefügt werden, sollten nur gültige Werte für die entsprechenden Schlüssel angegeben werden.
+.. Größe: Sie können den Bereich zwischen minimaler und maximaler Objektgröße einschränken. Sie können einen oder beide Werte eingeben. Die Standardeinheit ist MiB.
 
 
-. Geben Sie die Aktion an:
+. Aktion angeben:
 +
-.. *Die aktuelle Version von Objekten ablaufen lassen*: Legen Sie eine Regel fest, um alle aktuellen Objekte nach einer bestimmten Anzahl von Tagen seit ihrer Erstellung oder an einem bestimmten Datum dauerhaft nicht mehr verfügbar zu machen. Diese Option ist nicht verfügbar, wenn die Option *Delete Expired object delete Markers* ausgewählt ist.
-.. *Nicht aktuelle Versionen dauerhaft löschen*: Geben Sie die Anzahl der Tage an, nach denen die nicht aktuelle Version gelöscht wird, und die Anzahl der zu haltenden Versionen.
-.. *Löschen abgelaufener Objektlösch-Marker*: Wählen Sie diese Aktion, um Objekte mit abgelaufenen Löschmarkierungen zu löschen, d.h. Marker ohne zugeordnetes aktuelles Objekt zu löschen.
+.. *Aktuelle Objektversionen ablaufen lassen*: Es kann eine Regel festgelegt werden, nach der alle aktuellen Objekte nach einer bestimmten Anzahl von Tagen seit ihrer Erstellung oder an einem bestimmten Datum dauerhaft nicht mehr verfügbar sind. Diese Option ist nicht verfügbar, wenn die Option *Löschmarkierungen abgelaufener Objekte löschen* ausgewählt ist.
+.. *Nicht mehr aktuelle Versionen endgültig löschen*: Geben Sie die Anzahl der Tage an, nach denen die nicht mehr aktuelle Version gelöscht wird, und die Anzahl der zu behaltenden Versionen.
+.. *Abgelaufene Objektlöschmarkierungen löschen*: Diese Aktion löscht Objekte mit abgelaufenen Löschmarkierungen, also Löschmarkierungen ohne zugehöriges aktuelles Objekt.
 +
 
-NOTE: Diese Option ist nicht mehr verfügbar, wenn Sie die Option *die aktuelle Version von Objekten ablaufen lassen* auswählen, die automatisch alle Objekte nach der Aufbewahrungsfrist löscht. Diese Option ist auch nicht mehr verfügbar, wenn Objekt-Tags zum Filtern verwendet werden.
+NOTE: Diese Option ist nicht verfügbar, wenn die Option *Aktuelle Version von Objekten ablaufen lassen* ausgewählt wird, die alle Objekte nach Ablauf der Aufbewahrungsfrist automatisch löscht. Diese Option ist ebenfalls nicht verfügbar, wenn Objekttags zum Filtern verwendet werden.
 
-.. *Unvollständige mehrteilige Uploads löschen*: Legen Sie die Anzahl der Tage fest, nach denen unvollständige mehrteilige Uploads gelöscht werden sollen. Wenn die mehrteiligen Uploads, die gerade ausgeführt werden, innerhalb der angegebenen Aufbewahrungsfrist fehlschlagen, können Sie die unvollständigen mehrteiligen Uploads löschen. Diese Option ist nicht mehr verfügbar, wenn Objekt-Tags zum Filtern verwendet werden.
-.. Klicken Sie Auf *Speichern*.
+.. *Unvollständige Multipart-Uploads löschen*: Legen Sie die Anzahl der Tage fest, nach denen unvollständige Multipart-Uploads gelöscht werden. Wenn laufende Multipart-Uploads innerhalb des angegebenen Aufbewahrungszeitraums fehlschlagen, können die unvollständigen Multipart-Uploads gelöscht werden. Diese Option ist nicht verfügbar, wenn Objekt-Tags zum Filtern verwendet werden.
+.. Auf *Speichern* klicken.
 
 
 
@@ -156,29 +156,29 @@ NOTE: Diese Option ist nicht mehr verfügbar, wenn Sie die Option *die aktuelle 
 
 
 [[import-a-lifecycle-rule]]
-=== Lebenszyklusregel importieren
+=== Import einer Lebenszyklusregel
 
-. Klicken Sie Auf *Speicher > Buckets*.
+. *Speicher > Buckets* auswählen.
 . Wählen Sie den Bucket aus, für den Sie die Ablaufregel importieren möchten.
 . Klicken Sie auf das image:icon_kabob.gif["Symbol für Menüoptionen"] Symbol und wählen Sie *Lebenszyklusregeln verwalten*.
-. Klicken Sie auf *Hinzufügen > Regel importieren*.
-. Wählen Sie den Bucket aus, aus dem Sie die Regel importieren möchten. Die für den ausgewählten Bucket definierten Lifecycle-Management-Regeln werden angezeigt.
-. Wählen Sie die Regel aus, die Sie importieren möchten. Sie haben die Möglichkeit, jeweils eine Regel auszuwählen, wobei die Standardauswahl die erste Regel ist.
-. Klicken Sie Auf *Import*.
+. *Hinzufügen > Regel importieren* auswählen.
+. Wählen Sie den Bucket aus, aus dem Sie die Regel importieren möchten. Die für den ausgewählten Bucket definierten Lebenszyklusverwaltungsregeln werden angezeigt.
+. Wählen Sie die Regel aus, die Sie importieren möchten. Es besteht die Möglichkeit, jeweils eine Regel auszuwählen, wobei standardmäßig die erste Regel ausgewählt ist.
+. Klicken Sie auf *Import*.
 
 
 
 
 [[edit-delete-or-disable-a-rule]]
-=== Bearbeiten, löschen oder deaktivieren Sie eine Regel
+=== Eine Regel bearbeiten, löschen oder deaktivieren
 
-Sie können nur die Lifecycle-Management-Aktionen bearbeiten, die der Regel zugeordnet sind. Wenn die Regel mit Objekt-Tags gefiltert wurde, stehen die Optionen *abgelaufene Objekte löschen Marker* und *unvollständige mehrteilige Uploads löschen* nicht zur Verfügung.
+Sie können nur die mit der Regel verknüpften Lebenszyklusverwaltungsaktionen bearbeiten. Wenn die Regel mit Objekt-Tags gefiltert wurde, sind die Optionen *Abgelaufene Objektlöschmarkierungen löschen* und *Unvollständige Multipart-Uploads löschen* nicht verfügbar.
 
-Wenn Sie eine Regel löschen, gilt diese Regel nicht mehr für zuvor zugeordnete Objekte.
+Wenn eine Regel gelöscht wird, gilt diese Regel nicht mehr für zuvor verknüpfte Objekte.
 
-. Klicken Sie Auf *Speicher > Buckets*.
-. Wählen Sie den Bucket aus, für den Sie die Lifecycle-Management-Regel bearbeiten, löschen oder deaktivieren möchten.
+. *Speicher > Buckets* auswählen.
+. Wählen Sie den Bucket aus, für den Sie die Lebenszyklusverwaltungsregel bearbeiten, löschen oder deaktivieren möchten.
 . Klicken Sie auf das image:icon_kabob.gif["Symbol für Menüoptionen"] Symbol und wählen Sie *Lebenszyklusregeln verwalten*.
-. Wählen Sie die gewünschte Regel aus. Sie können jeweils eine Regel bearbeiten und deaktivieren. Sie können mehrere Regeln auf einmal löschen.
-. Wählen Sie *Bearbeiten*, *Löschen* oder *Deaktivieren*, und schließen Sie das Verfahren ab.
+. Wählen Sie die gewünschte Regel aus. Es ist möglich, jeweils eine Regel zu bearbeiten und zu deaktivieren. Mehrere Regeln können gleichzeitig gelöscht werden.
+. *Bearbeiten*, *Löschen* oder *Deaktivieren* auswählen und den Vorgang abschließen.
 

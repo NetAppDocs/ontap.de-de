@@ -2,106 +2,106 @@
 permalink: encryption-at-rest/enable-external-key-management-96-later-nve-task.html 
 sidebar: sidebar 
 keywords: enabling, external key management, ontap 9.6, later, nve 
-summary: Ein oder mehrere KMIP-Server dienen zur Sicherung der Schlüssel, die das Cluster für den Zugriff auf verschlüsselte Daten verwendet. Ab ONTAP 9.6 können Sie einen oder mehrere KMIP-Server verwenden, um die Schlüssel zu sichern, die eine bestimmte SVM für den Zugriff auf verschlüsselte Daten verwendet. 
+summary: Sie können einen oder mehrere KMIP-Server verwenden, um die Schlüssel zu sichern, die der Cluster für den Zugriff auf verschlüsselte Daten verwendet. Ab ONTAP 9.6 ist es möglich, einen oder mehrere KMIP-Server zu nutzen, um die Schlüssel zu sichern, die eine bestimmte SVM für den Zugriff auf verschlüsselte Daten verwendet. 
 ---
-= Aktivieren Sie die externe Schlüsselverwaltung für NVE in ONTAP 9.6 und höher
+= Externe Schlüsselverwaltung für NVE in ONTAP 9.6 und höher aktivieren
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Verwenden Sie KMIP-Server, um die Schlüssel zu sichern, die der Cluster für den Zugriff auf verschlüsselte Daten verwendet.  Ab ONTAP 9.6 haben Sie die Möglichkeit, einen separaten externen Schlüsselmanager zu konfigurieren, um die Schlüssel zu sichern, die ein Daten-SVM für den Zugriff auf verschlüsselte Daten verwendet.
+KMIP-Server dienen der Sicherung der Schlüssel, die der Cluster für den Zugriff auf verschlüsselte Daten verwendet. Ab ONTAP 9.6 besteht die Möglichkeit, einen separaten externen Schlüsselmanager zu konfigurieren, um die Schlüssel zu sichern, die eine Daten-SVM für den Zugriff auf verschlüsselte Daten verwendet.
 
-Ab ONTAP 9.11.1 können Sie bis zu 3 sekundäre Schlüsselserver pro primären Schlüsselserver hinzufügen, um einen geclusterten Schlüsselserver zu erstellen. Weitere Informationen finden Sie unter xref:configure-cluster-key-server-task.html[Konfigurieren Sie externe geclusterte Schlüsselserver].
+Ab ONTAP 9.11.1 können bis zu 3 sekundäre Schlüsselserver pro primärem Schlüsselserver hinzugefügt werden, um einen gruppierten Schlüsselserver zu erstellen. Weitere Informationen finden sich unter xref:configure-cluster-key-server-task.html[Clustered externe Schlüsselserver konfigurieren].
 
 .Über diese Aufgabe
-Sie können bis zu vier KMIP-Server mit einem Cluster oder SVM verbinden.  Verwenden Sie mindestens zwei Server für Redundanz und Notfallwiederherstellung.
+Sie können bis zu vier KMIP-Server an einen Cluster oder eine SVM anschließen. Mindestens zwei Server sollten für Redundanz und Notfallwiederherstellung eingesetzt werden.
 
-Der Umfang des externen Verschlüsselungsmanagement bestimmt, ob wichtige Managementserver alle SVMs im Cluster oder nur ausgewählte SVMs sichern:
+Der Umfang der externen Schlüsselverwaltung bestimmt, ob Schlüsselverwaltungsserver alle SVMs im Cluster oder nur ausgewählte SVMs sichern:
 
-* Sie können ein_Cluster Scope_ verwenden, um das externe Verschlüsselungsmanagement für alle SVMs im Cluster zu konfigurieren. Der Clusteradministrator hat Zugriff auf jeden auf den Servern gespeicherten Schlüssel.
-* Ab ONTAP 9.6 können Sie mithilfe eines Umfangs _SVM_ externes Verschlüsselungsmanagement für eine Daten-SVM im Cluster konfigurieren. Dies eignet sich am besten für mandantenfähige Umgebungen, in denen jeder Mandant eine andere SVM (oder einen Satz SVMs) zur Bereitstellung von Daten verwendet. Nur der SVM-Administrator für einen bestimmten Mandanten hat Zugriff auf die Schlüssel für den jeweiligen Mandanten.
-* Installieren Sie für mandantenfähige Umgebungen eine Lizenz für _MT_EK_MGMT_, indem Sie den folgenden Befehl verwenden:
+* Sie können einen Clusterbereich verwenden, um die externe Schlüsselverwaltung für alle SVMs im Cluster zu konfigurieren. Der Clusteradministrator hat Zugriff auf alle auf den Servern gespeicherten Schlüssel.
+* Ab ONTAP 9.6 kann ein SVM-Bereich verwendet werden, um die externe Schlüsselverwaltung für eine Daten-SVM im Cluster zu konfigurieren. Das ist optimal für mandantenfähige Umgebungen, in denen jeder Mandant eine andere SVM (oder eine Gruppe von SVMs) zur Datenbereitstellung verwendet. Nur der SVM-Administrator eines bestimmten Mandanten hat Zugriff auf die Schlüssel dieses Mandanten.
+* Für mandantenfähige Umgebungen ist eine Lizenz für _MT_EK_MGMT_ mit folgendem Befehl zu installieren:
 +
 `system license add -license-code <MT_EK_MGMT license code>`
 
 +
-Erfahren Sie mehr über `system license add` in der link:https://docs.netapp.com/us-en/ontap-cli/system-license-add.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `system license add` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/system-license-add.html["ONTAP-Befehlsreferenz"^].
 
 
 
-Sie können beide Bereiche im selben Cluster verwenden. Wenn Verschlüsselungsmanagement-Server für eine SVM konfiguriert wurden, verwendet ONTAP nur diese Server zur Sicherung der Schlüssel. Andernfalls sichert ONTAP Schlüssel mit den für den Cluster konfigurierten Verschlüsselungsmanagement-Servern.
+Beide Bereiche können im selben Cluster verwendet werden. Wenn Schlüsselverwaltungsserver für eine SVM konfiguriert wurden, verwendet ONTAP ausschließlich diese Server zur Sicherung der Schlüssel. Andernfalls sichert ONTAP die Schlüssel mit den für den Cluster konfigurierten Schlüsselverwaltungsservern.
 
-Die integrierte Verschlüsselungsmanagement lässt sich für den Cluster-Umfang und das externe Verschlüsselungsmanagement auf der SVM-Ebene konfigurieren. Mit dem `security key-manager key migrate` Befehl können Sie Schlüssel vom integrierten Verschlüsselungsmanagement im Cluster-Umfang zu externen Schlüsselmanagern im SVM-Umfang migrieren.
+Sie können die Onboard-Schlüsselverwaltung auf Clusterebene und die externe Schlüsselverwaltung auf SVM-Ebene konfigurieren. Sie können den  `security key-manager key migrate` Befehl verwenden, um Schlüssel von der Onboard-Schlüsselverwaltung auf Clusterebene zu externen Schlüsselverwaltungen auf SVM-Ebene zu migrieren.
 
-Erfahren Sie mehr über `security key-manager key migrate` in der link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-key-migrate.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `security key-manager key migrate` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-key-migrate.html["ONTAP-Befehlsreferenz"^].
 
 .Bevor Sie beginnen
 * Die KMIP SSL-Client- und Serverzertifikate müssen installiert sein.
-* Der KMIP-Server muss von jedem Knoten-Management-LIF aus erreichbar sein.
-* Sie müssen ein Cluster- oder SVM-Administrator sein, um diese Aufgabe durchzuführen.
-* In einer MetroCluster -Umgebung:
+* Der KMIP-Server muss von jedem Node-Management-LIF aus erreichbar sein.
+* Sie müssen Cluster- oder SVM-Administrator sein, um diese Aufgabe ausführen zu können.
+* In einer MetroCluster Umgebung:
 +
-** MetroCluster muss vollständig konfiguriert sein, bevor die externe Schlüsselverwaltung aktiviert wird.
-** Sie müssen auf beiden Clustern dasselbe KMIP-SSL-Zertifikat installieren.
+** MetroCluster muss vollständig konfiguriert sein, bevor die externe Schlüsselverwaltung aktiviert werden kann.
+** Auf beiden Clustern ist dasselbe KMIP SSL-Zertifikat zu installieren.
 ** Auf beiden Clustern muss ein externer Schlüsselmanager konfiguriert werden.
 
 
 
 
 .Schritte
-. Konfigurieren Sie die Schlüsselmanager-Konnektivität für das Cluster:
+. Die Key-Manager-Konnektivität für den Cluster konfigurieren:
 +
 `security key-manager external enable -vserver admin_SVM -key-servers host_name|IP_address:port,... -client-cert client_certificate -server-ca-cert server_CA_certificates`
 
 +
 
-NOTE: Der `security key-manager external enable` Befehl ersetzt den `security key-manager setup` Befehl.  Wenn Sie den Befehl an der Cluster-Anmeldeaufforderung ausführen, `_admin_SVM_` standardmäßig auf die Admin-SVM des aktuellen Clusters.  Sie können die `security key-manager external modify` Befehl zum Ändern der Konfiguration der externen Schlüsselverwaltung.
+NOTE: Der  `security key-manager external enable` Befehl ersetzt den  `security key-manager setup` Befehl. Wenn der Befehl an der Cluster-Anmeldeaufforderung ausgeführt wird,  `_admin_SVM_` ist standardmäßig die Admin-SVM des aktuellen Clusters voreingestellt. Der  `security key-manager external modify` Befehl kann verwendet werden, um die Konfiguration der externen Schlüsselverwaltung zu ändern.
 
 +
-Mit dem folgenden Befehl wird die externe Schlüsselverwaltung für `cluster1` mit drei externen Schlüsselservern aktiviert. Der erste Schlüsselserver wird mit seinem Hostnamen und Port angegeben, der zweite mit einer IP-Adresse und dem Standardport und der dritte mit einer IPv6-Adresse und einem IPv6-Port:
+Der folgende Befehl aktiviert die externe Schlüsselverwaltung für `cluster1` mit drei externen Schlüsselservern. Der erste Schlüsselserver wird über seinen Hostnamen und Port angegeben, der zweite über eine IP-Adresse und den Standardport, und der dritte über eine IPv6-Adresse und den Port:
 
 +
 [listing]
 ----
 clusterl::> security key-manager external enable -vserver cluster1 -key-servers ks1.local:15696,10.0.0.10,[fd20:8b1e:b255:814e:32bd:f35c:832c:5a09]:1234 -client-cert AdminVserverClientCert -server-ca-certs AdminVserverServerCaCert
 ----
-. Konfiguration eines Schlüsselmanagers einer SVM:
+. Konfiguration eines Schlüsselmanagers für eine SVM:
 +
 `security key-manager external enable -vserver SVM -key-servers host_name|IP_address:port,... -client-cert client_certificate -server-ca-cert server_CA_certificates`
 
 +
 [NOTE]
 ====
-** Wenn Sie den Befehl an der SVM-Anmeldeaufforderung ausführen, `SVM` standardmäßig auf die aktuelle SVM eingestellt.  Sie können die `security key-manager external modify` Befehl zum Ändern der Konfiguration der externen Schlüsselverwaltung.
-** Wenn Sie in einer MetroCluster-Umgebung externes Verschlüsselungsmanagement für eine Daten-SVM konfigurieren, müssen Sie den `security key-manager external enable` Befehl auf dem Partner-Cluster nicht wiederholen.
+** Wenn der Befehl an der SVM-Anmeldeaufforderung ausgeführt wird,  `SVM` gilt standardmäßig die aktuelle SVM. Der  `security key-manager external modify` Befehl kann verwendet werden, um die Konfiguration der externen Schlüsselverwaltung zu ändern.
+** In einer MetroCluster-Umgebung ist es bei der Konfiguration der externen Schlüsselverwaltung für eine Daten-SVM nicht erforderlich, den  `security key-manager external enable` Befehl auf dem Partnercluster zu wiederholen.
 
 
 ====
 +
-Mit dem folgenden Befehl wird die externe Schlüsselverwaltung für `svm1` mit einem einzelnen Schlüsselserver aktiviert, der auf dem Standardport 5696 lauscht:
+Der folgende Befehl aktiviert die externe Schlüsselverwaltung für `svm1` einen einzelnen Schlüsselserver, der auf dem Standardport 5696 lauscht:
 
 +
 [listing]
 ----
 svm1l::> security key-manager external enable -vserver svm1 -key-servers keyserver.svm1.com -client-cert SVM1ClientCert -server-ca-certs SVM1ServerCaCert
 ----
-. Wiederholen Sie den letzten Schritt für alle weiteren SVMs.
+. Den letzten Schritt für alle weiteren SVMs wiederholen.
 +
 [NOTE]
 ====
-Sie können auch `security key-manager external add-servers` weitere SVMs mit dem Befehl konfigurieren. Der `security key-manager external add-servers` Befehl ersetzt den `security key-manager add` Befehl. Erfahren Sie mehr über `security key-manager external add-servers` in der link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-add-servers.html["ONTAP-Befehlsreferenz"^].
+Sie können auch den  `security key-manager external add-servers` Befehl verwenden, um zusätzliche SVMs zu konfigurieren. Der  `security key-manager external add-servers` Befehl ersetzt den  `security key-manager add` Befehl. Weitere Informationen zu  `security key-manager external add-servers` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-add-servers.html["ONTAP-Befehlsreferenz"^].
 
 ====
-. Vergewissern Sie sich, dass alle konfigurierten KMIP-Server verbunden sind:
+. Es wird überprüft, ob alle konfigurierten KMIP-Server verbunden sind:
 +
 `security key-manager external show-status -node node_name`
 
 +
 [NOTE]
 ====
-Der `security key-manager external show-status` Befehl ersetzt den `security key-manager show -status` Befehl. Erfahren Sie mehr über `security key-manager external show-status` in der link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-show-status.html["ONTAP-Befehlsreferenz"^].
+Der  `security key-manager external show-status` Befehl ersetzt den  `security key-manager show -status` Befehl. Weitere Informationen zu  `security key-manager external show-status` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-show-status.html["ONTAP-Befehlsreferenz"^].
 
 ====
 +
@@ -128,19 +128,19 @@ node2
 
 8 entries were displayed.
 ----
-. Konvertieren Sie optional Klartextvolumes in verschlüsselte Volumes.
+. Optional können Klartext-Volumes in verschlüsselte Volumes umgewandelt werden.
 +
 `volume encryption conversion start`
 
 +
-Ein externer Schlüsselmanager muss vollständig konfiguriert sein, bevor Sie die Volumes konvertieren.
+Vor der Konvertierung der Volumes muss ein externer Schlüsselmanager vollständig konfiguriert sein.
 
 
 
 .Verwandte Informationen
-* xref:configure-cluster-key-server-task.html[Konfigurieren Sie externe geclusterte Schlüsselserver]
-* link:https://docs.netapp.com/us-en/ontap-cli/system-license-add.html["Systemlizenz hinzufügen"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-key-migrate.html["Sicherheitsschlüssel-Manager-Schlüsselmigration"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-add-servers.html["Sicherheitsschlüssel-Manager Externe Add-Server"^]
-* link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-show-status.html["Sicherheitsschlüssel-Manager, externer Show-Status"^]
+* xref:configure-cluster-key-server-task.html[Clustered externe Schlüsselserver konfigurieren]
+* link:https://docs.netapp.com/us-en/ontap-cli/system-license-add.html["system license add"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-key-migrate.html["security key-manager key migrate"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-add-servers.html["security key-manager external add-servers"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-external-show-status.html["security key-manager external show-status"^]
 

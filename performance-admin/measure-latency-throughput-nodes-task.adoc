@@ -2,34 +2,34 @@
 permalink: performance-admin/measure-latency-throughput-nodes-task.html 
 sidebar: sidebar 
 keywords: check, throughput, latency, between, nodes 
-summary: Mithilfe des Befehls „Network Test-Path“ können Sie Netzwerkengpässe identifizieren oder Netzwerkpfade zwischen Nodes vorqualifizieren. Sie können den Befehl zwischen Cluster Nodes oder Intracluster Nodes ausführen. 
+summary: Mit dem Befehl „network test-path“ lassen sich Netzwerkengpässe identifizieren oder Netzwerkpfade zwischen Knoten vorab qualifizieren. Der Befehl kann zwischen Intercluster-Knoten oder Intracluster-Knoten ausgeführt werden. 
 ---
-= Überprüfen Sie den ONTAP Durchsatz und die Latenz zwischen den Knoten
+= ONTAP Durchsatz und Latenz zwischen den Knoten prüfen
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Mit dem `network test-path` Befehl können Sie Netzwerkengpässe identifizieren oder die Netzwerkpfade zwischen den Nodes vorqualifizieren. Sie können den Befehl zwischen Cluster Nodes oder Intracluster Nodes ausführen.
+Sie können den  `network test-path`Befehl verwenden, um Netzwerkengpässe zu identifizieren oder Netzwerkpfade zwischen Knoten vorab zu qualifizieren. Der Befehl kann zwischen Intercluster-Knoten oder Intracluster-Knoten ausgeführt werden.
 
 .Bevor Sie beginnen
-* Sie müssen ein Cluster-Administrator sein, um diese Aufgabe auszuführen.
-* Für diese Aufgabe sind erweiterte Befehle auf Berechtigungsebene erforderlich.
-* Für einen Intercluster-Pfad müssen die Quell- und Ziel-Cluster Peering durchgeführt werden.
+* Sie müssen Cluster-Administrator sein, um diese Aufgabe ausführen zu können.
+* Für diese Aufgabe sind Befehle auf dem erweiterten Berechtigungslevel erforderlich.
+* Für einen Intercluster-Pfad müssen Quell- und Zielcluster per Peering verbunden sein.
 
 
 .Über diese Aufgabe
-Gelegentlich erfüllt die Netzwerkleistung zwischen Knoten möglicherweise nicht die Erwartungen an Ihre Pfadkonfiguration. Eine Übertragungsrate von 1 Gbit/s für die Art großer Datentransfers, wie bei SnapMirror Replizierungsvorgängen zu beobachten ist, wäre nicht mit einer 10-GbE-Verbindung zwischen den Quell- und Ziel-Clustern konsistent.
+Gelegentlich entspricht die Netzwerkleistung zwischen den Knoten möglicherweise nicht den Erwartungen an Ihre Pfadkonfiguration. Eine Übertragungsrate von 1 Gbit/s für die großen Datentransfers, wie sie bei SnapMirror Replikationsvorgängen auftreten, wäre nicht mit einer 10 GbE Verbindung zwischen Quell- und Ziel-Cluster vereinbar.
 
-Mit dem `network test-path` Befehl können Sie den Durchsatz und die Latenz zwischen Nodes messen. Sie können den Befehl zwischen Cluster Nodes oder Intracluster Nodes ausführen.
+Sie können den  `network test-path`Befehl verwenden, um Durchsatz und Latenz zwischen Knoten zu messen. Der Befehl kann zwischen Intercluster-Knoten oder Intracluster-Knoten ausgeführt werden.
 
 [NOTE]
 ====
-Der Test sättigt den Netzwerkpfad mit Daten. Wenn also das System nicht ausgelastet ist und der Netzwerk-Traffic zwischen den Nodes nicht zu hoch ist, sollte der Befehl ausgeführt werden. Die Testzeit beträgt nach zehn Sekunden. Der Befehl kann nur zwischen ONTAP 9 Nodes ausgeführt werden.
+Der Test sättigt den Netzwerkpfad mit Daten, daher sollte der Befehl nur ausgeführt werden, wenn das System nicht ausgelastet ist und der Netzwerkverkehr zwischen den Knoten nicht übermäßig hoch ist. Der Test wird nach zehn Sekunden abgebrochen. Der Befehl kann nur zwischen ONTAP 9 Knoten ausgeführt werden.
 
 ====
-Die `session-type` Option gibt an, welche Art von Vorgang Sie über den Netzwerkpfad ausführen – z. B. „AsyncMirrorRemote“ für die SnapMirror-Replikation zu einem Remote-Ziel. Der Typ gibt die Menge der im Test verwendeten Daten an. Die folgende Tabelle definiert die Sitzungstypen:
+Die  `session-type` Option kennzeichnet die Art des Vorgangs, der über den Netzwerkpfad ausgeführt wird, zum Beispiel „AsyncMirrorRemote“ für SnapMirror Replikation an ein Remote-Ziel. Der Typ bestimmt die im Test verwendete Datenmenge. Die folgende Tabelle definiert die Sitzungstypen:
 
 |===
 
@@ -38,39 +38,39 @@ Die `session-type` Option gibt an, welche Art von Vorgang Sie über den Netzwerk
 
 
  a| 
-SyncMirrorLocal
+AsyncMirrorLocal
  a| 
-Von SnapMirror zwischen den Nodes im selben Cluster verwendete Einstellungen
+Einstellungen, die von SnapMirror zwischen Knoten im selben Cluster verwendet werden
 
 
 
  a| 
-SyncMirrorRemote
+AsyncMirrorRemote
  a| 
-Von SnapMirror verwendete Einstellungen zwischen Nodes in verschiedenen Clustern (Standardtyp)
+Einstellungen, die von SnapMirror zwischen Knoten in verschiedenen Clustern verwendet werden (Standardtyp)
 
 
 
  a| 
 RemoteDataTransfer
  a| 
-Von ONTAP für Remote-Datenzugriff zwischen Nodes im selben Cluster (z. B. eine NFS-Anforderung an einen Node für eine Datei, die in einem Volume auf einem anderen Node gespeichert ist)
+Einstellungen, die ONTAP für den Remote-Datenzugriff zwischen Knoten im selben Cluster verwendet (z. B. eine NFS-Anfrage an einen Knoten für eine Datei, die in einem Volume auf einem anderen Knoten gespeichert ist)
 
 |===
 .Schritte
-. Ändern Sie die erweiterte Berechtigungsebene:
+. Wechsel zum erweiterten Berechtigungslevel:
 +
 `set -privilege advanced`
 
-. Messung des Durchsatzes und der Latenz zwischen Nodes:
+. Durchsatz und Latenz zwischen den Knoten:
 +
 `network test-path -source-node _source_nodename_ |local -destination-cluster _destination_clustername_ -destination-node _destination_nodename_ -session-type Default|AsyncMirrorLocal|AsyncMirrorRemote|SyncMirrorRemote|RemoteDataTransfer`
 
 +
-Der Quell-Node muss sich im lokalen Cluster befinden. Der Ziel-Node kann sich im lokalen Cluster oder in einem Peering-Cluster befinden. Ein Wert von „local“ für `-source-node` gibt den Node an, auf dem Sie den Befehl ausführen.
+Der Quellknoten muss sich im lokalen Cluster befinden. Der Zielknoten kann sich im lokalen Cluster oder in einem verbundenen Cluster befinden. Ein Wert von „local“ für `-source-node` gibt den Knoten an, auf dem Sie den Befehl ausführen.
 
 +
-Mit dem folgenden Befehl werden Durchsatz und Latenz für SnapMirror-Typ-Replikationsvorgänge zwischen `node1` dem lokalen Cluster und `node3` auf gemessen `cluster2`:
+Der folgende Befehl misst Durchsatz und Latenz für Replikationsvorgänge vom Typ SnapMirror zwischen  `node1` auf dem lokalen Cluster und  `node3` auf  `cluster2`:
 
 +
 [listing]
@@ -78,7 +78,7 @@ Mit dem folgenden Befehl werden Durchsatz und Latenz für SnapMirror-Typ-Replika
 cluster1::> network test-path -source-node node1 -destination-cluster cluster2 -destination-node node3 -session-type AsyncMirrorRemote
 ----
 +
-Beispielausgabe (die Ausgabedetails können je nach Ihrer Version von ONTAP variieren):
+Beispielausgabe (die Ausgabedetails können je nach Ihrer ONTAP-Version variieren):
 
 +
 [listing]
@@ -91,13 +91,13 @@ MB received:        198.31
 Avg latency in ms:  2301.47
 ----
 +
-Erfahren Sie mehr über `network test-path` in der link:https://docs.netapp.com/us-en/ontap-cli/network-test-path.html["ONTAP-Befehlsreferenz"^].
+Weitere Informationen zu  `network test-path` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/network-test-path.html["ONTAP-Befehlsreferenz"^].
 
-. Zurück zur Administratorberechtigung:
+. Zurück zu als Administrator angemeldet:
 +
 `set -privilege admin`
 
 
 
 .Nachdem Sie fertig sind
-Wenn die Performance die Erwartungen der Pfadkonfiguration nicht erfüllt, sollten Sie die Performance-Statistiken der Nodes überprüfen, die verfügbaren Tools verwenden, um das Problem im Netzwerk zu isolieren, die Switch-Einstellungen zu überprüfen usw.
+Falls die Leistung nicht den Erwartungen an die Pfadkonfiguration entspricht, empfiehlt es sich, die Leistungsstatistiken der Knoten zu überprüfen, verfügbare Tools zu nutzen, um das Problem im Netzwerk einzugrenzen, die Switch-Einstellungen zu prüfen und Ähnliches.
