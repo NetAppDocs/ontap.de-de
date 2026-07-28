@@ -19,48 +19,81 @@ Ab ONTAP 9.19.1 können Sie TLS-Offload konfigurieren, um die Leistung nach dem 
 * Die TLS-Handschlagphase wird nicht ausgelagert. Nur die Datenphase nach dem Handschlag wird ausgelagert.
 * Die Migration der logischen Netzwerkschnittstelle (LIF) auf Ports, die nicht für Offloading geeignet sind, führt zu einem automatischen Software-Fallback.
 +
-Bei TLS-offloaded-Verbindungen umgehen die kryptografischen Operationen von TLS üblicherweise die Software und werden von einer Offload-fähigen Netzwerkkarte (NIC) verarbeitet. Wenn die mit dieser Verbindung verknüpfte LIF auf einen Netzwerkport ohne TLS-Offload-Funktion migriert, greifen die kryptografischen Operationen auf die Software zurück und werden vom Systemkernel verarbeitet.
+Bei TLS-offloaded-Verbindungen umgehen die kryptografischen Operationen von TLS üblicherweise die Software und werden von einer Offload-fähigen NIC ausgeführt. Wenn die mit dieser Verbindung verknüpfte LIF auf einen Netzwerkport ohne TLS-Offload-Funktion migriert, greifen die kryptografischen Operationen auf die Software zurück und werden vom Systemkernel verarbeitet.
 
 * Die Management-Schnittstellen (HTTPS, REST API) sind von dieser Einstellung nicht betroffen.
 * Die Einstellung für die TLS-Hardwareauslagerung gilt clusterweit.
 
 
 .Unterstützte Netzwerkkarten und Plattformen
-Für die Hardware-Auslagerung von TLS ist eine unterstützte Netzwerkkarte erforderlich. Folgende Netzwerkkarten werden unterstützt:
+Für die Hardware-Auslagerung von TLS ist eine unterstützte Netzwerkkarte erforderlich. Die folgende Tabelle listet die unterstützten Netzwerkkarten nach Plattform auf.
 
+[cols="1,2,3a"]
+|===
+| Plattformfamilie | Plattformen | Unterstützte Netzwerkkarten 
+
+
+| AFF und FAS | AFF A20, AFF A30, AFF A50, AFF C30, AFF C60, FAS50  a| 
 * 4-Port CX7 10/25 GbE
-* 2-Port CX6-Dx 40/100 GbE
+* 2-Port CX6-DX 40/100 GbE
 * 2-Port CX7 40/100 GbE
-* 2-Port CX7 40/100/200
 
 
-Die 4-Port-CX7-10/25-GbE-, 2-Port-CX6-Dx-40/100-GbE- und 2-Port-CX7-40/100-GbE-Karten werden auf den folgenden AFF-Plattformen unterstützt:
-
-* AFF A20
-* AFF A30
-* AFF A50
-* AFF C30
-* AFF C60
 
 
-Die 4-Port 2-Port CX6-Dx 40/100 GbE-, 2-Port CX7 40/100 GbE- und 2-Port CX7 40/100/200 GbE-Karten werden auf den folgenden AFF und FAS Plattformen unterstützt:
-
-* AFF A70-90
-* AFF C80
-* FAS70
-* FAS90
-* AFF A1K
+| AFF und FAS | AFF A70, AFF A90, AFF C80, FAS70, FAS90, AFF A1K  a| 
+* 2-Port CX6-DX 40/100 GbE
+* 2-Port CX7 40/100 GbE
+* 2-Port CX7 40/100/200/400 GbE
 
 
+
+
+| ASA | ${post_edited_translations.segment}  a| 
+* 4-Port CX7 10/25 GbE
+* 2-Port CX6-DX 40/100 GbE
+* 2-Port CX7 40/100 GbE
+
+
+
+
+| ASA | ASA A70, ASA A90, ASA A1K  a| 
+* 2-Port CX6-DX 40/100 GbE
+* 2-Port CX7 40/100 GbE
+* 2-Port CX7 40/100/200/400 GbE
+
+
+
+
+| AFX | AFX 1K  a| 
+* 2-Port CX6-DX 40/100 GbE
+* 2-Port CX7 40/100 GbE
+* 2-Port CX7 40/100/200/400 GbE
+
+
+
+
+| AFX | AFX 2K  a| 
+* 2-Port CX7 40/100/200/400 GbE
+
+
+|===
 .Unterstützte Verkehrstypen
 TLS-Hardware-Offload unterstützt die folgenden Verkehrstypen:
 
+* NFS
 * NVMe/TCP
 * Cluster-Peering-Verschlüsselung
 * FabricPool
 * S3
 * NFS
 
+
+
+NOTE: Auf ASA-Systemen gilt die TLS-Hardwareauslagerung nur für NVMe/TCP-Datenverkehr. NFS über TLS, FabricPool und S3 werden auf ASA-Plattformen nicht unterstützt.
+
+
+NOTE: Auf AFX-Plattformen unterstützt die TLS-Hardwareauslagerung die NFS- und S3-Frontend-Datenverkehrstypen. NVMe/TCP wird auf AFX-Plattformen nicht unterstützt, da AFX keine SAN/Block-Protokolle unterstützt.
 
 .Bevor Sie beginnen
 * Sie müssen ONTAP Administrator auf der `admin`-Berechtigungsstufe sein, um die folgenden Aufgaben auszuführen.
@@ -101,19 +134,11 @@ false      TLSv1.3,  false   TLS_RSA_WITH_AES_128_CCM,
 +
 [source, cli]
 ----
-security config modify -is-offload-enabled {true|false}
+security config modify * -is-offload-enabled {true|false}
 ----
 +
 Dieser Befehl aktiviert oder deaktiviert die Hardware-Auslagerung für die TLS-Datenphase bei neuen Verbindungen. Bestehende Verbindungen, die vor der Aktivierung der TLS-Auslagerungsfunktion erstellt wurden, werden erst dann ausgelagert, wenn diese Verbindungen entfernt und neu erstellt werden.
 
-+
-Bei der Aktivierung des TLS-Offloads muss die Schnittstelle angegeben werden:
-
-+
-[source, cli]
-----
-security config modify -is-offload-enabled true -interface SSL
-----
 
 
 .Verwandte Informationen

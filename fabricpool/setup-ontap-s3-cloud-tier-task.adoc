@@ -33,6 +33,11 @@ NOTE: Bei Überlastung der Cluster-LIF-Ressourcen kann es zu Leistungseinbußen 
 .Über diese Aufgabe
 Lastverteilung ist für ONTAP S3 Server ab ONTAP 9.8 aktiviert. Wenn der Hostname des Servers zu mehr als einer IP-Adresse aufgelöst wird, stellt ONTAP Client-Verbindungen mit allen zurückgegebenen IP-Adressen her (bis zu maximal 16 IP-Adressen). Die IP-Adressen werden beim Verbindungsaufbau nach dem Round-Robin-Verfahren ausgewählt.
 
+
+
+[[set-up-the-ontap-s3-cloud-tier-for-fabricpool]]
+== Die ONTAP S3 Cloud-Tier für FabricPool einrichten
+
 .Schritte
 ONTAP S3 kann als Cloud-Tier für FabricPool mit ONTAP System Manager oder der ONTAP CLI eingerichtet werden.
 
@@ -103,6 +108,41 @@ Der  `storage aggregate object-store config modify`Befehl ermöglicht die Änder
 
 --
 ====
+
+
+[[change-the-ontap-s3-fqdn-for-fabricpool-tiering]]
+== Den ONTAP S3 FQDN für FabricPool Tiering ändern
+
+Wenn Änderungen an Ihrem Netzwerk erforderlich sind, die FQDN-Aktualisierungen beinhalten, sollte der für das FabricPool-Tiering verwendete ONTAP S3 FQDN geändert werden, um Netzwerkunterbrechungen zu vermeiden.
+
+.Schritte
+. Zertifikatsprüfung für die FabricPool Stufe deaktivieren:
++
+`storage aggregate object-store config modify -object-store-name <object store> -is-certificate-validation-enabled false`
+
+. Den FQDN für den ONTAP S3 Server ändern:
++
+`vserver object-store-server modify -vserver <vserver> -object-store-server <new fqdn>`
+
+. (Optional) Falls eine Zertifikatsvalidierung erforderlich ist und der Hostname geändert wurde, link:../s3-config/create-install-ca-certificate-svm-task.html["das Zertifikat erneuern"].
+. Die FabricPool Tier mit dem neuen FQDN aktualisieren:
++
+`storage aggregate object-store config modify -object-store-name <object_store_name> -server <new fqdn>`
+
+. Es wird geprüft, ob alle Objektspeicher und gegebenenfalls deren Spiegel in der FabricPool-Ebene verfügbar sind:
++
+`storage aggregate object-store show -fields object-store-availability,mirror-type,is-mirror-degraded`
+
++
+Weitere Informationen finden Sie unter link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-object-store-show.html#description["storage aggregate object-store show"^].
+
+. Diese Schritte sind für alle weiteren Objektspeicher zu wiederholen.
+. Wenn die Zertifikate auf dem ONTAP S3-Server und die Zertifikate auf der FabricPool Ebene erneuert wurden, sollte die Zertifikatsprüfung erneut aktiviert werden:
++
+`storage aggregate object-store config modify -object-store-name <object store> -is-certificate-validation-enabled true`
+
+
+
 [[create-lif]]
 .Verwandte Informationen
 * link:../smb-config/create-lif-task.html["LIF für SMB erstellen"]
