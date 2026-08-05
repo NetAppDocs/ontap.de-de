@@ -204,17 +204,17 @@ Beim Klonen von Volumes sind die folgenden bewährten Vorgehensweisen zu beachte
 
 
 
-[[how-tiering-policies-work-with-cloud-migration]]
-== Wie Tiering-Richtlinien bei der Cloud-Migration funktionieren
+[[how-cloud-retrieval-policies-work-with-tiering-policies]]
+== Wie Cloud-Abrufrichtlinien mit Tiering-Richtlinien funktionieren
 
-FabricPool Cloud-Datenabruf wird durch Tiering-Richtlinien gesteuert, die den Datenabruf vom Cloud-Tier zum Performance-Tier anhand des Lesemusters bestimmen. Lesemuster können entweder sequenziell oder zufällig sein.
+FabricPool Cloud-Datenabruf wird durch Abrufrichtlinien gesteuert, die festlegen, wann Daten in die lokale Ebene zurückgeschrieben werden. Lesemuster können entweder sequenziell oder zufällig sein.
 
-Die folgende Tabelle listet die Tiering-Richtlinien und die Cloud-Datenabrufregeln für jede Richtlinie auf.
+Die folgende Tabelle listet die Volume-Tiering-Richtlinien und das Standardabrufverhalten für jede Richtlinie auf.
 
 |===
 
 
-| Tiering-Richtlinie | Abrufverhalten 
+| Tiering-Richtlinie | Standardmäßiges Abrufverhalten 
 
 
  a| 
@@ -257,30 +257,44 @@ Die folgende Tabelle listet die unterstützten Cloud-Abrufrichtlinien und deren 
  a| 
 Standard
  a| 
-Die Tiering-Richtlinie bestimmt, welche Daten zurückgeholt werden sollen, sodass sich beim Cloud-Datenabruf mit "`default,`" `cloud-retrieval-policy` keine Änderung ergibt. Diese Richtlinie ist der Standardwert für jedes Volume, unabhängig vom Typ des gehosteten Aggregats.
+Beim Lesen von kalten Blöcken in einem Volume wird das Standardverhalten der Volume-Tiering-Richtlinie des Volumes verwendet. Diese Richtlinie ist der Standardwert für jedes Volume, unabhängig vom Typ des gehosteten Aggregats.
 
 
 
  a| 
 on-read
  a| 
-Alle clientseitig gelesenen Daten werden von der Cloud-Tier in die Performance-Tier übertragen.
+Wenn kalte Blöcke in einem Volume mit einer Cloud-Abrufrichtlinie, die auf "`On-Read`" gesetzt ist, zufällig oder sequenziell gelesen werden, werden sie zu heißen Blöcken und in die lokale Ebene geschrieben.
+
+Anwendungen, die sequenzielle Lesevorgänge nutzen, lösen Rückschreibvorgänge auf die lokale Ebene aus, indem die Abrufrichtlinie für das Volume aus der Cloud auf „On-Read“ gesetzt wird. Dies kann für Anwendungen von Vorteil sein, die lokale Ebenenleistung für zuvor kalte Daten benötigen, die nun von aktiven Workloads gelesen werden.
 
 
 
  a| 
 niemals
  a| 
-Es werden keine clientseitigen Daten von der Cloud-Ebene in die Performance-Ebene übertragen.
+Wenn kalte Blöcke in einem Volume mit einer Cloud-Abrufrichtlinie, die auf „Nie“ gesetzt ist, gelesen werden, bleiben sie kalt und verbleiben auf der Cloud-Ebene. Sie werden nicht zurück auf die lokale Ebene geschrieben.
+
+Die Einstellung der Cloud-Abrufrichtlinie auf „`Never`“ ist ähnlich wie die All Tiering-Richtlinie, da Daten nicht auf die lokale Ebene zurückkehren dürfen, unterscheidet sich jedoch von der All Tiering-Richtlinie dadurch, dass weiterhin die Einstellung „tiering-minimum-cooling-days“ des Volumes verwendet wird, anstatt die Daten so schnell wie möglich zu verschieben.
+
+Beispielsweise würde ein Volume, das die Standardeinstellung der Auto Tiering-Richtlinie verwendet, Daten erst nach 31 Tagen Inaktivität als kalt markieren. Nach 31 Tagen würden die inaktiven Daten in den Objektspeicher verschoben und kämen beim Lesen nicht zurück, da die Cloud Retrieval Policy des Volumes auf "Never" gesetzt wurde.
 
 
 
  a| 
 promoten
  a| 
-* Für die Tiering-Richtlinie „`none`“ werden alle Cloud-Daten vom Cloud-Tier in den Performance-Tier verschoben.
-* Für die Tiering-Richtlinie „`snapshot-only`“ werden AFS-Daten abgerufen.
+* Für die Tiering-Richtlinie "`none,`" werden alle gestuften Daten zurück auf die lokale Tier geschrieben.
+* Für die Tiering-Richtlinie „`snapshot-only`“ werden gestaffelte, nicht-Snapshot-Daten zurück in die lokale Ebene geschrieben.
 
 
 |===
-Weitere Informationen zu den in diesem Verfahren beschriebenen Befehlen befinden sich in der link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
+.Beispiel für die Änderung der Cloud Retrieval-Richtlinie
+Das folgende Beispiel ändert die Tiering-Richtlinie des Volumes auf `none` und die Abrufrichtlinie auf `promote`:
+
+[listing]
+----
+set -privilege advanced
+
+volume modify -vserver vs1 -volume myvol -tiering-policy none -cloud-retrieval-policy promote
+----
