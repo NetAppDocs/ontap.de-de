@@ -1,0 +1,292 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/respond-arpai.html 
+keywords: ARP AI, arpai, respond, abnormal activity, false positive, ransomware attack, NAS, SAN, entropy spike, clear suspect, ONTAP 9.16.1, machine learning ransomware, ransomware detected ONTAP alert, ARP AI warning response, ARP AI false positive response 
+summary: Wenn ARP/AI ungewöhnliche Aktivitäten in einem geschützten Volume erkennt, sollte bewertet werden, ob es sich um einen Fehlalarm oder einen tatsächlichen Ransomware-Angriff handelt, und dem empfohlenen ONTAP Reaktionsablauf gefolgt werden. 
+---
+= Auf von ONTAP ARP/AI erkannte abnormale Aktivitäten reagieren
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Wenn der autonome Ransomware-Schutz mit KI (ARP/AI) ungewöhnliche Aktivitäten in einem geschützten Volume erkennt (ONTAP 9.16.1 und höher), wird eine Warnung ausgegeben. Die Benachrichtigung sollte bewertet und entweder als Fehlalarm oder als potenzieller Ransomware-Angriff eingestuft werden. Nachdem die Aktivität kategorisiert wurde, speichert ARP/AI die Bewertung, passt das Bedrohungsprofil an und setzt die normale Überwachung fort.
+
+
+NOTE: Wenn Sie ONTAP 9.15.1 oder eine frühere Version verwenden, siehe link:respond-arp.html["Auf von ARP erkannte abnormale Aktivität reagieren"].
+
+Wenn ein Angriff kategorisiert wird, werden ARP/AI Snapshots für einen durch den Kategorisierungsvorgang initiierten verkürzten Zeitraum aufbewahrt:
+
+* ONTAP 9.17.1 und höher: 7 Tage bei bestätigten Angriffen, 24 Stunden bei Fehlalarmen.
+* ONTAP 9.16.1 und früher: 5 Tage für bestätigte Angriffe, 48 Stunden für Fehlalarme.
+
+
+
+NOTE: Sie können diese link:modify-snapshot-options-arpai.html["Aufbewahrungseinstellungen"] für ARP/AI Snapshots anpassen.
+
+.Über diese Aufgabe
+Bei NAS-Volumes zeigt ARP/AI eine Liste verdächtiger Dateien an, wenn eine Kombination aus hoher Datenentropie, ungewöhnlicher Volume-Aktivität mit Datenverschlüsselung und ungewöhnlichen Dateierweiterungen erkannt wird.
+
+Ab ONTAP 9.17.1:
+
+* *Für NAS-Volumes*: ARP/AI stellt weiterhin verdächtige Dateien und Dateitypen bereit.
+* *Für SAN Volumes* (Volumes, die LUNs oder NVMe Namespaces enthalten): ARP/AI bewertet die Entropie nur auf Volume-Ebene. ONTAP sieht keine einzelnen Dateien innerhalb der LUN oder des Namespace, daher sind Listen verdächtiger Dateien und Dateitypen *nicht* verfügbar. Stattdessen meldet ARP/AI Volumenebene-Spitzen im Verschlüsselungsprozentsatz (Entropiespitzen).
+
+
+Einzelheiten zu Entropiespitzen sowohl für NAS- als auch für SAN-Volumes werden auf der Anti-Ransomware-Seite im System Manager angezeigt.
+
+Obwohl der autonome Ransomware-Schutz die Erkennung und Erstellung von Snapshots automatisiert, erfordert die endgültige Feststellung, ob eine Datei oder ein Ereignis tatsächlich schädlich ist, eine manuelle Untersuchung. Der autonome Ransomware-Schutz kann nicht mit Sicherheit feststellen, ob es sich bei einem Ereignis um einen echten Ransomware-Angriff handelt. Verdächtige Aktivitäten werden gekennzeichnet, jedoch ist eine Untersuchung und Bestätigung erforderlich, ob es sich tatsächlich um Ransomware oder einen Fehlalarm (harmlose Aktivität) handelt.
+
+link:determine-ransomware-tips.html["Es wird festgestellt, ob eine Datei oder ein Ereignis tatsächlich schädlich ist."].
+
+Wenn eine ARP/AI-Warnmeldung ausgegeben wird, kann die Aktivität auf eine von zwei Arten gekennzeichnet werden:
+
+* *Falsch positiv*: Der identifizierte Dateityp oder der Entropieanstieg ist in Ihrer Arbeitslast zu erwarten und kann ignoriert werden.
+* *Potenzieller Ransomware-Angriff*: Der identifizierte Dateityp oder der Entropieanstieg ist in Ihrer Arbeitslast unerwartet und sollte als potenzieller Angriff behandelt werden.
+
+
+Die normale Überwachung wird wieder aufgenommen, nachdem Sie Ihre Entscheidung aktualisiert und die ARP/AI-Benachrichtigungen gelöscht haben. ARP/AI speichert Ihre Bewertung im Bedrohungsanalyseprofil und verwendet Ihre Auswahl zur Überwachung nachfolgender Dateiaktivitäten.
+
+Im Falle eines vermuteten Angriffs ist festzustellen, ob es sich tatsächlich um einen Angriff handelt, gegebenenfalls darauf zu reagieren und anschließend Benachrichtigungen zu löschen sowie Daten wiederherzustellen. link:recover-arpai.html["Weitere Informationen zur Wiederherstellung nach einem Ransomware-Angriff"].
+
+.Bevor Sie beginnen
+ARP/AI muss ein Volume aktiv schützen und darf sich bei SAN-Volumes nicht im Auswertungsmodus befinden.
+
+.Schritte
+Gehen Sie wie folgt vor, wenn Sie abnormale Aktivitäten klassifizieren müssen:
+
+. <<Details zu abnormalen Aktivitäten prüfen,Details zu abnormalen Aktivitäten prüfen>>
+. <<Snapshot-Verhalten beim Löschen eines vermuteten Ereignisses,Snapshot-Verhalten beim Löschen eines vermuteten Ereignisses>>
+. Führen Sie einen der folgenden Schritte aus:
++
+** <<Als falsch positiv einstufen und Überwachung fortsetzen,Als falsch positiv einstufen und Überwachung fortsetzen>>
+** <<Als potenziellen Ransomware-Angriff einstufen und Daten wiederherstellen,Als potenziellen Ransomware-Angriff einstufen, Daten wiederherstellen und abschließen>>
+
+
+
+
+Falls eine Wiederherstellung von Daten erforderlich ist, sind die Schritte in link:recover-arpai.html["Daten nach einem Ransomware-Angriff wiederherstellen"] zu beachten.
+
+
+
+[[review-abnormal-activity-details]]
+== Details zu abnormalen Aktivitäten prüfen
+
+Sie können den System Manager oder die ONTAP CLI verwenden, um die ARP/AI-Warnungsdetails zu überprüfen, bevor ein Antwortablauf ausgewählt wird.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wenn Sie eine Benachrichtigung über „ungewöhnliche Aktivitäten“ erhalten, folgen Sie dem Link. Alternativ navigieren Sie zu *Speicher > Volumes*, suchen ein betroffenes Volume und wählen die Registerkarte *Sicherheit* aus.
++
+Warnungen werden im System Manager-Dashboard im Bereich *Übersicht* des Menüs *Ereignisse* angezeigt.
+
+. Überprüfen Sie im Tab *Sicherheit* die Details zu den ungewöhnlichen Aktivitäten:
++
+** Für NAS-Volumes steht der Bericht *Verdächtige Dateitypen* zur Verfügung. Ein Dialogfeld *Verdächtige Dateitypen* zeigt die von ARP/AI identifizierten Dateierweiterungen und Dateianzahlen an.
+** Prüfen Sie für NAS- und SAN-Volumes den Entropiespitzenbericht, der das Zeitfenster, die Dauer, die Menge der geschriebenen Daten und die Entropiewerte anzeigt.
+
+
+
+
+--
+.CLI
+--
+. Wenn eine Benachrichtigung über einen vermuteten Ransomware-Angriff eingeht, sollten Zeitpunkt und Schweregrad des Angriffs überprüft werden:
++
+[source, cli]
+----
+security anti-ransomware volume show -vserver <svm_name> -volume <vol_name>
+----
++
+Beispielausgabe:
+
++
+....
+Vserver Name: vs0
+Volume Name: vol1
+State: enabled
+Attack Probability: moderate
+Attack Timeline: 5/12/2025 01:03:23
+Number of Attacks: 1
+Attack Detected By: encryption_percentage_analysis
+....
++
+Sie können auch EMS-Nachrichten überprüfen:
+
++
+[source, cli]
+----
+event log show -message-name callhome.arw.activity.seen
+----
+. (Optional, NAS und SAN) Kürzlich erkannte Entropiespitzen auf dem Volume anzeigen:
++
+[source, cli]
+----
+security anti-ransomware volume entropy-stat show-recent-high-encryption-stat -vserver <svm_name> -volume <vol_name>
+----
+. (Optional) Histogramm des Verschlüsselungsprozentsatzes im Zeitverlauf anzeigen:
++
+[source, cli]
+----
+security anti-ransomware volume entropy-stat show-encryption-percentage-histogram -vserver <svm_name> -volume <vol_name>
+----
+
+
+--
+====
+
+
+[[understand-snapshot-behavior-when-clearing-a-suspected-event]]
+== Snapshot-Verhalten beim Löschen eines vermuteten Ereignisses
+
+* Für `volume snapshot restore` ONTAP 9.16.1 und höher sollte *zuerst das verdächtige Ereignis gelöscht* und anschließend die Wiederherstellung durchgeführt werden. Nach dem Löschen verdächtiger Dateien bleiben ARP/AI-Snapshots entsprechend der Kategorisierung der Aktivität erhalten: 7 Tage (standardmäßig), wenn die Aktivität als potenzieller Ransomware-Angriff markiert wird, oder 24 Stunden, wenn sie als Fehlalarm markiert wird. Das vorherige Löschen entfernt das Wiederherstellungsziel nicht. Zudem ist die Option clear-suspect nach einer Volume-Wiederherstellung nicht mehr verfügbar, daher muss das Löschen vor der Wiederherstellung erfolgen.
+* Bei Wiederherstellungsmethoden außer  `volume snapshot restore` (zum Beispiel FlexClone oder Einzeldatei SnapRestore), führen Sie zuerst die Datenwiederherstellung durch und löschen Sie anschließend das verdächtige Ereignis. Diese Methoden beeinträchtigen die Verfügbarkeit der Option „Verdächtiges Ereignis löschen“ nicht.
+* Ab ONTAP 9.13.1 kann bei Verwendung von MAV zum Schutz der ARP/AI-Einstellungen der  `clear-suspect`-Vorgang zusätzliche Genehmigungen erfordern. link:../multi-admin-verify/request-operation-task.html["Die Zustimmung aller Administratoren muss eingeholt werden."] müssen der MAV-Genehmigungsgruppe zugeordnet sein, sonst schlägt der Vorgang fehl.
+
+
+
+
+[[classify-as-false-positive-and-resume-monitoring]]
+== Als falsch positiv einstufen und Überwachung fortsetzen
+
+Verwenden Sie diesen Ablauf, wenn der identifizierte Dateityp oder der Entropieanstieg für die Arbeitslast _erwartet_ wird.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Notieren Sie Ihre Antwort:
++
+** Bei NAS-Dateitypwarnungen wählen Sie die betroffenen Dateien aus, wählen Sie *Als falsch positiv markieren* und dann *Verdächtige Dateitypen aktualisieren und löschen*.
+** Bei Entropiespitzen (NAS und SAN) wählen Sie *Als falsch positiv markieren* und dann *Speichern und verwerfen*.
+
+
+
+
+Diese Maßnahmen beseitigen Warnmeldungen zu verdächtigen Dateien (NAS) oder ungewöhnlicher Aktivität (NAS und SAN). Anschließend setzt ARP/AI die normale Überwachung des Volumes fort.
+
+--
+.CLI
+--
+. Führen Sie einen der folgenden Befehle aus, um Ihre Entscheidung zu protokollieren und die normale ARP/AI-Überwachung fortzusetzen:
++
+** Für NAS-Dateierweiterungen:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension_identifiers>] -false-positive true
+----
++
+Verwenden Sie den folgenden optionalen Parameter, um nur bestimmte Erweiterungen als falsch positive Ergebnisse zu kennzeichnen: `[-extension <text>, ... ]`
+
+** Bei Entropiespitzen (NAS und SAN):
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive true
+----
++
+Für SAN-Volumes ist dies die einzige unterstützte Methode zur Kategorisierung abnormaler Aktivitäten; es gibt keine Listen verdächtiger Dateien oder Dateierweiterungen.
+
+
+
+. Ab ONTAP 9.18.1 können Sie den Status des `clear-suspect` Vorgangs ermitteln:
++
+[source, cli]
+----
+security anti-ransomware volume show -clear-suspect-status -volume <vol_name> -vserver <svm_name>
+----
+
+
+--
+====
+
+
+[[classify-as-potential-ransomware-attack-and-recover-data]]
+== Als potenziellen Ransomware-Angriff einstufen und Daten wiederherstellen
+
+Verwenden Sie diesen Ablauf, wenn der ermittelte Dateityp oder der Entropieanstieg für die Arbeitslast _unerwartet_ ist.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Klassifizieren Sie die Aktivität:
++
+** Bei Warnungen zu NAS-Dateitypen markiere ausgewählte Dateien als *Potenzieller Ransomware-Angriff*.
+** Bei Entropiespitzen (NAS und SAN) wählen Sie *Als potenziellen Ransomware-Angriff markieren*.
+
+
+. Bevor Sie Daten wiederherstellen, sollten Sie Ihre link:recover-arpai.html#choose-a-recovery-method["Optionen für Wiederherstellungsmethoden"] Sicherheitsvorkehrungen beachten. Anschließend ist eine der folgenden Optionen möglich:
++
+** *Zum Wiederherstellen eines Volumes*: Zuerst die Benachrichtigungen löschen, dann das Volume wiederherstellen:
++
+... [[arp-snapshot-decision-sm-pre-restore]]Klare Hinweise auf den potenziellen Angriff:
++
+**** Bei NAS-Dateitypwarnungen wählen Sie *Aktualisieren und Verdächtige Dateitypen löschen*.
+**** Bei Entropiespitzen (NAS und SAN) wählen Sie *Speichern und schließen*.
++
+
+NOTE: Nachdem Sie verdächtige Dateien gelöscht haben, wird der ARP/AI Snapshot standardmäßig 7 Tage lang aufbewahrt. Wenn mehr Zeit für die Datenwiederherstellung benötigt wird, link:modify-snapshot-options-arpai.html["ARP/AI Snapshot-Einstellungen anpassen"] kann die Aufbewahrungsdauer des Snapshots verlängert werden. Nachdem die Datenwiederherstellung abgeschlossen ist, kann die Aufbewahrungsdauer wieder verkürzt werden.
+
+
+
+... Daten mit link:recover-arpai.html["der aktuellste ARP/AI Snapshot oder ein früherer Snapshot"] wiederherstellen.
+
+
+** *Falls Sie eine andere Wiederherstellungsmethode verwenden möchten*: Stellen Sie zuerst die Daten wieder her und löschen Sie dann die Benachrichtigungen:
++
+... link:recover-arpai.html["Stellen Sie Daten mithilfe von FlexClone oder Einzeldatei-SnapRestore wieder her"].
+... Die Kategorisierung nach der Datenwiederherstellung abschließen, damit die normale ARP/AI-Überwachung fortgesetzt werden kann:
++
+**** Bei NAS-Dateitypwarnungen wählen Sie *Aktualisieren und Verdächtige Dateitypen löschen*.
+**** Bei Entropiespitzen (NAS und SAN) wählen Sie *Speichern und schließen*.
++
+
+NOTE: Durch das Protokollieren Ihrer Entscheidung wird der Angriffsbericht gelöscht.
+
+
+
+
+
+
+
+
+
+--
+.CLI
+--
+. (Nur NAS-Volumes) Erstellen Sie einen Angriffsbericht:
++
+.. Generieren Sie einen Angriffsbericht und geben Sie an, wo dieser gespeichert werden soll.
++
+[source, cli]
+----
+security anti-ransomware volume attack generate-report -vserver <svm_name> -volume <vol_name> -dest-path <[svm_name]:[junction_path/sub_dir_name]>
+----
+
+
+. [[arp-snapshot-decision-cli-pre-restore]]Das verdächtige Ereignis vor der Wiederherstellung (für  `volume snapshot restore`) beseitigen. Den Angriff als potenzielle Ransomware (`-false-positive false` markieren und verdächtige Dateien löschen, um die Sperre aufzuheben:
++
+** Für NAS-Dateierweiterungen:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension_identifiers>] -false-positive false
+----
+** Bei Entropiespitzen (NAS und SAN):
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive false
+----
+
+
+. [[arp-snapshot-decision-cli-post-restore]]Weiter zu link:recover-arpai.html["Daten wiederherstellen"].
+
+
+--
+====

@@ -1,0 +1,252 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/recover-arpai.html 
+keywords: ARP AI, arpai, recover data, ransomware attack, ARP AI snapshot, restore, FlexClone, SnapRestore, ONTAP 9.16.1, machine learning ransomware, SnapMirror 
+summary: Verwenden Sie ARP/AI Snapshots oder einen anderen Snapshot Ihrer Wahl, um Daten nach der Bestätigung eines Ransomware-Angriffs wiederherzustellen. 
+---
+= Daten nach einem Ransomware-Angriff mit ONTAP ARP/AI wiederherstellen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Autonomer Ransomware-Schutz mit KI (ARP/AI) erstellt Snapshots, um vor Ransomware-Bedrohungen zu schützen. Es können ARP/AI-Snapshots oder ein anderer Snapshot Ihres Volumes zur Wiederherstellung von Daten verwendet werden.
+
+
+NOTE: Wenn Sie ONTAP 9.15.1 oder eine frühere Version verwenden, siehe link:recover-arp.html["Daten nach einem Ransomware-Angriff mit ARP wiederherstellen"].
+
+.Über diese Aufgabe
+Je nach potenzieller Angriffssituation stellen Sie die Daten auf eine der folgenden Arten wieder her:
+
+* *<<restore-from-arp-snapshot,Wiederherstellung aus dem aktuellsten ARP/AI Snapshot>>*: Der aktuellste verfügbare ARP/AI-Snapshot kann verwendet werden, sofern dessen Integrität sichergestellt ist.
+* *<<restore-from-earlier-snapshot,Wiederherstellung aus einem früheren Snapshot>>*: Die Sperre des zuletzt gespeicherten ARP/AI-Snapshots wird aufgehoben und anschließend ein älterer Snapshot wiederhergestellt.
+* *<<restore-without-attack,Wiederherstellung, wenn kein Angriff gemeldet wird>>*: Zuerst wird aus dem aktuellsten ARP/AI Snapshot wiederhergestellt, anschließend erfolgt eine Wiederherstellung aus dem gewünschten Snapshot.
+
+
+ARP/AI erstellt Snapshots mit einem der folgenden vorangestellten Namen:
+
+* `Anti_ransomware_periodic_backup`: Wird in ONTAP 9.17.1 und später für Snapshots verwendet, die in regelmäßigen 4-Stunden-Intervallen erstellt werden. Zum Beispiel, `Anti_ransomware_periodic_backup.2025-06-01_1248`.
+* `Anti_ransomware_attack_backup`: Wird in ONTAP 9.17.1 und später für Snapshots verwendet, die als Reaktion auf Abnormalitäten erstellt werden. Diese Snapshots haben eine Standardaufbewahrungsdauer von 10 Tagen. Zum Beispiel, `Anti_ransomware_attack_backup.2025-08-25_1248`.
+* `Anti_ransomware_backup`: Wurde in ONTAP 9.16.1 und früher für Snapshots verwendet, die als Reaktion auf Anomalien erstellt wurden. Zum Beispiel  `Anti_ransomware_backup.2022-12-20_1248`.
+
+
+.Bevor Sie beginnen
+* Wenn Sie auf eine Warnung wegen ungewöhnlicher Aktivitäten reagieren, link:respond-arpai.html#classify-as-potential-ransomware-attack-and-recover-data["Sie müssen es zunächst als potenziellen Ransomware-Angriff einstufen"] bevor Sie mit der Datenwiederherstellung fortfahren.
+* Wählen Sie eine <<choose-a-recovery-method,Wiederherstellungsmethode>> und überprüfen Sie <<recovery-constraints-and-considerations,Wiederherstellungsbeschränkungen>> bevor der Wiederherstellungsvorgang abgeschlossen wird.
+
+
+
+
+[[choose-a-recovery-method]]
+== Wählen Sie eine Wiederherstellungsmethode
+
+Je nach Ausmaß der Datenbeschädigung und Ihren betrieblichen Anforderungen wählen Sie eine oder mehrere dieser Wiederherstellungsmethoden.
+
+* *Wiederherstellung eines Volume-Snapshots*: Setzt das gesamte Volume auf einen ausgewählten Snapshot (ARP/AI oder geplant) zurück. Dies ist die schnellste Methode, entfernt jedoch alle Snapshots, die nach dem Wiederherstellungspunkt erstellt wurden.
+* *FlexClone von einem sauberen Snapshot*: Erstellt ein Klon-Volume aus dem ausgewählten Snapshot, wobei das Original-Volume und alle seine Snapshots für forensische Analysen oder zusätzliche Wiederherstellung erhalten bleiben. Es wird empfohlen, den Klon vom übergeordneten Volume zu trennen, um das infizierte übergeordnete Volume vom sauberen Klon zu isolieren.
++
+Weitere Informationen zu link:../volumes/create-flexclone-task.html["Erstellen eines FlexClone Volume aus einem Snapshot"] und link:../volumes/split-flexclone-from-parent-task.html["Abspaltung eines FlexClone von seinem Elternteil"].
+
+* *Einzeldatei SnapRestore*: Stellt einzelne Dateien aus Snapshots wieder her. Jede Datei kann aus einem anderen Snapshot stammen. Dies ist sinnvoll, wenn die Anzahl der betroffenen Dateien relativ gering ist.
++
+Weitere Informationen zu link:../data-protection/restore-single-file-snapshot-task.html["Wiederherstellen einer einzelnen Datei aus einem Snapshot"].
+
+* *Datenkopie aus dem  `.snapshot` Verzeichnis*: Kopiert Daten vom Snapshot-Mountpunkt mithilfe standardmäßiger Dateikopiervorgänge auf ein neues Volume. Bei dieser Methode bleiben das Original-Volume und die Snapshots für die Analyse erhalten.
+* *Hybridansatz*: Das Volume wird zuerst mithilfe von SnapRestore auf den nächstgelegenen sauberen Snapshot zurückgesetzt, dann werden alle verbleibenden beschädigten Dateien einzeln aus einem anderen Snapshot oder externem Backup wiederhergestellt.
+
+
+
+
+[[recovery-constraints-and-considerations]]
+== Einschränkungen und Überlegungen zur Wiederherstellung
+
+* Für ONTAP 9.16.1 und höher: Das verdächtige Ereignis *zuerst* (in link:respond-arpai.html["Auf abnormale Aktivität reagieren"]) löschen und anschließend die Wiederherstellung durchführen. Nach dem Löschen werden ARP/AI Snapshots entsprechend der Kategorisierung der Aktivität beibehalten. Ab ONTAP 9.17.1 gelten als Standard 7 Tage (echter Angriff) oder 24 Stunden (falsch positiv). In ONTAP 9.16.1 gelten als Standard 5 Tage (echter Angriff) oder 48 Stunden (falsch positiv). Die Option clear-suspect ist nach einer Volume Restore nicht mehr verfügbar, daher muss das Ereignis vor der Wiederherstellung gelöscht werden.
+* Das Freigeben der ARP/AI Snapshot-Sperre ist nur erforderlich, wenn  `volume snapshot restore` zur Wiederherstellung aus einem früheren Snapshot verwendet wird. Dies ist nicht erforderlich für FlexClone, Einzeldatei SnapRestore, Datenkopiervorgänge oder ähnliche Methoden.
+* Bei SAN-Volumes, bei denen der Angriff ausschließlich durch eine Entropieanalyse erkannt wird, werden nur der unmittelbar vor dem Angriffszeitpunkt erstellte Snapshot und der Angriffssnapshot für einen längeren Zeitraum (standardmäßig 10 Tage, konfigurierbar) aufbewahrt. Andere periodische Snapshots unterliegen weiterhin den normalen Aufbewahrungsregeln. Dies unterscheidet sich von NAS-Volumes, bei denen alle vor dem Angriffszeitpunkt erstellten Snapshots so lange aufbewahrt werden, bis der Administrator eine Aktion zur Beseitigung des Verdachts durchführt.
+
+
+.SnapMirror Überlegungen
+* Wenn das Volume Teil einer SnapMirror synchron oder SnapMirror active sync SAN-Beziehung in ONTAP 9.19.1 ist und eine Wiederherstellung auf Volume-Ebene geplant ist, sollte das Volume in den Quiesce-Modus link:../data-protection/make-destination-volume-writeable-task.html["Die Beziehung vor der Wiederherstellung aufheben"] versetzt und der Schutz nach der Wiederherstellung wiederhergestellt werden.
+* Wenn ein ARP/AI-geschütztes Volume aus einem Snapshot wiederhergestellt wird, während es an einer SnapMirror Beziehung beteiligt ist, sollten alle Spiegelkopien nach der Wiederherstellung manuell aktualisiert werden. Andernfalls können Spiegelkopien unbrauchbar werden und müssen möglicherweise gelöscht und neu erstellt werden.
+
+
+Für das vollständige SnapMirror und ARP/AI Interoperabilitätsverhalten siehe link:support-arpai.html#snapmirror["SnapMirror und ARP/AI Interoperabilität"].
+
+
+
+[[restore-after-a-system-attack]]
+[[restore-after-system-attack]]
+== Wiederherstellung nach einem Systemangriff
+
+Für die Wiederherstellung von Volume-Snapshots wählen Sie je nach Snapshot-Quelle und Situation einen dieser Abläufe:
+
+* <<restore-from-arp-snapshot,Wiederherstellung aus dem aktuellsten ARP/AI Snapshot>>
+* <<restore-from-earlier-snapshot,Wiederherstellung aus einem früheren Snapshot>>
+* <<restore-without-attack,Wiederherstellung, wenn kein Angriff erkannt wird>>
+
+
+
+
+[[restore-from-the-most-recent-arpai-snapshot]]
+[[restore-from-arp-snapshot]]
+=== Wiederherstellung aus dem aktuellsten ARP/AI Snapshot
+
+Dieser Ablauf eignet sich, wenn die Wiederherstellung sicher vom aktuellsten ARP/AI-Snapshot erfolgen kann, da dies der aktuellste für die Wiederherstellung verfügbare Snapshot ist.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wählen Sie *Storage > Volumes*, dann das Volume und *Snapshot Copies*.
+. Bevor Sie eine Volume-Wiederherstellung durchführen, link:respond-arpai.html#arp-snapshot-decision-sm-pre-restore["Verdächtige Dateien löschen"].
++
+
+NOTE: Nachdem Sie verdächtige Dateien gelöscht haben, wird der ARP/AI Snapshot standardmäßig 7 Tage lang aufbewahrt. Wenn mehr Zeit für die Datenwiederherstellung benötigt wird, link:modify-snapshot-options-arpai.html["ARP/AI Snapshot-Einstellungen anpassen"] kann die Aufbewahrungsdauer verlängert werden. Nachdem die Datenwiederherstellung abgeschlossen ist, kann die Aufbewahrungsdauer wieder verkürzt werden.
+
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] neben dem zuletzt verfügbaren ARP/AI Snapshot (`Anti_ransomware` den gewünschten Snapshot aus, der wiederhergestellt werden soll, und wählen Sie anschließend *Wiederherstellen*.
+
+
+--
+.CLI
+--
+. Snapshots in einem Volume auflisten:
++
+[source, cli]
+----
+volume snapshot show -vserver <svm> -volume <volume>
+----
+. Bevor Sie  `volume snapshot restore`, link:respond-arpai.html#arp-snapshot-decision-cli-pre-restore["Verdächtige Dateien löschen"] ausführen.
+. Den Inhalt eines Volumes aus einem Snapshot wiederherstellen:
++
+[source, cli]
+----
+volume snapshot restore -vserver <svm> -volume <volume> -snapshot <snapshot>
+----
+
+
+--
+====
+
+
+[[restore-from-an-earlier-snapshot]]
+[[restore-from-earlier-snapshot]]
+=== Wiederherstellung aus einem früheren Snapshot
+
+Diesen Ablauf wählen, wenn eine Wiederherstellung aus einem früheren Snapshot erfolgen soll. Vor der Wiederherstellung aus dem früheren Snapshot ist die Sperre des aktuellsten ARP/AI-Snapshots aufzuheben.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Die Sperre für den aktuellsten ARP/AI Snapshot aufheben:
++
+.. *Speicher > Volumes* auswählen.
+.. *Sicherheit* und dann *Verdächtige Dateitypen anzeigen* auswählen.
+.. Die Dateien werden als „Potenzieller Ransomware-Angriff“ markiert.
+.. Wählen Sie *Aktualisieren und Verdächtige Dateitypen löschen*.
+
+
+. Wählen Sie *Storage > Volumes*, dann das Volume und *Snapshot Copies*.
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] neben dem früheren Snapshot, den Sie wiederherstellen möchten, und wählen Sie dann *Wiederherstellen*.
+
+
+--
+.CLI
+--
+. Den Angriff als potenzielle Ransomware (`-false-positive false` markieren und verdächtige Dateien löschen, um die Sperre aufzuheben:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive false
+----
+. Snapshots in einem Volume auflisten:
++
+[source, cli]
+----
+volume snapshot show -vserver <svm> -volume <volume>
+----
++
+Das folgende Beispiel zeigt die Momentaufnahme in  `vol1`:
+
++
+[listing]
+----
+
+clus1::> volume snapshot show -vserver vs1 -volume vol1
+
+Vserver Volume Snapshot                State    Size  Total% Used%
+------- ------ ---------- ----------- ------   -----  ------ -----
+vs1	    vol1   hourly.2013-01-25_0005  valid   224KB     0%    0%
+               daily.2013-01-25_0010   valid   92KB      0%    0%
+               hourly.2013-01-25_0105  valid   228KB     0%    0%
+               hourly.2013-01-25_0205  valid   236KB     0%    0%
+               hourly.2013-01-25_0305  valid   244KB     0%    0%
+               hourly.2013-01-25_0405  valid   244KB     0%    0%
+               hourly.2013-01-25_0505  valid   244KB     0%    0%
+
+7 entries were displayed.
+----
+. Den Inhalt eines Volumes aus einem Snapshot wiederherstellen:
++
+[source, cli]
+----
+volume snapshot restore -vserver <svm> -volume <volume> -snapshot <snapshot>
+----
++
+Das folgende Beispiel stellt den Inhalt von  `vol1` wieder her:
+
++
+[listing]
+----
+cluster1::> volume snapshot restore -vserver vs0 -volume vol1 -snapshot daily.2013-01-25_0010
+----
+
+
+--
+====
+
+
+[[restore-when-no-attack-is-identified]]
+[[restore-without-attack]]
+== Wiederherstellung, wenn kein Angriff erkannt wird
+
+Wenn kein Angriff erkannt wird, erfolgt zunächst die Wiederherstellung aus dem aktuellsten ARP/AI-Snapshot und anschließend aus einem früheren Snapshot.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Wählen Sie *Storage > Volumes*, dann das Volume und *Snapshot Copies*.
+. Wählen Sie image:icon_kabob.gif["Symbol für Menüoptionen"] und wählen Sie dann den aktuellsten  `Anti_ransomware` Snapshot aus.
+. *Wiederherstellen* auswählen.
+. Kehren Sie zum Menü *Snapshot Copies* zurück und wählen Sie dann den früheren Snapshot aus, den Sie verwenden möchten.
+. *Wiederherstellen* auswählen.
+
+
+--
+.CLI
+--
+. Zuerst aus dem aktuellsten ARP/AI Snapshot wiederherstellen:
++
+.. Snapshots in einem Volume auflisten:
++
+[source, cli]
+----
+volume snapshot show -vserver <svm> -volume <volume>
+----
+.. Den Inhalt eines Volumes aus einem Snapshot wiederherstellen:
++
+[source, cli]
+----
+volume snapshot restore -vserver <svm> -volume <volume> -snapshot <snapshot>
+----
+
+
+. Wählen Sie den früheren Snapshot aus, den Sie verwenden möchten, und wiederholen Sie die Wiederherstellung.
+
+
+Weitere Informationen zu  `volume snapshot` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=volume+snapshot["ONTAP-Befehlsreferenz"^].
+
+--
+====

@@ -1,10 +1,10 @@
 ---
 sidebar: sidebar 
-permalink: anti-ransomware/manage-parameters-task.html 
-keywords: ransomware, security, configure workload characteristics, modify, security anti-ransomware attack, parameters 
-summary: Ab ONTAP 9.11.1 können die Erkennungsparameter des autonomen Ransomware Protection je nach Arbeitslast angepasst werden. 
+permalink: anti-ransomware/manage-parameters-arp.html 
+keywords: ARP, detection parameters, configure workload characteristics, modify, security anti-ransomware attack, ONTAP 9.11.1, NAS, event alerts, autonomous ransomware protection, legacy ARP detection tuning, ONTAP 9.15.1 or earlier 
+summary: 'Ab ONTAP 9.11.1 können die ARP-Erkennungsparameter für NAS-Volumes angepasst werden, um die Genauigkeit der Ransomware-Erkennung zu verbessern (ONTAP 9.10.1 bis 9.15.1).' 
 ---
-= Verwaltung der Angriffserkennungsparameter von ONTAP Autonomous Ransomware Protection
+= ONTAP ARP-Angriffserkennungsparameter verwalten
 :hardbreaks:
 :toclevels: 1
 :allow-uri-read: 
@@ -16,40 +16,41 @@ summary: Ab ONTAP 9.11.1 können die Erkennungsparameter des autonomen Ransomwar
 
 
 [role="lead"]
-Ab ONTAP 9.11.1 können die Parameter für die Ransomware-Erkennung auf einem bestimmten Volume mit aktiviertem Autonomous Ransomware Protection angepasst und ein bekannter Anstieg als normale Dateiaktivität gemeldet werden. Die Anpassung der Erkennungsparameter trägt dazu bei, die Genauigkeit der Berichterstattung basierend auf der spezifischen Volume-Auslastung zu verbessern.
+Ab ONTAP 9.11.1 können die Parameter für die Ransomware-Erkennung auf einem bestimmten ARP-fähigen NAS-Volume angepasst und ein bekannter Anstieg als normale Dateiaktivität gemeldet werden. Die Anpassung der Erkennungsparameter trägt dazu bei, die Genauigkeit der Berichterstattung basierend auf der spezifischen Volume-Auslastung zu verbessern.
+
+
+NOTE: Wenn Sie ONTAP 9.16.1 oder höher verwenden, siehe link:manage-parameters-arpai.html["ARP/AI-Angriffserkennungsparameter verwalten"].
 
 
 
-[[how-attack-detection-works]]
-== Wie die Angriffserkennung funktioniert
+[[how-arp-attack-detection-works]]
+== Wie die Erkennung von ARP-Angriffen funktioniert
 
-Wenn sich der autonome Ransomware-Schutz (ARP) im Lern- oder Evaluierungsmodus befindet, entwickelt er Basiswerte für das Volumenverhalten. Dazu gehören Entropie, Dateierweiterungen und, beginnend mit ONTAP 9.11.1, IOPS. Diese Basiswerte werden zur Bewertung von Ransomware-Bedrohungen verwendet. Weitere Informationen zu diesen Kriterien finden sich unter link:index.html#what-arp-detects["was ARP erkennt"].
+Im Lernmodus entwickelt der autonome Ransomware-Schutz (ARP) Basiswerte für das Volume-Verhalten. Dazu gehören Entropie, Dateierweiterungen und ab ONTAP 9.11.1 IOPS. Diese Basiswerte werden zur Bewertung von Ransomware-Bedrohungen verwendet. Weitere Informationen zu diesen Kriterien sind unter link:learn-about-arp.html#what-arp-detects["was ARP erkennt"] zu finden.
 
-Bestimmte Volumes und Workloads erfordern unterschiedliche Erkennungsparameter. Beispielsweise kann ein ARP-fähiges Volume zahlreiche Arten von Dateierweiterungen enthalten, in diesem Fall kann es sinnvoll sein, den Schwellenwert für noch nie zuvor gesehene Dateierweiterungen auf einen Wert über dem Standardwert von 20 zu setzen oder Warnungen basierend auf noch nie zuvor gesehene Dateierweiterungen zu deaktivieren. Ab ONTAP 9.11.1 lassen sich die Parameter der Angriffserkennung so anpassen, dass sie besser zu den jeweiligen Workloads passen.
-
-Ab ONTAP 9.14.1 ist es möglich, Benachrichtigungen zu konfigurieren, wenn ARP eine neue Dateierweiterung erkennt oder wenn ARP einen Snapshot erstellt. Weitere Informationen finden sich unter <<modify-alerts>>.
-
-.Angriffserkennung in NAS-Umgebungen
-In ONTAP 9.10.1 gibt ARP eine Warnung aus, wenn beide der folgenden Bedingungen erkannt werden:
+In ONTAP 9.10.1 gibt ARP eine Warnung aus, wenn *beide* der folgenden Bedingungen erfüllt sind:
 
 * Mehr als 20 Dateien mit Dateierweiterungen, die zuvor im Volume nicht beobachtet wurden
 * Daten mit hoher Entropie
 
 
-Ab ONTAP 9.11.1 gibt ARP eine Bedrohungswarnung aus, wenn _nur_ eine Bedingung erfüllt ist. Wenn beispielsweise innerhalb eines Zeitraums von 24 Stunden mehr als 20 Dateien mit Dateiendungen beobachtet werden, die zuvor noch nicht im Volume festgestellt wurden, wird dies von ARP _unabhängig_ von der beobachteten Entropie als Bedrohung eingestuft. Die Werte von 24 Stunden und 20 Dateien sind Standardwerte, die geändert werden können.
+In ONTAP 9.10.1 wird eine Warnung vor geringer Bedrohung zu einer Warnung vor mittlerer Bedrohung hochgestuft, wenn 100 oder mehr Dateien betroffen sind.
+
+Ab ONTAP 9.11.1 gibt ARP eine Bedrohungswarnung aus, wenn *eine* der beiden Bedingungen erfüllt ist. Wenn beispielsweise innerhalb eines Zeitraums von 24 Stunden mehr als 20 Dateien mit zuvor im Volume nicht beobachteten Dateierweiterungen erkannt werden, kategorisiert ARP dies als Bedrohung, unabhängig von der beobachteten Entropie. Die Werte von 24 Stunden und 20 Dateien sind Standardwerte, die geändert werden können.
 
 
-NOTE: Um die Anzahl falsch positiver Warnmeldungen zu reduzieren, zu *Speicher > Volumes > Sicherheit > Workload-Merkmale konfigurieren* wechseln und *Neue Dateitypen überwachen* deaktivieren. Diese Einstellung ist in ONTAP 9.14.1 P7, 9.15.1 P1, 9.16.1 und später standardmäßig deaktiviert. Ab ONTAP 9.18.1 P2 zeigt System Manager keine ARP-Workload-Merkmale mehr an, einschließlich Basis- und Spitzen-Statistiken. Spitzen-Statistiken sind weiterhin über ONTAP CLI und ONTAP REST API für erweiterte Analysen verfügbar.
+NOTE: Zur Reduzierung einer hohen Anzahl falsch positiver Warnmeldungen zu *Storage > Volumes > Security > Configure workload characteristics* wechseln und *Monitor new file types* deaktivieren. Diese Einstellung ist in ONTAP 9.14.1 P7 und 9.15.1 P1 standardmäßig deaktiviert.
 
-.Angriffserkennung in SAN-Umgebungen
-Ab ONTAP 9.17.1 gibt ARP eine Warnung aus, wenn hohe Verschlüsselungsraten erkannt werden, die einen automatisch erlernten Schwellenwert überschreiten. Dieser Schwellenwert wird nach einer link:respond-san-entropy-eval-period.html["Bewertungszeitraum"] festgelegt, kann aber angepasst werden.
+ARP wertet SAN-Volumes in ONTAP 9.10.1 bis 9.15.1 nicht aus. Ab ONTAP 9.17.1 werden SAN-Volumes ausschließlich von ARP/AI unterstützt.
+
+Ab ONTAP 9.14.1 ist es möglich, Benachrichtigungen zu konfigurieren, wenn ARP eine neue Dateierweiterung erkennt oder wenn ARP einen Snapshot erstellt. Weitere Informationen finden sich unter <<modify-alerts>>.
 
 
 
-[[modify-attack-detection-parameters]]
-== Angriffserkennungsparameter ändern
+[[modify-arp-attack-detection-parameters]]
+== Parameter zur Erkennung von ARP-Angriffen anpassen
 
-Je nach dem zu erwartenden Verhalten des ARP-fähigen Volumes kann eine Anpassung der Parameter zur Angriffserkennung sinnvoll sein.
+Je nach dem zu erwartenden Verhalten des ARP-fähigen NAS-Volumes kann es sinnvoll sein, die Parameter für die Angriffserkennung zu ändern.
 
 .Schritte
 . Vorhandene Parameter zur Angriffserkennung werden angezeigt:
@@ -63,7 +64,6 @@ security anti-ransomware volume attack-detection-parameters show -vserver <svm_n
 security anti-ransomware volume attack-detection-parameters show -vserver vs1 -volume vol1
                                              Vserver Name : vs1
                                               Volume Name : vol1
-           Block Device Auto Learned Encryption Threshold : 10
             Is Detection Based on High Entropy Data Rate? : true
   Is Detection Based on Never Seen before File Extension? : true
                   Is Detection Based on File Create Rate? : true
@@ -74,8 +74,8 @@ security anti-ransomware volume attack-detection-parameters show -vserver vs1 -v
                  File Create Rate Surge Notify Percentage : 100
                  File Rename Rate Surge Notify Percentage : 100
                  File Delete Rate Surge Notify Percentage : 100
- Never Seen before File Extensions Count Notify Threshold : 5
-       Never Seen before File Extensions Duration in Hour : 48
+ Never Seen before File Extensions Count Notify Threshold : 20
+       Never Seen before File Extensions Duration in Hour : 24
 ....
 . Alle angezeigten Felder sind mit booleschen oder ganzzahligen Werten änderbar. Zum Ändern eines Feldes wird der  `security anti-ransomware volume attack-detection-parameters modify` Befehl verwendet.
 +
@@ -88,7 +88,7 @@ Weitere Informationen zu  `security anti-ransomware volume attack-detection-para
 [[report-known-surges]]
 == Bekannte Anstiege melden
 
-ARP passt die Basiswerte für die Erkennungsparameter auch im aktiven Zustand kontinuierlich an. Wenn Anstiege in Ihrer Volumenaktivität bekannt sind, sei es einmalige Anstiege oder ein Anstieg, der für eine neue Normalität charakteristisch ist, sollten diese als unbedenklich gemeldet werden. Das manuelle Melden dieser Anstiege als unbedenklich trägt dazu bei, die Genauigkeit der Bedrohungsbewertungen von ARP zu verbessern.
+ARP passt die Basiswerte für die Erkennungsparameter auch im aktiven Zustand kontinuierlich an. Wenn Anstiege in Ihrer Volumenaktivität bekannt sind, entweder einmalige Anstiege oder ein Anstieg, der für eine neue Normalität charakteristisch ist, sollten diese als unbedenklich gemeldet werden. Das manuelle Melden dieser Anstiege als unbedenklich trägt zur Verbesserung der Genauigkeit der Bedrohungsbewertungen von ARP bei.
 
 .Ein einmaliger Anstieg kann gemeldet werden
 . Wenn unter bekannten Umständen eine einmalige Lastspitze auftritt und Sie möchten, dass ARP eine ähnliche Lastspitze auch in Zukunft meldet, entfernen Sie die Lastspitze aus dem Workload-Verhalten:
@@ -103,7 +103,7 @@ Weitere Informationen zu  `security anti-ransomware volume workload-behavior cle
 
 
 .Basislinienanstieg ändern
-. Wenn ein gemeldeter Anstieg als normales Anwendungsverhalten betrachtet werden sollte, ist der Anstieg entsprechend zu melden, um den Basiswert für den Anstieg zu ändern.
+. Wenn ein gemeldeter Anstieg als normales Anwendungsverhalten betrachtet werden sollte, ist der Anstieg entsprechend zu melden, um den Basiswert für den Anstieg zu ändern:
 +
 [source, cli]
 ----
@@ -120,15 +120,15 @@ Weitere Informationen zu  `security anti-ransomware volume workload-behavior upd
 [[modify-alerts]]
 == ARP-Warnmeldungen konfigurieren
 
-Ab ONTAP 9.14.1 ermöglicht ARP die Angabe von Warnmeldungen für zwei ARP-Ereignisse:
+Ab ONTAP 9.14.1 ermöglicht ARP die Angabe von Warnmeldungen für zwei Ereignisse:
 
 * Beobachtung einer neuen Dateierweiterung auf einem Volume
 * Erstellung eines ARP Snapshots
 
 
-Benachrichtigungen für diese beiden Ereignisse können für einzelne Volumes oder für die gesamte SVM eingerichtet werden. Wenn Benachrichtigungen für die SVM aktiviert werden, werden die Benachrichtigungseinstellungen nur von Volumes übernommen, die nach der Aktivierung erstellt werden. Standardmäßig sind Benachrichtigungen für kein Volume aktiviert.
+Warnungen für diese beiden Ereignisse können für einzelne Volumes oder für die gesamte SVM eingerichtet werden. Wenn Warnungen für die SVM aktiviert werden, werden die Warnungseinstellungen nur von Volumes übernommen, die nach der Aktivierung der Warnung erstellt werden. Standardmäßig sind Warnungen für kein Volume aktiviert.
 
-Ereignisbenachrichtigungen können mit Multi-Admin-Verifizierung gesteuert werden. Weitere Informationen finden sich unter link:use-cases-restrictions-concept.html#multi-admin-verification-with-volumes-protected-with-arp["Multi-Admin-Verifizierung mit durch ARP geschützten Volumes"].
+Ereignisbenachrichtigungen können mit Multi-Admin-Verifizierung gesteuert werden. Weitere Informationen finden Sie unter link:support-arp.html#multi-admin-verification["Multi-Admin-Verifizierung mit ARP-geschützten Volumes"].
 
 .Schritte
 Sie können den System Manager oder die ONTAP CLI verwenden, um Warnmeldungen für ARP-Ereignisse festzulegen.
@@ -155,11 +155,11 @@ Sie können den System Manager oder die ONTAP CLI verwenden, um Warnmeldungen f�
 .CLI
 --
 .Alarme für ein Volume festlegen
-* Benachrichtigungen für eine neue Dateierweiterung festlegen:
+* Benachrichtigungen für eine neue Dateierweiterung einrichten:
 +
 [source, cli]
 ----
-security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-new-file-extension-seen true`
+security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-new-file-extension-seen true
 ----
 * Zum Einrichten von Benachrichtigungen für die Erstellung eines ARP Snapshot:
 +
@@ -171,7 +171,7 @@ security anti-ransomware volume event-log modify -vserver <svm_name> -volume <vo
 
 
 .Alarme für eine SVM festlegen
-* Benachrichtigungen für eine neue Dateierweiterung festlegen:
+* Benachrichtigungen für eine neue Dateierweiterung einrichten:
 +
 [source, cli]
 ----
@@ -191,6 +191,6 @@ Weitere Informationen zu  `security anti-ransomware vserver event-log`Befehlen f
 --
 ====
 .Verwandte Informationen
-* link:https://kb.netapp.com/onprem/ontap/da/NAS/Understanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot["Autonomous Ransomware Protection-Angriffe und den Autonomous Ransomware Protection Snapshot"^].
+* link:https://kb.netapp.com/onprem/ontap/da/NAS/Understanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot["Informationen zu ARP-Angriffen und dem ARP-Snapshot"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^]
 

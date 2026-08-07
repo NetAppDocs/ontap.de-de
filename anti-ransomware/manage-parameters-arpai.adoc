@@ -1,0 +1,197 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/manage-parameters-arpai.html 
+keywords: ARP AI, arpai, detection parameters, configure workload characteristics, modify, security anti-ransomware attack, SAN ransomware parameters, ONTAP 9.16.1, machine learning ransomware, event alerts 
+summary: Ab ONTAP 9.16.1 können die ARP/AI-Erkennungsparameter für NAS- und SAN-Workloads angepasst werden, um die Genauigkeit der Ransomware-Erkennung zu verbessern. 
+---
+= ONTAP ARP/AI-Angriffserkennungsparameter verwalten
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.16.1 können die Parameter für die Ransomware-Erkennung auf einem bestimmten ARP/AI-fähigen Volume angepasst und ein bekannter Anstieg als normale Dateiaktivität gemeldet werden. Die Anpassung der Erkennungsparameter trägt dazu bei, die Genauigkeit der Berichterstattung basierend auf der spezifischen Volume-Workload zu verbessern.
+
+
+NOTE: Wenn Sie ONTAP 9.15.1 oder eine frühere Version verwenden, siehe link:manage-parameters-arp.html["Verwaltung der ARP-Angriffserkennungsparameter"].
+
+
+
+[[how-arpai-attack-detection-works]]
+== Funktionsweise der Erkennung von ARP/AI-Angriffen
+
+ARP/AI nutzt ein Machine-Learning-Modell zur Erkennung von Ransomware-Aktivitäten. Wenn ARP/AI sich im aktiven Modus befindet (oder im Evaluierungsmodus für SAN-Volumes), werden die Volume-Verhaltensweisen kontinuierlich überwacht. Dazu gehören Entropie, Dateierweiterungen und Datei-IOPS (NAS) oder Verschlüsselungsraten auf Volume-Ebene (SAN). Weitere Informationen zu den Erkennungskriterien finden sich unter link:learn-about-arpai.html#what-arp-ai-detects["was ARP/AI erkennt"].
+
+Bestimmte Volumes und Workloads erfordern unterschiedliche Erkennungsparameter. Beispielsweise kann ein ARP/AI-fähiges Volume zahlreiche Arten von Dateierweiterungen enthalten, in diesem Fall kann es sinnvoll sein, die Schwellenwertanzahl für bisher unbekannte Dateierweiterungen anzupassen oder diese Warnungen vollständig zu deaktivieren.
+
+Ab ONTAP 9.14.1 ist die Konfiguration von Benachrichtigungen möglich, wenn ARP/AI eine neue Dateierweiterung erkennt oder wenn ARP/AI einen Snapshot erstellt. Weitere Informationen finden sich unter <<modify-alerts>>.
+
+.Angriffserkennung in NAS-Umgebungen
+ARP/AI gibt eine Bedrohungswarnung aus, wenn eine der folgenden Bedingungen erkannt wird:
+
+* Daten mit hoher Entropie
+* Mehrere Dateien mit derselben noch nie zuvor gesehenen Dateiendung (innerhalb eines Zeitraums von 48 Stunden beobachtet)
+
+
+
+NOTE: Um die Anzahl falsch positiver Warnmeldungen zu reduzieren, zu *Speicher > Volumes > Sicherheit > Workload-Merkmale konfigurieren* wechseln und *Neue Dateitypen überwachen* deaktivieren. Ab ONTAP 9.18.1 P2 zeigt System Manager keine ARP/AI Workload-Merkmale mehr an, einschließlich Basis- und Spitzen-Statistiken. Spitzen-Statistiken sind weiterhin über ONTAP CLI und REST API Optionen für erweiterte Analysen verfügbar.
+
+.Angriffserkennung in SAN-Umgebungen
+Ab ONTAP 9.17.1 gibt ARP/AI eine Warnung aus, wenn hohe Verschlüsselungsraten erkannt werden, die einen automatisch erlernten Schwellenwert überschreiten. Dieser Schwellenwert wird nach einem link:entropy-eval-period-arpai.html["Bewertungszeitraum"] festgelegt, kann aber angepasst werden.
+
+
+
+[[modify-arpai-attack-detection-parameters]]
+== Ändern der ARP/AI Angriffserkennungsparameter
+
+Je nach dem zu erwartenden Verhalten des ARP/AI-fähigen Volumes kann eine Anpassung der Parameter für die Angriffserkennung sinnvoll sein.
+
+.Schritte
+. Vorhandene Parameter zur Angriffserkennung werden angezeigt:
++
+[source, cli]
+----
+security anti-ransomware volume attack-detection-parameters show -vserver <svm_name> -volume <volume_name>
+----
++
+....
+security anti-ransomware volume attack-detection-parameters show -vserver vs1 -volume vol1
+                                             Vserver Name : vs1
+                                              Volume Name : vol1
+           Block Device Auto Learned Encryption Threshold : 10
+            Is Detection Based on High Entropy Data Rate? : true
+  Is Detection Based on Never Seen before File Extension? : true
+                  Is Detection Based on File Create Rate? : true
+                  Is Detection Based on File Rename Rate? : true
+                  Is Detection Based on File Delete Rate? : true
+           Is Detection Relaxing Popular File Extensions? : true
+                High Entropy Data Surge Notify Percentage : 100
+                 File Create Rate Surge Notify Percentage : 100
+                 File Rename Rate Surge Notify Percentage : 100
+                 File Delete Rate Surge Notify Percentage : 100
+ Never Seen before File Extensions Count Notify Threshold : 5
+       Never Seen before File Extensions Duration in Hour : 48
+....
+. Alle angezeigten Felder sind mit booleschen oder ganzzahligen Werten änderbar. Zum Ändern eines Feldes wird der  `security anti-ransomware volume attack-detection-parameters modify` Befehl verwendet.
++
+Weitere Informationen zu  `security anti-ransomware volume attack-detection-parameters modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-attack-detection-parameters-modify.html["ONTAP-Befehlsreferenz"^].
+
+
+
+
+
+[[report-known-surges]]
+== Bekannte Anstiege melden
+
+ARP/AI passt die Basiswerte für die Erkennungsparameter auch im aktiven Modus kontinuierlich an. Wenn Anstiege in Ihrer Volumenaktivität bekannt sind, entweder einmalige Anstiege oder ein Anstieg, der für eine neue Normalität charakteristisch ist, sollten diese als unbedenklich gemeldet werden. Das manuelle Melden solcher Anstiege als unbedenklich trägt zur Verbesserung der Genauigkeit der Bedrohungsbewertungen von ARP/AI bei.
+
+.Ein einmaliger Anstieg kann gemeldet werden
+. Wenn unter bekannten Umständen eine einmalige Lastspitze auftritt und ARP/AI eine ähnliche Lastspitze auch in Zukunft melden soll, kann die Lastspitze aus dem Workload-Verhalten entfernt werden:
++
+[source, cli]
+----
+security anti-ransomware volume workload-behavior clear-surge -vserver <svm_name> -volume <volume_name>
+----
++
+Weitere Informationen zu  `security anti-ransomware volume workload-behavior clear-surge` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-workload-behavior-clear-surge.html["ONTAP-Befehlsreferenz"^].
+
+
+
+.Basislinienanstieg ändern
+. Wenn ein gemeldeter Anstieg als normales Anwendungsverhalten betrachtet werden sollte, ist der Anstieg entsprechend zu melden, um den Basiswert für den Anstieg zu ändern:
++
+[source, cli]
+----
+security anti-ransomware volume workload-behavior update-baseline-from-surge -vserver <svm_name> -volume <volume_name>
+----
++
+Weitere Informationen zu  `security anti-ransomware volume workload-behavior update-baseline-from-surge` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-workload-behavior-update-baseline-from-surge.html["ONTAP-Befehlsreferenz"^].
+
+
+
+
+
+[[configure-arpai-alerts]]
+[[modify-alerts]]
+== ARP/AI-Warnungen konfigurieren
+
+Ab ONTAP 9.14.1 können Benachrichtigungen für zwei Ereignisse festgelegt werden:
+
+* Beobachtung einer neuen Dateierweiterung auf einem Volume
+* Erstellung eines ARP/AI Snapshots
+
+
+Warnungen für diese beiden Ereignisse können für einzelne Volumes oder für die gesamte SVM eingerichtet werden. Wenn Warnungen für die SVM aktiviert werden, werden die Warnungseinstellungen nur von Volumes übernommen, die nach der Aktivierung der Warnung erstellt werden. Standardmäßig sind Warnungen für kein Volume aktiviert.
+
+Ereignisbenachrichtigungen können mit Multi-Admin-Verifizierung gesteuert werden. Weitere Informationen finden Sie unter link:support-arpai.html#multi-admin-verification-with-arpai-protected-volumes["Multi-Admin-Verifizierung mit ARP/AI-geschützten Volumes"].
+
+.Schritte
+Sie können den System Manager oder die ONTAP CLI verwenden, um Warnmeldungen für ARP/AI-Ereignisse festzulegen.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Alarme für ein Volume festlegen
+. Navigieren Sie zu *Volumes*. Wählen Sie das einzelne Volume aus, für das Sie die Einstellungen ändern möchten.
+. Die Registerkarte *Sicherheit* und dann *Ereignis-Schweregrad-Einstellungen* auswählen.
+. Um Benachrichtigungen für *Neue Dateierweiterung erkannt* und *Ransomware-Snapshot erstellt* zu erhalten, das Dropdown-Menü unter der Überschrift *Schweregrad* auswählen. Die Einstellung von *Kein Ereignis generieren* auf *Benachrichtigung* ändern.
+. *Speichern* auswählen.
+
+
+.Alarme für eine SVM festlegen
+. Zu *Storage VM* navigieren und dann die SVM auswählen, für die Einstellungen aktiviert werden sollen.
+. Unter der Überschrift *Sicherheit* die Karte *Anti-ransomware* suchen. image:../media/icon_kabob.gif["Symbol für Menüoptionen"] dann *Schweregrad von Ransomware-Ereignissen bearbeiten* auswählen.
+. Um Benachrichtigungen für *Neue Dateierweiterung erkannt* und *Ransomware-Snapshot erstellt* zu erhalten, das Dropdown-Menü unter der Überschrift *Schweregrad* auswählen. Die Einstellung von *Kein Ereignis generieren* auf *Benachrichtigung* ändern.
+. *Speichern* auswählen.
+
+
+--
+.CLI
+--
+.Alarme für ein Volume festlegen
+* Benachrichtigungen für eine neue Dateierweiterung einrichten:
++
+[source, cli]
+----
+security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-new-file-extension-seen true
+----
+* Zum Einrichten von Benachrichtigungen für die Erstellung eines ARP/AI Snapshots:
++
+[source, cli]
+----
+security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-snapshot-copy-creation true
+----
+* Bestätigen Sie Ihre Einstellungen mit dem  `anti-ransomware volume event-log show` Befehl.
+
+
+.Alarme für eine SVM festlegen
+* Benachrichtigungen für eine neue Dateierweiterung einrichten:
++
+[source, cli]
+----
+security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-new-file-extension-seen true
+----
+* Zum Einrichten von Benachrichtigungen für die Erstellung eines ARP/AI Snapshots:
++
+[source, cli]
+----
+security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true
+----
+* Bestätigen Sie Ihre Einstellungen mit dem  `security anti-ransomware vserver event-log show` Befehl.
+
+
+Weitere Informationen zu  `security anti-ransomware vserver event-log`Befehlen finden Sie in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security-anti-ransomware-vserver-event-log["ONTAP-Befehlsreferenz"^].
+
+--
+====
+.Verwandte Informationen
+* link:https://kb.netapp.com/onprem/ontap/da/NAS/Understanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot["Informationen zu ARP/AI-Angriffen und dem ARP/AI-Snapshot"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^]
+
