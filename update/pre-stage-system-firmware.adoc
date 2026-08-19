@@ -1,0 +1,68 @@
+---
+permalink: update/pre-stage-system-firmware.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, andu, bios, loader, firmware, pre-stage, single reboot, slipstream, system firmware, boot media, cluster image update 
+summary: Ab ONTAP 9.17.1 besteht die Möglichkeit, neuere BIOS- oder LOADER-Firmware auf Ihren Knoten vor einem ONTAP Upgrade vorab bereitzustellen, sodass beide Aktualisierungen in einem einzigen Neustartzyklus abgeschlossen werden. 
+---
+= System-Firmware vor einem ONTAP Software Upgrade vorbereiten
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.17.1 bleibt, wenn auf dem Boot-Gerät eines Knotens bereits eine neuere BIOS- oder LOADER-Firmware vorhanden ist, bevor ein automatisiertes unterbrechungsfreies Upgrade (ANDU) durchgeführt wird, die neuere Firmware erhalten, anstatt sie durch die im ONTAP Image enthaltene Version zu überschreiben. Dadurch können sowohl das ONTAP Software-Upgrade als auch das Firmware-Update in einem einzigen Neustartzyklus abgeschlossen werden.
+
+In ONTAP 9.16.1 und früher installiert ein ANDU immer die im Ziel-ONTAP-Image enthaltene BIOS- und LOADER-Firmware, unabhängig davon, welche Firmware-Version bereits auf dem Boot-Gerät vorhanden ist. Wenn ein neueres BIOS- oder LOADER-Service-Image unabhängig heruntergeladen wurde, ist nach dem ONTAP Upgrade ein separater Übernahme- und Rückgabevorgang erforderlich, um die neuere Firmware zu aktivieren.
+
+Ab ONTAP 9.17.1 vergleicht ONTAP die BIOS- und LOADER-Firmware-Versionen auf dem Boot-Gerät jedes Knotens mit den im Ziel-ONTAP-Image enthaltenen Versionen. Ist auf dem Boot-Gerät bereits eine neuere Version als die mitgelieferte vorhanden, wird die mitgelieferte Firmware nicht installiert. Die vorhandene neuere Firmware bleibt erhalten. Ist die mitgelieferte Version gleich oder neuer als die auf dem Boot-Gerät vorhandene, wird die mitgelieferte Firmware installiert.
+
+Nach dem Neustart des Knotens im Rahmen des normalen ANDU-Workflows wird die Firmware auf dem Boot-Gerät aktiviert, sodass sowohl das ONTAP Upgrade als auch das Firmware-Update in einem einzigen Neustart abgeschlossen werden.
+
+.Bevor Sie beginnen
+* Alle Knoten im Cluster müssen ONTAP 9.17.1 oder höher ausführen.
+* Sie müssen das neuere BIOS- oder LOADER-Service-Image von der link:https://mysupport.netapp.com/site/downloads/firmware/system-firmware-diagnostics["NetApp Support Site"^] heruntergeladen haben.
++
+Für das Herunterladen der Firmware auf das Boot-Gerät eines Knotens ist ein erweitertes Berechtigungsniveau erforderlich.
+
+
+
+.Schritte
+. Stellen Sie die Berechtigungsstufe auf „Erweitert“ ein:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Das neuere Service-Image wird auf das Boot-Gerät jedes Knotens heruntergeladen:
++
+[source, cli]
+----
+system node firmware download -node <node_name> -package
+----
++
+Dieser Schritt ist für jeden Knoten im Cluster zu wiederholen, der die neuere Firmware erhalten soll.
+
+. Zurück zu Administratorrechten:
++
+[source, cli]
+----
+set -privilege admin
+----
+. Die aktuell auf dem Boot-Gerät jedes Knotens vorhandene Firmware-Version kann überprüft werden:
++
+[source, cli]
+----
+system node firmware bootmedia show
+----
++
+Die vorab bereitgestellte Firmware-Version sollte höher sein als die in Ihrem Ziel ONTAP Image enthaltene Version.
+
+
+
+.Was kommt als Nächstes?
+* Nachdem Sie Ihre Firmware vorbereitet haben, sind Sie bereit, link:../upgrade/automated-upgrade-task.html["Ein automatisiertes ONTAP Upgrade durchführen"].
++
+Während des Upgrades erkennt ONTAP, dass das Boot-Gerät bereits neuere BIOS- und LOADER-Firmware enthält und behält diese bei. Die mitgelieferte Firmware wird nicht auf Knoten installiert, auf denen bereits eine höhere Version vorhanden ist.
+
+
