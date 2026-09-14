@@ -11,7 +11,9 @@ summary: TLS-Offload-Einstellungen konfigurieren
 
 
 [role="lead"]
-Ab ONTAP 9.19.1 können Sie TLS-Offload konfigurieren, um die Leistung nach dem TLS-Handschlag durch die Nutzung von Ressourcen unterstützter Ethernet-Karten zu verbessern. Diese Funktion lagert Verschlüsselung und Entschlüsselung aus, reduziert die CPU-Überlastung und verbessert die Performance.
+Ab ONTAP 9.19.1 kann die TLS Offload-Funktion konfiguriert werden, um die TLS-Post-Handshake-Leistung durch Nutzung von Ressourcen auf unterstützten Ethernet-Karten zu verbessern. Diese Funktion lagert Verschlüsselung und Entschlüsselung aus, reduziert die CPU-Last und verbessert die Leistung.
+
+TLS-Offload kann nur für Datenverkehr aktiviert werden, der KTLS verwendet. Diese Einstellung gilt nicht für den gesamten TLS-aktivierten Datenverkehr. Verwaltungsdatenverkehr wie HTTPS- und REST-API-Datenverkehr ist von dieser Einstellung nicht betroffen. HA-Datenverkehr wird nicht unterstützt.
 
 .Über diese Aufgabe
 * TLS-Offload ist standardmäßig deaktiviert.
@@ -22,7 +24,8 @@ Ab ONTAP 9.19.1 können Sie TLS-Offload konfigurieren, um die Leistung nach dem 
 Bei TLS-offloaded-Verbindungen umgehen die kryptografischen Operationen von TLS üblicherweise die Software und werden von einer Offload-fähigen NIC ausgeführt. Wenn die mit dieser Verbindung verknüpfte LIF auf einen Netzwerkport ohne TLS-Offload-Funktion migriert, greifen die kryptografischen Operationen auf die Software zurück und werden vom Systemkernel verarbeitet.
 
 * Die Management-Schnittstellen (HTTPS, REST API) sind von dieser Einstellung nicht betroffen.
-* Die Einstellung für die TLS-Hardwareauslagerung gilt clusterweit.
+* Die TLS Hardwareauslagerung ist eine clusterweite Einstellung.
+* HA-Datenverkehr wird für TLS Hardware-Offload nicht unterstützt.
 
 
 .Unterstützte Netzwerkkarten und Plattformen
@@ -79,20 +82,44 @@ Für die Hardware-Auslagerung von TLS ist eine unterstützte Netzwerkkarte erfor
 
 |===
 .Unterstützte Verkehrstypen
-TLS-Hardware-Offload unterstützt die folgenden Verkehrstypen:
+Die folgende Tabelle zeigt, ob TLS-Hardware-Offloading für jeden Verkehrstyp unterstützt wird.
 
-* NVMe/TCP
-* Cluster-Peering-Verschlüsselung
-* FabricPool
-* S3
-* NFS
+[cols="1,1,2"]
+|===
+| Verkehrsart | Unterstützt | Hinweise 
 
 
+| NVMe/TCP | Ja | Unterstützt auf Plattformen und Netzwerkkarten, die TLS Offload unterstützen. 
+
+
+| Cluster-Peering-Verschlüsselung | Ja | Unterstützt für Cluster-Netzwerkverkehr. Dies schließt HA-Verkehr nicht ein. 
+
+
+| FabricPool | Ja | Unterstützt auf Plattformen und Netzwerkkarten, die TLS Offload unterstützen. 
+
+
+| S3 | Ja | Unterstützt auf Plattformen und Netzwerkkarten, die TLS Offload unterstützen. 
+
+
+| NFS über TLS | Ja, ab ONTAP 9.19.1 | Unterstützt für ONTAP NFS over TLS Datenverkehr, bei dem KTLS verwendet wird. 
+
+
+| KMIP | Nein | Nicht unterstützt. 
+
+
+| System Manager | Nein | Die Management-Schnittstellen sind von dieser Einstellung nicht betroffen. 
+
+
+| REST API | Nein | Die Management-Schnittstellen sind von dieser Einstellung nicht betroffen. 
+
+
+| HA Verkehr | Nein | Die TLS-Hardwareauslagerung gilt nicht für HA-Datenverkehr. 
+|===
 
 NOTE: Auf ASA-Systemen gilt die TLS-Hardwareauslagerung nur für NVMe/TCP-Datenverkehr. NFS über TLS, FabricPool und S3 werden auf ASA-Plattformen nicht unterstützt.
 
 
-NOTE: Auf AFX-Plattformen unterstützt die TLS-Hardwareauslagerung die NFS- und S3-Frontend-Datenverkehrstypen. NVMe/TCP wird auf AFX-Plattformen nicht unterstützt, da AFX keine SAN/Block-Protokolle unterstützt.
+NOTE: Auf AFX-Plattformen unterstützt die TLS-Hardwareauslagerung NFS über TLS und S3 Frontend-Datenverkehrstypen. NVMe/TCP wird auf AFX-Plattformen nicht unterstützt, da AFX keine SAN/Block-Protokolle unterstützt.
 
 .Bevor Sie beginnen
 * Sie müssen ONTAP Administrator auf der `admin`-Berechtigungsstufe sein, um die folgenden Aufgaben auszuführen.
