@@ -23,16 +23,20 @@ Die SMB-Verschlüsselung auf der SVM wird durch zwei Einstellungen gesteuert:
 * Eine SMB-Freigabeeigenschaft, die die SMB-Verschlüsselungseinstellung für jede einzelne Freigabe konfiguriert
 
 
-Sie können festlegen, ob für den Zugriff auf alle Daten auf der SVM eine Verschlüsselung erforderlich ist oder ob die SMB-Verschlüsselung nur für den Zugriff auf Daten in ausgewählten Freigaben erforderlich ist. SVM-Einstellungen haben Vorrang vor Freigabeeinstellungen.
+Sie können entscheiden, ob für den Zugriff auf alle Daten auf der SVM eine Verschlüsselung erforderlich sein soll oder ob für den Zugriff auf Daten nur in ausgewählten Freigaben SMB-Verschlüsselung erforderlich sein soll. Die  `encrypt-data` Freigabeeigenschaft erfordert SMB-Verschlüsselung für den Zugriff auf eine Freigabe. Ab ONTAP 9.11.1 ermöglicht die  `allow-unencrypted-access` Freigabeeigenschaft SMB2-Clients den Zugriff auf eine Freigabe ohne Verschlüsselung, während SMB3-Clients weiterhin Verschlüsselung verwenden, wenn  `encrypt-data` aktiviert ist.
+
+SVM-Einstellungen haben Vorrang vor Freigabeeinstellungen.
 
 Die effektive SMB-Verschlüsselungskonfiguration hängt von der Kombination der beiden Einstellungen ab und ist in der folgenden Tabelle beschrieben:
 
 |===
-| SMB-Server mit aktivierter SMB-Verschlüsselung | Einstellung „Daten verschlüsseln“ für die Freigabe aktiviert | Server-seitiges Verschlüsselungsverhalten 
+| SMB-Server mit aktivierter SMB-Verschlüsselung | Einstellung „Daten verschlüsseln“ für die Freigabe aktiviert | Einstellung „Unverschlüsselten Zugriff zulassen“ aktiviert | Server-seitiges Verschlüsselungsverhalten 
 
 
  a| 
 True
+ a| 
+Falsch
  a| 
 Falsch
  a| 
@@ -45,6 +49,8 @@ True
  a| 
 True
  a| 
+Falsch
+ a| 
 Die serverseitige Verschlüsselung ist für alle Freigaben in der SVM aktiviert, unabhängig von der Freigabeverschlüsselung. Mit dieser Konfiguration erfolgt die Verschlüsselung für die gesamte SMB-Sitzung.
 
 
@@ -54,10 +60,14 @@ Falsch
  a| 
 True
  a| 
-Die Verschlüsselung auf Freigabeebene ist für die jeweiligen Freigaben aktiviert. Bei dieser Konfiguration erfolgt die Verschlüsselung ab der Baumverbindung.
+Falsch
+ a| 
+Die Freigabeverschlüsselung ist für die betreffenden Freigaben aktiviert. SMB3 Clients verwenden Verschlüsselung, SMB2 Clients können jedoch unverschlüsselt auf die Freigabe zugreifen, da die  `allow-unencrypted-access`Eigenschaft aktiviert ist.
 
 
 
+ a| 
+Falsch
  a| 
 Falsch
  a| 
@@ -65,7 +75,24 @@ Falsch
  a| 
 Es ist keine Verschlüsselung aktiviert.
 
+
+
+ a| 
+Falsch
+ a| 
+Falsch
+ a| 
+True
+ a| 
+Es ist keine Verschlüsselung aktiviert. Die `allow-unencrypted-access` Eigenschaft hat keine Auswirkung, sofern `encrypt-data` nicht aktiviert ist.
+
 |===
 SMB-Clients, die keine Verschlüsselung unterstützen, können keine Verbindung zu einem SMB-Server oder einer Freigabe herstellen, die eine Verschlüsselung erfordert.
 
 Änderungen an den Verschlüsselungseinstellungen werden für neue Verbindungen wirksam. Bestehende Verbindungen sind davon nicht betroffen.
+
+
+NOTE: Die `allow-unencrypted-access` Eigenschaft wird ab ONTAP 9.11.1 unterstützt.
+
+
+NOTE: Die SMB-Verschlüsselung auf SVM-Ebene überschreibt die Einstellungen auf Freigabeebene.
