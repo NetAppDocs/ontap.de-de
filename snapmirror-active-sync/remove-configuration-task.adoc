@@ -21,11 +21,49 @@ Wenn kein Zero-RTO-SnapMirror-synchroner Schutz mehr erforderlich ist, kann die 
 [[remove-an-asymmetric-san-configuration]]
 == Entfernen einer asymmetrischen SAN Konfiguration
 
+
+
+[[unmap-luns-on-the-destination-cluster]]
+=== Zuordnung der LUNs auf dem Ziel-Cluster aufheben
+
+.Über diese Aufgabe
 * Bevor die SnapMirror active sync SAN-Beziehung gelöscht wird, müssen alle LUNs im Ziel-Cluster aus der Zuordnung entfernt werden.
 * Nachdem die LUNs entfernt und der Host neu gescannt wurden, benachrichtigt das SCSI-Ziel die Hosts, dass sich das LUN-Inventar geändert hat. Die vorhandenen LUNs auf den Zero RTO sekundären Volumes ändern ihre Identität, nachdem die Zero RTO Beziehung gelöscht wurde. Die Hosts erkennen die sekundären Volume LUNs als neue LUNs, die keine Beziehung zu den Quell-Volume LUNs haben.
 * Die sekundären Volumes bleiben auch nach dem Löschen der Beziehung DP-Volumes. Mit dem  `snapmirror break` Befehl ist eine Umwandlung in lesen/schreiben möglich.
 * Das Löschen der Beziehung ist im Failover-Zustand nicht zulässig, wenn die Beziehung nicht umgekehrt ist.
 
+
+.Schritte
+Vor dem Löschen einer SnapMirror active sync SAN Beziehung müssen Sie auf dem Ziel-Cluster die Zuordnung aller LUNs aufheben, die Teil der Beziehung sind. Vor dem Löschen einer asymmetrischen SAN-Konfiguration sind die folgenden Schritte erforderlich.
+
+. Wenn eine Ziel-LUN über eine replizierte Initiatorgruppe zugeordnet ist, müssen Sie die Replikation der Initiatorgruppe im Quell-Cluster prüfen und entfernen, bevor Sie die LUN-Zuordnung im Ziel-Cluster löschen können:
++
+`SiteB::> igroup show -igroup <igroup_name>  -vserver <vserver_name> -fields replication-peer`
+
+. Wenn die Initiatorgruppe repliziert wird, ist die Replikations-Peer-Zuordnung aus dem Quell-Cluster zu entfernen:
++
+`SiteA::> igroup modify -vserver <svm_name> -igroup <igroup_name> -replication-peer "-"`
+
+. Überprüfung, ob die Initiatorgruppe nicht mehr repliziert wird:
++
+`SiteB::> igroup show -igroup <igroup_name> -vserver <vserver_name> -fields replication-peer`
+
+. Löschen der LUN-Zuordnung auf der Zielseite:
++
+`SiteB::> lun mapping delete -vserver <svm_name> -igroup <igroup_name> -path <lun_path>`
+
+. Sind der Initiatorgruppe keine weiteren LUNs zugeordnet, kann die Initiatorgruppe gelöscht werden:
++
+`SiteB::> igroup delete -vserver <svm_name> -igroup <igroup_name>`
+
+
+
+
+
+[[delete-the-snapmirror-active-sync-san-relationship]]
+=== Löschen der SnapMirror active sync SAN Beziehung
+
+Nach dem Aufheben der Zuordnung der LUNs wird die SnapMirror Active Sync Beziehung gelöscht.
 
 .Schritte
 . Vom sekundären Cluster aus die SnapMirror Aktiv Sync Konsistenzgruppenbeziehung zwischen Quell-Endpunkt und Ziel-Endpunkt entfernen:
