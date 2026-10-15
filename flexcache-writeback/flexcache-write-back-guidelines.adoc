@@ -18,7 +18,7 @@ Es empfiehlt sich, Ihre Produktions-Workload in einer Nicht-Produktionsumgebung 
 Die folgenden Richtlinien sind intern bei NetApp erprobt. Es wird *_dringend_* empfohlen, sich daran zu halten. Andernfalls kann unerwartetes Verhalten auftreten.
 
 * Wesentliche Verbesserungen für FlexCache Write-Back wurden in ONTAP 9.17.1P1 eingeführt. Es wird *dringend* empfohlen, nach 9.17.1P1 die aktuell empfohlene Version sowohl auf dem Ursprungs- als auch auf dem Cache-Cluster zu verwenden. Falls die Codeline 9.17.1 nicht ausgeführt werden kann, ist die neueste P-Version von 9.16.1 die nächstempfohlene Version. ONTAP 9.15.1 enthält nicht alle notwendigen Korrekturen und Verbesserungen für FlexCache Write-Back und wird nicht für Produktions-Workloads empfohlen.
-* In der aktuellen Version sollte der FlexCache Write-Back-Cache mit einem einzigen Bestandteil für das gesamte FlexCache Volume konfiguriert werden. Mehrere Bestandteile eines FlexCaches können zu unerwünschtem Entfernen von Daten aus dem Cache führen.
+* Write-Back-Caches mit mehreren Constituents für FlexCache werden mit ONTAP 9.19.1 GA, 9.18.1P2, 9.17.1P3, 9.16.1P10 und späteren P-Releases in der jeweiligen Release-Familie unterstützt. Bei früheren ONTAP Releases muss für das gesamte FlexCache Volume ein einzelner Constituent verwendet werden. Multi-Constituent-FlexCaches in früheren Releases können dazu führen, dass Daten unerwünscht aus dem Cache entfernt werden.
 * Die Tests wurden mit Dateien unter 100GB und WAN-Roundtrip-Zeiten zwischen Cache und Origin mit maximal 200ms durchgeführt. Arbeitslasten außerhalb dieser Grenzen können zu unerwarteten Leistungseigenschaften führen.
 * Das Schreiben in alternative SMB-Datenströme führt dazu, dass die Hauptdatei aus dem Cache entfernt wird. Alle schmutzigen Daten der Hauptdatei müssen an den Ursprung übertragen werden, bevor weitere Vorgänge an dieser Datei stattfinden können. Der alternative Datenstrom wird ebenfalls an den Ursprung weitergeleitet.
 * Das Umbenennen einer Datei führt dazu, dass die Datei aus dem Cache entfernt wird. Alle schmutzigen Daten der Datei müssen an den Ursprung übertragen werden, bevor weitere Vorgänge an dieser Datei stattfinden können.
@@ -37,6 +37,32 @@ Alle weiteren geänderten oder festgelegten Attribute werden an den Ursprung wei
 
 * Die am Ursprungsvolume erstellten Snapshots führen dazu, dass alle ausstehenden schmutzigen Daten aus jedem Write-Back-fähigen Cache, der diesem Ursprungsvolume zugeordnet ist, abgerufen werden. Dies kann mehrere Wiederholungsversuche der Operation erfordern, wenn umfangreiche Write-Back-Aktivitäten im Gange sind, da das Entfernen dieser schmutzigen Dateien einige Zeit in Anspruch nehmen kann.
 * SMB Opportunistic Locks (Oplocks) für Schreibvorgänge werden auf Write-Back-fähigen FlexCache Volumes nicht unterstützt.
-* Write-Back-Caches schalten automatisch in den Write-Around-Modus, sobald der freie Speicherplatz des Ursprungsvolumes auf 20 % oder darunter sinkt. Dies hilft zu verhindern, dass am Ursprungsvolume der Speicherplatz ausgeht, was dazu führen würde, dass schmutzige Daten in einem Write-Back-fähigen Cache verwaist zurückbleiben. Ist das Ursprungsvolume jedoch überprovisioniert, das heißt, seine logisch bereitgestellte Größe ist größer als der freie Speicherplatz im Aggregat, kann der gemeldete freie Speicherplatzanteil diesen Schwellenwert früher als erwartet auslösen. Der 20-%-Schwellenwert wird sowohl anhand des gemeldeten freien Speicherplatzes des Ursprungsvolumes als auch der verfügbaren physischen Kapazität des Aggregats bewertet.
-* Geringe Bandbreite und/oder verlustbehaftete Intercluster-Netzwerke können die FlexCache Write-Back-Performance erheblich beeinträchtigen. Obwohl es keine spezifische Bandbreitenanforderung gibt, da diese stark von Ihrer Arbeitslast abhängt, wird *_dringend_* empfohlen, auf die Stabilität der Intercluster-Verbindung zwischen Cache(s) und Ursprung zu achten.
+* Write-Back-Caches schalten automatisch in den Write-Around-Modus, wenn der freie Speicherplatz des Ursprungsvolumes auf 20 % oder weniger sinkt. Dies verhindert, dass am Ursprungsvolume der Speicherplatz ausgeht und dadurch schmutzige Daten in einem Write-Back-fähigen Cache verwaist zurückbleiben. Wenn das Ursprungsvolume überprovisioniert ist, ist seine logisch bereitgestellte Größe größer als der freie Speicherplatz im Aggregat. Der Schwellenwert von 20 % wird sowohl anhand des verfügbaren Speicherplatzes des Ursprungsvolumes als auch anhand der verfügbaren physischen Kapazität des Aggregats ausgewertet. `percent-used` und  `capacity` können weiterhin 0 % anzeigen, wenn der verfügbare Speicherplatz bereits unter diesem Schwellenwert liegt.
++
+Das folgende Beispiel zeigt ein überprovisioniertes Ursprungsvolume. Es werden fast keine Daten geschrieben, doch das Aggregat kann die volle logische Größe nicht bereitstellen:
+
++
+[source, cli]
+----
+ORIGIN::> vol show -volume origin_volume -fields percent-used,available,size
+vserver             volume           size    available percent-used
+------------------- ---------------- ------- --------- ------------
+origin_svm          origin_volume    19.70TB 1.33TB    0%
+----
++
+Es ist zu beachten, dass die  `percent-used`Auslastung 0 % beträgt, der verfügbare Speicherplatz jedoch 1,33 TB von 19,70 TB beträgt, also 1,33 / 19,70 oder etwa 7 % verfügbar sind. Dies liegt bereits unter dem Schwellenwert von 20 %, daher schalten Write-Back-Caches für diesen Ursprung in den Write-Around-Modus.
+
++
+[source, cli]
+----
+ORIGIN::> df -h origin_volume
+Filesystem               total       used      avail   capacity  Mounted on       Vserver
+/vol/origin_volume/      18TB        515MB     1363GB         0%    ---           origin_svm
+
+2 entries were displayed.
+----
++
+Zu beachten ist, dass `capacity` auch dieser Wert 0 % beträgt und nur 515 MB genutzt werden. Der verfügbare Speicherplatz beträgt 1363 GB von 18 TB, also etwa 7 % des Dateisystems. Die Prozentangaben zeigen, wie wenige Daten gespeichert sind. Sie geben nicht an, wie viel von der Volume-Größe das Aggregat tatsächlich bereitstellen kann.
+
+* Geringe Bandbreite und/oder verlustbehaftete Intercluster-Netzwerke können die FlexCache Write-Back-Performance erheblich beeinträchtigen. Es gibt zwar keine spezifische Anforderung an die Bandbreite, da diese stark von Ihrer Arbeitslast abhängt, es wird jedoch *_dringend_* empfohlen, den Systemstatus der Intercluster-Verbindung zwischen dem bzw. den Cache(s) und dem Ursprung sicherzustellen. Wenn Ihr Netzwerk anfällig für Paketverluste ist und Sie ONTAP 9.19.1 oder höher verwenden, sollte die Verwendung von link:../networking/improve-tcp-wan-performance.html["TCP RACK"] zur Verbesserung der Performance in Betracht gezogen werden.
 
