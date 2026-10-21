@@ -1,0 +1,92 @@
+---
+permalink: san-config/fc-config-best-practices.html 
+sidebar: sidebar 
+keywords: fc, fabric, configuration, best, practices, san 
+summary: Für eine optimale Leistung sind bei der Konfiguration Ihres FC Switch bestimmte Best Practices zu berücksichtigen. 
+---
+= Informationen zu Best Practices für die Konfiguration von FC-Fabrics mit ONTAP Systemen
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Die Einhaltung bewährter Verfahren bei der FC Fabric Konfiguration verbessert Performance, Zuverlässigkeit und Stabilität von Host und Zielsystem bei Änderungen der Fabric.
+
+.Empfohlene Best Practices für die FC Fabric-Konfiguration
+* *Single-Initiator / Single-Target (SI/ST)-Zonierung*
++
+SI/ST Zonierung reduziert Latenzspitzen bei Fabric-Änderungen, beseitigt Übersprechen, begrenzt Registered State Change Notifications (RSCNs), vereinfacht die Fehlersuche und hält die Pfadanzahl innerhalb der Host-Grenzen.
+
++
+** Auswirkungen auf den Host: Die SI/ST-Zonierung gewährleistet ein vorhersehbares MPIO-Verhalten, eine schnellere Erkennung und weniger All Path Down (APD)/Permanent Device Loss (PDL)-Ereignisse.
+** Zielwirkung: Die SI/ST-Zonierung gewährleistet weniger An- und Abmeldevorgänge und stabile FC-Sitzungen.
+
+
+* *WWPN‑basierte Zonierung unter Verwendung von Ziel-LIF-WWPNs (nicht physischen Ports)*
++
+Die WWPN-basierte Zonierung ermöglicht die Mobilität von LIF, Takeover/Giveback, unterbrechungsfreie Abläufe ohne erneute Zonierung und verhindert Pfadresets während der Wartung.
+
++
+** Auswirkungen auf den Host: Die WWPN-basierte Zonierung gewährleistet, dass es bei LIF-Verschiebungen oder Controller-Failover zu keinem Pfadverlust kommt.
+** Zielwirkung: Die WWPN-basierte Zonierung gewährleistet, dass ONTAP die Ziel-LIFs transparent verschieben kann.
+
+
+* *NPIV auf allen FC-Switches aktiviert*
++
+Alle mit dem Fabric verbundenen Switches müssen NPIV unterstützen, und NPIV muss aktiviert sein. ONTAP verwendet N_Port ID-Virtualisierung (NPIV), um FC-Ziele bereitzustellen. Ohne NPIV können sich Ziel-LIFs nicht korrekt anmelden.
+
++
+** Auswirkungen auf den Host: NPIV verhindert zeitweilige Pfadabbrüche und fehlende Geräte.
+** Zielwirkung: NPIV gewährleistet die Transparenz der Ziel-LIFs und stabile FC-Logins.
+
+
+* *Zwei unabhängige, vollständig isolierte Fabrics*
++
+Ein duales, unabhängiges Fabric besteht aus zwei separaten physischen Switches, Netzteilen und Verkabelungen. Fabric A und Fabric B sind niemals miteinander verbunden. Jedes Fabric verwaltet seinen eigenen FC-Nameserver, seine eigenen Zonensätze und Domänen-IDs. Da die Fabrics vollständig isoliert sind, gibt es keinen Single Point of Failure. Unterbrechungsfreie Wartungsarbeiten können an einem Fabric durchgeführt werden, während das andere weiter in Betrieb bleibt.
+
++
+** Auswirkungen auf den Host: Zwei unabhängige Fabrics unterstützen kontinuierliche E/A bei Firmware-Upgrades oder Ausfällen der Fabric.
+** Zielauswirkung: Zwei unabhängige Fabrics gewährleisten redundanten Zielzugriff bei Switch-Problemen.
+
+
+* *Feste FC-Portgeschwindigkeiten (automatische Aushandlung vermeiden)*
++
+Die automatische Aushandlung kann den Wiederaufbau der Fabric verzögern, zu Geschwindigkeitsabweichungen führen und Verzögerungen bei der Rekonvergenz sowie Link-Flaps verursachen.
+
++
+** Auswirkungen auf den Host: Feste FC Portgeschwindigkeiten führen bei Link-Resets zu kürzeren Ausfallzeiten.
+** Zielwirkung: Feste FC-Portgeschwindigkeiten sorgen dafür, dass die Ports nach Knoten- oder Switch-Ereignissen schneller wieder online kommen.
+
+
+* *Strenge Einhaltung der von NetApp Interoperability Matrix Tool (IMT) validierten Konfigurationen (HBA, Treiber, Firmware, Switch)*
++
+Die strikte Einhaltung der im  https://mysupport.netapp.com/matrix["NetApp IMT"^] validierten Konfigurationen gewährleistet die erwartete Latenz und den erwarteten Durchsatz.
+
++
+** Auswirkungen auf den Host: Durch die Verwendung von durch IMT validierten Konfigurationen lassen sich unerklärliche E/A-Fehler und Timeouts vermeiden.
+** Zielwirkung: Die Verwendung von IMT validierten Konfigurationen verhindert Inkompatibilitäten auf Protokollebene.
+
+
+* *Proaktive Überwachung der FC-Fehlerzähler (CRC, Synchronisationsverlust, RECV_ERROR)*
++
+Fabric-Fehler äußern sich häufig als hostseitige Latenz- oder E/A-Fehler, bevor ONTAP Storage-Zähler sie erkennen. Die proaktive Überwachung der FC-Fehleranzahl verhindert einen kontinuierlichen Anstieg der Latenz.
+
++
+** Auswirkungen auf den Host: Proaktives Monitoring ermöglicht die frühzeitige Erkennung und verhindert erneute Host-E/A-Versuche sowie Stillstände von Applikationen.
+** Zielwirkung: Proaktives Monitoring verhindert, dass Fabric-Probleme fälschlicherweise Storage Problemen zugeschrieben werden.
+
+
+* *Vermeidung einer Überbelegung der Inter-Switch-Verbindung (ISL) für SAN-Datenverkehr*
++
+Überlastete ISLs führen zu Kreditknappheit und Slow-Drain-Verhalten.
+
++
+** Auswirkungen auf den Host: Die Vermeidung einer ISL-Überbelegung reduziert Host-E/A-Wartezeiten und die Warteschlangenbildung.
+** Zielwirkung: Die Vermeidung einer ISL-Überbelegung verhindert Rückstau an ONTAP FC-Ports.
+
+
+
+
+.Verwandte Informationen
+https://www.netapp.com/pdf.html?item=/media/10680-tr4080.pdf["NetApp Technischer Bericht 4080: Bewährte Verfahren für moderne SAN"^].
