@@ -13,10 +13,12 @@ summary: LIFs können unterschiedliche Eigenschaften aufweisen, um verschiedene 
 
 
 [role="lead"]
-LIFs können unterschiedliche Eigenschaften aufweisen, um verschiedene Port-Typen zu unterstützen.
+LIFs können unterschiedliche Eigenschaften aufweisen, um verschiedene Porttypen zu unterstützen. LIFs können sich entweder auf einem physischen oder einem logischen Port in einem IPspace befinden. Jeder Port ist nur einem IPspace zugeordnet.
 
 
 NOTE: Wenn Intercluster- und Management-LIFs im selben Subnetz konfiguriert sind, kann der Management-Datenverkehr durch eine externe Firewall blockiert werden und die AutoSupport- und NTP-Verbindungen können fehlschlagen. Das System kann wiederhergestellt werden, indem der  `network interface modify -vserver _vserver name_ -lif _intercluster LIF_ -status-admin up|down` Befehl zum Umschalten des Intercluster-LIF ausgeführt wird. Es empfiehlt sich jedoch, Intercluster-LIF und Management-LIF in unterschiedlichen Subnetzen zu konfigurieren, um dieses Problem zu vermeiden.
+
+Die folgende Tabelle fasst die LIF-Typen, ihre kompatiblen Porttypen und ihr Failover oder Migrationsverhalten zusammen.
 
 [cols="30,70"]
 |===
@@ -25,23 +27,68 @@ NOTE: Wenn Intercluster- und Management-LIFs im selben Subnetz konfiguriert sind
 | LIF | Beschreibung 
 
 
-| Data LIF | Eine LIF, die einer Storage Virtual Machine (SVM) zugeordnet ist und für die Kommunikation mit Clients verwendet wird. Es können mehrere Daten-LIFs auf einem Port vorhanden sein. Diese Schnittstellen können im gesamten Cluster migrieren oder ein Failover durchführen. Eine Daten-LIF kann so geändert werden, dass sie als SVM Management-LIF dient, indem die Firewall-Richtlinie auf mgmt geändert wird. Sitzungen, die zu NIS-, LDAP-, Active Directory-, WINS- und DNS-Servern aufgebaut werden, verwenden Daten-LIFs. 
+| Cluster-LIF  a| 
+Ein LIF, das für den Transport von Intracluster-Datenverkehr zwischen Knoten in einem Cluster verwendet wird.
+
+* Cluster LIFs müssen immer auf Cluster-Ports erstellt werden.
+* Cluster LIFs können zwischen Cluster-Ports auf demselben Knoten ein Failover durchführen, sie können jedoch nicht auf einen entfernten Knoten migriert oder dorthin verschoben werden. Wenn ein neuer Knoten einem Cluster beitritt, werden IP-Adressen automatisch generiert. Wenn IP-Adressen manuell den Cluster LIFs zugewiesen werden sollen, muss sichergestellt werden, dass die neuen IP-Adressen im selben Subnetzbereich wie die vorhandenen Cluster LIFs liegen.
 
 
-| Cluster-LIF | Ein LIF, das für den Transport von Intracluster-Datenverkehr zwischen Knoten in einem Cluster verwendet wird. Cluster LIFs müssen immer auf Cluster-Ports erstellt werden. Cluster LIFs können zwischen Cluster-Ports auf demselben Knoten ein Failover durchführen, sie können jedoch nicht auf einen entfernten Knoten migriert oder dorthin verschoben werden. Wenn ein neuer Knoten einem Cluster beitritt, werden IP-Adressen automatisch generiert. Wenn IP-Adressen manuell den Cluster LIFs zugewiesen werden sollen, muss sichergestellt werden, dass die neuen IP-Adressen im selben Subnetzbereich wie die vorhandenen Cluster LIFs liegen. 
 
 
-| Cluster Management-LIF | Eine LIF stellt eine zentrale Managementoberfläche für den gesamten Cluster bereit. Eine Cluster-Management-LIF kann auf jeden Knoten im Cluster umschalten. Sie kann jedoch kein Failover auf Cluster- oder Intercluster-Ports durchführen. 
+| Cluster Management-LIF  a| 
+Eine LIF, die eine einzige Managementoberfläche für den gesamten Cluster bereitstellt.
+
+* Ein Cluster-Management-LIF kann auf jeden beliebigen Knoten im Cluster ausweichen. Ein Ausweichen auf Cluster- oder Intercluster-Ports ist nicht möglich.
 
 
-| Intercluster-LIF | Eine LIF, die für die clusterübergreifende Kommunikation, Datensicherung und Replikation verwendet wird. Auf jedem Knoten im Cluster muss eine Intercluster-LIF erstellt werden, bevor eine Cluster-Peering-Beziehung hergestellt werden kann. Diese LIFs können nur auf Ports desselben Knotens ausweichen. Sie können nicht migriert oder auf einen anderen Knoten im Cluster verschoben werden. 
 
 
-| Node Management-LIF | Eine LIF, die eine dedizierte IP-Adresse für die Verwaltung eines bestimmten Knotens in einem Cluster bereitstellt. Node Management LIFs werden beim Erstellen oder Beitritt zum Cluster erstellt. Diese LIFs werden für die Systemwartung verwendet, zum Beispiel wenn ein Knoten vom Cluster aus nicht mehr erreichbar ist. 
+| Data LIF  a| 
+Eine LIF, die einer Storage Virtual Machine (SVM) zugeordnet ist und für die Kommunikation mit Clients verwendet wird.
+
+* Jede SVM ist einem bestimmten IPspace zugeordnet. Daten-SVMs befinden sich häufig im IPspace "Default", aber nicht zwingend.
+* Sie können mehrere Daten-LIFs auf einem Port hosten. Diese Daten-LIFs können innerhalb des Clusters migrieren oder per Failover umgeschaltet werden. Sie können eine Daten-LIF so ändern, dass sie als SVM Management-LIF dient, indem Sie ihre Firewall-Richtlinie in mgmt ändern.
+* Sitzungen, die zu NIS-, LDAP-, Active Directory-, WINS- und DNS-Servern aufgebaut werden, verwenden Daten-LIFs.
 
 
-| VIP LIF | Ein VIP-LIF ist ein beliebiges Daten-LIF, das auf einem VIP-Port erstellt wird. Weitere Informationen finden sich unter link:../networking/configure_virtual_ip_vip_lifs.html["Virtuelle IP (VIP) LIFs konfigurieren"]. 
+
+
+| Intercluster-LIF  a| 
+Eine LIF, die für die clusterübergreifende Kommunikation, Datensicherung und Replikation verwendet wird.
+
+* Auf jedem Knoten im Cluster muss eine Intercluster-LIF erstellt werden, bevor eine Cluster-Peering-Beziehung hergestellt werden kann. Diese LIFs können nur auf Ports desselben Knotens ausweichen. Sie können nicht migriert oder auf einen anderen Knoten im Cluster verschoben werden.
+
+
+
+
+| Node Management-LIF  a| 
+Eine LIF, die eine dedizierte IP-Adresse für die Verwaltung eines bestimmten Knotens in einem Cluster bereitstellt.
+
+* Node Management LIFs werden beim Erstellen oder Beitritt zum Cluster erstellt. Diese LIFs werden für die Systemwartung verwendet, zum Beispiel wenn ein Knoten vom Cluster aus nicht mehr erreichbar ist.
+
+
+
+
+| SVM Management-LIF  a| 
+Ein LIF, das einer SVM administrative Konnektivität bereitstellt und Managementvorgänge (oft über Port 443) sowie zugehörige Services für diese SVM ermöglicht.
+
+* Jede SVM ist einem bestimmten IPspace zugeordnet.
+* Die LIF kann je nach Failover-Richtlinie auf einen anderen Knoten oder Port migrieren oder ein Failover auf einen anderen Knoten oder Port durchführen.
+* Sie können mehrere SVM Management LIFs auf einem Port hosten.
+* Eine SVM Management LIF ist nützlich, wenn Sie in einer Umgebung mit Mandantenfähigkeit hosten.
+
+
+
+
+| VIP LIF  a| 
+Eine virtuelle IP (VIP) LIF ist jede Daten-LIF, die auf einem VIP-Port erstellt wird.
+
+Weitere Informationen finden sich unter link:../networking/configure_virtual_ip_vip_lifs.html["Virtuelle IP (VIP) LIFs konfigurieren"].
+
 |===
 .Verwandte Informationen
+* link:./configure_network_ports_cluster_administrators_only_overview.html["Erfahren Sie mehr über ONTAP Netzwerkportkonfiguration"]
 * link:https://docs.netapp.com/us-en/ontap-cli/network-interface-modify.html["Netzwerkschnittstelle ändern"^]
+* link:./configure_ipspaces_cluster_administrators_only_overview.html["Informationen zur ONTAP IPspace Konfiguration"]
 
