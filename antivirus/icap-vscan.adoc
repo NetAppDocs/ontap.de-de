@@ -1,0 +1,109 @@
+---
+permalink: antivirus/icap-vscan.html 
+sidebar: sidebar 
+keywords: antivirus, vscan, icap, on-access scanning, smb 
+summary: ICAP-basiertes Vscan für SMB On-Access-Scanning ab ONTAP 9.20.1 konfigurieren. 
+---
+= Konfiguration von ICAP-basiertem Vscan für On-Access-Scans
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ab ONTAP 9.20.1 können Sie ICAP-basiertes Vscan so konfigurieren, dass On-Access-Antivirus-Scan-Anfragen direkt an ICAP-fähige Scan-Engines gesendet werden, ohne den ONTAP Antivirus Connector installieren zu müssen. ICAP-basiertes Vscan nutzt die bestehende FPolicy-Infrastruktur für Benachrichtigungen im gemeinsamen Speicher, um Verbindungen zu managen und Scan-Anfragen zu übermitteln.
+
+Vscan, basierend auf ICAP, verwendet eine proprietäre ICAP-Erweiterung namens FILEMOD (Request Modification for files) anstelle der Standard-ICAP-Methoden REQMOD oder RESPMOD:
+
+* *Pfadbasiertes Scannen*: ONTAP sendet lediglich den Dateipfad und die Metadaten in den ICAP-Anforderungsheadern. ONTAP überträgt den Dateiinhalt nicht über das Netzwerk an die Scan-Engine.
+* *Direkter Dateizugriff*: Die Scan-Engine bindet die entsprechende ONTAP Freigabe ein und liest die Dateidaten direkt über das SMB-Protokoll mithilfe eines konfigurierten privilegierten Benutzerkontos.
+* *Vorteile*: Dieser Ansatz vermeidet den CPU- und Speicher-Overhead beim Streaming großer Dateien, reduziert den Netzwerkverkehr und erhält den vom Antivirus Connector verwendeten effizienten Lesepfad.
+
+
+
+
+[[supported-scan-engines]]
+== Unterstützte Scan-Engines
+
+Für folgende ICAP-fähige Scan-Engines besteht Unterstützung:
+
+* Symantec Protection Engine (SPE)
+* OPSWAT MetaDefender
+
+
+
+
+[[configuration-considerations]]
+== Konfigurationsüberlegungen
+
+Bei der Konfiguration von ICAP-basiertem Vscan sind folgende Punkte zu beachten:
+
+* Jede SVM muss entweder die ICAP-basierte Vscan-Konfiguration oder die Scannerpools von Antivirus Connector verwenden; die gleichzeitige Konfiguration beider auf derselben SVM ist nicht möglich. Um zwischen den Konfigurationen zu wechseln, muss die bestehende Konfiguration zuerst entfernt werden.
+* Vscan auf ICAP-Basis unterstützt On-Access-Scanning nur für SMB. On-Demand-Scanning und NFS On-Access-Scanning werden nicht unterstützt.
+* Vor der Rückkehr von ONTAP 9.20.1 auf eine frühere Version sind alle ICAP-basierten Vscan-Konfigurationen zu entfernen.
+
+
+.Bevor Sie beginnen
+* Auf dem Cluster muss ONTAP 9.20.1 oder höher laufen.
+* Auf der SVM muss SMB konfiguriert und aktiviert sein.
+* Auf einem Server, der über das Clusternetzwerk erreichbar ist, muss eine ICAP-fähige Antiviren-Scan-Engine (wie z. B. SPE oder OPSWAT) installiert und in Betrieb sein.
+* Die SVM darf keine vorhandene Antivirus Connector Konfiguration aufweisen. Jede SVM unterstützt entweder ICAP-basiertes Vscan oder Antivirus Connector, jedoch nicht beides.
+* Falls für die ICAP-Verbindung eine TLS-Verschlüsselung erforderlich ist, müssen die entsprechenden Server-CA-Zertifikate auf dem Cluster installiert werden.
+
+
+.Schritte
+. Eine ICAP-Konfiguration für die SVM erstellen. Pro SVM wird nur eine ICAP-Konfiguration unterstützt:
++
+`vserver vscan icap-config create -vserver <svm_name> -server-ip <icap_server_ip> -port <port> -max-connections <max_conn> -service-path <service_path> -ssl-enabled {true|false} -skip-cert-validation {true|false}`
+
++
+.Beispiel:
+`cluster1::> vserver vscan icap-config create -vserver vs1 -server-ip 10.10.10.1 -port 1344 -max-connections 10 -service-path SYMCSCANRESPEX-AV -ssl-enabled false -skip-cert-validation false`
+
++
+[cols="25,20,15,40"]
+|===
+
+
+| Parameter | Standard | Bereich | Beschreibung 
+
+
+ a| 
+`-port`
+| 1344 | 1–65535 | TCP-Port der ICAP-Scan-Engine 
+
+
+ a| 
+`-max-connections`
+| 10 | 1–256 | Maximale Anzahl gleichzeitiger Verbindungen zum ICAP-Server 
+
+
+ a| 
+`-service-path`
+| SYMCSCANRESPEX-AV | k. A. | Vom Scan-Engine bereitgestellter ICAP-Dienstpfad 
+
+
+ a| 
+`-ssl-enabled`
+| false | k. A. | Die TLS-Verschlüsselung für die ICAP-Verbindung wird aktiviert 
+
+
+ a| 
+`-skip-cert-validation`
+| false | k. A. | Serverzertifikatsprüfung überspringen 
+|===
+. Falls noch keine On-Access-Richtlinie vorhanden ist, ist eine zu erstellen.
++
+`vserver vscan on-access-policy create -vserver <svm_name> -policy-name <policy_name> -protocol CIFS -max-file-size <size> -filters <filter_list> -file-ext-to-exclude <extensions> -paths-to-exclude <paths>`
+
++
+
+NOTE: Wenn bereits eine On-Access-Richtlinie aus einer früheren Vscan-Konfiguration existiert und für Ihre Arbeitslast geeignet ist, können Sie diese mit dem ICAP-Pfad wiederverwenden.
+
+. Zum Abfangen von Dateivorgängen und zum Weiterleiten von Scan-Anfragen an den ICAP-Server muss Vscan aktiviert sein.
++
+`vserver vscan enable -vserver <svm_name>`
+
+. Überprüfung des ICAP-Verbindungsstatus:
+`vserver vscan icap-connection-status show -vserver <svm_name>`
+

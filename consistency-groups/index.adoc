@@ -67,17 +67,30 @@ NOTE: In ONTAP 9.13.1 können historische Metriken nur über die ONTAP REST API 
 [[protect-consistency-groups]]
 == Konsistenzgruppen schützen
 
-Konsistenzgruppen bieten applikationskonsistente Schutzmechanismen und gewährleisten die Konsistenz Ihrer Daten über mehrere Volumes oder LIFs hinweg. Beim Erstellen eines Snapshots einer Konsistenzgruppe wird ein „Fence“ auf der Konsistenzgruppe gesetzt. Der Fence initiiert eine Warteschlange für Ein-/Ausgabe, bis der Snapshot-Vorgang abgeschlossen ist, und stellt so die zeitpunktgenaue Konsistenz der Daten über alle Entitäten in der Konsistenzgruppe sicher. Der Fence kann während Snapshot-Erstellungsvorgängen, wie etwa einer geplanten Snapshot-Richtlinie oder der Erstellung eines Snapshots mit System Manager, zu einem vorübergehenden Anstieg der Latenz führen. Weitere Informationen zum Kontext der ONTAP REST API und ONTAP CLI befinden sich in der link:https://kb.netapp.com/on-prem/ontap/DM/REST-API["ONTAP REST API Dokumentation"^] und link:https://docs.netapp.com/us-en/ontap-cli/["ONTAP-Befehlsreferenz"^].
+Konsistenzgruppen bieten applikationskonsistente Schutzmechanismen und gewährleisten die Konsistenz Ihrer Daten über mehrere Volumes oder LIFs hinweg. Beim Erstellen eines Snapshots einer Konsistenzgruppe wird ein „Fence“ auf der Konsistenzgruppe gesetzt. Der Fence initiiert eine Warteschlange für Ein-/Ausgabe, bis der Snapshot-Vorgang abgeschlossen ist, und stellt so die zeitpunktgenaue Konsistenz der Daten über alle Entitäten in der Konsistenzgruppe sicher. Der Fence kann während Snapshot-Erstellungsvorgängen, wie etwa einer geplanten Snapshot-Richtlinie oder der Erstellung eines Snapshots mit System Manager, zu einem vorübergehenden Anstieg der Latenz führen.
 
-Konsistenzgruppen bieten Schutz durch:
+Die Art des für Konsistenzgruppen verfügbaren Datenschutzes variiert je nach Ihrer ONTAP Version.
 
+[cols="2"]
+|===
+| Verfügbar ab ONTAP... | Datensicherung für Konsistenzgruppen 
+
+
+| 9.20.1 | link:protect-task.html#configure-snaplock-for-snapvault-replication-from-a-non-snaplock-source["SnapLock für SnapVault aus nicht-SnapLock Volumes"] 
+
+
+| 9.14.1 | link:../data-protection/snapmirror-svm-replication-concept.html["SVM Disaster Recovery"] 
+
+
+| 9.13.1 | xref:../data-protection/snapmirror-disaster-recovery-concept.html[SnapMirror asynchron] 
+
+
+| 9.10.1  a| 
 * Snapshot Richtlinien
 * xref:../snapmirror-active-sync/index.html[SnapMirror Active Sync]
-* <<mcc>> (beginnend mit ONTAP 9.11.1)
-* xref:../data-protection/snapmirror-disaster-recovery-concept.html[SnapMirror asynchron] (beginnend mit ONTAP 9.13.1)
-* link:../data-protection/snapmirror-svm-replication-concept.html["SVM Disaster Recovery"] (beginnend mit ONTAP 9.14.1)
 
 
+|===
 Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Lokale und Remote-Datensicherungsstrategien können beim Erstellen oder nach dem Erstellen einer Konsistenzgruppe festgelegt werden.
 
 Zum Konfigurieren des Schutzes einer Konsistenzgruppe siehe link:protect-task.html["Eine Konsistenzgruppe schützen"].
@@ -125,9 +138,7 @@ NOTE: Es wird empfohlen, für gespiegelte Aggregate mindestens 20 % freien Speic
 [[upgrade-considerations]]
 == Upgrade-Überlegungen
 
-Beim Upgrade auf ONTAP 9.10.1 oder höher werden Konsistenzgruppen, die mit SnapMirror active sync (früher bekannt als SnapMirror Business Continuity) in ONTAP 9.8 und 9.9.1 erstellt wurden, automatisch aktualisiert und können anschließend unter *Storage > Consistency Groups* im System Manager oder über die ONTAP REST API verwaltet werden. Weitere Informationen zum Upgrade von ONTAP 9.8 oder 9.9.1 finden sich unter link:../snapmirror-active-sync/upgrade-revert-task.html["SnapMirror Überlegungen zum Upgrade und zur Rücksetzung von active sync"].
-
-In der ONTAP REST API erstellte Konsistenzgruppen-Snapshots können über die Konsistenzgruppen-Oberfläche des System Manager und über Konsistenzgruppen-ONTAP REST API-Endpunkte verwaltet werden. Ab ONTAP 9.14.1 können Konsistenzgruppen-Snapshots auch mit der ONTAP CLI verwaltet werden.
+Beim Upgrade auf ONTAP 9.10.1 oder höher werden Konsistenzgruppen, die in ONTAP 9.8 und 9.9.1 mit SnapMirror active sync (früher als SnapMirror Business Continuity bezeichnet) erstellt wurden, automatisch aktualisiert und können anschließend in System Manager oder in der ONTAP REST API unter *Storage > Consistency Groups* verwaltet werden. Weitere Informationen zum Upgrade von ONTAP 9.8 oder 9.9.1 enthält link:../snapmirror-active-sync/upgrade-revert-task.html["SnapMirror Überlegungen zum Upgrade und zur Rücksetzung von active sync"].
 
 
 NOTE: Snapshots, die mit den ONTAPI-Befehlen  `cg-start` und  `cg-commit` erstellt wurden, werden nicht als Konsistenzgruppe-Snapshots erkannt und können daher weder über die Konsistenzgruppe-Oberfläche des System Manager noch über die Konsistenzgruppe-Endpunkte in der ONTAP REST API verwaltet werden. Ab ONTAP 9.14.1 können diese Snapshots auf das Zielvolume gespiegelt werden, wenn eine SnapMirror asynchron Richtlinie verwendet wird. Weitere Informationen finden sich unter xref:protect-task.html#configure-snapmirror-asynchronous[Asynchrones SnapMirror konfigurieren].
@@ -137,60 +148,58 @@ NOTE: Snapshots, die mit den ONTAPI-Befehlen  `cg-start` und  `cg-commit` erstel
 [[supported-features-by-release]]
 == Unterstützte Funktionen nach Version
 
-[cols="3,1,1,1,1,1,1,1"]
+[cols="2"]
 |===
-|  | ONTAP 9.16.1 | ONTAP 9.15.1 | ONTAP 9.14.1 | ONTAP 9.13.1 | ONTAP 9.12.1 | ONTAP 9.11.1 | ONTAP 9.10.1 
+| Beginnend mit ONTAP... | Unterstützte Funktionen 
 
 
-| Hierarchische Konsistenzgruppen | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 
+| 9.20.1 | SnapLock für SnapVault Schutz auf Sekundärsystemen 
 
 
-| Lokaler Schutz mit Snapshots | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 
+| 9.16.1  a| 
+Multi-Admin-Verifizierung
 
 
-| SnapMirror Active Sync | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 
+
+| 9.14.1  a| 
+* SVM Disaster Recovery (nur einzelne Konsistenzgruppe)
+* CLI-Unterstützung
 
 
-| MetroCluster Unterstützung | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  
 
 
-| Zwei-Phasen-Commits (nur REST API) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  
+| 9.13.1  a| 
+* Volumes zwischen untergeordneten Konsistenzgruppen verschieben
+* Konsistenzgruppe Geometrie ändern
+* Überwachung
+* SnapMirror asynchron (nur einzelne Konsistenzgruppen)
 
 
-| Anwendungs- und Komponententags | ✓ | ✓ | ✓ | ✓ | ✓ |  |  
 
 
-| Konsistenzgruppen klonen | ✓ | ✓ | ✓ | ✓ | ✓ |  |  
+| 9.12.1  a| 
+* Volumes hinzufügen und entfernen
+* Anwendungs- und Komponententags
+* Konsistenzgruppen klonen
+* Erstellen von CGs mit neuen NAS Volumes (nur REST API)
+* Erstellen von CGs mit NVMe Namespaces (nur REST API)
 
 
-| Volumes hinzufügen und entfernen | ✓ | ✓ | ✓ | ✓ | ✓ |  |  
 
 
-| CGs mit neuen NAS-Volumes erstellen | ✓ | ✓ | ✓ | ✓ | Nur REST API |  |  
+| 9.11.1  a| 
+* MetroCluster Konfigurationen
+* Zwei-Phasen-Commits (nur REST API)
 
 
-| CGs mit neuen NVMe Namespaces erstellen | ✓ | ✓ | ✓ | ✓ | Nur REST API |  |  
 
 
-| Volumes zwischen untergeordneten Konsistenzgruppen verschieben | ✓ | ✓ | ✓ | ✓ |  |  |  
+| 9.10.1  a| 
+* Hierarchische Konsistenzgruppen
+* Lokaler Schutz mit Snapshots
+* SnapMirror Active Sync
 
 
-| Konsistenzgruppe Geometrie ändern | ✓ | ✓ | ✓ | ✓ |  |  |  
-
-
-| Überwachung | ✓ | ✓ | ✓ | ✓ |  |  |  
-
-
-| Multi-Admin-Verifizierung | ✓ |  |  |  |  |  |  
-
-
-| SnapMirror asynchron (nur einzelne Konsistenzgruppen) | ✓ | ✓ | ✓ | ✓ |  |  |  
-
-
-| SVM Disaster Recovery (nur einzelne Konsistenzgruppen) | ✓ | ✓ | ✓ |  |  |  |  
-
-
-| CLI-Unterstützung | ✓ | ✓ | ✓ |  |  |  |  
 |===
 
 

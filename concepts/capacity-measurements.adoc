@@ -4,7 +4,7 @@ permalink: concepts/capacity-measurements.html
 keywords: capacity, measurement, physical, logical, storage, used storage, local tier capacity, aggregate capacity, block, capacity concern, add capacity, volume, used capacity, available capacity, total capacity, inactive capacity, static insights, dynamic insights, snapshot copy, snapshot copies, inactive data, overprovision, overflows, snapshot copy policy, snapshot copy reserves, reserves, policy, top volumes 
 summary: 'Ihre ONTAP-Speicherkapazität kann entweder als physischer Speicherplatz oder als logischer Speicherplatz gemessen werden. Wie diese Messungen gemeldet werden, variiert je nach Ihrer ONTAP-Version und ob Sie System Manager oder die Command Line Interface (CLI) verwenden. Das Verständnis verschiedener Begriffe im Zusammenhang mit der Kapazität, der Unterschiede zwischen physischer und logischer Kapazität und wie die Kapazitätstypen gemeldet werden, ist wichtig, wenn Sie Ihre Speichernutzung überwachen.' 
 ---
-= Informationen zu ONTAP Kapazitätsberichten und Messungen
+= Informationen dazu, wie ONTAP genutzten Storage meldet
 :hardbreaks:
 :toclevels: 1
 :allow-uri-read: 
@@ -16,18 +16,70 @@ summary: 'Ihre ONTAP-Speicherkapazität kann entweder als physischer Speicherpla
 
 
 [role="lead"]
-Ihre ONTAP-Speicherkapazität kann entweder als physischer Speicherplatz oder als logischer Speicherplatz gemessen werden. Wie diese Messungen gemeldet werden, variiert je nach Ihrer ONTAP-Version und ob Sie System Manager oder die Command Line Interface (CLI) verwenden. Das Verständnis verschiedener Begriffe im Zusammenhang mit der Kapazität, der Unterschiede zwischen physischer und logischer Kapazität und wie die Kapazitätstypen gemeldet werden, ist wichtig, wenn Sie Ihre Speichernutzung überwachen.
-
-* *Physische Kapazität*: Der physische Speicherplatz bezieht sich auf die physischen Speicherblöcke, die im Volume oder der lokalen Tier verwendet werden. Der Wert für die physisch genutzte Kapazität ist in der Regel kleiner als der Wert für die genutzte logische Kapazität, da Daten durch Storage-Effizienzfunktionen wie Deduplizierung und Datenkomprimierung reduziert werden.
-* *Logische Kapazität*: Logischer Speicherplatz bezeichnet den nutzbaren Speicherplatz (die logischen Blöcke) in einem Volume oder einer lokalen Tier. Logischer Speicherplatz gibt an, wie viel Speicherplatz theoretisch genutzt werden kann, ohne die Ergebnisse von Deduplizierung oder Datenkomprimierung zu berücksichtigen. Der Wert für die genutzte logische Kapazität ergibt sich aus dem belegten physischen Speicherplatz zuzüglich der Einsparungen durch konfigurierte Speichereffizienzfunktionen (wie Deduplizierung und Datenkomprimierung). Dieser Wert erscheint oft größer als die genutzte physische Kapazität, da er Snapshots, Klone und andere Komponenten umfasst und die Datenkomprimierung sowie andere Reduzierungen des physischen Speicherplatzes nicht widerspiegelt. Daher kann die gesamte logische Kapazität höher sein als der bereitgestellte Speicherplatz.
+Die Menge des verwendeten Storage wird in ONTAP System Manager entweder als „_logical used_“ oder „_used_“ Speicherplatz und in der ONTAP Befehlszeilenschnittstelle (CLI) entweder als `physical used` Speicherplatz oder `effective-total-footprint` ausgewiesen. Ob diese Werte den von Snapshots belegten Speicherplatz einschließen, hängt von Ihrer ONTAP Version und, bei Verwendung der CLI, vom gewählten ONTAP Befehl ab. Das Verständnis, wie die verwendete Kapazität ausgewiesen wird, unterstützt eine präzise Überwachung der Storage Nutzung.
 
 
+
+[[capacity-reporting-in-system-manager]]
+== Kapazitätsberichterstattung in System Manager
+
+Je nach ONTAP Version verwendet System Manager den Begriff _logical used_ oder _used_, um die Kapazität zu melden.
+
+
+NOTE: Im System Manager berücksichtigen die Kapazitätsdarstellungen nicht die Kapazitäten der Root-Speicherebene (Aggregate).
+
+[cols="15,15,30,40"]
+|===
+
+
+| ONTAP Version | Bezeichnung zur Angabe der Kapazität | Beinhaltet Speicherplatz für Snapshots? | Definition 
+
+
+ a| 
+9.13.1 und später
+ a| 
+_logisch verwendet_
+ a| 
+Nein. Der für Snapshots verwendete Speicherplatz wird separat ausgewiesen.
+| Der nutzbare Speicherplatz (die logischen Blöcke) in einem Volume oder lokalen Tier (Aggregat) ergibt sich aus dem belegten physischen Speicherplatz zuzüglich der durch die Anwendung von Storage-Effizienzfunktionen erzielten Speicherplatzeinsparungen. 
+
+
+ a| 
+9.12.1-9.9.1
+ a| 
+_Logisch verwendet_
+ a| 
+Ja
+| Gleiches wie oben 
+
+
+ a| 
+9,8-9,7
+ a| 
+_Verwendet_
+ a| 
+Ja
+| Gleiches wie oben 
+
+
+ a| 
+9,6-9,5
+ a| 
+_Verwendet_
+ a| 
+Nein
+ a| 
+Die physischen Speicherblöcke, die im Volume oder lokalen Tier (Aggregat) verwendet werden.
+
+|===
 
 
 [[capacity-reporting-in-the-cli]]
 == Kapazitätsberichterstattung in der CLI
 
-Der physisch belegte Speicherplatz wird in der ONTAP CLI je nach Ihrer ONTAP-Version unterschiedlich angezeigt. In ONTAP 9.13.1 und früher enthält der `physical used` Parameter, der in der `volume show` Befehlsausgabe angezeigt wird, alle auf das Volume angewendeten Speichereffizienzeinsparungen. Ab ONTAP 9.14.1 schließt der `physical used` Parameter keine Speichereffizienzeinsparungen auf Aggregatebene wie temperaturabhängige Speicherung (TSSE), Inline-Komprimierung, Kompaktierung und volumeübergreifende Deduplizierung ein und gibt daher den physisch belegten Speicherplatz des Volumes nicht korrekt wieder. In ONTAP 9.14.1 und später sollten Sie den `vol show-footprint` Befehl mit dem `effective_total_footprint` Parameter verwenden, um den genauen physisch belegten Speicherplatz eines Volumes anzuzeigen.
+Die ONTAP CLI verwendet die  `physical used` und  `effective-total-footprint` Parameter, um die Kapazität zu melden.
+
+Ab ONTAP 9.14.1 berücksichtigt der  `physical used` Parameter keine Storage-Einsparungen durch Speichereffizienz auf Aggregatebene, wie temperaturabhängige Storage-Effizienz (TSSE), Inline-Komprimierung, Kompaktierung und volumenübergreifende Deduplizierung. Daher spiegelt er den physisch belegten Speicherplatz des Volumes nicht vollständig wider. In ONTAP 9.14.1 und höher steht für eine vollständige Ansicht des physisch belegten Speicherplatzes eines Volumes der  `vol show-footprint` Befehl mit dem  `effective_total_footprint` Parameter zur Verfügung.
 
 [cols="4"]
 |===
@@ -58,67 +110,14 @@ Der physisch belegte Speicherplatz wird in der ONTAP CLI je nach Ihrer ONTAP-Ver
 
 
 
-[[capacity-reporting-in-system-manager]]
-== Kapazitätsberichterstattung in System Manager
+[[data-reduction-rate]]
+== Datenreduktionsrate
 
-Messungen der genutzten Kapazität werden im System Manager je nach Version von ONTAP unterschiedlich angezeigt. Ab ONTAP 9.7 bietet der System Manager Messungen sowohl der physischen als auch der logischen Kapazität.
+Die Datenreduktionsrate gibt an, um wie viel sich der von Ihren Daten belegte Storage nach der Anwendung von Speichereffizienzfunktionen wie Komprimierung, Verdichtung und Deduplizierung verringert.
 
-
-NOTE: Im System Manager berücksichtigen die Kapazitätsdarstellungen nicht die Kapazitäten der Root-Speicherebene (Aggregate).
-
-[cols="30,30,40"]
-|===
-
-
-| Version von System Manager | Begriff für Kapazität | Art der Kapazität, auf die Bezug genommen wird 
-
-
- a| 
-9.9.1 und später
- a| 
-Logisch verwendet
- a| 
-Genutzte logische Kapazität, wenn die Einstellungen zur Speichereffizienz aktiviert sind)
-
-
-
- a| 
-9.7 und 9.8
- a| 
-Gebraucht
- a| 
-Logisch genutzter Speicherplatz (wenn Einstellungen zur Speichereffizienz aktiviert wurden)
-
-
-
- a| 
-9.5 und 9.6 (Klassische Ansicht)
- a| 
-Gebraucht
- a| 
-genutzter physischer Speicherplatz
-
-|===
-
-
-[[capacity-measurement-terms]]
-== Kapazitätsmessungsbegriffe
-
-Zur Beschreibung der Kapazität werden folgende Begriffe verwendet:
-
-* *Zugewiesene Kapazität*: Die Menge an Speicherplatz, die für Volumes in einer Storage-VM zugewiesen wurde.
-* *Verfügbar*: Die Menge an physischem Speicherplatz, die zum Speichern von Daten oder zum Bereitstellen von Volumes in einer Storage-VM oder auf einer lokalen Tier zur Verfügung steht.
-* *Kapazität über alle Volumes*: Die Summe des belegten und des verfügbaren Speicherplatzes aller Volumes auf einer Storage-VM.
-* *Clientdaten*: Die Menge an Speicherplatz, die von Clientdaten verwendet wird (entweder physisch oder logisch).
+* Ab ONTAP 9.20.1 wird die Datenreduktionsrate (DRR) mit und ohne _reduzierbare Daten_ angegeben. _Reduzierbare Daten_ sind Daten, bei denen nach Anwendung von Storage-Effizienzfunktionen Speicherplatz eingespart wird. In ONTAP 9.19.1 und früheren Versionen umfasst die DRR sowohl reduzierbare als auch _nicht reduzierbare Daten_. _Nicht reduzierbare Daten_ sind Daten, bei denen nach Anwendung von Storage-Effizienzfunktionen keine Speicherplatzeinsparung erzielt wird, oder Daten, auf die Storage-Effizienzfunktionen nicht angewendet werden können. Die DRR ohne reduzierbare Daten bildet die durch ONTAP Storage-Effizienz erzielte Speicherplatzeinsparung genauer ab. Informationen dazu, wie link:../task_admin_monitor_capacity_in_sm.html["den DRR anzeigen."]
+* Ab ONTAP 9.13.1 werden bei der Datenreduktion die Ergebnisse der meisten Speichereffizienzfunktionen wie Deduplizierung und Datenkomprimierung berücksichtigt, jedoch werden Snapshots und Thin Provisioning nicht als Teil des Datenreduktionsverhältnisses gezählt.
 +
-** Ab ONTAP 9.13.1 wird die von Clientdaten genutzte Kapazität als *Logical Used* bezeichnet, und die von Snapshots genutzte Kapazität wird separat angezeigt.
-** In ONTAP 9.12.1 und früher wird die von den Clientdaten belegte Kapazität, zusammen mit der von Snapshots belegten Kapazität, als *genutzte logische Kapazität* bezeichnet.
-
-
-* *Zugesichert*: Die zugesicherte Kapazität für eine lokale Ebene.
-* *Datenreduktion*: Das Verhältnis der Größe der aufgenommenen Daten zur Größe der gespeicherten Daten.
-+
-** Ab ONTAP 9.13.1 werden bei der Datenreduktion die Ergebnisse der meisten Speichereffizienzfunktionen wie Deduplizierung und Datenkomprimierung berücksichtigt, jedoch werden Snapshots und Thin Provisioning nicht als Teil des Datenreduktionsverhältnisses gezählt.
 ** In ONTAP 9.12.1 und früher werden die Datenreduktionsverhältnisse wie folgt angezeigt:
 +
 *** Der im *Kapazität*-Panel angezeigte Wert für die Datenreduktion ist das Gesamtverhältnis des gesamten genutzten logischen Kapazität zum gesamten physisch belegten Speicherplatz und beinhaltet die Vorteile, die sich aus der Verwendung von Snapshots und anderen Speichereffizienzfunktionen ergeben.
@@ -127,12 +126,20 @@ Zur Beschreibung der Kapazität werden folgende Begriffe verwendet:
 
 
 
-* *Logisch verwendet*:
-+
-** Ab ONTAP 9.13.1 wird die von Clientdaten genutzte Kapazität als *Logical Used* bezeichnet, und die von Snapshots genutzte Kapazität wird separat angezeigt.
-** In ONTAP 9.12.1 und früher wird die von den Clientdaten belegte Kapazität, zuzüglich der von den Snapshots belegten Kapazität, als *Logical Used* bezeichnet.
 
 
+
+
+[[capacity-measurement-terms]]
+== Kapazitätsmessungsbegriffe
+
+In System Manager gelten für die Beschreibung der Kapazität die folgenden Begriffe:
+
+* *Zugewiesene Kapazität*: Die Menge an Speicherplatz, die für Volumes in einer Storage-VM zugewiesen wurde.
+* *Verfügbar*: Die Menge an physischem Speicherplatz, die zum Speichern von Daten oder zum Bereitstellen von Volumes in einer Storage-VM oder auf einer lokalen Tier zur Verfügung steht.
+* *Kapazität über alle Volumes*: Die Summe des belegten und des verfügbaren Speicherplatzes aller Volumes auf einer Storage-VM.
+* *Clientdaten*: Die Menge an Speicherplatz, die von Clientdaten verwendet wird (entweder physisch oder logisch).
+* *Zugesichert*: Die zugesicherte Kapazität für eine lokale Ebene.
 * *Logische Auslastung in %*: Der Prozentsatz der aktuell genutzten logischen Kapazität im Vergleich zur bereitgestellten Größe, ohne Berücksichtigung von Snapshot-Reserven. Dieser Wert kann über 100 % liegen, da er Effizienzgewinne im Volume berücksichtigt.
 * *Maximale Kapazität*: Die maximale Menge an Speicherplatz, die für Volumes auf einer Storage-VM zugewiesen ist.
 * *Physisch genutzt*: Die in den physischen Blöcken eines Volumens oder einer lokalen Tier genutzte Kapazität.
@@ -160,7 +167,7 @@ Die folgende Tabelle erläutert, wie die Messung der Kapazität über verschiede
 
 image:max-cap-limit-cap-x-volumes.gif["Die maximale Kapazitätsgrenze setzt sich aus dem zugewiesenen und dem verfügbaren Speicherplatz zusammen, und die Kapazität über alle Volumes hinweg belegt nur den zugewiesenen Speicherplatz."]
 
-Ab ONTAP 9.13.1 können Clusteradministratoren link:../manage-max-cap-limit-svm-in-sm-task.html["Eine maximale Kapazitätsgrenze für eine Storage-VM festlegen"]. Allerdings können für eine Storage-VM, die Volumes für den Datenschutz, in einer SnapMirror Beziehung oder in einer MetroCluster Konfiguration enthält, keine Speichergrenzen festgelegt werden. Auch können Kontingente nicht so konfiguriert werden, dass sie die maximale Kapazität einer Storage-VM überschreiten.
+Ab ONTAP 9.13.1 können Cluster-Administratoren link:../manage-max-cap-limit-svm-in-sm-task.html["Eine maximale Kapazitätsgrenze für eine Storage-VM festlegen"]. Informationen zu unterstützten und nicht unterstützten Konfigurationen sind unter link:../volumes/manage-svm-capacity.html["ONTAP SVM-Kapazitätsgrenzen verwalten"] verfügbar.
 
 Nachdem die maximale Kapazitätsgrenze festgelegt wurde, kann sie nicht auf eine Größe geändert werden, die kleiner ist als die aktuell zugewiesene Kapazität.
 

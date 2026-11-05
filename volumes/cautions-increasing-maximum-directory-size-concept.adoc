@@ -1,8 +1,8 @@
 ---
 permalink: volumes/cautions-increasing-maximum-directory-size-concept.html 
 sidebar: sidebar 
-keywords: flexvol, maximum, limits, maxdir-size, maxdirsize, caution, caveats, directory, size, directory size, max, allowed, default, volume 
-summary: Die standardmäßige maximale Verzeichnisgröße für FlexVol volumes ist modellabhängig und für die Größe des Systemspeichers optimiert. Vor einer Erhöhung der maximalen Verzeichnisgröße sollte der technische Support einbezogen werden. 
+keywords: flexvol, flexgroup, maximum, limits, maxdir-size, maxdirsize, directory, size, directory size, max, 25 million files, large directory, directory index, is-dir-index-transfer-enabled 
+summary: Sie können die maximale Größe der Verzeichnisse auf einem FlexVol volume konfigurieren. Die größte Größe, die Sie festlegen sollten, hängt von der ONTAP Version und Ihrer spezifischen Konfiguration ab. Die ONTAP Funktion zur Durchsetzung der Verzeichnisgröße wurde mit ONTAP 9.20.1 erweitert, um größere Verzeichnisgrößen zu unterstützen. 
 ---
 = Maximale Verzeichnisgröße für ONTAP FlexVol Volumes
 :allow-uri-read: 
@@ -11,8 +11,106 @@ summary: Die standardmäßige maximale Verzeichnisgröße für FlexVol volumes i
 
 
 [role="lead"]
-Sie können die standardmäßige maximale Verzeichnisgröße für ein bestimmtes FlexVol Volume mithilfe der  `-maxdir-size` Option des  `volume modify` Befehls erhöhen, was jedoch die Systemleistung beeinträchtigen kann. Siehe link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/What_is_maxdirsize["NetApp Knowledge Base: Was ist maxdirsize?"^].
+Sie können die maximale Größe der Verzeichnisse auf einem FlexVol volume konfigurieren. Die größte Größe, die Sie festlegen sollten, hängt von der ONTAP Version und Ihrer spezifischen Konfiguration ab. Die ONTAP Funktion zur Durchsetzung der Verzeichnisgröße wurde mit ONTAP 9.20.1 erweitert, um größere Verzeichnisgrößen zu unterstützen.
 
-Weitere Informationen zu den modellabhängigen maximalen Verzeichnisgrößen für FlexVol volumes finden Sie unter link:https://hwu.netapp.com/["NetApp Hardware Universe"^].
 
-Weitere Informationen zu  `volume modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/volume-modify.html["ONTAP-Befehlsreferenz"^].
+NOTE: Die Konfiguration der maximalen Verzeichnisgröße gilt sowohl für einzelne FlexVol Volumes als auch für alle Volumes in einem FlexGroup.
+
+
+
+[[considerations-for-directory-size-limit-processing]]
+== Überlegungen zur Verarbeitung von Verzeichnisgrößenlimits
+
+Die Größe eines Verzeichnisses hängt von der Anzahl der enthaltenen Dateien, Ordner und sonstigen Einträge sowie von der Länge der Namen ab. Mit zunehmender Gesamtgröße kann sich dies auf die Performance und die Fähigkeit von ONTAP auswirken, Verzeichnisse effizient zu managen. Die maximale Verzeichnisgröße lässt sich mithilfe des `maxdir-size`Befehlsparameters begrenzen. Die maximale Verzeichnisgröße wird einmal für ein bestimmtes Volume festgelegt und auf jeden Ordner auf dem Volume angewendet.
+
+
+
+[[operational-characteristics]]
+=== Betriebliche Merkmale
+
+Es gibt mehrere Merkmale der ONTAP Verzeichnisverarbeitung im Zusammenhang mit der Festlegung und Durchsetzung einer maximalen Größe.
+
+Standardmaximum:: Die standardmäßige maximale Verzeichnisgröße für ONTAP Versionen vor 9.20.1 beträgt 320 MB. Der genaue Wert ist modellabhängig und für die Speicherkapazität der jeweiligen Plattform optimiert. Modellspezifische Details und Standardwerte sind im https://hwu.netapp.com/["NetApp Hardware Universe"^] enthalten.
+Die maximale Verzeichnisgröße erhöhen:: Der standardmäßige Maximalwert ist für die meisten Workloads typischer Geschäftsanwendungen ausreichend; in den meisten Umgebungen muss dieser Wert nicht geändert werden. Bei Bedarf können Sie die maximal zulässige Verzeichnisgröße mithilfe des `-maxdir-size` Parameters in den CLI-Befehlen `volume create` und `volume modify` erhöhen.
+Empfohlene Obergrenze:: NetApp empfiehlt im Allgemeinen, ein Verzeichnis nicht über 1 GB hinaus zu erweitern, auch wenn beobachtet wurde, dass einige Verzeichnisse diese Größe sicher überschreiten können. Vor ONTAP 9.20.1 bestehen bei übermäßiger Größe Performance-Risiken.
+
+
+
+
+[[performance-considerations]]
+=== Leistungsüberlegungen
+
+Die Größe eines Verzeichnisses wirkt sich direkt auf die Performance bei Suchvorgängen aus, insbesondere bei sehr großen und häufig genutzten Verzeichnissen. Mit zunehmender Größe eines Verzeichnisses erstellt ONTAP automatisch einen internen Index, um Namenssuchen zu beschleunigen, sodass bei den meisten Anfragen nicht das gesamte Verzeichnis durchsucht werden muss.
+
+Bei kontinuierlich hoher Dateirate beim Erstellen und Löschen von Dateien kann die Indexverwaltung jedoch mit den eingehenden Änderungen nicht mehr Schritt halten. Dies kann in manchen Fällen zu einem großen, nur teilweise indizierten Verzeichnis führen. In diesem Fall kann es bei Such- und Verzeichnisauflistungsanfragen zu einer erheblichen Performance-Verschlechterung kommen, die so lange anhält, bis die Indizierung wieder aufgeholt hat.
+
+
+
+[[enhanced-directory-size-supporting-25-million-files]]
+== Erweiterte Verzeichnisgröße für bis zu 25 Millionen Dateien
+
+Ab ONTAP 9.20.1 können Sie die maximale Verzeichnisgröße bedenkenlos über die Beschränkung früherer ONTAP Versionen hinaus erhöhen. Die Obergrenze liegt ab Version 9.20.1 bei 4 GB; dies ermöglicht die Speicherung von ca. 25 Millionen Dateien, Ordnern und anderen Einträgen. Diese Erweiterung ist für Workloads wie KI konzipiert, die eine sehr große Anzahl von Dateien in einem einzigen Verzeichnis erfordern.
+
+
+
+[[two-step-configuration-process]]
+=== Zweistufiger Konfigurationsprozess
+
+Die Konfiguration eines Volumes zur sicheren Unterstützung größerer Verzeichnisse erfolgt in zwei Schritten. Sie können die Konfiguration beim Erstellen eines Volumes oder durch Ändern eines bestehenden Volumes durchführen. Die Schritte sind:
+
+* Die Funktion muss aktiviert werden. Sie müssen den Parameter `-is-dir-index-transfer-enabled` auf `true` (vom Standardwert `false`) für ein bestimmtes Volume mit dem Befehl `volume create` oder `volume modify` setzen.
+* Eine Erhöhung der maximalen Verzeichnisgröße ist möglich. Das Maximum für das Volume kann mit dem  `-maxdir-size` Parameter bei der Volume-Erstellung oder bei einer späteren Änderung festgelegt werden. Dies ist derselbe Parameter, der bei ONTAP Systemen vor 9.20.1 verwendet wurde.
+
+
+Diese beiden Einstellungen sind voneinander unabhängig, sodass die Reihenfolge bei der Konfiguration flexibel ist. NetApp empfiehlt jedoch, zuerst die Option für erweiterte Größe zu aktivieren (`-is-dir-index-transfer-enabled`), bevor Volume-Verzeichnisse auf die konfigurierte maximale Größe anwachsen können. Verzeichnisse, die vor der Aktivierung der Funktion anwachsen, profitieren erst dann vollständig von den Verbesserungen, wenn die Option aktiviert wurde und der zugehörige Konvertierungsprozess im Hintergrund abgeschlossen ist.
+
+
+
+[[benefits]]
+=== Vorteile
+
+Die erweiterte maximale Verzeichnisgröße bietet mehrere Verbesserungen:
+
+* Die verbesserte Indizierung hält mit schnellen, umfangreichen Dateierstellungs- und Löschanforderungen Schritt, wodurch das Risiko großer, nicht indizierter Verzeichnisse verringert wird.
+* Verzeichnisindexinformationen werden auf SnapMirror Zielvolumes repliziert; ein Zielvolume bleibt auch dann indiziert und leistungsfähig, wenn eine SnapMirror Beziehung unterbrochen wird.
+* Der Verzeichniszugriff während der Hintergrundkonsistenzprüfungen ist schneller, wodurch die Auswirkungen großer Verzeichnisse auf Systemstatusprüfungen reduziert werden.
+* Die Lookup Performance ist über ein breiteres Spektrum von Operationen hinweg konsistenter und bietet einen zuverlässigen Ausweichmechanismus, selbst wenn der Index eines Verzeichnisses nicht verfügbar ist.
+
+
+
+
+[[enhanced-internal-processing]]
+=== Verbesserte interne Verarbeitung
+
+Wenn Sie die Option für die erweiterte maximale Verzeichnisgröße aktivieren, startet ONTAP einen Hintergrundscanner, der die vorhandenen Verzeichnisindexinformationen des Volumes in ein neues, flexibles Format konvertiert. Dieser Vorgang läuft asynchron und benötigt einige Zeit, insbesondere bei Volumes mit vielen vorhandenen Verzeichnissen. Große vorhandene Verzeichnisse profitieren möglicherweise erst nach Abschluss des Scanvorgangs in vollem Umfang von den Performance- und Replikationsvorteilen.
+
+Nachdem Sie die Option für ein Volume aktiviert haben, sollten Sie nicht versuchen, sie wieder zu deaktivieren. Die Deaktivierung startet einen Hintergrundscan, der die Verzeichnisindexinformationen wieder in ihr ursprüngliches Format konvertiert; der Scan muss abgeschlossen sein, bevor die Option vollständig zurückgesetzt ist.
+
+
+
+[[restrictions-and-cautions]]
+=== Einschränkungen und Vorsichtsmaßnahmen
+
+Vor der Aktivierung der Funktion mithilfe des  `-is-dir-index-transfer-enabled` Parameters sind die folgenden Einschränkungen zu beachten:
+
+* Es ist nicht mit S3 Dualität kompatibel. Für die Anzahl der Objekte in einem Verzeichnis, die von S3 Dualität unterstützt werden können, gilt eine bekannte Begrenzung. Die beiden Funktionen schließen sich gegenseitig aus und sollten nicht zusammen verwendet werden.
+* Es wird auf einem Volume nicht unterstützt, das sich in einer synchronen SnapMirror Beziehung oder einer SnapMirror Active Sync NAS-Beziehung befindet oder das Sie darin platzieren möchten.
+* Dies wird für ein Volume, das für eine SVM Migration infrage kommt, nicht unterstützt.
+* SnapMirror asynchrone und SnapMirror Cloud Ziele müssen ONTAP 9.17.1 oder höher ausführen; Replikation auf frühere Releases wird nicht unterstützt.
+* Die logische Verzeichnisreplikation (LDR) wird für ein Volume mit aktivierter Funktion nicht unterstützt.
+* Es kann nicht direkt auf einem SnapMirror Zielvolume (DP) aktiviert werden; sein Status folgt immer dem Quellvolume.
+* Ein FlexCache volume speichert niemals Verzeichnisindexinformationen aus seinem Ursprung zwischen. Der Aktivierungsstatus dieser Funktion wird vom Ursprungsvolume an seine Caches synchronisiert, die zugrunde liegende Indexkonvertierung gilt jedoch nur für den Ursprung.
+
+
+Vor der Aktivierung dieser Funktion auf einem Volume ist eine Überprüfung Ihrer Datensicherungstopologie erforderlich. Diese Einschränkungen können bestehende oder zukünftige Pläne beeinträchtigen, einschließlich SnapMirror Beziehungen und SVM-Migration.
+
+
+
+[[related-information]]
+== Verwandte Informationen
+
+* link:../volumes/enable-large-dir-max-support-task.html["Aktivieren der ONTAP Unterstützung für die maximale Größe großer Verzeichnisse"]
+* https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/What_is_maxdirsize["NetApp Knowledge Base: Was ist maxdirsize?"^]
+* https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_modify_the_maxdir-size_in_ONTAP_9["NetApp Knowledge Base: Änderung der maxdir-size in ONTAP 9"^]
+* https://hwu.netapp.com/["NetApp Hardware Universe"^]
+

@@ -11,39 +11,37 @@ summary: Ab ONTAP 9.7 ist eine direkte Konvertierung eines FlexVol Volume in ein
 
 
 [role="lead"]
-Ab ONTAP 9.7 ist eine direkte Konvertierung eines FlexVol Volume in ein FlexGroup Volume möglich, ohne dass eine Datenkopie oder zusätzlicher Speicherplatz erforderlich ist.
+Ab ONTAP 9.7 können Sie ein FlexVol Volume ohne Datenkopie oder zusätzlichen Speicherplatz direkt in ein FlexGroup Volume konvertieren. Ein FlexVol Volume kann konvertiert werden, wenn Sie es über sein Speicherplatzlimit hinaus erweitern möchten. Die Konvertierung eines FlexVol Volume in ein FlexGroup Volume bietet eine höhere Performance sowie automatische Lastverteilung und Skalierbarkeit.
+
+.Über diese Aufgabe
+* Die Konvertierung von FlexVol Volumes in FlexGroup Volumes ist ein unterbrechungsfreier Vorgang. Die Konvertierung dauert normalerweise nur wenige Sekunden, ohne dass das Volume offline genommen oder Freigaben und Exporte neu eingebunden werden, sodass Clients weiterhin auf Daten zugreifen können.
+* Die Vorgänge und Konfigurationen auf dem FlexVol volume müssen mit dem Konvertierungsprozess kompatibel sein.
+* Ab ONTAP 9.20.1 bietet ONTAP Empfehlungen für die Konvertierung von FlexVol Volumes in FlexGroup Volumes über EMS-Benachrichtigungen und Eingabeaufforderungen in der CLI, wenn Sie die Kapazität eines FlexVol Volumes ändern. Bei einer Konvertierung können Sie das FlexGroup Volume zum Zeitpunkt der Konvertierung erweitern, anstatt ein FlexGroup Volume mit derselben Kapazität wie das ursprüngliche FlexVol Volume erstellen zu müssen.
+
 
 .Bevor Sie beginnen
-* Übertragene Volumes können ab ONTAP 9.8 in FlexGroup Volumes konvertiert werden.
 * Das FlexVol Volume, das konvertiert wird, muss online sein.
-* Die Konvertierung von FlexVol Volumes in FlexGroup Volumes ist ein unterbrechungsfreier Vorgang. Die Konvertierung dauert normalerweise nur wenige Sekunden, ohne dass das Volume offline genommen oder Freigaben und Exporte neu eingebunden werden, sodass Clients weiterhin auf Daten zugreifen können.
 * Die Vorgänge und Konfigurationen auf dem FlexVol volume müssen mit dem Konvertierungsprozess kompatibel sein.
 +
 Es sind die folgenden Bedingungen zu prüfen, die eine erfolgreiche Konvertierung verhindern können:
 
 +
-** Ein FlexVol Volume wurde mit 7MTT (ONTAP 9.7) von 7-Mode migriert.
-+
-Übertragene Volumes können ab ONTAP 9.8 konvertiert werden.
-
-** Auf dem Volume ist eine Funktion aktiviert, die mit FlexGroup Volume noch nicht unterstützt wird, zum Beispiel SAN LUNs, Windows NFS, SMB1, Snapshot-Benennung/Autolöschung, vmalign set, SnapLock mit Releases vor ONTAP 9.11.1 (SnapLock wird ab ONTAP 9.11.1 unterstützt), Space SLO oder logische Speicherbereichs-Durchsetzung/-Berichterstattung. Weitere Informationen finden Sie unter link:supported-unsupported-config-concept.html["Unterstützte und nicht unterstützte Konfigurationen für FlexGroup Volumes"].
-** Bei Versionen vor ONTAP 9.10.1 verwendet die SVM, auf der sich das zu konvertierende FlexVol volume befindet, derzeit SVM-DR. Ab ONTAP 9.10.1 ist dies möglich link:convert-flexvol-svm-dr-relationship-task.html["ein FlexVol Volume in ein FlexGroup Volume auf einer SVM-DR-Quelle konvertieren"].
-** NetApp FlexClone Volumes sind vorhanden, und das FlexVol Volume ist das übergeordnete Volume. Das zu konvertierende Volume darf weder ein übergeordnetes Volume noch ein Klon sein.
-** Das Volumen ist ein NetApp FlexCache Ursprungsvolumen.
+** Alles auf dem Volume, was mit FlexGroup volume noch nicht unterstützt wird, wurde deaktiviert oder entfernt, zum Beispiel SAN LUNs, Windows NFS, SMB1, Snapshot-Benennung/Autolöschen, vmalign set, SnapLock mit Releases vor ONTAP 9.11.1 (SnapLock wird ab ONTAP 9.11.1 unterstützt), Space SLO oder die Durchsetzung/Berichterstellung für logischen Speicherplatz. Weitere Informationen bietet link:supported-unsupported-config-concept.html["Unterstützte und nicht unterstützte Konfigurationen für FlexGroup Volumes"].
+** Bei Releases vor ONTAP 9.10.1 ist SVM-DR auf der zugehörigen SVM des FlexVol volume deaktiviert. Ab ONTAP 9.10.1 können Sie link:convert-flexvol-svm-dr-relationship-task.html["ein FlexVol Volume in ein FlexGroup Volume auf einer SVM-DR-Quelle konvertieren"].
+** Das FlexVol volume darf nicht das übergeordnete Volume von NetApp FlexClone Volumes sein. Das zu konvertierende Volume kann weder ein übergeordnetes Volume noch ein Klon sein.
+** Das Volumen darf kein NetApp FlexCache Ursprungsvolumen sein.
 ** Für ONTAP 9.7 und früher dürfen NetApp Snapshots 255 nicht überschreiten. Für ONTAP 9.8 und später werden 1023 Snapshots unterstützt.
-** Speichereffizienzfunktionen sind aktiviert. Diese müssen deaktiviert werden und können nach der Umstellung wieder aktiviert werden.
-** Das Volumen ist die Quelle einer SnapMirror Beziehung, und das Ziel wurde noch nicht umgewandelt.
-** Das Volumen ist Teil einer aktiven (nicht ruhenden) SnapMirror Beziehung.
+** Ein FlexVol volume, das mit 7MTT aus 7-Mode migriert wurde, kann nicht konvertiert werden. Migrierte Volumes können ab ONTAP 9.8 konvertiert werden.
+** Das Volume darf keiner Applikation zugeordnet sein. Dies gilt nur für ONTAP 9.7. Diese Einschränkung entfällt in ONTAP 9.8.
+** Storage-Effizienzfunktionen wurden deaktiviert. Diese können nach der Umstellung wieder aktiviert werden.
+** Die Konvertierung ist nicht möglich, wenn ein Volume die Quelle einer SnapMirror Beziehung ist und das Ziel noch nicht konvertiert wurde.
+** Wenn das Volume Teil einer aktiven (nicht angehaltenen) SnapMirror Beziehung ist, muss die Beziehung angehalten werden.
 ** Der autonome Ransomware-Schutz wurde für das Volume deaktiviert. Er sollte erst wieder aktiviert werden, wenn die Konvertierung abgeschlossen ist.
-** Quoten sind aktiviert. Diese müssen deaktiviert werden und können nach der Umstellung wieder aktiviert werden.
-** Volume-Namen sind länger als 197 Zeichen.
-** Das Volumen ist einer Anwendung zugeordnet.
-+
-Dies gilt nur für ONTAP 9.7. In ONTAP 9.8 entfällt diese Einschränkung.
-
-** Es laufen ONTAP-Prozesse wie Spiegelung, Jobs, wafliron, NDMP Backup und Inode-Konvertierung.
-** Das Volume ist ein SVM Root Volume.
-** Das Volume ist zu voll.
+** Die Quoten wurden deaktiviert. Sie können nach der Umstellung wieder aktiviert werden.
+** Volumenamen dürfen maximal 197 Zeichen lang sein.
+** Es dürfen keine ONTAP Prozesse wie Spiegelung, Jobs, wafliron, NDMP Backup und laufende inode Konvertierung ausgeführt werden.
+** Das Volume darf kein SVM root volume sein.
+** Das Volume darf nicht zu voll sein.
 +
 Wenn eine dieser Inkompatibilitäten vorliegt, wird eine Fehlermeldung generiert, wenn das FlexVol Volume betroffen ist, und die Volumenkonvertierung wird abgebrochen. Korrekturmaßnahmen können ergriffen und die Konvertierung erneut versucht werden.
 

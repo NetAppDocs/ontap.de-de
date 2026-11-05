@@ -19,6 +19,9 @@ Genehmigungsanfragen werden mit Indexnummern gekennzeichnet, die in E-Mail-Nachr
 
 NOTE: `multi-admin-verify`Anfragen im Endstatus können automatisch überschrieben oder entfernt werden. Die link:../system-admin/audit-display-log-contents-task.html["Revisionsprotokoll"] kann zur Überprüfung vorheriger Anfragen verwendet werden.
 
+
+NOTE: Ab ONTAP 9.20.1 können Mitglieder einer konfigurierten Genehmigergruppe für IdP, AD oder LDAP Anfragen genehmigen oder ablehnen, ohne als namentlich genannte Genehmiger aufgeführt zu sein. Änderungen an der Gruppenzugehörigkeit eines Benutzers im Identitätsanbieter werden bei der nächsten erfolgreichen Anmeldung des Benutzers wirksam. Eine Neukonfiguration von MAV ist nicht erforderlich.
+
 Folgende Informationen aus der Anfragewarteschlange können angezeigt werden:
 
 Betrieb:: Die geschützte Operation, für die die Anfrage erstellt wird.
@@ -26,6 +29,7 @@ Abfrage:: Das Objekt (oder die Objekte), auf das bzw. die der Benutzer die Opera
 Status:: Der aktuelle Status des Antrags: ausstehend, genehmigt, abgelehnt, abgelaufen, ausgeführt. Wird ein Antrag von einem Genehmiger abgelehnt, sind keine weiteren Maßnahmen möglich.
 Erforderliche Genehmiger:: Die Anzahl der MAV-Administratoren, die die Anfrage genehmigen müssen. Ein Benutzer kann den Parameter required-approvers für die Vorgangsregel festlegen. Wenn ein Benutzer required-approvers für die Regel nicht festlegt, wird der Wert required-approvers aus der globalen Einstellung angewendet.
 Ausstehende Genehmiger:: Die Anzahl der MAV-Administratoren, die noch erforderlich sind, um die Anfrage zu genehmigen, damit die Anfrage als genehmigt markiert wird.
+Potenzielle Genehmigergruppen:: Ab ONTAP 9.20.1 sind dies die IdP-, Active Directory- oder LDAP-Gruppen, deren Mitglieder berechtigt sind, die Anfrage zu genehmigen oder abzulehnen.
 Ablauf der Genehmigung:: Die Frist, innerhalb derer ein MAV-Administrator auf eine Genehmigungsanfrage reagieren muss. Jeder autorisierte Benutzer kann die Genehmigungsfrist für eine Vorgangsregel festlegen. Ist keine Genehmigungsfrist für die Regel festgelegt, wird die Genehmigungsfrist aus der globalen Einstellung angewendet.
 Ablauf der Ausführung:: Der Zeitraum, innerhalb dessen der anfragende Administrator den Vorgang abschließen muss. Jeder autorisierte Benutzer kann das Ausführungsablaufdatum für eine Vorgangsregel festlegen. Wenn kein Ausführungsablaufdatum für die Regel festgelegt ist, wird das Ausführungsablaufdatum aus der globalen Einstellung übernommen.
 Genehmigte Nutzer:: Die MAV-Administratoren, die den Antrag genehmigt haben.
@@ -42,9 +46,9 @@ Zugelassene Benutzer:: Die Liste der Benutzer, die berechtigt sind, die geschüt
 ====
 .System Manager
 --
-MAV-Administratoren erhalten E-Mail-Nachrichten mit Details zur Genehmigungsanfrage, zur Ablaufdauer der Anfrage und mit einem Link zur Genehmigung oder Ablehnung der Anfrage. Ein Genehmigungsdialog kann über den Link in der E-Mail aufgerufen werden oder durch Navigation zu *Events & Jobs > Requests* im System Manager.
+MAV-Administratoren erhalten E-Mails mit Details zur Genehmigungsanfrage, deren Gültigkeitsdauer und einem Link zur Genehmigung oder Ablehnung der Anfrage. Sie können den Genehmigungsdialog über den Link in der E-Mail aufrufen oder in System Manager zu *Events & Jobs > Multi-Admin Requests* navigieren.
 
-Das Fenster *Anfragen* ist verfügbar, wenn die Multi-Admin-Verifizierung aktiviert ist, und zeigt ausstehende Anfragen basierend auf der Anmelde-ID des Benutzers und der MAV-Rolle (Genehmiger oder nicht) an.
+Das Fenster *Multi-Admin Requests* ist verfügbar, wenn die Multi-Admin-Verifizierung aktiviert ist, und zeigt ausstehende Anfragen basierend auf der Anmelde-ID des Benutzers und der MAV-Rolle (Genehmiger oder nicht) an. Mit *My Approvals* werden nur die Anfragen aufgelistet, für die der angemeldete Benutzer berechtigt ist zu handeln, einschließlich Anfragen, die über die Mitgliedschaft in einer IdP-, Active Directory- oder LDAP-Genehmigergruppe verfügbar sind.
 
 * Betrieb
 * Index (Nummer)
@@ -56,7 +60,7 @@ Wird ein Antrag von einem Genehmiger abgelehnt, sind keine weiteren Maßnahmen m
 * Anfordernder Benutzer
 * Anfrage läuft am
 * (Anzahl der) ausstehenden Genehmiger
-* (Anzahl) potenzieller Genehmiger
+* Potenzielle Genehmiger (ab ONTAP 9.20.1 umfasst dies Benutzer, die als benannte Genehmiger oder durch Mitgliedschaft in einer berechtigten IdP-, Active Directory- oder LDAP-Genehmigergruppe infrage kommen)
 
 
 MAV-Administratoren verfügen in diesem Fenster über zusätzliche Steuerungsmöglichkeiten; sie können einzelne Vorgänge oder ausgewählte Gruppen von Vorgängen genehmigen, ablehnen oder löschen. Wenn der MAV-Administrator jedoch der Requesting User ist, kann er seine eigenen Anfragen nicht genehmigen, ablehnen oder löschen.
@@ -64,7 +68,7 @@ MAV-Administratoren verfügen in diesem Fenster über zusätzliche Steuerungsmö
 --
 .CLI
 --
-. Bei Benachrichtigung über ausstehende Anfragen per E-Mail ist die Indexnummer der Anfrage sowie der Ablaufzeitraum der Genehmigung zu notieren. Die Indexnummer kann auch mit den unten genannten Optionen *show* oder *show-pending* angezeigt werden.
+. Wenn Sie per E-Mail über ausstehende Anfragen benachrichtigt werden, sollten Sie die Indexnummer und die Gültigkeitsdauer der Genehmigung der Anfrage beachten. Die Indexnummer kann auch mithilfe der Optionen *show* oder *show-pending* in der folgenden Tabelle angezeigt werden.
 . Den Antrag genehmigen oder ablehnen.
 +
 [cols="50,50"]
@@ -126,17 +130,20 @@ cluster-1::> security multi-admin-verify request show 3
              State: approved
 Required Approvers: 2
  Pending Approvers: 0
+Potential Approver Groups: entra-group-mav-approvers
    Approval Expiry: 2/25/2022 14:32:03
   Execution Expiry: 2/25/2022 14:35:36
-         Approvals: mav-admin2
-       User Vetoed: -
-           Vserver: cluster-1
+        Approvals: mav-admin2
+      User Vetoed: -
+          Vserver: cluster-1
     User Requested: julia
-      Time Created: 2/25/2022 13:32:03
-     Time Approved: 2/25/2022 13:35:36
-           Comment: -
+     Time Created: 2/25/2022 13:32:03
+    Time Approved: 2/25/2022 13:35:36
+          Comment: -
    Users Permitted: -
 ----
+Ab ONTAP 9.20.1 enthält der `security multi-admin-verify request show` Befehl ein `Potential Approver Groups` Feld, in dem alle IdP-, AD- oder LDAP-Gruppen aufgeführt sind, deren Mitglieder berechtigt sind, die Anfrage zu genehmigen oder abzulehnen.
+
 .Beispiel:
 Die folgende Sequenz legt ein Veto gegen eine Anfrage ein, nachdem der MAV-Administrator die Anfrage-E-Mail mit der Indexnummer 3 erhalten hat, die bereits eine Genehmigung hat.
 

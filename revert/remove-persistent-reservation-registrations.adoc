@@ -1,0 +1,39 @@
+---
+permalink: revert/remove-persistent-reservation-registrations.html 
+sidebar: sidebar 
+keywords: revert, persistent reservation, registrations, SCSI-3, LUN, 9.20.1 
+summary: Wenn eine LUN in der Vergangenheit mehr als 182 Registrierungen für persistente SCSI-3-Reservierungen aufgewiesen hat, blockiert ONTAP die Rückkehr zu Versionen vor ONTAP 9.20.1. Vor der Rückkehr ist jede LUN zu prüfen, und alle Registrierungen sind zu entfernen. 
+---
+= Vor einer Rückkehr von ONTAP 9.20.1 ist das Entfernen der Registrierungen für persistente Reservierungen erforderlich.
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP Versionen vor 9.20.1 unterstützen maximal 182 Registrierungen persistenter Reservierungen pro LUN. Ab ONTAP 9.20.1 erhöht sich dieses Limit auf 256. Wenn eine LUN in der Vergangenheit mehr als 182 Registrierungen aufgewiesen hat, blockiert ONTAP die Revertierung unabhängig von der aktuellen Anzahl der Registrierungen. Vor einer Revertierung von 9.20.1 auf 9.19.1 ist die Identifizierung und Entfernung der Registrierungen persistenter Reservierungen auf den betroffenen LUNs erforderlich.
+
+
+IMPORTANT: Das Entfernen von Registrierungen für persistente Reservierungen kann in Clusterumgebungen eine Neukonfiguration auf Host-Seite erfordern. Je nach Host-Betriebssystem und Clustering-Software kann es erforderlich sein, Clusterressourcen offline zu nehmen, betroffene LUNs aus der Clusterverwaltung zu entfernen und den Clusterzugriff nach dem Revert erneut herzustellen. Die Dokumentation der Clustering-Lösung sollte überprüft und der Recovery-Workflow vor einem Revert in einer Testumgebung validiert werden.
+
+.Schritte
+. Es ist zu prüfen, ob LUNs in der Vergangenheit mehr als 182 Registrierungen für persistente Reservierungen aufwiesen:
++
+[source, cli]
+----
+lun show -field persistent-reservation-scale-tier
+----
++
+Ein Wert über 182 im Feld „persistent-reservation-scale-tier“ bedeutet, dass die LUN zusätzliche persistente Reservierungsmetadaten zugewiesen hat. Dies blockiert eine Reversion, unabhängig von der aktuellen Anzahl der Registrierungen.
+
+. Für jede betroffene LUN folgt die Anzeige der aktuellen Anzahl aktiver Registrierungen:
++
+[source, cli]
+----
+lun persistent-reservation show -vserver <vserver_name> -path <lun_path>
+----
+. Die Registrierungen für persistente Reservierungen sind auf allen betroffenen LUNs zu entfernen.
++
+Die Vorabprüfung für das Revert ausführen. Wenn diese Bedingung erkannt wird, enthält die Ausgabe der Vorabprüfung die erforderlichen spezifischen Bereinigungsbefehle.
+
+

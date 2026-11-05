@@ -14,7 +14,7 @@ summary: Ab ONTAP 9.13.1 ist das Festlegen von Kapazitätsgrenzen für eine SVM 
 Ab ONTAP 9.13.1 kann eine maximale Kapazität für eine Storage-VM (SVM) festgelegt werden. Es besteht außerdem die Möglichkeit, Warnmeldungen zu konfigurieren, wenn die SVM einen Schwellenwert für die Kapazität erreicht.
 
 .Über diese Aufgabe
-Die Kapazität einer SVM berechnet sich als Summe der FlexVols, FlexGroup Volumes, FlexClones, FlexCache Volumes. Volumes wirken sich auf die Kapazitätsberechnung aus, auch wenn sie eingeschränkt, offline oder nach dem Löschen in der Wiederherstellungswarteschlange sind. Wenn Volumes mit automatischer Größenanpassung konfiguriert sind, wird der maximale Wert für die automatische Größenanpassung des Volumes bei der Berechnung der SVM-Größe berücksichtigt; ohne automatische Größenanpassung wird die tatsächliche Größe des Volumes berechnet.
+Die Kapazität auf einer SVM wird als Summe der FlexVol Volumes, FlexGroup Volumes, FlexClone Volumes und FlexCache Volumes berechnet. Volumes wirken sich auch dann auf die Kapazitätsberechnung aus, wenn sie eingeschränkt, offline oder nach dem Löschen in der Wiederherstellungswarteschlange sind. Wenn Volumes mit automatischer Vergrößerung konfiguriert sind, wird der maximale Wert der automatischen Größenanpassung des Volumes auf die SVM-Größe angerechnet; ohne automatische Vergrößerung wird die tatsächliche Größe des Volumes berechnet.
 
 Die folgende Tabelle zeigt, wie  `autosize-mode` Parameter die Kapazitätsberechnung beeinflussen.
 
@@ -31,6 +31,13 @@ Die folgende Tabelle zeigt, wie  `autosize-mode` Parameter die Kapazitätsberech
 |===
 .Bevor Sie beginnen
 * Um ein SVM-Limit festzulegen, ist die Rolle als Cluster-Administrator erforderlich.
+* Ab ONTAP 9.20.1 können Speichergrenzen für SVMs konfiguriert werden, die Teil einer MetroCluster IP Konfiguration sind.
++
+[NOTE]
+====
+Das Aktivieren oder Deaktivieren von Storage-Grenzwerten auf der *sync-destination* SVM in einer MetroCluster IP-Konfiguration wird nicht unterstützt. Storage-Grenzwerte können nur auf der *sync-source* SVM aktiviert oder deaktiviert werden.
+
+====
 * Ab ONTAP 9.16.1 können Speichergrenzen für SVMs konfiguriert werden, die Datensicherungs-Volumes enthalten, einschließlich der folgenden Datensicherungstypen:
 +
 ** FlexVol Volumes in asynchroner DR ohne Kaskade
@@ -42,17 +49,17 @@ Die folgende Tabelle zeigt, wie  `autosize-mode` Parameter die Kapazitätsberech
 +
 ** SnapMirror Vault-Beziehungen
 ** SnapMirror Active Sync
-** FlexGroup Volumes
-** Konsistenzgruppen
+** Konsistenzgruppen, die Datenschutz-Volumes enthalten
+** Datensicherungs-FlexGroup Volumes
 ** SVM DR
 ** Kaskaden
-** MetroCluster
+** MetroCluster FC
 
 
 * Ab ONTAP 9.16.1 kann beim Erstellen einer Load-Sharing-Mirror-Beziehung für die Ziel-SVM kein Speicherlimit aktiviert sein.
 * Bei der Migration einer SVM darf für die Quell-SVM kein Speicherlimit aktiviert sein. Zum Abschluss der Migration ist das Speicherlimit auf der Quell-SVM zu deaktivieren und anschließend die Migration abzuschließen.
 * Die SVM-Kapazität ist von xref:../volumes/quotas-concept.html[Quoten] zu unterscheiden. Quoten dürfen die maximale Größe nicht überschreiten.
-* Sie können kein Speicherlimit festlegen, wenn andere Vorgänge auf der SVM ausgeführt werden. Mit dem  `job show vserver <svm_name>` Befehl lassen sich vorhandene Aufträge anzeigen. Der Befehl kann erneut ausgeführt werden, sobald alle Aufträge abgeschlossen sind. Weitere Informationen zu  `job show` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/job-show.html["ONTAP-Befehlsreferenz"^].
+* Ein Storage-Limit kann nicht zum ersten Mal aktiviert werden, während auf der SVM Volume-Operationen ausgeführt werden. Nach der Aktivierung kann das Limit auch während laufender Volume-Operationen geändert werden. Mit dem  `job show -vserver <svm_name>` Befehl lassen sich vorhandene Jobs anzeigen. Sobald alle Jobs abgeschlossen sind, kann der Befehl erneut ausgeführt werden. Weitere Informationen zu  `job show` finden Sie im link:https://docs.netapp.com/us-en/ontap-cli/job-show.html["ONTAP-Befehlsreferenz"^].
 
 
 
@@ -64,7 +71,6 @@ Wenn die Kapazitätsgrenze erreicht ist, schlagen die folgenden Operationen fehl
 
 * Erstellen einer LUN, eines Namespace oder eines Volumes
 * Klonen einer LUN, eines Namespace oder eines Volumes
-* Ändern einer LUN, eines Namespace, oder eines Volumes
 * Vergrößern der Größe einer LUN, eines Namespace oder eines Volumes
 * Erweitern einer LUN, eines Namespace oder eines Volumes
 * Neuhosting einer LUN, eines Namespace oder eines Volume
@@ -128,6 +134,11 @@ Sie können für eine bestehende SVM eine Kapazitätsgrenze und einen Schwellenw
 
 Sobald Sie das Kapazitätslimit festgelegt haben, kann das Limit nicht mehr auf einen Wert unterhalb der aktuell zugewiesenen Kapazität geändert werden.
 
+[NOTE]
+====
+Das Aktivieren oder Deaktivieren von Storage-Grenzwerten auf der *sync-destination* SVM in einer MetroCluster IP-Konfiguration wird nicht unterstützt. Storage-Grenzwerte können nur auf der *sync-source* SVM aktiviert oder deaktiviert werden.
+
+====
 [role="tabbed-block"]
 ====
 .System Manager

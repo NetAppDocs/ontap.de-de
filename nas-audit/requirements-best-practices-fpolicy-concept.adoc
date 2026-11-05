@@ -44,6 +44,13 @@ Dies umfasst auch die LIFs, die für Passthrough-Read-Verbindungen verwendet wer
 
 
 
+* Ab ONTAP 9.20.1 unterstützen FPolicy-Richtlinien S3-Ereignisse. Um FPolicy für S3-Objektereignisse zu konfigurieren, müssen die folgenden zusätzlichen Anforderungen erfüllt sein:
++
+** Alle Knoten im Cluster müssen ONTAP 9.20.1 oder höher ausführen. Cluster mit gemischten Versionen blockieren die S3 FPolicy Konfiguration, bis alle Knoten diese Funktion unterstützen.
+** Unterstützt werden nur NAS-Buckets, keine nativen S3-Buckets.
+** Ein externer FPolicy-Server, der das protobuf-Benachrichtigungsformat unterstützt. Das XML-Format wird für S3-Ereignisse nicht unterstützt.
+
+
 
 
 
@@ -136,12 +143,41 @@ Die Überwachung von Dateivorgängen beeinflusst Ihre Gesamterfahrung. Beispiels
 +
 ** Überwachung der minimalen Arten von Dateivorgängen und Aktivierung der maximalen Anzahl von Filtern, ohne den Anwendungsfall zu beeinträchtigen.
 ** Filter werden für getattr-, Lese-, Schreib-, Öffnungs- und Schließvorgänge verwendet. In SMB- und NFS-Home-Verzeichnisumgebungen ist der Anteil dieser Vorgänge hoch.
+** Nur erfolgreiche, vom S3-Client gesteuerte Operationen generieren Benachrichtigungen. Intern generierte Operationen (wie z. B. Objektablauf oder durch Snapshots ausgelöste Wiederherstellungen) generieren keine FPolicy-Benachrichtigungen.
+** Unterstützte S3-Operationen umfassen:
++
+*** Objekterstellung (PUT, COPY und CompleteMultipartUpload)
+*** Objektlöschung (DELETE und multi-delete)
+*** Objekt-Tag (Tag PUT und Tag DELETE)
++
+
+NOTE: GET- und Leseereignisse werden nicht überwacht.
+
+
+
+** Eine S3-Mehrfachlöschanforderung kann bis zu 1.000 Objekte löschen, FPolicy sendet jedoch für jedes erfolgreich gelöschte Objekt eine Benachrichtigung (der SHM-Slot ist auf 32 KB begrenzt). Die Kapazität des externen Servers ist entsprechend zu planen.
+** Mit dem FPolicy-Richtlinienbereich können Sie bestimmte NAS-Buckets anhand ihres Namens ein- oder ausschließen. Wenn ein konfigurierter Bucket-Name falsch geschrieben ist oder der Bucket gelöscht wurde, blockiert FPolicy keine Vorgänge, sondern generiert lediglich keine Benachrichtigungen für diesen Bucket.
 
 
 * Konfiguration des FPolicy Bereichs für SVMs:
 +
 Der Geltungsbereich der Richtlinien sollte auf die relevanten Speicherobjekte wie Freigaben, Volumes und Exporte beschränkt werden, anstatt sie für die gesamte SVM zu aktivieren. NetApp empfiehlt, die Verzeichniserweiterungen zu überprüfen. Wenn der  `is-file-extension-check-on-directories-enabled` Parameter auf  `true` gesetzt ist, werden Verzeichnisobjekte denselben Erweiterungsprüfungen unterzogen wie reguläre Dateien.
 
+
+
+
+
+[[s3-fpolicy-limitations]]
+=== Einschränkungen von S3 FPolicy
+
+Ab ONTAP 9.20.1 unterstützt FPolicy die Überwachung von S3-Objekten mit folgenden Einschränkungen:
+
+* S3 FPolicy arbeitet ausschließlich im asynchronen, nicht obligatorischen Modus. Synchroner Modus, obligatorische Richtlinien und nativ Blockieren (Blockieren auf Basis von Dateierweiterungen) werden für S3-Ereignisse nicht unterstützt.
+* Persistenter Speicher wird für S3 FPolicy-Benachrichtigungen nicht unterstützt.
+* SSL/TLS wird für S3-Benachrichtigungen bei der Verbindung zur externen FPolicy Engine nicht unterstützt.
+* Privilegierter Datenzugriff und Passthrough-Lesezugriff gelten nicht für S3 FPolicy.
+* Eine garantierte Delivery wird nicht unterstützt. Benachrichtigungen erfolgen nur nach bestem Bemühen und können verloren gehen, wenn die Verbindung zum externen FPolicy-Server unterbrochen ist oder der Shared Memory Buffer (SHM) nach mehreren Wiederholungsversuchen voll bleibt.
+* S3-Ereignisse unterstützen keine Benachrichtigungen über Zugriffsverweigerungen und fehlgeschlagene Vorgänge.
 
 
 
@@ -288,9 +324,13 @@ Weitere Informationen zu  `statistics start` und  `statistics show` finden sich 
 
 NetApp empfiehlt, eine FPolicy Richtlinie zu deaktivieren, bevor Konfigurationsänderungen vorgenommen werden. Wenn beispielsweise eine IP-Adresse in der für die aktivierte Richtlinie konfigurierten externen Engine hinzugefügt oder geändert werden soll, ist zuerst die Richtlinie zu deaktivieren.
 
-Wenn Sie FPolicy zur Überwachung von NetApp FlexCache Volumes konfigurieren, empfiehlt NetApp, FPolicy nicht zur Überwachung von Lese- und Getattr-Dateioperationen zu konfigurieren. Die Überwachung dieser Operationen in ONTAP erfordert das Abrufen von Inode-zu-Pfad (I2P) Daten. Da I2P-Daten nicht von FlexCache Volumes abgerufen werden können, müssen sie vom Ursprungsvolume abgerufen werden. Daher entfallen durch die Überwachung dieser Operationen die Leistungs­vorteile, die FlexCache bieten kann.
+Wenn FPolicy zur Überwachung von NetApp FlexCache Volumes konfiguriert wird, empfiehlt NetApp, FPolicy nicht für die Überwachung von Lese- und getattr-Dateioperationen zu konfigurieren. Die Überwachung dieser Operationen in ONTAP erfordert den Abruf von Inode-zu-Pfad-Daten (I2P). Da I2P-Daten nicht von FlexCache Volumes abgerufen werden können, müssen sie vom Ursprungs-Volume abgerufen werden. Daher werden durch die Überwachung dieser Operationen die Performance Vorteile aufgehoben, die FlexCache bieten kann. Bei S3 NAS-Buckets auf FlexCache Volumes erzeugen interne Write-Back- und Write-Around-Operationen auf das Ursprungs-Volume keine FPolicy-Benachrichtigungen. Als Best Practice sollte FPolicy sowohl auf der Ursprungs-SVM als auch auf der FlexCache SVM konfiguriert werden, um alle S3-Ereignisse zu erfassen.
 
 Wenn sowohl FPolicy als auch eine externe Antivirenlösung im Einsatz sind, erhält die Antivirenlösung die Benachrichtigungen zuerst. Die Verarbeitung durch FPolicy beginnt erst, nachdem der Antivirenscan abgeschlossen ist. Es ist wichtig, die Antivirenlösungen korrekt zu dimensionieren, da ein langsamer Antivirenscanner die Gesamtleistung beeinträchtigen kann.
+
+S3 FPolicy wird für MetroCluster Konfigurationen unterstützt. Nach der Umschaltung können FPolicy-Benachrichtigungen vom entfernten (verbleibenden) Standort generiert werden, sofern der externe FPolicy-Server konfiguriert und von diesem Standort aus erreichbar ist.
+
+Während der Übernahme und Rückgabe von Knoten kann die Verbindung zum FPolicy-Server kurzzeitig unterbrochen werden, wenn die zugehörige LIF auf einen anderen Knoten migriert. Die Verbindung wird automatisch wiederhergestellt, sobald eine geeignete LIF verfügbar ist. S3-Clients, die während dieses Zeitfensters Vorgänge erneut versuchen, generieren neue FPolicy-Benachrichtigungen, sobald die Verbindung wiederhergestellt ist.
 
 
 
@@ -306,6 +346,8 @@ Es gibt bestimmte Aspekte beim Upgrade und Revertierung, die bekannt sein sollte
 
 Nachdem alle Knoten auf eine Version von ONTAP aktualisiert wurden, die FPolicy Passthrough-Read unterstützt, ist der Cluster in der Lage, die Passthrough-Read-Funktionalität zu nutzen; jedoch ist Passthrough-Read in bestehenden FPolicy Konfigurationen standardmäßig deaktiviert. Um Passthrough-Read in bestehenden FPolicy Konfigurationen zu verwenden, muss die FPolicy Richtlinie deaktiviert, die Konfiguration geändert und anschließend die Konfiguration wieder aktiviert werden.
 
+Nachdem alle Knoten auf ONTAP 9.20.1 oder höher aktualisiert wurden, können FPolicy-Ereignisse mit dem S3-Protokoll und S3-Objektoperationen (object create, object delete, object tag) konfiguriert werden. In Clustern mit gemischten Versionen ist die S3 FPolicy Konfiguration gesperrt.
+
 
 
 [[reverting]]
@@ -318,6 +360,8 @@ Bevor auf eine Version von ONTAP zurückgekehrt wird, die FPolicy passthrough-re
 
 
 Bevor auf eine Version von ONTAP zurückgekehrt wird, die keine persistenten Speicher unterstützt, muss sichergestellt sein, dass keine der FPolicy Richtlinien einen persistenten Speicher konfiguriert hat. Wenn ein persistenter Speicher konfiguriert ist, schlägt das Zurücksetzen fehl.
+
+Vor der Rückkehr zu einer Version von ONTAP, die S3 FPolicy nicht unterstützt, müssen alle mit dem S3-Protokoll konfigurierten FPolicy-Ereignisse gelöscht werden. Wenn die S3 FPolicy Konfiguration bestehen bleibt, schlägt die Rückkehr fehl.
 
 .Verwandte Informationen
 * link:https://docs.netapp.com/us-en/ontap-cli/statistics-show.html["Statistiken zeigen"^]

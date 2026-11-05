@@ -13,17 +13,30 @@ summary: Die Beziehung zwischen dem Quell-Volume im Primärspeicher und dem Ziel
 [role="lead"]
 Die Beziehung zwischen dem Quell-Volume im Primärspeicher und dem Ziel-Volume im Sekundärspeicher wird als _Datensicherungsbeziehung_ bezeichnet. Mit dem  `snapmirror create` Befehl lassen sich SnapMirror DR-, SnapVault- oder Unified Replication Datensicherungsbeziehungen erstellen.
 
+.Über diese Aufgabe
+* Dieses Verfahren gilt für FAS, AFF und ASA Systeme. Bei einem ASA r2 System (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30, ASA A20 oder ASA C30) ist link:https://docs.netapp.com/us-en/asa-r2/data-protection/snapshot-replication.html["diese Schritte"^] zu folgen, um eine Replikationsbeziehung zu erstellen. ASA r2 Systeme bieten eine vereinfachte ONTAP Erfahrung speziell für ausschließlich SAN-basierte Kunden.
+* Ab ONTAP 9.20.1 kann die Backend-SnapMirror asynchrone Replizierung so konfiguriert werden, dass entweder IP- oder FC-Transport verwendet wird. Standardmäßig verwendet die Backend-Replikation das IP-Netzwerk. Für die Replizierung über Ihr FC-Fabric werden beim Erstellen Ihrer SnapMirror Beziehung eine unterstützte asynchrone Datensicherungsstrategie und die `-transport fc` Option verwendet. link:default-protection-policies-concept.html["Welche standardmäßigen asynchronen Datenschutzrichtlinien die Backend FC Replikation unterstützt"].
++
+** Um das ausgewählte Transportprotokoll nach dem Erstellen einer SnapMirror Replikationsbeziehung zu ändern, müssen Sie die Beziehung löschen und neu erstellen.
+** Direkt angeschlossene FC-Konfigurationen werden für die Backend FC-Replikation nicht unterstützt.
 
-NOTE: Dieses Verfahren gilt für FAS, AFF und ASA Systeme. Bei einem ASA r2 System (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30, ASA A20 oder ASA C30) ist link:https://docs.netapp.com/us-en/asa-r2/data-protection/snapshot-replication.html["diese Schritte"^] zu folgen, um eine Replikationsbeziehung zu erstellen. ASA r2 Systeme bieten eine vereinfachte ONTAP Erfahrung speziell für ausschließlich SAN-basierte Kunden.
 
-Ab ONTAP 9.11.1 kann im System Manager die Auswahl von vordefinierten und benutzerdefinierten Mirror- und Vault-Richtlinien erfolgen, die Anzeige und Auswahl von älteren Richtlinien sowie das Überschreiben der in einer Datensicherungsstrategie definierten Übertragungszeitpläne beim Schutz von Volumes und Storage-VMs. Diese Funktion ist auch in ONTAP 9.8P12 und späteren Patches von ONTAP 9.8 verfügbar.
-
+* Ab ONTAP 9.11.1 kann im System Manager die Auswahl von vordefinierten und benutzerdefinierten Mirror- und Vault-Richtlinien erfolgen, die Anzeige und Auswahl von älteren Richtlinien sowie das Überschreiben der in einer Datensicherungsstrategie definierten Übertragungszeitpläne beim Schutz von Volumes und Storage-VMs. Diese Funktion ist auch in ONTAP 9.8P12 und späteren Patches von ONTAP 9.8 verfügbar.
++
 [NOTE]
 ====
 Wenn Sie ONTAP 9.8P12 oder eine spätere ONTAP 9.8 Patch-Version verwenden und SnapMirror mit System Manager konfiguriert haben, sollten Sie ONTAP 9.9.1P13 oder eine spätere sowie ONTAP 9.10.1P10 oder eine spätere Patch-Version verwenden, falls ein Upgrade auf ONTAP 9.9.1 oder ONTAP 9.10.1 Releases vorgesehen ist.
 
 ====
+
+
 .Bevor Sie beginnen
+* In ONTAP 9.20.1 und späteren Versionen gilt: Wenn Sie eine SnapMirror asynchrone Beziehung für die Verwendung von FC als Transportprotokoll konfigurieren:
++
+** Ihr ONTAP System-Backend muss für die FC-Replikation konfiguriert sein, und sowohl das FC Fabric als auch das Intercluster-IP-Netzwerk müssen betriebsbereit sein. Replikationsdaten können über das FC Fabric übertragen werden, das Intercluster-IP-Netzwerk ist jedoch für die Clusterkommunikation und die Replikationsverwaltungsfunktionen erforderlich. link:configure-backend-fc-replication.html["Informationen zur Konfiguration des Backends Ihres ONTAP Systems für die FC-Replikation"].
+** In einer MetroCluster Konfiguration muss der für MetroCluster verwendete Storage-Initiator von dem für die Replizierung über FC verwendeten Initiator getrennt sein. Die gemeinsame Nutzung von Initiator-Storage zwischen beiden wird nicht unterstützt.
+
+
 * Die Quell- und Ziel-Cluster sowie die SVMs müssen miteinander verbunden sein.
 +
 link:../peering/index.html["Cluster- und SVM-Peering"]
@@ -160,12 +173,12 @@ Das folgende Beispiel erstellt eine SnapVault Beziehung mit der Standard `XDPDef
 cluster_dst::> snapmirror create -source-path svm1:volA -destination-path svm_backup:volA_dst -type XDP -schedule my_daily -policy XDPDefault
 ----
 +
-Das folgende Beispiel erstellt eine einheitliche Replikationsbeziehung mit der Standard `MirrorAndVault`richtlinie:
+Das folgende Beispiel erstellt eine einheitliche Replikationsbeziehung unter Verwendung der standardmäßigen `MirrorAndVault` asynchronen Richtlinie und des `fc` Transportprotokolls:
 
 +
 [listing]
 ----
-cluster_dst:> snapmirror create -source-path svm1:volA -destination-path svm_backup:volA_dst -type XDP -schedule my_daily -policy MirrorAndVault
+cluster_dst:> snapmirror create -source-path svm1:volA -destination-path svm_backup:volA_dst -type XDP -schedule my_daily -policy MirrorAndVault -transport fc
 ----
 +
 Das folgende Beispiel erstellt eine einheitliche Replikationsbeziehung mithilfe der benutzerdefinierten `my_unified` Richtlinie:

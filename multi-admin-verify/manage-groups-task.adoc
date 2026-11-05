@@ -22,6 +22,13 @@ Sie können MAV so konfigurieren, dass MAV-Administratoren über ausstehende Gen
 
 Ab ONTAP 9.15.1 ist es möglich, Active Directory (AD)-Benutzer als MAV-Administratoren zu konfigurieren. Der AD-Benutzer muss link:../authentication/grant-access-active-directory-users-groups-task.html["Als ONTAP Administrator konfiguriert"] sein.
 
+Ab ONTAP 9.20.1 können Genehmigungsgruppen auch Identity Provider (IdP)-, Active Directory (AD)- oder LDAP (nsswitch)-Gruuppen umfassen. Zu den unterstützten Gruppentypen gehören Entra ID (ehemals Azure AD), ADFS, AD-Domänengruppen und LDAP-Gruppen.
+
+Änderungen an der Gruppenzugehörigkeit eines Benutzers beim Identitätsanbieter werden bei der nächsten erfolgreichen Anmeldung des Benutzers wirksam. Eine Neukonfiguration von MAV ist nicht erforderlich.
+
+
+NOTE: Bevor Sie eine IdP-, Active Directory- oder LDAP-Gruppe zu einer MAV-Genehmigungsgruppe hinzufügen können, muss die Gruppe bereits über einen konfigurierten Anmeldezugriff verfügen und in der  `security login group`Tabelle mit einer Rollenzuordnung registriert sein. Die entsprechenden Verfahren sind nachfolgend aufgeführt.
+
 
 
 [[system-manager-procedure]]
@@ -34,21 +41,31 @@ Eine bestehende Genehmigungsgruppe kann geändert oder eine zusätzliche Genehmi
 . Administratoren für den Erhalt der Multi-Admin-Verifizierung festlegen.
 +
 .. *Cluster > Einstellungen* auswählen.
-.. Klicken Sie image:icon_arrow.gif["Pfeilsymbol"] neben *Benutzer und Rollen*.
-.. Klicken Sie auf image:icon_add.gif["Symbol hinzufügen"] unter *Benutzer*.
+.. Die Auswahl von image:icon_arrow.gif["Pfeilsymbol"] erfolgt neben *Benutzer, Gruppen und Rollen.*
+.. Unter *Users* erfolgt die Auswahl von image:icon_add.gif["Symbol hinzufügen"].
 .. Die Liste kann bei Bedarf angepasst werden.
 +
 Weitere Informationen sind unter link:../task_security_administrator_access.html["Administratorzugriff kontrollieren."] verfügbar.
 
 
 
+. Ab ONTAP 9.20.1 ist vor dem Hinzufügen einer IdP-, AD- oder LDAP-Gruppe als MAV-Genehmiger zunächst eine Registrierung der Gruppe erforderlich, damit in der MAV-Konfiguration auf sie verwiesen werden kann.
++
+.. Unter *Gruppen* erfolgt das Hinzufügen einer Gruppe über image:icon_add.gif["Symbol hinzufügen"].
++
+Eingabe des Gruppennamens. Das UUID-Feld ist nur für Microsoft Entra-Gruppen erforderlich; andere Identitätsanbieter verwenden den Gruppennamen.
+
+.. Unter *Gruppe-Rollen-Zuordnung* erfolgt die Auswahl von image:icon_add.gif["Symbol hinzufügen"] und der Gruppe sowie die Zuweisung einer Rolle mit ausreichenden Berechtigungen zur Genehmigung von MAV-Anfragen.
+
+
 . MAV-Genehmigungsgruppe erstellen oder ändern:
 +
 .. *Cluster > Einstellungen* auswählen.
-.. Klicken Sie image:icon_arrow.gif["Pfeilsymbol"] neben *Multi-Admin Approval* im Abschnitt *Security*. (Das image:icon_gear.gif["Aktionssymbol"]-Symbol wird angezeigt, wenn MAV noch nicht konfiguriert ist.)
+.. Wählen Sie image:icon_arrow.gif["Pfeilsymbol"] neben *Genehmigung durch mehrere Administratoren* im Abschnitt *Sicherheit* aus. (Das image:icon_gear.gif["Aktionssymbol"]-Symbol wird angezeigt, wenn MAV noch nicht konfiguriert ist.)
 +
 *** Name: Einen Gruppennamen eingeben.
-*** Genehmiger: Genehmiger aus einer Benutzerliste auswählen.
+*** Genehmiger (Benutzer): Auswahl einzelner Genehmiger aus einer Benutzerliste.
+*** Genehmiger (Gruppen): Ab ONTAP 9.20.1 können Sie optional eine oder mehrere registrierte IdP-, Active Directory- oder LDAP-Gruppen auswählen.
 *** E-Mail-Adresse: E-Mail-Adresse(n) eingeben.
 *** Standardgruppe: eine Gruppe auswählen.
 
@@ -90,7 +107,7 @@ Zum Konfigurieren dieser Parameter wird Folgendes eingegeben:
 +
 Weitere Informationen zu  `event config show` und  `event config modify` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=event+config["ONTAP-Befehlsreferenz"^].
 
-. Administratoren für den Erhalt der Multi-Admin-Verifizierung festlegen
+. Es sind Administratoren zu bestimmen, die an der Multi-Admin-Verifizierung teilnehmen.
 +
 [cols="50,50"]
 |===
@@ -114,22 +131,62 @@ Weitere Informationen zu  `event config show` und  `event config modify` finden 
 +
 Weitere Informationen zu `security login show`, `security login modify` und `security login create` in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+login["ONTAP-Befehlsreferenz"^].
 
-. Die MAV-Genehmigungsgruppe erstellen:
+. Ab ONTAP 9.20.1 ist beim Hinzufügen einer IdP-, AD- oder LDAP-Gruppe als MAV-Genehmiger zunächst zu prüfen, ob für die Gruppe der Anmeldezugriff konfiguriert ist; anschließend ist sie für MAV zu registrieren.
 +
-`security multi-admin-verify approval-group create [ -vserver _svm_name_] -name _group_name_ -approvers _approver1_[,_approver2_…] [[-email _address1_], _address1_...]`
+Falls für die Gruppe noch kein Anmeldezugriff konfiguriert ist, ist Folgendes einzugeben:
 
 +
-** `-vserver` - Nur die Admin-SVM wird in dieser Version unterstützt.
-** `-name` - Der MAV Gruppenname, maximal 64 Zeichen.
-** `-approvers` - Die Liste eines oder mehrerer Genehmiger. Für AD-Benutzer gilt das Format `domain\user`. Zum Beispiel  `mydomain\pavan`.
-** `-email` - Eine oder mehrere E-Mail-Adressen, die benachrichtigt werden, wenn eine Anfrage erstellt, genehmigt, abgelehnt oder ausgeführt wird.
+`security login create -user-or-group-name _group_name_ -application http|ssh -authentication-method domain|nsswitch|saml|oauth2 -role _role_`
+
 +
-*Beispiel:* Der folgende Befehl erstellt eine MAV-Gruppe mit zwei Mitgliedern und zugehörigen E-Mail-Adressen.
+Anschließend wird die Gruppe registriert, damit in der MAV Konfiguration auf sie verwiesen und sie einer Rolle zugeordnet werden kann:
+
++
+`security login group create -vserver _svm_name_ -name _group_name_ [-uuid _uuid_]`
+
++
+`security login group role-mapping create -group-id _group_id_ -role _role_`
+
++
+Der `-uuid` Parameter ist nur für Microsoft Entra ID-Gruppen erforderlich. Active Directory-Domänengruppen, ADFS/SAML-Gruppen und LDAP-(nsswitch)-Gruuppen werden nur anhand des Namens identifiziert.
+
++
+*Beispiel:* Die folgenden Befehle registrieren die Active Directory-Gruppe `mydomain\mav_approvers` für MAV und ordnen sie der `admin` Rolle zu.
 
 +
 [listing]
 ----
-cluster-1::> security multi-admin-verify approval-group create -name mav-grp1 -approvers pavan,julia -email pavan@myfirm.com,julia@myfirm.com
+cluster-1::> security login group create -vserver cluster-1 -name mydomain\mav_approvers
+cluster-1::> security login group show -vserver cluster-1
+
+     Vserver: cluster-1
+  Group Name: mydomain\mav_approvers
+    Group ID: 1
+  Group UUID: -
+     Comment: -
+
+cluster-1::> security login group role-mapping create -group-id 1 -role admin
+----
++
+Weitere Informationen zu  `security login group create` und  `security login group role-mapping create` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+login+group["ONTAP-Befehlsreferenz"^].
+
+. Die MAV-Genehmigungsgruppe erstellen:
++
+`security multi-admin-verify approval-group create [ -vserver _svm_name_] -name _group_name_ [-approvers _approver1_[,_approver2_…]] [-groups _group1_[,_group2_…]] [[-email _address1_], _address1_...]`
+
++
+** `-vserver` - Nur die Admin-SVM wird in dieser Version unterstützt.
+** `-name` - Der MAV Gruppenname, maximal 64 Zeichen.
+** `-approvers` - Die Liste eines oder mehrerer einzelner Genehmiger. Für AD-Benutzer gilt das Format `domain\user`. Beispielsweise `mydomain\pavan`.
+** `-groups` - Die Liste einer oder mehrerer IdP-, AD- oder LDAP-Gruppen, die in die Genehmigungsgruppe aufgenommen werden sollen. Jede Gruppe muss bereits in der `security login group`Tabelle mit einer Rollenzuordnung registriert sein.
+** `-email` - Eine oder mehrere E-Mail-Adressen, die benachrichtigt werden, wenn eine Anfrage erstellt, genehmigt, abgelehnt oder ausgeführt wird.
++
+*Beispiel:* Der folgende Befehl erstellt eine MAV-Gruppe mit zwei einzelnen Genehmigern und einer Entra ID Gruppe.
+
++
+[listing]
+----
+cluster-1::> security multi-admin-verify approval-group create -name mav-grp1 -approvers pavan,julia -groups entra-group-mav-approvers -email pavan@myfirm.com,julia@myfirm.com
 ----
 
 
@@ -144,9 +201,9 @@ cluster-1::> security multi-admin-verify approval-group create -name mav-grp1 -a
 [listing]
 ----
 cluster-1::> security multi-admin-verify approval-group show
-Vserver  Name        Approvers        Email
--------  ---------------- ------------------  ------------------------------------------------------------
-svm-1    mav-grp1   pavan,julia      email pavan@myfirm.com,julia@myfirm.com
+Vserver  Name        Approvers        Approver Groups                  Email
+-------  ---------------- ------------------  ------------------------------- ------------------------------------------------------------
+svm-1    mav-grp1   pavan,julia      entra-group-mav-approvers        pavan@myfirm.com,julia@myfirm.com
 ----
 
 
@@ -160,12 +217,12 @@ Diese Befehle dienen zur Änderung der ursprünglichen MAV Gruppenkonfiguration.
 
 
 | Gruppenmerkmale oder vorhandene Mitgliederinformationen ändern  a| 
-`security multi-admin-verify approval-group modify [_parameters_]`
+`security multi-admin-verify approval-group modify [-vserver _svm_name_] -name _group_name_ [-approvers _approver1_[,_approver2_…]] [-groups _group1_[,_group2_…]] [[-email _address1_], _address1_...]`
 
 
 
 | Mitglieder hinzufügen oder entfernen  a| 
-`security multi-admin-verify approval-group replace [-vserver _svm_name_] -name _group_name_ [-approvers-to-add _approver1_[,_approver2_…]][-approvers-to-remove _approver1_[,_approver2_…]]`
+`security multi-admin-verify approval-group replace [-vserver _svm_name_] -name _group_name_ [-approvers-to-add _approver1_[,_approver2_…]][-approvers-to-remove _approver1_[,_approver2_…]] [-groups-to-add _group1_[,_group2_…]][-groups-to-remove _group1_[,_group2_…]]`
 
 
 

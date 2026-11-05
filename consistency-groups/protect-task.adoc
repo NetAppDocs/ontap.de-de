@@ -14,18 +14,34 @@ summary: Konsistenzgruppen ermöglichen den Schutz von Daten mithilfe lokaler Sn
 [role="lead"]
 Konsistenzgruppen bieten einfach zu verwaltenden lokalen und Remote-Schutz für SAN, NAS und NVMe-Anwendungen, die sich über mehrere Volumes erstrecken.
 
-Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Datensicherungsstrategien können zum Zeitpunkt der Erstellung oder nach dem Erstellen Ihrer Konsistenzgruppe festgelegt werden. Konsistenzgruppen können mit folgenden Methoden geschützt werden:
+Das Erstellen einer Konsistenzgruppe aktiviert den Schutz nicht automatisch. Datensicherungsstrategien können zum Zeitpunkt der Erstellung oder nach dem Erstellen Ihrer Konsistenzgruppe festgelegt werden.
 
-* Lokale Snapshots
-* SnapMirror active sync (in Versionen von ONTAP vor 9.15.1 als SnapMirror Business Continuity bezeichnet)
-* xref:index.html#mcc[MetroCluster (beginnend mit 9.11.1)]
-* SnapMirror asynchron (ab 9.13.1)
-* Asynchrone SVM Notfallwiederherstellung (ab Version 9.14.1)
+Die Art des für Konsistenzgruppen verfügbaren Datenschutzes variiert je nach Ihrer ONTAP Version.
+
+[cols="2"]
+|===
+| Verfügbar ab ONTAP... | Datensicherung für Konsistenzgruppen 
 
 
+| 9.20.1 | SnapLock für SnapVault aus nicht-SnapLock Volumes 
+
+
+| 9.14.1 | SVM Disaster Recovery 
+
+
+| 9.13.1 | SnapMirror asynchron 
+
+
+| 9.11.1 | Konsistenzgruppen bieten <<two-phase,Zwei-Phasen-Konsistenzgruppen-Snapshot-Erstellung>>. Der zweiphasige Snapshot-Vorgang führt eine Vorprüfung durch, um sicherzustellen, dass der Snapshot erfolgreich erfasst wird. 
+
+
+| 9.10.1  a| 
+* Snapshot Richtlinien
+* SnapMirror Active Sync
+
+
+|===
 Wenn Sie verschachtelte Konsistenzgruppen verwenden, können Sie unterschiedliche Datensicherungsstrategien für die übergeordnete und die untergeordnete Konsistenzgruppe festlegen.
-
-Ab ONTAP 9.11.1 bieten Konsistenzgruppen <<two-phase,Zwei-Phasen-Konsistenzgruppen-Snapshot-Erstellung>>. Die zweiphasige Snapshot-Operation führt eine Vorprüfung durch, wodurch sichergestellt wird, dass der Snapshot erfolgreich erfasst wird.
 
 Die Wiederherstellung kann für eine gesamte Konsistenzgruppe, eine einzelne Konsistenzgruppe in einer hierarchischen Konfiguration oder für einzelne Volumes innerhalb der Konsistenzgruppe erfolgen. Die Wiederherstellung erfolgt durch Auswahl der Konsistenzgruppe, die wiederhergestellt werden soll, Auswahl des Snapshot-Typs und anschließender Identifizierung des Snapshots, auf dem die Wiederherstellung basieren soll. Weitere Informationen zu diesem Prozess finden sich unter link:../task_dp_restore_from_vault.html["Ein Volume aus einem früheren Snapshot wiederherstellen"].
 
@@ -201,7 +217,14 @@ For more information about the ONTAP REST API, see link:https://docs.netapp.com/
 [[set-remote-protection-for-a-consistency-group]]
 == Remote-Schutz für eine Konsistenzgruppe festlegen
 
-Konsistenzgruppen bieten Fernschutz durch SnapMirror active sync und, beginnend mit ONTAP 9.13.1, SnapMirror asynchron.
+Je nach Ihrer ONTAP Version bieten Konsistenzgruppen Remote-Schutz durch SnapMirror active sync, SnapMirror asynchron und SnapLock für SnapVault Beziehungen.
+
+Ab ONTAP 9.20.1 ist SnapLock für SnapVault Schutz verfügbar. Ab ONTAP 9.13.1 ist SnapMirror asynchroner Schutz verfügbar.
+
+.Bevor Sie beginnen
+* Sie müssen link:../peering/create-cluster-relationship-93-later-task.html["eine Cluster Peer-Beziehung erstellen"].
+* Sie müssen link:../peering/create-intercluster-svm-peer-relationship-93-later-task.html["Erstellen einer Intercluster-SVM Peer-Beziehung"].
+
 
 
 
@@ -247,6 +270,12 @@ Um volume-granulare Snapshots zu replizieren, muss ONTAP 9.14.1 oder höher ausg
 Beim Resynchronisieren der SnapMirror Beziehung mit volume-granularen Snapshots können volume-granulare Snapshots mit dem  `-preserve` Flag beibehalten werden. Volume-granulare Snapshots, die neuer als Konsistenzgruppe-Snapshots sind, werden beibehalten. Wenn keine Konsistenzgruppe-Snapshot vorhanden ist, können bei der Resynchronisierung keine volume-granularen Snapshots übertragen werden.
 
 .Bevor Sie beginnen
+* Ab ONTAP 9.20.1 können Sie die Backend SnapMirror Replikation über bestehende FC-Fabrics konfigurieren. Wenn Sie die FC-Fabric für die Replikation verwenden möchten, müssen Sie link:..//data-protection/configure-backend-fc-replication.html["Konfiguration Ihres Systems für die Backend-FC-Replikation"]. Sie müssen außerdem:
++
+** Bei der Erstellung Ihrer asynchronen SnapMirror Beziehung für die Replikation über Ihr FC-Fabric erfolgt die Auswahl von FC als Transportprotokoll. Die Backend-Replikation verwendet standardmäßig das IP-Protokoll.
+** Voraussetzung ist eine unterstützte asynchrone Datensicherungsstrategie link:../data-protection/default-protection-policies-concept.html["Welche standardmäßigen asynchronen Datenschutzrichtlinien die Backend FC Replikation unterstützt"].
+
+
 * SnapMirror asynchroner Schutz ist nur für eine einzelne Konsistenzgruppe verfügbar. Er wird für hierarchische Konsistenzgruppen nicht unterstützt. Zur Umwandlung einer hierarchischen Konsistenzgruppe in eine einzelne Konsistenzgruppe siehe xref:modify-geometry-task.html[Konsistenzgruppenarchitektur ändern].
 * Die Richtlinienbezeichnungen im Quell- und Ziel-Cluster müssen übereinstimmen.
 * Eine unterbrechungsfreie xref:modify-task.html#add-volumes-to-a-consistency-group[Volumes zu einer Konsistenzgruppe hinzufügen] ist mit einer aktiven SnapMirror asynchronen Beziehung möglich. Alle anderen Änderungen an einer Konsistenzgruppe erfordern das Aufheben der SnapMirror Beziehung, das Modifizieren der Konsistenzgruppe sowie das anschließende Wiederherstellen und Resynchronisieren der Beziehung.
@@ -275,6 +304,109 @@ NOTE: Der minimal unterstützte Zeitplan (Recovery Point Objective, RPO) für Ko
 . Die Konsistenzgruppe muss initialisiert und synchronisiert werden. Die erfolgreiche Synchronisierung lässt sich durch Rückkehr zum Menü *Konsistenzgruppe* bestätigen. Der Status *SnapMirror (Remote)* wird  `Protected` neben image:../media/icon_shield.png["Schildsymbol"] angezeigt.
 
 
+
+
+[[configure-snaplock-for-snapvault-replication-from-a-non-snaplock-source]]
+=== Konfigurieren von SnapLock für SnapVault Replikation aus einer Nicht-SnapLock Quelle
+
+Ab ONTAP 9.20.1 können Sie eine Konsistenzgruppe von einem Nicht-SnapLock Quellvolume auf ein SnapLock für SnapVault Zielvolume replizieren. Snapshots, die auf dem Zielvolume durch SnapLock für SnapVault geschützt sind, können weder versehentlich noch böswillig gelöscht werden.
+
+.Bevor Sie beginnen
+* Sie sollten link:../system-admin/manage-license-task.html["Es sollte überprüft werden, ob eine SnapLock-Lizenz installiert ist."]. Wenn auf dem Knoten keine SnapLock Lizenz installiert ist, müssen Sie link:..//system-admin/install-license-task.html["es installieren"]. Diese Lizenz ist im Lieferumfang von link:..//system-admin/manage-licenses-concept.html["ONTAP One"] enthalten.
+* Das link:..//snaplock/initialize-complianceclock-task.html["Die Compliance-Uhr muss initialisiert werden"] auf beiden Clusterknoten.
+* Sie können Backend SnapLock für SnapVault über bestehende FC-Fabrics für die Replikation konfigurieren. Wenn Sie die FC-Fabric für die Replikation nutzen möchten, müssen Sie link:..//data-protection/configure-backend-fc-replication.html["Konfiguration Ihres Systems für die Backend-FC-Replikation"]. Außerdem ist Folgendes erforderlich:
++
+** Beim Erstellen Ihrer SnapLock für SnapVault Beziehung zur Replizierung über Ihr FC-Fabric ist als Transportprotokoll FC zu verwenden. Die Backend-Replizierung verwendet standardmäßig das IP-Protokoll.
+** Dabei kommt die MirrorAndVault asynchrone Datensicherungsstrategie zum Einsatz..
+
+
+
+
+.Schritte
+System Manager oder die CLI dienen zur Konfiguration Ihrer SnapLock für SnapVault Replizierungsbeziehung
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Die Aktivierung von SnapLock für SnapVault in System Manager erfolgt durch die Auswahl einer _vault_-Replikationsrichtlinie und anschließend der Option zum Sperren der Ziel-Snapshots.
+
+. In System Manager befindet sich dies unter *Schutz > Konsistenzgruppen*.
+. Anschließend erfolgt die Auswahl einer Konsistenzgruppe und dann von *Protect*.
++
+System Manager füllt die Quellseiteninformationen automatisch aus.
+
+. Den Ziel-Cluster und die Storage-VM auswählen.
+. Wählen Sie eine Datensicherungsstrategie.
++
+Sie müssen eine _vault_-Replikationsrichtlinie auswählen, die mit Aufbewahrungsregeln konfiguriert ist. In ONTAP 9.20.1 und höher müssen Sie für die Backend-FC-Replikation die Richtlinie _MirrorAndVault_ auswählen.
+
+. Hier wird die Option *Ziel-Konsistenzgruppen sperren* ausgewählt.
+. Es muss *Beziehung initialisieren* ausgewählt sein.
+. *Speichern* auswählen.
+
+
+--
+.CLI
+--
+. Erstellung eines SnapLock Ziel-Volumes für die Quell-Konsistenzgruppe:
++
+[source, cli]
+----
+volume create -vserver <dst_svm> -volume <dst_vol> -aggregate <aggr> -size <size> -type DP -snaplock-type enterprise
+----
+. Erstellen einer SnapMirror Vault-Richtlinie:
++
+[source, cli]
+----
+snapmirror policy create -vserver <dst_svm> -policy <policy_name> -type vault
+----
+. Der Richtlinie werden Aufbewahrungsregeln hinzugefügt:
++
+[source, cli]
+----
+snapmirror policy add-rule -vserver <dst_svm> -policy <policy_name> -snapmirror-label daily -keep <retention_length> -retention-period <retention_period>
+----
++
+Im folgenden Beispiel ist die Aufbewahrungsfrist auf 1 Jahr festgelegt:
+
++
+`snapmirror policy add-rule -vserver svm1 -policy vault -snapmirror-label monthly -keep 12 -retention-period "1 years"`
+
++
+Im folgenden Beispiel ist die Aufbewahrungsfrist auf 30 Tage festgelegt:
+
++
+`snapmirror policy add-rule -vserver svm1 -policy vault -snapmirror-label daily -keep 30 -retention-period "30 days"`
+
+. Erstellung der SnapLock für SnapVault Beziehung:
++
+[source, cli]
+----
+snapmirror create -source-path <src_svm>:/cg/<src_cg> -destination-path <dst_svm>:/cg/<dst_cg> -policy <policy_name>
+----
+. Initialisierung der Beziehung:
++
+[source, cli]
+----
+snapmirror initialize -destination-path <dst_svm>:<dst_vol>
+----
+. Überprüfung, ob die Beziehung hergestellt wurde:
++
+[source, cli]
+----
+snapmirror show -destination-path <dst_svm>:<dst_vol> -fields policy,status,state
+----
+. Überprüfen, ob die Snapshots am Ziel gesperrt sind:
++
+[source, cli]
+----
+volume snapshot show -vserver <dst_svm> -volume <dst_vol> -fields snapshot,snaplock-expiry-time,is-snaplock-expiry-locked
+----
+
+
+--
+====
 
 
 [[configure-svm-disaster-recovery]]

@@ -1,7 +1,7 @@
 ---
 permalink: encryption-at-rest/configure-external-key-management-overview-concept.html 
 sidebar: sidebar 
-keywords: external key management, kmip, configure 
+keywords: external key management, kmip, configure, intracluster key sharing, key restore 
 summary: 'Sie können einen oder mehrere externe Schlüsselverwaltungsserver verwenden, um die Schlüssel zu sichern, die der Cluster für den Zugriff auf verschlüsselte Daten verwendet. Ein externer Schlüsselverwaltungsserver ist ein Drittanbietersystem in Ihrer Speicherumgebung, das Schlüssel an Nodes mithilfe des Key Management Interoperability Protocol (KMIP) bereitstellt.' 
 ---
 = Informationen zur Konfiguration der externen Schlüsselverwaltung mit ONTAP NetApp Volume Encryption
@@ -14,3 +14,14 @@ summary: 'Sie können einen oder mehrere externe Schlüsselverwaltungsserver ver
 Sie können einen oder mehrere externe Schlüsselverwaltungsserver verwenden, um die Schlüssel zu sichern, die der Cluster für den Zugriff auf verschlüsselte Daten verwendet. Ein externer Schlüsselverwaltungsserver ist ein Drittanbietersystem in Ihrer Speicherumgebung, das Schlüssel an Nodes mithilfe des Key Management Interoperability Protocol (KMIP) bereitstellt. Zusätzlich zum integrierten Onboard Key Manager unterstützt ONTAP mehrere externe Schlüsselverwaltungsserver.
 
 Ab ONTAP 9.10.1 kann xref:manage-keys-azure-google-task.html[Azure Key Vault oder Google Cloud Key Manager Service] zum Schutz Ihrer NVE-Schlüssel für Daten-SVMs verwendet werden. Ab ONTAP 9.11.1 ist die Konfiguration mehrerer externer Schlüsselmanager in einem Cluster möglich. Siehe xref:configure-cluster-key-server-task.html[Clustered Key-Server konfigurieren]. Ab ONTAP 9.12.0 kann link:https://docs.aws.amazon.com/kms/latest/developerguide/overview.html["AWS KMS"^] zum Schutz Ihrer NVE-Schlüssel für Daten-SVMs verwendet werden. Ab ONTAP 9.17.1 kann OpenStacks xref:manage-keys-barbican-task.html[Barbican KMS] zum Schutz Ihrer NVE-Schlüssel für Daten-SVMs verwendet werden.
+
+[[intracluster-key-sharing]]
+Ab ONTAP 9.20.1 teilen Knoten in einem Cluster, die einen externen KMIP-Schlüsselmanager verwenden, ihre Verschlüsselungsschlüssel untereinander. Die geteilten Schlüssel werden mit AES-GCM-256 verschlüsselt und authentifiziert. ONTAP teilt Schlüssel in zwei Situationen:
+
+* *Schlüsselerstellung.* Wenn ONTAP einen neuen Schlüssel erstellt, beispielsweise beim Erstellen eines verschlüsselten FlexVol volume, FlexGroup volume oder Aggregats, speichert der Knoten, der den Schlüssel erstellt, diesen auf dem Schlüsselserver und sendet ihn dann an alle anderen Knoten im Cluster.
+* *Schlüsselwiederherstellung nach einem Neustart.* Wenn ein Knoten neu startet, beispielsweise im Rahmen eines automatisierten unterbrechungsfreien Upgrade, einer Übernahme und Rückgabe oder eines ungeplanten Neustarts, stellt er seine Schlüssel von seinem HA-Partner wieder her. ONTAP kontaktiert den Schlüsselserver nur für Schlüssel, die der Partner nicht bereitstellen kann. Verfügt der Partner über alle Schlüssel, kann die Schlüsselwiederherstellung auch dann abgeschlossen werden, wenn der Schlüsselserver nicht verfügbar ist.
+
+
+Dieses Verhalten wird auf einem neuen ONTAP 9.20.1 Cluster sowie beim Upgrade eines Clusters auf ONTAP 9.20.1 automatisch aktiviert.
+
+Die clusterinterne Schlüsselfreigabe gilt nur für einen externen KMIP Schlüsselmanager. Sie wird nicht mit dem Onboard Key Manager, Azure Key Vault, Google Cloud Key Management Service, AWS KMS oder Barbican verwendet. Sie wird nicht verwendet, wenn MetroCluster konfiguriert ist. Die Wiederherstellung der Schlüssel nach einem Neustart erfordert, dass der HA Partner online ist und die Schlüssel selbst besitzt.
