@@ -2,7 +2,7 @@
 permalink: authentication/install-server-certificate-cluster-svm-ssl-server-task.html 
 sidebar: sidebar 
 keywords: generate, install, ca-signed, server, certificate, csr, signing request, signed 
-summary: 'Auf Produktionssystemen gilt es als Best Practice, ein von einer Zertifizierungsstelle (CA) signiertes digitales Zertifikat zur Authentifizierung des Clusters oder der SVM als SSL-Server zu installieren.' 
+summary: Für die Authentifizierung eines ONTAP Cluster oder einer SVM als SSL-Server sind das Erstellen einer Zertifikatsignierungsanforderung und die Installation eines von einer CA signierten Serverzertifikats erforderlich. 
 ---
 = Ein von einer Zertifizierungsstelle signiertes Serverzertifikat in ONTAP generieren und installieren
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: 'Auf Produktionssystemen gilt es als Best Practice, ein von einer Zerti
 
 
 [role="lead"]
-Auf Produktionssystemen gilt es als Best Practice, ein von einer Zertifizierungsstelle (CA) signiertes digitales Zertifikat zur Authentifizierung des Clusters oder der SVM als SSL-Server zu installieren. Mit dem  `security certificate generate-csr` Befehl kann eine Zertifikatsignierungsanforderung (CSR) generiert werden, und mit dem  `security certificate install` Befehl lässt sich das von der Zertifizierungsstelle zurückgesendete Zertifikat installieren. Weitere Informationen zu  `security certificate generate-csr` und  `security certificate install` finden sich in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+certificate["ONTAP-Befehlsreferenz"^].
+Auf Produktionssystemen empfiehlt es sich, zur Authentifizierung des Clusters oder der SVM als SSL-Server ein von einer Zertifizierungsstelle signiertes digitales Zertifikat zu installieren. Sie können den `security certificate generate-csr`Befehl verwenden, um eine Zertifikatsignierungsanforderung (CSR) zu generieren, und den `security certificate install`Befehl, um das von der Zertifizierungsstelle erhaltene Zertifikat zu installieren. Weitere Informationen zu `security certificate generate-csr` und `security certificate install` finden Sie in der link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+certificate["ONTAP-Befehlsreferenz"^].
 
 
 
@@ -31,7 +31,7 @@ Sie müssen Cluster- oder SVM-Administrator sein, um diese Aufgabe ausführen zu
 security certificate generate-csr -common-name FQDN_or_common_name -size 512|1024|1536|2048 -country country -state state -locality locality -organization organization -unit unit -email-addr email_of_contact -hash-function SHA1|SHA256|MD5
 ----
 +
-Der folgende Befehl erstellt eine CSR mit einem 2048-Bit-Privatschlüssel, der von der  `SHA256` Hash-Funktion generiert wurde, zur Verwendung durch die  `Software` Gruppe in der  `IT` Abteilung eines Unternehmens, dessen benutzerdefinierter Common Name  `server1.companyname.com` ist und das in Sunnyvale, Kalifornien, USA, ansässig ist. Die E-Mail-Adresse des SVM-Kontaktadministrators ist  `web@example.com`. Das System zeigt die CSR und den privaten Schlüssel in der Ausgabe an.
+Der folgende Befehl erstellt eine CSR mit einem 2048-Bit-Privatschlüssel, der von der  `SHA256` Hash-Funktion generiert wird. Die CSR ist für die Verwendung durch die  `Software` Gruppe in der  `IT` Abteilung eines Unternehmens mit Sitz in Sunnyvale, California, USA bestimmt. Der benutzerdefinierte Common Name des Unternehmens lautet  `server1.companyname.com`. Die E-Mail-Adresse des SVM Kontaktadministrators lautet  `web@example.com`. Das System zeigt die CSR und den Privatschlüssel in der Ausgabe an.
 
 +
 .Beispiel für das Erstellen eines CSR
@@ -57,6 +57,10 @@ NOTE: Keep a copy of your certificate request and private key for future referen
 ====
 . Die Zertifikatsanforderung aus der CSR-Ausgabe kopieren und in elektronischer Form (z. B. per E-Mail) zur Signierung an eine vertrauenswürdige Drittzertifizierungsstelle senden.
 +
+
+NOTE: Die Zertifizierungsstelle muss das signierte Zertifikat im Base64-kodierten PEM- oder PKCS12-Format zurückgeben.
+
++
 Nach Bearbeitung Ihres Antrags sendet Ihnen die Zertifizierungsstelle das signierte digitale Zertifikat. Eine Kopie des privaten Schlüssels und des von der Zertifizierungsstelle signierten digitalen Zertifikats sollte aufbewahrt werden.
 
 
@@ -81,14 +85,14 @@ security certificate install -vserver SVM_name -type certificate_type
 +
 [NOTE]
 ====
-ONTAP fordert Sie zur Eingabe der Stamm- und Zwischenzertifikate der Zertifizierungsstelle auf, die die Zertifikatskette des Serverzertifikats bilden. Die Kette beginnt mit dem Zertifikat der Zertifizierungsstelle, die das Serverzertifikat ausgestellt hat, und kann bis zum Stammzertifikat der Zertifizierungsstelle reichen. Fehlende Zwischenzertifikate führen zu einem Fehler bei der Installation des Serverzertifikats.
+ONTAP fordert Sie zur Eingabe der Stamm- und Zwischenzertifikate der Zertifizierungsstelle auf, die die Zertifikatskette des Serverzertifikats bilden. Die Kette beginnt mit dem Zertifikat der Zertifizierungsstelle, die das Serverzertifikat ausgestellt hat, und kann bis zum Stammzertifikat der Zertifizierungsstelle reichen. Fehlende Zwischenzertifikate führen dazu, dass die Installation des Serverzertifikats fehlschlägt.
 
 ====
 +
 Der folgende Befehl installiert das CA-signierte Serverzertifikat und die Zwischenzertifikate auf SVM `engData2`.
 
 +
-.Beispiel für die Installation von Zwischenzertifikaten eines von einer Zertifizierungsstelle signierten Serverzertifikats
+.Beispiel für die Installation eines CA-signierten Serverzertifikats und von Zwischenzertifikaten
 [%collapsible]
 ====
 [listing]
